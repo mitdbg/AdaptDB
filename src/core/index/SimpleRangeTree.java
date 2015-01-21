@@ -5,7 +5,14 @@ import java.util.List;
 import core.index.key.MDIndexKey;
 import core.utils.SchemaUtils.TYPE;
 
-public class KDDTree implements MDIndex{
+/**
+ * A simple range tree which collects the ranges of all index 
+ * attributes in the build phase and constructs a range tree over that. 
+ * 
+ * @author alekh
+ *
+ */
+public class SimpleRangeTree implements MDIndex {
 
 	@Override
 	public void initBuild(TYPE[] dimensions, int buckets) {
@@ -30,7 +37,7 @@ public class KDDTree implements MDIndex{
 		// TODO Auto-generated method stub
 		
 	}
-	
+
 	@Override
 	public int getBucketId(MDIndexKey key) {
 		// TODO Auto-generated method stub
@@ -60,4 +67,5 @@ public class KDDTree implements MDIndex{
 		// TODO Auto-generated method stub
 		
 	}
+
 }

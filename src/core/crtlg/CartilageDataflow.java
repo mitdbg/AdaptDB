@@ -78,11 +78,10 @@ public class CartilageDataflow {
 	 */
 	public void run(MDIndex mdIndex, MDIndexKey mdIndexKey, String inputPath, String hdfsPath){		
 		CartilageConf conf = ConfUtils.create(propertiesFile, hdfsPath);
-		int dimensions = 0;	//TODO
+		TYPE[] dimensions = null;	//TODO
 		int buckets = 0;	//TODO
-		TYPE[] dimensionTypes = null;	//TODO 
 		
-		mdIndex.initBuild(dimensions, dimensionTypes, buckets);
+		mdIndex.initBuild(dimensions, buckets);
 		new FirstPass(conf, mdIndex, mdIndexKey).run(inputPath, 0);
 		mdIndex.initProbe();
 		new SecondPass(conf, mdIndex, mdIndexKey).run(inputPath, 0);

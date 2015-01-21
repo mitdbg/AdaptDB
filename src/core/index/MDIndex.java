@@ -37,7 +37,7 @@ public interface MDIndex {
 	 * @param dimensionTypes
 	 * @param buckets
 	 */
-	public void initBuild(int dimensions, TYPE[] dimensionTypes, int buckets); 
+	public void initBuild(TYPE[] dimensions, int buckets); 
 
 	
 	/**
