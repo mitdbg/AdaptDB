@@ -1,6 +1,9 @@
 package core.index;
 import java.util.List;
 
+import core.index.key.MDIndexKey;
+import core.utils.SchemaUtils.TYPE;
+
 
 /**
  * 
@@ -10,7 +13,7 @@ import java.util.List;
 
 public interface MDIndex {
 
-	/**
+	/*
 	 * Placeholder class for the index leaves.
 	 * 
 	 */
@@ -19,14 +22,22 @@ public interface MDIndex {
 	}
 	
 	
+	/*
+	 * 
+	 * The Build phase of the index
+	 * 
+	 */
+	
+	
 	/**
 	 * Initialize the index with the number of dimensions and 
 	 * the maximum number of buckets over those dimensions.
 	 * 
 	 * @param dimensions
+	 * @param dimensionTypes
 	 * @param buckets
 	 */
-	public void init(int dimensions, int buckets);
+	public void initBuild(int dimensions, TYPE[] dimensionTypes, int buckets); 
 
 	
 	/**
@@ -35,16 +46,29 @@ public interface MDIndex {
 	 * 
 	 * @param key
 	 */
-	public void insert(Object[] key);
+	public void insert(MDIndexKey key);
 	
 
 	/**
 	 * Bulk load the index structure, without loading the actual data.
 	 * 
+	 * TODO: this method does not really fit in our project because it 
+	 * assumes data to be in memory.
+	 * 
 	 * @param keys
 	 */
-	public void bulkLoad(Object[][] keys);
+	public void bulkLoad(MDIndexKey[] keys);
 	
+	
+	
+	/*
+	 * 
+	 * The Probe phase of the index
+	 * 
+	 */
+	
+	
+	public void initProbe();
 	
 	/**
 	 * Get the bucket id, for a given key, from an existing index.
@@ -52,8 +76,33 @@ public interface MDIndex {
 	 * @param key
 	 * @return
 	 */
-	public int getBucketId(Object[] key);
+	public int getBucketId(MDIndexKey key);
 	
+	
+	/**
+	 * Point query.
+	 * 
+	 * @param key
+	 * @return the bucket containing the key.
+	 */
+	public Bucket search(MDIndexKey key);
+	
+	
+	/**
+	 * Range query.
+	 * 
+	 * @param low
+	 * @param high
+	 * @return the set of buckets containing the given range.
+	 */
+	public List<Bucket> range(MDIndexKey low, MDIndexKey high);
+	
+	
+	/*
+	 * 
+	 * Other Utility methods.
+	 * 
+	 */
 	
 	/**
 	 * Serialize the index into a byte array.
@@ -70,22 +119,4 @@ public interface MDIndex {
 	 */
 	public void unmarshall(byte[] bytes);
 	
-	
-	/**
-	 * Point query.
-	 * 
-	 * @param key
-	 * @return the bucket containing the key.
-	 */
-	public Bucket search(Object[] key);
-	
-	
-	/**
-	 * Range query.
-	 * 
-	 * @param low
-	 * @param high
-	 * @return the set of buckets containing the given range.
-	 */
-	public List<Bucket> range(Object[] low, Object[] high);
 }

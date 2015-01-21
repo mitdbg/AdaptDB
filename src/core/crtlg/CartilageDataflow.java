@@ -4,10 +4,11 @@ import lib.udf.parse.CartilageBinaryParser;
 import lib.udf.partition.CartilageHDFSSizePartitioner;
 import core.conf.CartilageConf;
 import core.index.MDIndex;
-import core.index.MDIndexKey;
+import core.index.key.MDIndexKey;
 import core.pipeline.Dataflow;
 import core.udf.CartilageUDF;
 import core.utils.ConfUtils;
+import core.utils.SchemaUtils.TYPE;
 
 public class CartilageDataflow {
 	
@@ -75,10 +76,17 @@ public class CartilageDataflow {
 	 * @param inputPath	-- the input dataset
 	 * @param hdfsPath	-- the target location on hdfs
 	 */
-	public void run(MDIndex mdIndex, MDIndexKey mdIndexKey, String inputPath, String hdfsPath){
+	public void run(MDIndex mdIndex, MDIndexKey mdIndexKey, String inputPath, String hdfsPath){		
 		CartilageConf conf = ConfUtils.create(propertiesFile, hdfsPath);
+		int dimensions = 0;	//TODO
+		int buckets = 0;	//TODO
+		TYPE[] dimensionTypes = null;	//TODO 
+		
+		mdIndex.initBuild(dimensions, dimensionTypes, buckets);
 		new FirstPass(conf, mdIndex, mdIndexKey).run(inputPath, 0);
+		mdIndex.initProbe();
 		new SecondPass(conf, mdIndex, mdIndexKey).run(inputPath, 0);
 	}
 	
+
 }

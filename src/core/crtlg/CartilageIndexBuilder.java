@@ -3,7 +3,7 @@ package core.crtlg;
 import core.conf.CartilageConf;
 import core.data.CartilageDatum;
 import core.index.MDIndex;
-import core.index.MDIndexKey;
+import core.index.key.MDIndexKey;
 import core.udf.CartilageUDF;
 
 public class CartilageIndexBuilder extends CartilageUDF{
@@ -30,7 +30,8 @@ public class CartilageIndexBuilder extends CartilageUDF{
 	}
 
 	public CartilageDatum getNext() {
-		mdIndex.insert(mdIndexKey.extract(datum.get(currentDatum)));	// get the next tuple from upstream operator
+		mdIndexKey.setTuple(datum.get(currentDatum));	// get the next tuple from upstream operator
+		mdIndex.insert(mdIndexKey);	
 		currentDatum++;
 		return null;
 	}

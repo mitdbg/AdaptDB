@@ -3,7 +3,7 @@ package core.crtlg;
 import core.conf.CartilageConf;
 import core.data.CartilageDatum;
 import core.index.MDIndex;
-import core.index.MDIndexKey;
+import core.index.key.MDIndexKey;
 import core.udf.partition.CartilageLogicalPartitioner;
 
 public class CartilagePartitionMapper extends CartilageLogicalPartitioner{
@@ -26,7 +26,8 @@ public class CartilagePartitionMapper extends CartilageLogicalPartitioner{
 		if(returnFlag){
 			returnFlag = false;
 			CartilageDatum returnPartition = currentDatum;
-			returnPartition.currentLabel = mdIndex.getBucketId(mdIndexKey.extract(currentDatum));
+			mdIndexKey.setTuple(currentDatum);
+			returnPartition.currentLabel = mdIndex.getBucketId(mdIndexKey);
 			return returnPartition;
 		}
 		else{
