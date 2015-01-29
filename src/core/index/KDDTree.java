@@ -40,6 +40,7 @@ public class KDDTree implements MDIndex{
 	@Override
 	public Bucket search(MDIndexKey key) {
 		// TODO Auto-generated method stub
+		// very similar to the above method!
 		return null;
 	}
 
