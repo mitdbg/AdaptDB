@@ -1,5 +1,7 @@
 package core.index.key;
 
+import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
+
 /**
  * Could be created as template?
  * e.g. T for tuple type.
@@ -16,7 +18,7 @@ public interface MDIndexKey {
 	
 	String getKeyString();
 	
-	String getStringAttribute(int index);
+	String getStringAttribute(int index, int maxSize);
 	
 	int getIntAttribute(int index);
 	
@@ -25,4 +27,6 @@ public interface MDIndexKey {
 	float getFloatAttribute(int index);
 	
 	double getDoubleAttribute(int index);
+	
+	SimpleDate getDateAttribute(int index);
 }

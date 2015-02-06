@@ -2,7 +2,6 @@ package core.index;
 import java.util.List;
 
 import core.index.key.MDIndexKey;
-import core.utils.SchemaUtils.TYPE;
 
 
 /**
@@ -34,10 +33,9 @@ public interface MDIndex {
 	 * the maximum number of buckets over those dimensions.
 	 * 
 	 * @param dimensions
-	 * @param dimensionTypes
-	 * @param buckets
+	 * @param bucketSize
 	 */
-	public void initBuild(TYPE[] dimensions, int buckets); 
+	public void initBuild(int bucketSize); 
 
 	
 	/**

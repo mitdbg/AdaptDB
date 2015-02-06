@@ -3,12 +3,11 @@ package core.index;
 import java.util.List;
 
 import core.index.key.MDIndexKey;
-import core.utils.SchemaUtils.TYPE;
 
 public class KDDTree implements MDIndex{
 
 	@Override
-	public void initBuild(TYPE[] dimensions, int buckets) {
+	public void initBuild(int buckets) {
 		// TODO Auto-generated method stub
 		
 	}

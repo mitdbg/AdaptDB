@@ -17,23 +17,25 @@ public class CartilageIndexBuilder extends CartilageUDF{
 	}
 	
 	public void initialize(CartilageConf arg0) {
-		currentDatum = 0;
+		currentDatum = -1;
 	}
 
 	public boolean hasNext() {
+		currentDatum++;
+		
 		if(currentDatum < datum.size())
 			return true;
 		else{
-			currentDatum = 0;
+			currentDatum = -1;
 			return false;
 		}
 	}
 
 	public CartilageDatum getNext() {
-		mdIndexKey.setTuple(datum.get(currentDatum));	// get the next tuple from upstream operator
+		CartilageDatum d = datum.get(currentDatum);
+		mdIndexKey.setTuple(d);	// get the next tuple from upstream operator
 		mdIndex.insert(mdIndexKey);	
-		currentDatum++;
-		return null;
+		return d;
 	}
 
 	public void finalize() {
