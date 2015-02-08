@@ -8,6 +8,7 @@ import java.nio.channels.FileChannel;
 
 import core.index.MDIndex;
 import core.index.SimpleRangeTree;
+import core.index.kdtree.KDDTree;
 import core.index.key.CartilageIndexKey2;
 
 public class ScanTest {
@@ -40,8 +41,9 @@ public class ScanTest {
 		int bucketSize = 1024*1024*10;	// 10mb
 		
 		//CartilageIndexKey2 key = new CartilageIndexKey2('|');
-		SimpleRangeTree t = new SimpleRangeTree();
-		t.initBuild(bucketSize);
+		// SimpleRangeTree t = new SimpleRangeTree();
+        MDIndex t = new KDDTree();
+		//t.initBuild(bucketSize); todo(qui): remember to undo this later!
 		
 		FileInputStream f;
 		try {
@@ -49,6 +51,8 @@ public class ScanTest {
 			
 			f = new FileInputStream(filename);
 			ch = f.getChannel();
+            int numBuckets = (int) ch.size() / bucketSize + 1;
+            t.initBuild(numBuckets);
 			
 			//byte[] line = null;
 			int totalLineSize=0, lineCount=0;
