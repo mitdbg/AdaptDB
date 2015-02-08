@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.HashMap;
+import java.util.Map;
 
 import core.index.MDIndex;
 import core.index.SimpleRangeTree;
@@ -42,7 +44,7 @@ public class ScanTest {
 		
 		//CartilageIndexKey2 key = new CartilageIndexKey2('|');
 		// SimpleRangeTree t = new SimpleRangeTree();
-        MDIndex t = new KDDTree();
+        // MDIndex t = new KDDTree();
 		//t.initBuild(bucketSize); todo(qui): remember to undo this later!
 		
 		FileInputStream f;
@@ -52,7 +54,7 @@ public class ScanTest {
 			f = new FileInputStream(filename);
 			ch = f.getChannel();
             int numBuckets = (int) ch.size() / bucketSize + 1;
-            t.initBuild(numBuckets);
+            index.initBuild(numBuckets);
 			
 			//byte[] line = null;
 			int totalLineSize=0, lineCount=0;
@@ -87,7 +89,7 @@ public class ScanTest {
 			    		
 			    		lineCount++;
 			    		//offsets[tupleId++] = key.getOffsets();
-			    		t.insert(key);
+			    		index.insert(key);
 			    	}
 			    }
 			    if(previous < nRead){	// is there a broken line in the end?
@@ -104,7 +106,7 @@ public class ScanTest {
 			System.out.println("Line count = "+lineCount);
 			System.out.println("Average line size = "+(double)totalLineSize/lineCount);
 			
-			t.initProbe();
+			index.initProbe();
 			
 		} catch (FileNotFoundException e) {
 			throw new IllegalAccessError("Cannot parse file: "+filename);
@@ -113,14 +115,97 @@ public class ScanTest {
 		}
 		
 	}
+
+    public void countBuckets(String filename, MDIndex index, CartilageIndexKey2 key) {
+        byteArray = new byte[bufferSize];
+        bb = ByteBuffer.wrap(byteArray);
+        previous = 0;
+        byteArrayIdx = 0;
+        nRead = 0;
+        newLine = '\n';
+        Map<Integer, Integer> bucketCounts = new HashMap<Integer, Integer>();
+
+        index.initProbe();
+
+        FileInputStream f;
+        try {
+            long startTime = System.nanoTime();
+
+            f = new FileInputStream(filename);
+            ch = f.getChannel();
+
+            //byte[] line = null;
+            int totalLineSize=0, lineCount=0;
+
+            while((nRead = ch.read(bb)) != -1){
+                if(nRead==0)
+                    continue;
+
+                byteArrayIdx = previous = 0;
+                for ( ; byteArrayIdx<nRead; byteArrayIdx++ ){
+                    if(byteArray[byteArrayIdx]==newLine){
+
+                        totalLineSize += byteArrayIdx-previous;
+                        //line = BinaryUtils.getBytes(byteArray, previous, byteArrayIdx-previous);
+                        //key.setBytes(line);
+                        key.setBytes(byteArray, previous, byteArrayIdx-previous);
+                        if(hasLeftover){
+
+                            byte[] a = new byte[brokenLine.length + byteArrayIdx-previous];
+                            System.arraycopy(brokenLine, 0, a, 0, brokenLine.length);
+                            System.arraycopy(byteArray, previous, a, brokenLine.length, byteArrayIdx-previous);
+                            key.setBytes(a);
+
+                            //line = BinaryUtils.concatenate(brokenLine, (byte[])line);
+                            //key.setBytes(line);
+
+                            totalLineSize += brokenLine.length;
+                            hasLeftover = false;
+                        }
+                        //System.out.println(new String((byte[])line));
+                        previous = ++byteArrayIdx;
+
+                        lineCount++;
+                        //offsets[tupleId++] = key.getOffsets();
+                        int bucketId = index.getBucketId(key);
+                        if (!bucketCounts.containsKey(bucketId)) {
+                            bucketCounts.put(bucketId, 1);
+                        } else {
+                            int oldCount = bucketCounts.get(bucketId);
+                            bucketCounts.put(bucketId, oldCount + 1);
+                        }
+                    }
+                }
+                if(previous < nRead){	// is there a broken line in the end?
+                    brokenLine = BinaryUtils.getBytes(byteArray, previous, nRead-previous);
+                    hasLeftover = true;
+                }
+                bb.clear();
+
+            }
+
+            ch.close();
+
+            System.out.println(bucketCounts.size());
+            System.out.println(bucketCounts);
+
+        } catch (FileNotFoundException e) {
+            throw new IllegalAccessError("Cannot parse file: "+filename);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 	
 	public static void main(String[] args) {
 		ScanTest t = new ScanTest();
 		
 		CartilageIndexKey2 key = new CartilageIndexKey2('|');
-		SimpleRangeTree index = new SimpleRangeTree();
+		MDIndex index = new KDDTree();
 		
 		//t.FileChannelScan("/Users/alekh/Work/Cartilage/support/datasets/tpch_0.01/lineitem.tbl", index, key);
-		t.FileChannelScan("/Users/alekh/Work/Cartilage/support/datasets/scale_1/lineitem.tbl", index, key);
+		//t.FileChannelScan("/Users/alekh/Work/Cartilage/support/datasets/scale_1/lineitem.tbl", index, key);
+        t.FileChannelScan("/home/ubuntu/lineitem.tbl", index, key);
+        t.countBuckets("/home/ubuntu/lineitem.tbl", index, key);
+
 	}
 }
