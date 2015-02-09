@@ -12,6 +12,7 @@ import java.util.List;
 public class KDNode {
 
     private int dimension;
+    private TYPE type;
     private Comparable value;
     private int numBuckets;
 
@@ -33,37 +34,45 @@ public class KDNode {
 
     public void setValues(int dimension, TYPE type, MDIndexKey key) {
         this.dimension = dimension;
+        this.type = type;
+        this.value = getValue(dimension, type, key);
+    }
+
+    private Comparable getValue(int dimension, TYPE type, MDIndexKey key) {
         switch (type) {
             case INT:
-                this.value = key.getIntAttribute(dimension);
-                break;
+                return key.getIntAttribute(dimension);
             case LONG:
-                this.value = key.getLongAttribute(dimension);
-                break;
+                return key.getLongAttribute(dimension);
             case FLOAT:
-                this.value = key.getFloatAttribute(dimension);
-                break;
+                return key.getFloatAttribute(dimension);
             case DATE:
-                this.value = (Comparable) key.getDateAttribute(dimension);
-                break;
+                return (Comparable) key.getDateAttribute(dimension);
             case STRING:
-                this.value = key.getStringAttribute(dimension, 20);
-                break;
+                return key.getStringAttribute(dimension, 20);
             default:
                 throw new RuntimeException("Unknown dimension type: "+type);
         }
         // TODO(qui): deal with VARCHAR somewhere
     }
 
+    private void incrementNumBuckets() {
+        this.numBuckets++;
+        if (this.parent != null) {
+            this.parent.incrementNumBuckets();
+        }
+    }
+
     public KDNode insert(MDIndexKey key) {
         if (value == null) {
             return this;
-        } else if (value.compareTo(key.getIntAttribute(dimension)) >= 0) {
+        } else if (value.compareTo(getValue(dimension, type, key)) >= 0) {
             if (leftChild == null) {
                 leftChild = new KDNode();
                 leftChild.parent = this;
-                if (rightChild != null) {
-                    numBuckets = rightChild.getNumBuckets() + 1;
+                if (rightChild == null) {
+                    numBuckets = 2;
+                    parent.incrementNumBuckets();
                 }
                 return leftChild;
             } else {
@@ -73,8 +82,9 @@ public class KDNode {
             if (rightChild == null) {
                 rightChild = new KDNode();
                 rightChild.parent = this;
-                if (leftChild != null) {
-                    numBuckets = leftChild.getNumBuckets() + 1;
+                if (leftChild == null) {
+                    numBuckets = 2;
+                    parent.incrementNumBuckets();
                 }
                 return rightChild;
             } else {
@@ -84,14 +94,17 @@ public class KDNode {
     }
 
     public int getBucketId(MDIndexKey key, int start) {
-        if (numBuckets == 1) {
-            return start;
-        }
-        int searchVal = key.getIntAttribute(dimension);
+        Comparable searchVal = getValue(dimension, type, key);
         if (value.compareTo(searchVal) >= 0) {
+            if (leftChild == null) {
+                return start;
+            }
             return leftChild.getBucketId(key, start*2);
         }
         else {
+            if (rightChild == null) {
+                return start;
+            }
             return rightChild.getBucketId(key, start*2+1);
         }
     }
