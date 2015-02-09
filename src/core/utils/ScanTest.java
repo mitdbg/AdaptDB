@@ -53,7 +53,7 @@ public class ScanTest {
 			
 			f = new FileInputStream(filename);
 			ch = f.getChannel();
-            int numBuckets = (int) ch.size() / bucketSize + 1;
+            int numBuckets = (int) (ch.size() / bucketSize) + 1;
             index.initBuild(numBuckets);
 			
 			//byte[] line = null;
@@ -186,6 +186,7 @@ public class ScanTest {
 
             ch.close();
 
+            System.out.println("Time taken = "+(double)(System.nanoTime()-startTime)/1E9+" sec");
             System.out.println(bucketCounts.size());
             System.out.println(bucketCounts);
 

@@ -70,9 +70,10 @@ public class KDNode {
             if (leftChild == null) {
                 leftChild = new KDNode();
                 leftChild.parent = this;
+		this.leftChild = leftChild;
                 if (rightChild == null) {
                     numBuckets = 2;
-                    parent.incrementNumBuckets();
+                    if (parent != null) { parent.incrementNumBuckets(); }
                 }
                 return leftChild;
             } else {
@@ -82,9 +83,10 @@ public class KDNode {
             if (rightChild == null) {
                 rightChild = new KDNode();
                 rightChild.parent = this;
+		this.rightChild = rightChild;
                 if (leftChild == null) {
                     numBuckets = 2;
-                    parent.incrementNumBuckets();
+                    if (parent != null) { parent.incrementNumBuckets(); }
                 }
                 return rightChild;
             } else {

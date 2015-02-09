@@ -1,5 +1,6 @@
 package core.index.kdtree;
 
+import java.util.Arrays;
 import java.util.List;
 
 import core.index.MDIndex;
