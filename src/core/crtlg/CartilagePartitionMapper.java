@@ -27,7 +27,7 @@ public class CartilagePartitionMapper extends CartilageLogicalPartitioner{
 			returnFlag = false;
 			CartilageDatum returnPartition = currentDatum;
 			mdIndexKey.setTuple(currentDatum);
-			returnPartition.currentLabel = mdIndex.getBucketId(mdIndexKey);
+			returnPartition.currentLabel = (Integer)mdIndex.getBucketId(mdIndexKey);
 			return returnPartition;
 		}
 		else{

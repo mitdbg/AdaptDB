@@ -74,7 +74,7 @@ public interface MDIndex {
 	 * @param key
 	 * @return
 	 */
-	public int getBucketId(MDIndexKey key);
+	public Object getBucketId(MDIndexKey key);
 	
 	
 	/**

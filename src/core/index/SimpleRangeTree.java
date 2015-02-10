@@ -1,6 +1,7 @@
 package core.index;
 
 import java.util.List;
+import java.util.Random;
 
 import core.index.key.CartilageIndexKey2;
 import core.index.key.MDIndexKey;
@@ -21,10 +22,19 @@ public class SimpleRangeTree implements MDIndex {
 
 	private TYPE[] types;
 	private Range[] valueRanges;
+	@SuppressWarnings("unused")
 	private int bucketSize;
+	
+	private int numPartitions;
+	private Random r;
+	
+	public SimpleRangeTree(int numPartitions){
+		this.numPartitions = numPartitions;
+	}
 	
 	public void initBuild(int bucketSize) {
 		this.bucketSize = bucketSize;
+		this.r = new Random();
 	}
 	
 	private void initRanges(TYPE[] types){
@@ -114,9 +124,9 @@ public class SimpleRangeTree implements MDIndex {
 		
 	}
 
-	public int getBucketId(MDIndexKey key) {
+	public Object getBucketId(MDIndexKey key) {
 		// TODO Auto-generated method stub
-		return 0;
+		return ""+r.nextInt(numPartitions);
 	}
 
 	public Bucket search(MDIndexKey key) {

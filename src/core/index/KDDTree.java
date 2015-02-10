@@ -31,7 +31,7 @@ public class KDDTree implements MDIndex{
 	}
 	
 	@Override
-	public int getBucketId(MDIndexKey key) {
+	public Object getBucketId(MDIndexKey key) {
 		// TODO Auto-generated method stub
 		return 0;
 	}

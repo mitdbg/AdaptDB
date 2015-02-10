@@ -27,7 +27,7 @@ public class TestCartilageDataflow extends TestCase{
 	}
 	
 	public void testSimpleRangeTree(){
-		mdIndex = new SimpleRangeTree();
+		mdIndex = new SimpleRangeTree(100);
 		d.run(mdIndex, mdIndexKey, inputPath, hdfsPath, bucketSize);
 		mdIndex.initProbe();
 	}
