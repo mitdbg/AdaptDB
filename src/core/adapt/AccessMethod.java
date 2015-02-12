@@ -1,15 +1,22 @@
 package core.adapt;
 
 import java.util.List;
-import java.util.Set;
 
-import core.adapt.PartitionIterator.ITER_TYPE;
-import core.adapt.Query.FilterQuery;
+import core.adapt.split.Split;
 import core.index.MDIndex;
+import core.utils.Pair;
+import core.utils.RangeUtils.Range;
+import core.utils.Schema.Attribute;
 
 
-/*
- * We consider only filter query for adaptivity for the moment.
+/**
+ * This access method class considers filter access method over the distributed dataset.
+ * The filter could be extracted as:
+ * - the selection predicate in selection query
+ * - the sub-range filter (different for each node) in join/aggregate query
+ * 
+ * Currently, we support filtering only on one attribute at a time, i.e.
+ * we expect the query processor to filter on the most selective attribute.
  * 
  * Filter query:
  *  - can access only the local blocks on each node
@@ -37,74 +44,42 @@ public class AccessMethod {
 	 */
 	MDIndex partitioningIndex;
 	
-	Set<Partition> dirtyPartitions;
-	int DIRTY_THRESHOLD = 10;
 	
-	/*
-	 *  Initialize hyper-partitioning data access.
-	 *  e.g. read the partitioning index from HDFS.
-	 *  
-	 */	
-	public void initPartitionIndex(String indexPath){
-		// de-serialize MDIndex from  HDFS
+	/**
+	 * Initialize hyper-partitioning data access.
+	 * 
+	 * This method does two things:
+	 * 1. lookup the index file (if exists) for this dataset
+	 * 2. de-serializes MDIndex from HDFS
+	 * 
+	 * @param dataset
+	 */
+	public void init(String dataset){
+		// TODO
 	}
 	
 	
 	/**
-	 * Get the relevant partitions for this query.
+	 * This method is used to:
+	 * 1. lookup the partition index for relevant partitions
+	 * 2. and, to create splits of partitions which could be assigned to different node.  
+	 * 
+	 * The split thus produced must be:
+	 * (a) equal in size
+	 * (b) contain blocks from the same sub-tree
+	 * 
+	 * @param filterPredicate - the filter predicate for data access
+	 * @param n	- the number of splits to produce
 	 * @return
 	 */
-	public List<Partition> getRelevantPartitions(Query q){
-		// 1. lookup the partition tree to find relevant partitions		
-		// 2. order the partitions by their blocks such that partitions in the 
-		//		same block are close to each other.		
-		return null;
+	public List<Split> getPartitionSplits(Pair<Attribute,Range> filterPredicate, int n){
+		// TODO
+		return null;	
 	}
 	
 	
-	// process a query:
-	// 	1. process partitioned portion
-	// 	2. process non-partitioned portion
-	//		- re-partition while processing
-
-	public PartitionIterator iterate(Partition p, FilterQuery q, ITER_TYPE type){
-		stats.collect(q);
-		
-		//1. too many dirty partitions?
-		if(dirtyPartitions.size() > DIRTY_THRESHOLD)
-			mergeAndFlush();
-		
-		//2. fetch
-		p.loadNext();
-		
-		//3. produce an iterator
-		switch(type){
-		case SCAN:		//TODO
-		case SPLIT:		//TODO
-						// get the modified partitions
-		case CRACK:		//TODO
-						// get the modified partitions
-		}
-		
-		return null;
+	public void finish(){
 	}
 	
-	public void mergeAndFlush(){
-		// merge partitions on the same attribute
-		// Two flush strategies:
-		//  1. overwrite: if a partition loaded from HDFS is modified
-		//	2. append: if a new partition is added to the buffer 
-	}
-	
-	public void finalize(){
-		// merge and flush periodically any remaining output partitions
-		mergeAndFlush();
-	}
-
-	
-	/*
-	 * Join query: will need to process co-partitioned joins and standard hash joins (future work). 
-	 *  
-	 */
 }
 
