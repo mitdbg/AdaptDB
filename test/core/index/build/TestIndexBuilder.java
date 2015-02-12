@@ -24,7 +24,8 @@ public class TestIndexBuilder extends TestCase{
 		short replication = 1;
 		
 		key = new CartilageIndexKey2('|');
-		writer = new HDFSPartitionWriter(partitionDir, partitionBufferSize, numPartitions, replication, propertiesFile);
+		//writer = new HDFSPartitionWriter(partitionDir, partitionBufferSize, numPartitions, replication, propertiesFile);
+		writer = new BufferedPartitionWriter(partitionDir, partitionBufferSize, numPartitions);
 		builder = new IndexBuilder();
 	}
 	
