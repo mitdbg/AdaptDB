@@ -14,7 +14,7 @@ import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
 import core.utils.SchemaUtils.TYPE;
 import core.utils.TypeUtils;
 
-public class CartilageIndexKey2 implements MDIndexKey{
+public class CartilageIndexKey2 implements MDIndexKey, Cloneable{
 
 	private SimpleDate dummyDate = new SimpleDate(0,0,0);
 	
@@ -23,6 +23,7 @@ public class CartilageIndexKey2 implements MDIndexKey{
 	private byte[] bytes;
 	private int offset, length;
 	
+	private int numAttrs;
 	private TYPE[] types;
 	private int[] attributeOffsets;
 	
@@ -38,13 +39,23 @@ public class CartilageIndexKey2 implements MDIndexKey{
 		this.keyAttrIdx = keyAttrIdx;
 	}
 	
+	public CartilageIndexKey2 clone() throws CloneNotSupportedException {
+		CartilageIndexKey2 k = (CartilageIndexKey2) super.clone();
+		k.dummyDate = new SimpleDate(0,0,0);
+        return k;
+	}
+	
+	public void setKeys(int[] keyAttrIdx){
+		this.keyAttrIdx = keyAttrIdx;
+	}
+	
 	public void setBytes(byte[] bytes, int[] offsets) {
 		this.bytes = bytes;
 		this.offset = 0;
 		this.length = bytes.length;
 		if(this.types==null){
 			this.types = detectTypes();
-			attributeOffsets = new int[types.length];
+			attributeOffsets = new int[numAttrs];
 		}
 		
 		if(offsets==null){
@@ -60,7 +71,7 @@ public class CartilageIndexKey2 implements MDIndexKey{
 				attributeOffsets[attrIdx] = previous;
 		}
 		else
-			this.keyAttrIdx = offsets;
+			this.attributeOffsets = offsets;
 	}
 	
 	public void setBytes(byte[] bytes) {
@@ -69,7 +80,7 @@ public class CartilageIndexKey2 implements MDIndexKey{
 		this.length = bytes.length;
 		if(this.types==null){
 			this.types = detectTypes();
-			attributeOffsets = new int[types.length];
+			attributeOffsets = new int[numAttrs];
 		}
 		
 		int previous = 0;
@@ -90,7 +101,7 @@ public class CartilageIndexKey2 implements MDIndexKey{
 		this.length = length;
 		if(this.types==null){
 			this.types = detectTypes();
-			attributeOffsets = new int[types.length];
+			attributeOffsets = new int[numAttrs];
 		}
 		
 		if(offsets==null){
@@ -106,7 +117,7 @@ public class CartilageIndexKey2 implements MDIndexKey{
 				attributeOffsets[attrIdx] = previous;
 		}
 		else
-			this.keyAttrIdx = offsets;
+			this.attributeOffsets = offsets;
 	}
 	
 	public void setBytes(byte[] bytes, int offset, int length) {
@@ -115,7 +126,7 @@ public class CartilageIndexKey2 implements MDIndexKey{
 		this.length = length;
 		if(this.types==null){
 			this.types = detectTypes();
-			attributeOffsets = new int[types.length];
+			attributeOffsets = new int[numAttrs];
 		}
 		
 		int previous = offset;
@@ -130,20 +141,24 @@ public class CartilageIndexKey2 implements MDIndexKey{
 			attributeOffsets[attrIdx] = previous;
 	}
 	
-	public int[] getOffsets(){
-		return this.keyAttrIdx;
-	}
-
+	/**
+	 * Extract the types of the relevant attributes (which need to be used as keys)
+	 * 
+	 * @return
+	 */
 	public TYPE[] detectTypes(){
 		List<TYPE> types = new ArrayList<TYPE>();
 		
+		numAttrs = 0;
 		String[] tokens = new String(bytes,offset,length).split("\\"+CartilageDataflow.delimiter);
 		for(int i=0;i<tokens.length;i++){
-			if(keyAttrIdx!=null && !Ints.contains(keyAttrIdx, i))
-				continue;
-			
 			String t = tokens[i].trim();
 			if(t.equals(""))
+				continue;
+			
+			numAttrs++;
+			
+			if(keyAttrIdx!=null && !Ints.contains(keyAttrIdx, i))
 				continue;
 			
 			if(TypeUtils.isInt(t))
@@ -177,6 +192,7 @@ public class CartilageIndexKey2 implements MDIndexKey{
 	}
 
 	public String getStringAttribute(int index, int maxSize) {
+		index = keyAttrIdx[index];
 		int off = attributeOffsets[index];
 		int strSize;
 		if(index < attributeOffsets.length-1)
@@ -188,6 +204,7 @@ public class CartilageIndexKey2 implements MDIndexKey{
 	}
 
 	public int getIntAttribute(int index) {
+		index = keyAttrIdx[index];
 		int off = attributeOffsets[index];
 		int len;
 		if(index < attributeOffsets.length-1)
@@ -213,6 +230,7 @@ public class CartilageIndexKey2 implements MDIndexKey{
 	}
 
 	public long getLongAttribute(int index) {
+		index = keyAttrIdx[index];
 		int off = attributeOffsets[index];
 		int len;
 		if(index < attributeOffsets.length-1)
@@ -238,6 +256,7 @@ public class CartilageIndexKey2 implements MDIndexKey{
 	}
 
 	public float getFloatAttribute(int index) {
+		index = keyAttrIdx[index];
 		int off = attributeOffsets[index];
 		int len;
 		if(index < attributeOffsets.length-1)
@@ -276,6 +295,7 @@ public class CartilageIndexKey2 implements MDIndexKey{
 	}
 	
 	public double getDoubleAttribute(int index) {
+		index = keyAttrIdx[index];
 		int off = attributeOffsets[index];
 		int len;
 		if(index < attributeOffsets.length-1)
@@ -314,6 +334,7 @@ public class CartilageIndexKey2 implements MDIndexKey{
 	}
 	
 	public Date getGenericDateAttribute(int index, String format){
+		index = keyAttrIdx[index];
 		SimpleDateFormat sdf = new SimpleDateFormat(format);
 		try {
 			return sdf.parse(getStringAttribute(index, 100));
@@ -323,6 +344,7 @@ public class CartilageIndexKey2 implements MDIndexKey{
 	}
 	
 	public SimpleDate getDateAttribute(int index){
+		index = keyAttrIdx[index];
 		// parse date assuming the format: "yyyy-MM-dd"
 		int off = attributeOffsets[index];
 		int year = 1000*(bytes[off]-'0') + 100*(bytes[off+1]-'0') + 10*(bytes[off+2]-'0') + (bytes[off+3]-'0');

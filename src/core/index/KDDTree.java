@@ -6,6 +6,10 @@ import core.index.key.MDIndexKey;
 
 public class KDDTree implements MDIndex{
 
+	public KDDTree clone() throws CloneNotSupportedException{
+		return null;
+	}
+	
 	@Override
 	public void initBuild(int buckets) {
 		// TODO Auto-generated method stub

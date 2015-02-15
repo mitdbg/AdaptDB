@@ -64,6 +64,14 @@ public class ByteMappedPartitionWriter extends PartitionWriter{
 		throw new UnsupportedOperationException("no output streams in this method");
 	}
 	
+	public void createPartitionDir(){
+		try {
+			FileUtils.forceMkdir(new File(partitionDir));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	protected void flush(int numPartitions){
 		// sort the partitions by their size
 		List<Entry<String,Integer>> l = Lists.newArrayList(bufferOffset.entrySet());

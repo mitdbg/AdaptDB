@@ -32,6 +32,10 @@ public class SimpleRangeTree implements MDIndex {
 		this.numPartitions = numPartitions;
 	}
 	
+	public SimpleRangeTree clone() throws CloneNotSupportedException{
+		return new SimpleRangeTree(numPartitions);
+	}
+	
 	public void initBuild(int bucketSize) {
 		this.bucketSize = bucketSize;
 		this.r = new Random();

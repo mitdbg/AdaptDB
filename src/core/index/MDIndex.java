@@ -21,6 +21,9 @@ public interface MDIndex {
 	}
 	
 	
+	public MDIndex clone() throws CloneNotSupportedException;
+	
+	
 	/*
 	 * 
 	 * The Build phase of the index

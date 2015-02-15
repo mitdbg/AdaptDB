@@ -4,6 +4,7 @@ import java.text.ParseException;
 import java.util.Date;
 
 import junit.framework.TestCase;
+import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
 import core.utils.SchemaUtils.TYPE;
 
 public class TestCartilageIndexKey2 extends TestCase{
@@ -84,10 +85,19 @@ public class TestCartilageIndexKey2 extends TestCase{
 	
 	public void testGetDateAttribute(){
 		key.setBytes(tuple1.getBytes());
-		//key.detectTypes();
+		String[] tokens = tuple1.split("\\|")[10].split("-");			
+		SimpleDate d = new SimpleDate(Integer.parseInt(tokens[0]),
+										Integer.parseInt(tokens[1]),
+										Integer.parseInt(tokens[2]));
+		
+		assertEquals(d, key.getDateAttribute(10));
+	}
+	
+	public void testGetDateGenericAttribute(){
+		key.setBytes(tuple1.getBytes());
 		try {
 			Date d = CartilageIndexKey.sdf.parse(tuple1.split("\\|")[10]);
-			assertEquals(d, key.getDateAttribute(10));
+			assertEquals(d, key.getGenericDateAttribute(10, "yyyy-MM-dd"));
 		} catch (ParseException e) {
 			throw new RuntimeException("could not parse date");
 		}

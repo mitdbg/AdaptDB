@@ -8,7 +8,7 @@ import java.util.Set;
 
 import com.google.common.collect.Maps;
 
-public abstract class PartitionWriter{
+public abstract class PartitionWriter implements Cloneable{
 
 	protected int bufferPartitionSize = 5*1024*1024;
 	protected int maxBufferPartitions = 100;
@@ -25,6 +25,20 @@ public abstract class PartitionWriter{
 	public PartitionWriter(String partitionDir) {
 		this.partitionDir = partitionDir;
 		this.buffer = Maps.newHashMap();
+	}
+	
+	public PartitionWriter clone() throws CloneNotSupportedException {
+		PartitionWriter w = (PartitionWriter) super.clone();
+		w.buffer = Maps.newHashMap();
+        return w;
+	}
+	
+	public void setPartitionDir(String partitionDir){
+		this.partitionDir = partitionDir;
+	}
+	
+	public String getPartitionDir(){
+		return this.partitionDir;
 	}
 
 	public void writeToPartition(String partitionId, byte[] bytes, int b_offset, int b_length){
@@ -47,6 +61,8 @@ public abstract class PartitionWriter{
 	}
 	
 	protected abstract OutputStream getOutputStream(String path);
+	
+	public abstract void createPartitionDir();
 	
 	public void flush(){
 		flush(buffer.size());		

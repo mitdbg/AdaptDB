@@ -1,9 +1,13 @@
 package core.index.build;
 
 import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
+
+import org.apache.commons.io.FileUtils;
 
 public class BufferedPartitionWriter extends PartitionWriter{
 
@@ -22,4 +26,12 @@ public class BufferedPartitionWriter extends PartitionWriter{
 			throw new RuntimeException("Failed to create an output stream!");
 		}
 	}	
+	
+	public void createPartitionDir(){
+		try {
+			FileUtils.forceMkdir(new File(partitionDir));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 }
