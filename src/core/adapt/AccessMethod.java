@@ -8,7 +8,6 @@ import core.utils.Pair;
 import core.utils.RangeUtils.Range;
 import core.utils.Schema.Attribute;
 
-
 /**
  * This access method class considers filter access method over the distributed dataset.
  * The filter could be extracted as:
@@ -24,8 +23,6 @@ import core.utils.Schema.Attribute;
  *  - crack over non-partitioned portion 
  * 
  */
-
-
 
 public class AccessMethod {
 	
@@ -72,7 +69,7 @@ public class AccessMethod {
 	 * @param n	- the number of splits to produce
 	 * @return
 	 */
-	public List<Split> getPartitionSplits(Pair<Attribute,Range> filterPredicate, int n){
+	public List<Split> getPartitionSplits(List<Predicate> predicates, int n){
 		// TODO
 		return null;	
 	}

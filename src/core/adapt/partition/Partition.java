@@ -1,10 +1,6 @@
 package core.adapt.partition;
 
-
-
-
 public abstract class Partition {
-
 	
 	public static enum State {ORIG,NEW,MODIFIED};
 	State state;	
@@ -17,5 +13,4 @@ public abstract class Partition {
 	
 	public abstract void drop();
 	
-		
 }

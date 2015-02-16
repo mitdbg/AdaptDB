@@ -12,7 +12,6 @@ public class DirtyPartitionBuffer {
 	private int mergeThreshold;
 	private int evictThreshold;
 	
-	
 	public DirtyPartitionBuffer(){
 		dirtyPartitions = Sets.newHashSet();
 		dirtyThreshold = 1000;	// no threshold

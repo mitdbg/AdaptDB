@@ -1,30 +1,27 @@
 package core.adapt;
 
-import core.utils.RangeUtils.Range;
-import core.utils.Schema.Attribute;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Query {
-
-	
-	
 	public static class FilterQuery extends Query{
+		private List<Predicate> predicates;
+		
+		public FilterQuery() {
+			this.predicates = new ArrayList<Predicate>();
+		}
+		
+		public FilterQuery(List<Predicate> predicates) {
+			this.predicates = predicates;
+		}
+		
+		public void addPredicate(Predicate pred) {
+			this.predicates.add(pred);
+		}
 
-		private Attribute filterAttribute;
-		private Range filterRange;
-		
-		public FilterQuery(Attribute filterAttribute, Range filterRange){
-			this.filterAttribute = filterAttribute;
-			this.filterRange = filterRange;
+		public List<Predicate> getPredicates() {
+			return this.predicates;
 		}
-		
-		public Attribute getFilterAttribute() {
-			return filterAttribute;
-		}
-
-		public Range getFilterRange() {
-			return filterRange;
-		}
-		
 	}
 
 	public class JoinQuery extends Query{
