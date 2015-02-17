@@ -96,6 +96,9 @@ public class KDNode {
     }
 
     public int getBucketId(MDIndexKey key, int start) {
+        if (value == null) {
+            return start;
+        }
         Comparable searchVal = getValue(dimension, type, key);
         if (value.compareTo(searchVal) >= 0) {
             if (leftChild == null) {
