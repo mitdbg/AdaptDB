@@ -205,8 +205,8 @@ public class ScanTest {
 		
 		//t.FileChannelScan("/Users/alekh/Work/Cartilage/support/datasets/tpch_0.01/lineitem.tbl", index, key);
 		//t.FileChannelScan("/Users/alekh/Work/Cartilage/support/datasets/scale_1/lineitem.tbl", index, key);
-        t.FileChannelScan("/home/ubuntu/lineitem.tbl", index, key);
-        t.countBuckets("/home/ubuntu/lineitem.tbl", index, key);
+        t.FileChannelScan("test/lineitem.tbl", index, key);
+        t.countBuckets("test/lineitem.tbl", index, key);
 
 	}
 }
