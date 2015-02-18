@@ -1,5 +1,6 @@
 package core.utils;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -7,11 +8,18 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import core.index.MDIndex;
 import core.index.SimpleRangeTree;
 import core.index.kdtree.KDDTree;
 import core.index.key.CartilageIndexKey2;
+
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.category.DefaultCategoryDataset;
+import org.jfree.chart.ChartUtilities;
 
 public class ScanTest {
 
@@ -40,7 +48,7 @@ public class ScanTest {
 		//offsets = new int[6001215][];
 		//int tupleId=0;
 		
-		int bucketSize = 1024*1024*10;	// 10mb
+		int bucketSize = 1024*1024*1;	// **1mb**
 		
 		//CartilageIndexKey2 key = new CartilageIndexKey2('|');
 		// SimpleRangeTree t = new SimpleRangeTree();
@@ -116,7 +124,7 @@ public class ScanTest {
 		
 	}
 
-    public void countBuckets(String filename, MDIndex index, CartilageIndexKey2 key) {
+    public Map<Integer, Integer> countBuckets(String filename, MDIndex index, CartilageIndexKey2 key) {
         byteArray = new byte[bufferSize];
         bb = ByteBuffer.wrap(byteArray);
         previous = 0;
@@ -189,12 +197,38 @@ public class ScanTest {
             System.out.println("Time taken = "+(double)(System.nanoTime()-startTime)/1E9+" sec");
             System.out.println(bucketCounts.size());
             System.out.println(bucketCounts);
+            return bucketCounts;
 
         } catch (FileNotFoundException e) {
             throw new IllegalAccessError("Cannot parse file: "+filename);
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return null;
+    }
+    
+    public static void plot(Map<Integer, Integer> buckets, String chartFileName) throws IOException{
+        final String cnt = "COUNT";
+
+
+        final DefaultCategoryDataset dataset = new DefaultCategoryDataset( );
+
+        for(Entry<Integer, Integer> kv : buckets.entrySet()){
+        	dataset.addValue( kv.getValue() , cnt , kv.getKey());
+        }
+
+
+        JFreeChart barChart = ChartFactory.createBarChart(
+           "Bucket Counts", 
+           "Bucket", "Count", 
+           dataset,PlotOrientation.VERTICAL, 
+           true, true, false);
+           
+        int width = 640; /* Width of the image */
+        int height = 480; /* Height of the image */ 
+        File BarChart = new File(chartFileName); 
+        ChartUtilities.saveChartAsJPEG( BarChart , barChart , width , height );
+    	
     }
 	
 	public static void main(String[] args) {
@@ -206,7 +240,12 @@ public class ScanTest {
 		//t.FileChannelScan("/Users/alekh/Work/Cartilage/support/datasets/tpch_0.01/lineitem.tbl", index, key);
 		//t.FileChannelScan("/Users/alekh/Work/Cartilage/support/datasets/scale_1/lineitem.tbl", index, key);
         t.FileChannelScan("test/lineitem.tbl", index, key);
-        t.countBuckets("test/lineitem.tbl", index, key);
+        Map<Integer, Integer> buckets = t.countBuckets("test/lineitem.tbl", index, key);
+        try{ 
+        	plot(buckets,  "BarChart.jpeg" );
+        } catch (IOException ex) {
+        	ex.printStackTrace();
+        }
 
 	}
 }
