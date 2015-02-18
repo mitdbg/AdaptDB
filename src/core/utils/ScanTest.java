@@ -1,6 +1,5 @@
 package core.utils;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -8,18 +7,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import core.index.MDIndex;
-import core.index.SimpleRangeTree;
 import core.index.kdtree.KDDTree;
 import core.index.key.CartilageIndexKey2;
-
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.JFreeChart;
-import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.data.category.DefaultCategoryDataset;
-import org.jfree.chart.ChartUtilities;
 
 public class ScanTest {
 
@@ -207,29 +198,7 @@ public class ScanTest {
         return null;
     }
     
-    public static void plot(Map<Integer, Integer> buckets, String chartFileName) throws IOException{
-        final String cnt = "COUNT";
 
-
-        final DefaultCategoryDataset dataset = new DefaultCategoryDataset( );
-
-        for(Entry<Integer, Integer> kv : buckets.entrySet()){
-        	dataset.addValue( kv.getValue() , cnt , kv.getKey());
-        }
-
-
-        JFreeChart barChart = ChartFactory.createBarChart(
-           "Bucket Counts", 
-           "Bucket", "Count", 
-           dataset,PlotOrientation.VERTICAL, 
-           true, true, false);
-           
-        int width = 640; /* Width of the image */
-        int height = 480; /* Height of the image */ 
-        File BarChart = new File(chartFileName); 
-        ChartUtilities.saveChartAsJPEG( BarChart , barChart , width , height );
-    	
-    }
 	
 	public static void main(String[] args) {
 		ScanTest t = new ScanTest();
@@ -242,7 +211,7 @@ public class ScanTest {
         t.FileChannelScan("test/lineitem.tbl", index, key);
         Map<Integer, Integer> buckets = t.countBuckets("test/lineitem.tbl", index, key);
         try{ 
-        	plot(buckets,  "BarChart.jpeg" );
+        	TreeUtils.plot(buckets,  "BarChart.jpeg" );
         } catch (IOException ex) {
         	ex.printStackTrace();
         }
