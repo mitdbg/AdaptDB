@@ -60,7 +60,7 @@ public class SimpleRangeTree implements MDIndex {
 	public void insert(MDIndexKey key) {
 		CartilageIndexKey2 k = (CartilageIndexKey2)key;
 		if(valueRanges==null)
-			initRanges(k.detectTypes());
+			initRanges(k.types);
 		
 		for(int i=0; i<types.length; i++){
 			switch(types[i]){

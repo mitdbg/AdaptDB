@@ -30,6 +30,7 @@ public class TestIndexBuilder extends TestCase{
 		propertiesFile = "/Users/alekh/Work/Cartilage/MDIndex/conf/cartilage.properties";
 		
 		key = new CartilageIndexKey2('|');
+		//key = new SinglePassIndexKey('|');
 		builder = new IndexBuilder();
 		
 		attributes = 16;

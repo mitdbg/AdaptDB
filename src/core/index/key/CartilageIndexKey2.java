@@ -20,15 +20,15 @@ public class CartilageIndexKey2 implements MDIndexKey, Cloneable{
 	
 	public static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 	//private CartilageBinaryRecord record;
-	private byte[] bytes;
-	private int offset, length;
+	protected byte[] bytes;
+	protected int offset, length;
 	
-	private int numAttrs;
-	private TYPE[] types;
-	private int[] attributeOffsets;
+	protected int numAttrs;
+	public TYPE[] types;
+	protected int[] attributeOffsets;
 	
-	private char delimiter;
-	private int[] keyAttrIdx;
+	protected char delimiter;
+	protected int[] keyAttrIdx;
 	
 	public CartilageIndexKey2(char delimiter){
 		this.delimiter = delimiter;
@@ -54,7 +54,7 @@ public class CartilageIndexKey2 implements MDIndexKey, Cloneable{
 		this.offset = 0;
 		this.length = bytes.length;
 		if(this.types==null){
-			this.types = detectTypes();
+			this.types = detectTypes(true);
 			attributeOffsets = new int[numAttrs];
 		}
 		
@@ -79,7 +79,7 @@ public class CartilageIndexKey2 implements MDIndexKey, Cloneable{
 		this.offset = 0;
 		this.length = bytes.length;
 		if(this.types==null){
-			this.types = detectTypes();
+			this.types = detectTypes(true);
 			attributeOffsets = new int[numAttrs];
 		}
 		
@@ -100,7 +100,7 @@ public class CartilageIndexKey2 implements MDIndexKey, Cloneable{
 		this.offset = offset;
 		this.length = length;
 		if(this.types==null){
-			this.types = detectTypes();
+			this.types = detectTypes(true);
 			attributeOffsets = new int[numAttrs];
 		}
 		
@@ -125,7 +125,7 @@ public class CartilageIndexKey2 implements MDIndexKey, Cloneable{
 		this.offset = offset;
 		this.length = length;
 		if(this.types==null){
-			this.types = detectTypes();
+			this.types = detectTypes(true);
 			attributeOffsets = new int[numAttrs];
 		}
 		
@@ -146,7 +146,7 @@ public class CartilageIndexKey2 implements MDIndexKey, Cloneable{
 	 * 
 	 * @return
 	 */
-	public TYPE[] detectTypes(){
+	public TYPE[] detectTypes(boolean skipNonKey){
 		List<TYPE> types = new ArrayList<TYPE>();
 		
 		numAttrs = 0;
@@ -158,7 +158,7 @@ public class CartilageIndexKey2 implements MDIndexKey, Cloneable{
 			
 			numAttrs++;
 			
-			if(keyAttrIdx!=null && !Ints.contains(keyAttrIdx, i))
+			if(skipNonKey && keyAttrIdx!=null && !Ints.contains(keyAttrIdx, i))
 				continue;
 			
 			if(TypeUtils.isInt(t))
@@ -358,6 +358,24 @@ public class CartilageIndexKey2 implements MDIndexKey, Cloneable{
 		return dummyDate;
 	}
 	
+	
+	/**
+	 * Assumes that the boolean data is represented as a single character in the ascii file.
+	 * 
+	 * @param index
+	 * @return
+	 */
+	public boolean getBooleanAttribute(int index) {
+		index = keyAttrIdx[index];
+		int off = attributeOffsets[index];
+		
+		if(bytes[off]=='1' || bytes[off]=='t')
+			return true;
+		else if(bytes[off]=='0' || bytes[off]=='f')
+			return false;
+		else
+			throw new RuntimeException("Cannot parse the boolean attribute: "+ bytes[off]);
+	}
 	
 	public static void main(String[] args) {
 		

@@ -103,13 +103,19 @@ public class InputReader {
 	    			totalLineSize += brokenLine.length;
 	    			hasLeftover = false;
 	    			
-	    			if(writer!=null)
+	    			if(writer!=null){
 	    				writer.writeToPartition((String)index.getBucketId(key), a, 0, a.length);
+	    				//byte[] keyBytes = ((SinglePassIndexKey)key).getBytes();
+	    				//writer.writeToPartition((String)index.getBucketId(key), keyBytes, 0, keyBytes.length);
+	    			}
 	    		}
 	    		else{
 	    			key.setBytes(byteArray, previous, byteArrayIdx-previous);
-	    			if(writer!=null)
+	    			if(writer!=null){
 	    				writer.writeToPartition((String)index.getBucketId(key), byteArray, previous, byteArrayIdx-previous);
+	    				//byte[] keyBytes = ((SinglePassIndexKey)key).getBytes();
+	    				//writer.writeToPartition((String)index.getBucketId(key), keyBytes, 0, keyBytes.length);
+	    			}
 	    		}
 	    		
 	    		//System.out.println(new String((byte[])line));

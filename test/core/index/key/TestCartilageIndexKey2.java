@@ -32,7 +32,7 @@ public class TestCartilageIndexKey2 extends TestCase{
 	
 	public void testSetTupleVarchar(){
 		key.setBytes(tuple1.getBytes());
-		TYPE[] keyTypes = key.detectTypes();
+		TYPE[] keyTypes = key.types;
 		for(int i=0;i<types.length;i++){
 			System.out.println(types[i]+" "+keyTypes[i]);
 			if(types[i]!=TYPE.VARCHAR)
