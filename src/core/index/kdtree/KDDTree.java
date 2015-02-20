@@ -15,7 +15,12 @@ public class KDDTree implements MDIndex {
     private int maxBuckets;
     private KDNode root;
 
-	@Override
+    @Override
+    public MDIndex clone() throws CloneNotSupportedException {
+        return null;
+    }
+
+    @Override
 	public void initBuild(int buckets) {
         this.maxBuckets = buckets;
         this.root = new KDNode();
@@ -29,7 +34,7 @@ public class KDDTree implements MDIndex {
         CartilageIndexKey2 k = (CartilageIndexKey2)key;
 
         if (dimensionTypes == null) {
-            dimensionTypes = k.detectTypes();
+            dimensionTypes = k.detectTypes(true);
             numDimensions = dimensionTypes.length;
         }
 
@@ -50,7 +55,7 @@ public class KDDTree implements MDIndex {
 	}
 	
 	@Override
-	public int getBucketId(MDIndexKey key) {
+	public Object getBucketId(MDIndexKey key) {
 		return this.root.getBucketId(key, 1);
 	}
 

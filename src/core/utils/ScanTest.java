@@ -166,7 +166,7 @@ public class ScanTest {
 
                         lineCount++;
                         //offsets[tupleId++] = key.getOffsets();
-                        int bucketId = index.getBucketId(key);
+                        int bucketId = (Integer) index.getBucketId(key);
                         if (!bucketCounts.containsKey(bucketId)) {
                             bucketCounts.put(bucketId, 1);
                         } else {
