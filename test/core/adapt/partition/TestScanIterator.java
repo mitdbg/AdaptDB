@@ -12,20 +12,20 @@ import junit.framework.TestCase;
 
 public class TestScanIterator extends TestCase{
 
-	String localPartitionDir;
+	String partitionDir;
 	List<String> partitionPaths;
 
 	int attributeIdx;
 	Range r;
 	
 	public void setUp(){
-		localPartitionDir = "/Users/alekh/Work/tmp";
+		partitionDir = "/Users/alekh/Work/tmp";
 		attributeIdx = 0;
 		r = RangeUtils.closed(3000000, 6000000);
 		
 		partitionPaths = Lists.newArrayList();
 		
-		File dir = new File(localPartitionDir);
+		File dir = new File(partitionDir);
 		File[] directoryListing = dir.listFiles();
 		if (directoryListing != null) {
 			for (File child : directoryListing)
@@ -34,8 +34,12 @@ public class TestScanIterator extends TestCase{
 		} 
 	}
 
+	protected Partition getPartitionInstance(String path){
+		return new Partition(path);
+	}
+	
 	public void testScan(){
-		Partition partition = new Partition(localPartitionDir+"/0");
+		Partition partition = getPartitionInstance(partitionDir+"/0");
 		partition.load();
 		ScanIterator itr =  new ScanIterator();
 		itr.setPartition(partition, attributeIdx, r);
@@ -49,7 +53,7 @@ public class TestScanIterator extends TestCase{
 	}
 	
 	public void testScanAll(){
-		Partition partition = new Partition("");
+		Partition partition = getPartitionInstance("");
 		ScanIterator itr =  new ScanIterator();
 		
 		int recCount = 0;

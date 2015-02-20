@@ -18,7 +18,7 @@ import core.utils.RangeUtils.Range;
 
 public class TestRepartitionIterator extends TestCase{
 
-	String localPartitionDir;
+	String partitionDir;
 	List<String> partitionPaths;
 
 	int attributeIdx;
@@ -28,14 +28,14 @@ public class TestRepartitionIterator extends TestCase{
 	
 
 	public void setUp(){
-		localPartitionDir = "/Users/alekh/Work/tmp";
+		partitionDir = "/Users/alekh/Work/tmp";
 		attributeIdx = 0;
 		r = RangeUtils.closed(3000000, 6000000);
 		
 		merger = new KWayMerge(0,2);
 		partitionPaths = Lists.newArrayList();
 		
-		File dir = new File(localPartitionDir);
+		File dir = new File(partitionDir);
 		File[] directoryListing = dir.listFiles();
 		if (directoryListing != null) {
 			for (File child : directoryListing)
@@ -44,9 +44,13 @@ public class TestRepartitionIterator extends TestCase{
 		} 
 	}
 
+	protected Partition getPartitionInstance(String path){
+		return new Partition(path);
+	}
+	
 	
 	public void testRepartition(){
-		Partition partition = new Partition(localPartitionDir+"/0");
+		Partition partition = getPartitionInstance(partitionDir+"/0");
 		partition.load();
 		RepartitionIterator itr =  new RepartitionIterator(merger);
 		itr.setPartition(partition, attributeIdx, r);
@@ -62,7 +66,7 @@ public class TestRepartitionIterator extends TestCase{
 	}
 
 	public void testRepartitionAll(){
-		Partition partition = new Partition("");
+		Partition partition = getPartitionInstance("");
 		RepartitionIterator itr =  new RepartitionIterator(merger);
 		
 		int recCount = 0;
@@ -84,8 +88,7 @@ public class TestRepartitionIterator extends TestCase{
 	
 
 	public void testRepartitionFraction(){
-		
-		Partition partition = new Partition("");
+		Partition partition = getPartitionInstance("");
 		RepartitionIterator itr1 =  new RepartitionIterator(merger);
 		ScanIterator itr2 =  new ScanIterator();
 		

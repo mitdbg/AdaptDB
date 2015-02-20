@@ -11,14 +11,29 @@ import core.utils.HDFSUtils;
 public class HDFSPartition extends Partition{
 
 	private FileSystem hdfs;
-	private short replication = 3;
+	private short replication;
+	private String propertiesFile;
 	
 	public HDFSPartition(String path, String propertiesFile) {
+		this(path,propertiesFile, (short)3);
+	}
+	
+	public HDFSPartition(String path, String propertiesFile, short replication) {
 		super(path);
+		this.propertiesFile = propertiesFile;
+		this.replication = replication;
 		CartilageConf conf = ConfUtils.create(propertiesFile, "defaultHDFSPath");		
 		hdfs = HDFSUtils.getFS(conf.getHadoopHome()+"/etc/hadoop/core-site.xml");
 	}
 
+	public Partition createChild(int childId){
+		Partition p = new HDFSPartition(path+"_"+childId, propertiesFile, replication);
+		p.bytes = new byte[bytes.length];	// child cannot have more bytes than parent
+		//p.bytes = new byte[8*1024*1024];	// child cannot have more than 8m bytes
+		p.state = State.NEW;
+		return p;
+	}
+	
 	public boolean load(){
 		if(path==null || path.equals(""))
 			return false;		
@@ -29,5 +44,9 @@ public class HDFSPartition extends Partition{
 	public void store(boolean append){
 		String storePath = FilenameUtils.getFullPath(path) + ArrayUtils.join("_", lineage);
 		HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);		
+	}
+	
+	public void drop(){
+		HDFSUtils.deleteFile(hdfs, path, false);
 	}
 }

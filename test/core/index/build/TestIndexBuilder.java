@@ -34,7 +34,7 @@ public class TestIndexBuilder extends TestCase{
 		builder = new IndexBuilder();
 		
 		attributes = 16;
-		replication = 3;
+		replication = 1;
 	}
 	
 	private PartitionWriter getLocalWriter(String partitionDir){
