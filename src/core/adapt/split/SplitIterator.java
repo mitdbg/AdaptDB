@@ -60,7 +60,7 @@ public abstract class SplitIterator {
 		public ScanSplitIterator(List<Partition> splitPartitions) {
 			super(splitPartitions);
 		}
-		protected PartitionIterator getPartitionIterator(){
+		protected PartitionIterator<CartilageIndexKey2> getPartitionIterator(){
 			splitPartitions.get(currentPartitionIdx).load();
 			// TODO: return scan iterator
 			return null;
@@ -74,7 +74,7 @@ public abstract class SplitIterator {
 			super(splitPartitions);
 			buffer = new DirtyPartitionBuffer();
 		}
-		protected PartitionIterator getPartitionIterator(){
+		protected PartitionIterator<CartilageIndexKey2> getPartitionIterator(){
 			Partition p = splitPartitions.get(currentPartitionIdx);
 			buffer.add(p);			
 			p.load();

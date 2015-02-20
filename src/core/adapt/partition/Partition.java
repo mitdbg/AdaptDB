@@ -14,9 +14,9 @@ public class Partition {
 	public static enum State {ORIG,NEW,MODIFIED};
 	State state;
 	
-	private String path;
-	private byte[] bytes;
-	private int offset;
+	protected String path;
+	protected byte[] bytes;
+	protected int offset;
 	
 	public int[] lineage;
 	

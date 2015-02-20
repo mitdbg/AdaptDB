@@ -9,7 +9,9 @@ public class DirtyPartitionBuffer {
 	private Set<Partition> dirtyPartitions;
 	private int dirtyThreshold;
 	
+	@SuppressWarnings("unused")
 	private int mergeThreshold;
+	@SuppressWarnings("unused")
 	private int evictThreshold;
 	
 	public DirtyPartitionBuffer(){
