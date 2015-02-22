@@ -4,9 +4,6 @@ import java.util.List;
 
 import core.adapt.split.Split;
 import core.index.MDIndex;
-import core.utils.Pair;
-import core.utils.RangeUtils.Range;
-import core.utils.Schema.Attribute;
 
 /**
  * This access method class considers filter access method over the distributed dataset.
