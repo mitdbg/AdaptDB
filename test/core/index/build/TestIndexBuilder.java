@@ -2,12 +2,12 @@ package core.index.build;
 
 import junit.framework.TestCase;
 import core.index.SimpleRangeTree;
-import core.index.key.CartilageIndexKey2;
+import core.index.key.CartilageIndexKey;
 
 public class TestIndexBuilder extends TestCase{
 
 	String inputFilename;
-	CartilageIndexKey2 key;
+	CartilageIndexKey key;
 	IndexBuilder builder;
 	
 	int numPartitions;
@@ -29,7 +29,7 @@ public class TestIndexBuilder extends TestCase{
 		hdfsPartitionDir = "/mydir";
 		propertiesFile = "/Users/alekh/Work/Cartilage/MDIndex/conf/cartilage.properties";
 		
-		key = new CartilageIndexKey2('|');
+		key = new CartilageIndexKey('|');
 		//key = new SinglePassIndexKey('|');
 		builder = new IndexBuilder();
 		

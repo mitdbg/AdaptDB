@@ -8,13 +8,13 @@ import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
 
 import core.index.MDIndex;
-import core.index.key.CartilageIndexKey2;
+import core.index.key.CartilageIndexKey;
 
 public class IndexBuilder {
 
 	int bucketSize = 64*1024*1024;
 	
-	public void build(MDIndex index, CartilageIndexKey2 key, String inputFilename, PartitionWriter writer){
+	public void build(MDIndex index, CartilageIndexKey key, String inputFilename, PartitionWriter writer){
 		
 		long startTime = System.nanoTime();
 		index.initBuild(bucketSize);
@@ -33,7 +33,7 @@ public class IndexBuilder {
 		System.out.println("Total time = "+(time1+time2)+" sec");
 	}
 	
-	public void build(MDIndex[] indexes, CartilageIndexKey2[] keys, String inputFilename, PartitionWriter[] writers){
+	public void build(MDIndex[] indexes, CartilageIndexKey[] keys, String inputFilename, PartitionWriter[] writers){
 		
 		long startTime = System.nanoTime();
 		for(MDIndex index: indexes)
@@ -55,7 +55,7 @@ public class IndexBuilder {
 		System.out.println("Total time = "+(time1+time2)+" sec");
 	}
 	
-	public void build(MDIndex index, CartilageIndexKey2 key, String inputFilename, PartitionWriter writer, int attributes, int replication){
+	public void build(MDIndex index, CartilageIndexKey key, String inputFilename, PartitionWriter writer, int attributes, int replication){
 		int attrPerReplica = attributes / replication;
 
 		Map<Integer,List<Integer>> replicaAttrs = Maps.newHashMap();
@@ -67,12 +67,12 @@ public class IndexBuilder {
 		}
 
 		MDIndex[] indexes = new MDIndex[replication];
-		CartilageIndexKey2[] keys = new CartilageIndexKey2[replication];
+		CartilageIndexKey[] keys = new CartilageIndexKey[replication];
 		PartitionWriter[] writers = new PartitionWriter[replication];
 		
 		for(int i=0;i<replication;i++){
 			try {
-				keys[i] = (CartilageIndexKey2) key.clone();
+				keys[i] = (CartilageIndexKey) key.clone();
 				keys[i].setKeys(Ints.toArray(replicaAttrs.get(i)));
 				indexes[i] = index.clone();
 				writers[i] = (PartitionWriter) writer.clone();

@@ -3,7 +3,7 @@ package core.index;
 import java.util.List;
 import java.util.Random;
 
-import core.index.key.CartilageIndexKey2;
+import core.index.key.CartilageIndexKey;
 import core.index.key.MDIndexKey;
 import core.utils.RangeUtils;
 import core.utils.RangeUtils.Range;
@@ -58,7 +58,7 @@ public class SimpleRangeTree implements MDIndex {
 	}
 
 	public void insert(MDIndexKey key) {
-		CartilageIndexKey2 k = (CartilageIndexKey2)key;
+		CartilageIndexKey k = (CartilageIndexKey)key;
 		if(valueRanges==null)
 			initRanges(k.types);
 		

@@ -12,7 +12,7 @@ import core.adapt.partition.iterator.RepartitionIterator;
 import core.adapt.partition.iterator.ScanIterator;
 import core.adapt.partition.merger.PartitionMerger;
 import core.adapt.partition.merger.PartitionMerger.KWayMerge;
-import core.index.key.CartilageIndexKey2;
+import core.index.key.CartilageIndexKey;
 import core.utils.RangeUtils;
 import core.utils.RangeUtils.Range;
 
@@ -101,7 +101,7 @@ public class TestRepartitionIterator extends TestCase{
 		for(int i=0; i<partitionPaths.size(); i++){
 			partition.setPath(partitionPaths.get(i));
 			partition.load();
-			PartitionIterator<CartilageIndexKey2> itr;
+			PartitionIterator<CartilageIndexKey> itr;
 			if(i<repartitionCount)
 				itr = itr1;
 			else

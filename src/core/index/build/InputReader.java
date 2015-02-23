@@ -6,7 +6,7 @@ import java.nio.channels.FileChannel;
 
 import core.data.CartilageDatum.CartilageFile;
 import core.index.MDIndex;
-import core.index.key.CartilageIndexKey2;
+import core.index.key.CartilageIndexKey;
 import core.utils.BinaryUtils;
 import core.utils.IOUtils;
 
@@ -23,11 +23,11 @@ public class InputReader {
 	int totalLineSize, lineCount;
 	
 	MDIndex index;
-	CartilageIndexKey2 key;
+	CartilageIndexKey key;
 	
 	boolean firstPass;
 	
-	public InputReader(MDIndex index, CartilageIndexKey2 key){
+	public InputReader(MDIndex index, CartilageIndexKey key){
 		this.index = index;
 		this.key = key;
 		this.firstPass = true;

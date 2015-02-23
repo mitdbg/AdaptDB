@@ -5,7 +5,7 @@ import java.util.List;
 import core.adapt.partition.DirtyPartitionBuffer;
 import core.adapt.partition.Partition;
 import core.adapt.partition.iterator.PartitionIterator;
-import core.index.key.CartilageIndexKey2;
+import core.index.key.CartilageIndexKey;
 
 
 /**
@@ -18,7 +18,7 @@ public abstract class SplitIterator {
 
 	
 	protected List<Partition> splitPartitions;
-	protected PartitionIterator<CartilageIndexKey2> currPartitionItr;
+	protected PartitionIterator<CartilageIndexKey> currPartitionItr;
 	protected int currentPartitionIdx;
 	
 	public SplitIterator(List<Partition> splitPartitions){
@@ -41,9 +41,9 @@ public abstract class SplitIterator {
 		}
 	}
 	
-	protected abstract PartitionIterator<CartilageIndexKey2> getPartitionIterator();
+	protected abstract PartitionIterator<CartilageIndexKey> getPartitionIterator();
 	
-	public CartilageIndexKey2 next() {
+	public CartilageIndexKey next() {
 		return currPartitionItr.next();
 	}
 
@@ -60,7 +60,7 @@ public abstract class SplitIterator {
 		public ScanSplitIterator(List<Partition> splitPartitions) {
 			super(splitPartitions);
 		}
-		protected PartitionIterator<CartilageIndexKey2> getPartitionIterator(){
+		protected PartitionIterator<CartilageIndexKey> getPartitionIterator(){
 			splitPartitions.get(currentPartitionIdx).load();
 			// TODO: return scan iterator
 			return null;
@@ -74,7 +74,7 @@ public abstract class SplitIterator {
 			super(splitPartitions);
 			buffer = new DirtyPartitionBuffer();
 		}
-		protected PartitionIterator<CartilageIndexKey2> getPartitionIterator(){
+		protected PartitionIterator<CartilageIndexKey> getPartitionIterator(){
 			Partition p = splitPartitions.get(currentPartitionIdx);
 			buffer.add(p);			
 			p.load();

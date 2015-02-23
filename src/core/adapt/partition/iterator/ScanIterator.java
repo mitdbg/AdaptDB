@@ -1,14 +1,14 @@
 package core.adapt.partition.iterator;
 
 import core.adapt.partition.Partition;
-import core.index.key.CartilageIndexKey2;
+import core.index.key.CartilageIndexKey;
 import core.utils.RangeUtils.Range;
 
-public class ScanIterator extends PartitionIterator<CartilageIndexKey2>{
+public class ScanIterator extends PartitionIterator<CartilageIndexKey>{
 
 	private Range range;
 	
-	private CartilageIndexKey2 key;
+	private CartilageIndexKey key;
 	char newLine = '\n';
 	
 	private byte[] bytes;
@@ -19,7 +19,7 @@ public class ScanIterator extends PartitionIterator<CartilageIndexKey2>{
 		this.partition = partition;
 		this.range = range;
 		
-		key = new CartilageIndexKey2('|', new int[]{attrIdx});
+		key = new CartilageIndexKey('|', new int[]{attrIdx});
 		bytes = partition.getBytes();
 		offset = 0;
 		previous = 0;
@@ -52,7 +52,7 @@ public class ScanIterator extends PartitionIterator<CartilageIndexKey2>{
 		}
 	}
 
-	public CartilageIndexKey2 next() {
+	public CartilageIndexKey next() {
 		return key;
 	}
 }

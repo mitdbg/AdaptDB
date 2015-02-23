@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import core.index.MDIndex;
-import core.index.key.CartilageIndexKey2;
+import core.index.key.CartilageIndexKey;
 import core.index.key.MDIndexKey;
 import core.utils.SchemaUtils.TYPE;
 
@@ -31,7 +31,7 @@ public class KDDTree implements MDIndex {
         if (root.getNumBuckets() >= maxBuckets) {
             return;
         }
-        CartilageIndexKey2 k = (CartilageIndexKey2)key;
+        CartilageIndexKey k = (CartilageIndexKey)key;
 
         if (dimensionTypes == null) {
             dimensionTypes = k.detectTypes(true);
