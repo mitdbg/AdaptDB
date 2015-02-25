@@ -9,10 +9,10 @@ import core.utils.SchemaUtils.TYPE;
 
 public class KDDTree implements MDIndex {
 
-    private int numDimensions;
-    private TYPE[] dimensionTypes;
-    private int maxBuckets;
-    private KDNode root;
+    int numDimensions;
+    TYPE[] dimensionTypes;
+    int maxBuckets;
+    KDNode root;
 
     @Override
     public MDIndex clone() throws CloneNotSupportedException {

@@ -10,7 +10,8 @@ import java.util.Map;
 
 import core.index.MDIndex;
 import core.index.kdtree.KDDTree;
-import core.index.key.CartilageIndexKey2;
+import core.index.kdtree.KDMedianTree;
+import core.index.key.CartilageIndexKey;
 
 public class ScanTest {
 
@@ -27,7 +28,7 @@ public class ScanTest {
 	int nRead, byteArrayIdx, previous;
 	
 	
-	public void FileChannelScan(String filename, MDIndex index, CartilageIndexKey2 key){
+	public void FileChannelScan(String filename, MDIndex index, CartilageIndexKey key){
 		
 		byteArray = new byte[bufferSize];
 		bb = ByteBuffer.wrap(byteArray);
@@ -53,11 +54,11 @@ public class ScanTest {
 			f = new FileInputStream(filename);
 			ch = f.getChannel();
             int numBuckets = (int) (ch.size() / bucketSize) + 1;
+            System.out.println("num buckets: " + numBuckets);
             index.initBuild(numBuckets);
 			
 			//byte[] line = null;
 			int totalLineSize=0, lineCount=0;
-			
 			while((nRead = ch.read(bb)) != -1){
 				if(nRead==0)
 					continue;
@@ -91,10 +92,10 @@ public class ScanTest {
 			    		index.insert(key);
 			    	}
 			    }
-			    if(previous < nRead){	// is there a broken line in the end?
-			    	brokenLine = BinaryUtils.getBytes(byteArray, previous, nRead-previous);
-			    	hasLeftover = true;
-			    }
+			    if(previous < nRead) {    // is there a broken line in the end?
+                    brokenLine = BinaryUtils.getBytes(byteArray, previous, nRead - previous);
+                    hasLeftover = true;
+                }
 			    bb.clear();
 				
 			}
@@ -105,8 +106,6 @@ public class ScanTest {
 			System.out.println("Line count = "+lineCount);
 			System.out.println("Average line size = "+(double)totalLineSize/lineCount);
 			
-			index.initProbe();
-			
 		} catch (FileNotFoundException e) {
 			throw new IllegalAccessError("Cannot parse file: "+filename);
 		} catch (IOException e) {
@@ -115,7 +114,7 @@ public class ScanTest {
 		
 	}
 
-    public Map<Integer, Integer> countBuckets(String filename, MDIndex index, CartilageIndexKey2 key) {
+    public Map<Integer, Integer> countBuckets(String filename, MDIndex index, CartilageIndexKey key) {
         byteArray = new byte[bufferSize];
         bb = ByteBuffer.wrap(byteArray);
         previous = 0;
@@ -203,8 +202,8 @@ public class ScanTest {
 	public static void main(String[] args) {
 		ScanTest t = new ScanTest();
 		
-		CartilageIndexKey2 key = new CartilageIndexKey2('|');
-		MDIndex index = new KDDTree();
+		CartilageIndexKey key = new CartilageIndexKey('|');
+		MDIndex index = new KDMedianTree();
 		
 		//t.FileChannelScan("/Users/alekh/Work/Cartilage/support/datasets/tpch_0.01/lineitem.tbl", index, key);
 		//t.FileChannelScan("/Users/alekh/Work/Cartilage/support/datasets/scale_1/lineitem.tbl", index, key);
