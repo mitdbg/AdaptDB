@@ -1,6 +1,5 @@
 package core.index.kdtree;
 
-import java.util.Arrays;
 import java.util.List;
 
 import core.index.MDIndex;
@@ -39,7 +38,7 @@ public class KDDTree implements MDIndex {
         }
 
         KDNode newNode = this.root.insert(key);
-        int nextDimension = (newNode.getDimension() + 1) % numDimensions;
+        int nextDimension = (newNode.getParentDimension() + 1) % numDimensions;
         newNode.setValues(nextDimension, dimensionTypes[nextDimension], key);
 	}
 
@@ -51,7 +50,7 @@ public class KDDTree implements MDIndex {
 
 	@Override
 	public void initProbe() {
-        System.out.println("OK");
+        System.out.println("initProbe OK");
 	}
 	
 	@Override

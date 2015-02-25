@@ -24,8 +24,11 @@ public class KDNode {
         numBuckets = 1;
     }
 
-    public int getDimension() {
-        return dimension;
+    public int getParentDimension() {
+        if (parent == null) {
+            return -1;
+        }
+        return parent.dimension;
     }
 
     public int getNumBuckets() {
