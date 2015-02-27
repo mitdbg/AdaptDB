@@ -16,7 +16,7 @@ public class KDDTree implements MDIndex {
 
     @Override
     public MDIndex clone() throws CloneNotSupportedException {
-        return null;
+        return new KDDTree();
     }
 
     @Override

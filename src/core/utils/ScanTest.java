@@ -203,7 +203,7 @@ public class ScanTest {
 		ScanTest t = new ScanTest();
 		
 		CartilageIndexKey key = new CartilageIndexKey('|');
-		MDIndex index = new KDMedianTree();
+		MDIndex index = new KDMedianTree(1);
 		
 		//t.FileChannelScan("/Users/alekh/Work/Cartilage/support/datasets/tpch_0.01/lineitem.tbl", index, key);
 		//t.FileChannelScan("/Users/alekh/Work/Cartilage/support/datasets/scale_1/lineitem.tbl", index, key);

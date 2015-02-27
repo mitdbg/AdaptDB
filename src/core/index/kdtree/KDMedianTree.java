@@ -14,6 +14,14 @@ import java.util.*;
 public class KDMedianTree extends KDDTree implements MDIndex {
 
     private List<CartilageIndexKeySet> buckets;
+    private double samplingRate;
+
+    public KDMedianTree(double samplingRate) {
+        this.samplingRate = samplingRate;
+    }
+
+    @Override
+    public MDIndex clone() { return new KDMedianTree(samplingRate); }
 
     @Override
     public void initBuild(int numBuckets) {
@@ -31,7 +39,9 @@ public class KDMedianTree extends KDDTree implements MDIndex {
             dimensionTypes = k.detectTypes(true);
             numDimensions = dimensionTypes.length;
         }
-        this.buckets.get(0).insert(k);
+        if (Math.random() < samplingRate) {
+            this.buckets.get(0).insert(k);
+        }
     }
 
     @Override
