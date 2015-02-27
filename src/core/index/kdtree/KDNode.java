@@ -69,7 +69,7 @@ public class KDNode {
     public KDNode insert(MDIndexKey key) {
         if (value == null) {
             return this;
-        } else if (value.compareTo(getValue(dimension, type, key)) >= 0) {
+        } else if (value.compareTo(getValue(dimension, type, key)) > 0) {
             if (leftChild == null) {
                 leftChild = new KDNode();
                 leftChild.parent = this;
@@ -103,7 +103,7 @@ public class KDNode {
             return start;
         }
         Comparable searchVal = getValue(dimension, type, key);
-        if (value.compareTo(searchVal) >= 0) {
+        if (value.compareTo(searchVal) > 0) {
             if (leftChild == null) {
                 return start;
             }
