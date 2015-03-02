@@ -55,7 +55,7 @@ public class KDDTree implements MDIndex {
 	
 	@Override
 	public Object getBucketId(MDIndexKey key) {
-		return this.root.getBucketId(key, 1);
+        return Integer.toString(this.root.getBucketId(key, 1));
 	}
 
 	@Override

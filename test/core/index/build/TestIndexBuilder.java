@@ -1,8 +1,11 @@
 package core.index.build;
 
+import core.index.kdtree.KDMedianTree;
 import junit.framework.TestCase;
 import core.index.SimpleRangeTree;
 import core.index.key.CartilageIndexKey;
+
+import java.io.File;
 
 public class TestIndexBuilder extends TestCase{
 
@@ -54,6 +57,18 @@ public class TestIndexBuilder extends TestCase{
 						getLocalWriter(localPartitionDir)
 					);
 	}
+
+    public void testBuildKDMedianTreeLocal(){
+        File f = new File(inputFilename);
+        Runtime runtime = Runtime.getRuntime();
+        double samplingRate = runtime.freeMemory() / (2 * f.length());
+        builder.build(
+                new KDMedianTree(samplingRate),
+                key,
+                inputFilename,
+                getLocalWriter(localPartitionDir)
+        );
+    }
 	
 	public void testBuildSimpleRangeTreeLocalReplicated(){		
 		builder.build(new SimpleRangeTree(numPartitions),
