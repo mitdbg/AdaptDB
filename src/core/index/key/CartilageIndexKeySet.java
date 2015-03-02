@@ -35,8 +35,9 @@ public class CartilageIndexKeySet {
 	 * Instantiate a key set with a given set of keys.
 	 * @param values
 	 */
-	public CartilageIndexKeySet(List<Object[]> values) {
-		this.values = values;
+	public CartilageIndexKeySet(List<Object[]> values, TYPE[] types) {
+        this.values = values;
+        this.types = types;
 	}
 	
 	/**
@@ -96,6 +97,7 @@ public class CartilageIndexKeySet {
 	
 	/**
 	 * Split this key set into two equal sized key sets.
+     * If the length is odd, the extra value goes in the second set.
 	 * This function assumes that the key set has already been sorted.
 	 *
 	 * Note that we do not copy the keys into a new object (we simply create a view using the subList() method).
@@ -104,8 +106,8 @@ public class CartilageIndexKeySet {
 	 * @return
 	 */
 	public Pair<CartilageIndexKeySet,CartilageIndexKeySet> splitInTwo(){
-		CartilageIndexKeySet k1 = new CartilageIndexKeySet(values.subList(0, values.size()/2));
-		CartilageIndexKeySet k2 = new CartilageIndexKeySet(values.subList(values.size()/2, values.size()));
+		CartilageIndexKeySet k1 = new CartilageIndexKeySet(values.subList(0, values.size()/2), types);
+		CartilageIndexKeySet k2 = new CartilageIndexKeySet(values.subList(values.size()/2, values.size()), types);
 		return new Pair<CartilageIndexKeySet,CartilageIndexKeySet>(k1,k2);
 	}
 	
@@ -123,6 +125,8 @@ public class CartilageIndexKeySet {
 	public List<Object[]> getValues(){
 		return values;
 	}
+
+    public int size() { return values.size(); }
 	
 	public void reset(){
 		values = Lists.newArrayList();

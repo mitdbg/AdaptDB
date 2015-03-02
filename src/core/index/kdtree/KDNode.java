@@ -2,6 +2,7 @@ package core.index.kdtree;
 
 import core.index.MDIndex;
 import core.index.key.MDIndexKey;
+import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
 import core.utils.SchemaUtils.TYPE;
 
 import java.util.List;
@@ -13,7 +14,7 @@ public class KDNode {
 
     private int dimension;
     private TYPE type;
-    private Comparable value;
+    private Object value;
     private int numBuckets;
 
     private KDNode parent;
@@ -24,8 +25,11 @@ public class KDNode {
         numBuckets = 1;
     }
 
-    public int getDimension() {
-        return dimension;
+    public int getParentDimension() {
+        if (parent == null) {
+            return -1;
+        }
+        return parent.dimension;
     }
 
     public int getNumBuckets() {
@@ -38,7 +42,7 @@ public class KDNode {
         this.value = getValue(dimension, type, key);
     }
 
-    private Comparable getValue(int dimension, TYPE type, MDIndexKey key) {
+    private Object getValue(int dimension, TYPE type, MDIndexKey key) {
         switch (type) {
             case INT:
                 return key.getIntAttribute(dimension);
@@ -47,13 +51,30 @@ public class KDNode {
             case FLOAT:
                 return key.getFloatAttribute(dimension);
             case DATE:
-                return (Comparable) key.getDateAttribute(dimension);
+                return key.getDateAttribute(dimension);
             case STRING:
                 return key.getStringAttribute(dimension, 20);
             default:
                 throw new RuntimeException("Unknown dimension type: "+type);
         }
         // TODO(qui): deal with VARCHAR somewhere
+    }
+
+    private int compareKey(Object value, int dimension, TYPE type, MDIndexKey key) {
+        switch (type) {
+            case INT:
+                return ((Integer) value).compareTo(key.getIntAttribute(dimension));
+            case LONG:
+                return ((Long) value).compareTo(key.getLongAttribute(dimension));
+            case FLOAT:
+                return ((Float) value).compareTo(key.getFloatAttribute(dimension));
+            case DATE:
+                return ((SimpleDate) value).compareTo(key.getDateAttribute(dimension));
+            case STRING:
+                return ((String) value).compareTo(key.getStringAttribute(dimension, 20));
+            default:
+                throw new RuntimeException("Unknown dimension type: "+type);
+        }
     }
 
     private void incrementNumBuckets() {
@@ -66,11 +87,10 @@ public class KDNode {
     public KDNode insert(MDIndexKey key) {
         if (value == null) {
             return this;
-        } else if (value.compareTo(getValue(dimension, type, key)) >= 0) {
+        } else if (compareKey(value, dimension, type, key) > 0) {
             if (leftChild == null) {
                 leftChild = new KDNode();
                 leftChild.parent = this;
-		this.leftChild = leftChild;
                 if (rightChild == null) {
                     numBuckets = 2;
                     if (parent != null) { parent.incrementNumBuckets(); }
@@ -83,7 +103,6 @@ public class KDNode {
             if (rightChild == null) {
                 rightChild = new KDNode();
                 rightChild.parent = this;
-		this.rightChild = rightChild;
                 if (leftChild == null) {
                     numBuckets = 2;
                     if (parent != null) { parent.incrementNumBuckets(); }
@@ -99,8 +118,7 @@ public class KDNode {
         if (value == null) {
             return start;
         }
-        Comparable searchVal = getValue(dimension, type, key);
-        if (value.compareTo(searchVal) >= 0) {
+        if (compareKey(value, dimension, type, key) > 0) {
             if (leftChild == null) {
                 return start;
             }

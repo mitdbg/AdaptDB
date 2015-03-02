@@ -1,5 +1,6 @@
 package core.index.build;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,8 @@ public class IndexBuilder {
 	public void build(MDIndex index, CartilageIndexKey key, String inputFilename, PartitionWriter writer){
 		
 		long startTime = System.nanoTime();
-		index.initBuild(bucketSize);
+        File f = new File(inputFilename);
+        index.initBuild((int) (f.length() / bucketSize) + 1);
 		InputReader r = new InputReader(index, key);
 		r.scan(inputFilename);		
 		index.initProbe();

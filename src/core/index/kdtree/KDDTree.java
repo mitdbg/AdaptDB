@@ -1,6 +1,5 @@
 package core.index.kdtree;
 
-import java.util.Arrays;
 import java.util.List;
 
 import core.index.MDIndex;
@@ -10,14 +9,14 @@ import core.utils.SchemaUtils.TYPE;
 
 public class KDDTree implements MDIndex {
 
-    private int numDimensions;
-    private TYPE[] dimensionTypes;
-    private int maxBuckets;
-    private KDNode root;
+    int numDimensions;
+    TYPE[] dimensionTypes;
+    int maxBuckets;
+    KDNode root;
 
     @Override
     public MDIndex clone() throws CloneNotSupportedException {
-        return null;
+        return new KDDTree();
     }
 
     @Override
@@ -39,7 +38,7 @@ public class KDDTree implements MDIndex {
         }
 
         KDNode newNode = this.root.insert(key);
-        int nextDimension = (newNode.getDimension() + 1) % numDimensions;
+        int nextDimension = (newNode.getParentDimension() + 1) % numDimensions;
         newNode.setValues(nextDimension, dimensionTypes[nextDimension], key);
 	}
 
@@ -51,12 +50,12 @@ public class KDDTree implements MDIndex {
 
 	@Override
 	public void initProbe() {
-        System.out.println("OK");
+        System.out.println("initProbe OK");
 	}
 	
 	@Override
 	public Object getBucketId(MDIndexKey key) {
-		return this.root.getBucketId(key, 1);
+        return Integer.toString(this.root.getBucketId(key, 1));
 	}
 
 	@Override

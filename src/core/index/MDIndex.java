@@ -32,13 +32,11 @@ public interface MDIndex {
 	
 	
 	/**
-	 * Initialize the index with the number of dimensions and 
-	 * the maximum number of buckets over those dimensions.
-	 * 
-	 * @param dimensions
-	 * @param bucketSize
+	 * Initialize the index with the maximum number of buckets.
+	 *
+	 * @param numBuckets;
 	 */
-	public void initBuild(int bucketSize); 
+	public void initBuild(int numBuckets);
 
 	
 	/**
