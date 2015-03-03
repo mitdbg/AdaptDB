@@ -19,13 +19,11 @@ public class KDDTree implements MDIndex {
         return new KDDTree();
     }
 
-    @Override
 	public void initBuild(int buckets) {
         this.maxBuckets = buckets;
         this.root = new KDNode();
     }
 
-	@Override
 	public void insert(MDIndexKey key) {
         if (root.getNumBuckets() >= maxBuckets) {
             return;
@@ -42,44 +40,37 @@ public class KDDTree implements MDIndex {
         newNode.setValues(nextDimension, dimensionTypes[nextDimension], key);
 	}
 
-	@Override
 	public void bulkLoad(MDIndexKey[] keys) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
-	@Override
 	public void initProbe() {
         System.out.println("initProbe OK");
 	}
-	
-	@Override
+
 	public Object getBucketId(MDIndexKey key) {
         return Integer.toString(this.root.getBucketId(key, 1));
 	}
 
-	@Override
 	public Bucket search(MDIndexKey key) {
 		// TODO Auto-generated method stub
 		// very similar to the above method!
 		return null;
 	}
 
-	@Override
 	public List<Bucket> range(MDIndexKey low, MDIndexKey high) {
 		// TODO Auto-generated method stub
 		return this.root.rangeSearch(low, high);
 	}
 
-	@Override
 	public byte[] marshall() {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
-	@Override
 	public void unmarshall(byte[] bytes) {
 		// TODO Auto-generated method stub
-		
+
 	}
 }
