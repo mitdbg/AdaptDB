@@ -17,6 +17,7 @@ public class RNode {
     public int dimension;
     public TYPE type;
     public Object value;
+    public float quantile;
 
     public RNode parent;
     public RNode leftChild;
@@ -72,13 +73,13 @@ public class RNode {
     public int getBucketId(MDIndexKey key) {
         if (compareKey(value, dimension, type, key) > 0) {
             if (leftChild == null) {
-                return start;
+                return bucket.bucketId;
             }
             return leftChild.getBucketId(key);
         }
         else {
             if (rightChild == null) {
-                return start;
+                return bucket.bucketId;
             }
             return rightChild.getBucketId(key);
         }

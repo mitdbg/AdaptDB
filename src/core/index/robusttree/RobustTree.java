@@ -18,7 +18,17 @@ public class RobustTree implements MDIndex {
 
 	// Access costs of each attribute
 	// Used only for the initial run
-	float[] costs;
+	double[] allocations;
+
+	public static class Bound {
+		public double upper;
+		public double lower;
+
+		public Bound(double upper, double lower) {
+			this.upper = upper;
+			this.lower = lower;
+		}
+	}
 
 	@Override
 	public MDIndex clone() throws CloneNotSupportedException {
@@ -34,11 +44,6 @@ public class RobustTree implements MDIndex {
         for (int i=0; i<numDimensions; i++) {
         	this.histograms[i].allocate(10);
         }
-
-        float[] costs = new float[this.numDimensions];
-		for (int i=0; i<this.numDimensions; i++) {
-			this.costs[i] = totalBuckets;
-		}
 
 		root = new RNode();
 	}
@@ -67,32 +72,39 @@ public class RobustTree implements MDIndex {
 	 * Created the tree based on the histograms
 	 */
 	public void initProbe() {
-		root.dimension = 0;
-		root.type = this.dimensionTypes[0];
-		root.value = this.histograms[0].quantile(0.5); // Get median
-
-		this.costs[0] = getAccessCost(0);
+//		root.dimension = 0;
+//		root.type = this.dimensionTypes[0];
+//		root.value = this.histograms[0].quantile(0.5); // Get median
+//
+//		this.costs[0] = getAccessCost(0);
 
 		int depth = 31 - Integer.numberOfLeadingZeros(this.maxBuckets); // Computes log(this.maxBuckets)
-		this.createTree(root, depth);
+		double allocation = RobustTree.nthroot(this.numDimensions, this.maxBuckets);
+
+		for (int i=0; i<this.numDimensions; i++) {
+			this.allocations[i] = allocation;
+		}
+
+		this.createTree(root, depth, 2);
 	}
 
-	public void createTree(RNode node, int depth) {
+	public void createTree(RNode node, int depth, double allocation) {
 		if (depth > 0) {
-			int dim = getLeastEffective();
+			int dim = this.getLeastAllocated();
 			node.dimension = dim;
 			node.type = this.dimensionTypes[dim];
-			node.value = 0; // Need to traverse up for range
 
-			//
-			float cost = this.getAccessCost(dim);
-			this.costs[dim] = cost;
+			Bound range = this.findRangeMidpoint(node.parent, node, dim);
+			double rangeMidpoint = (range.upper + range.lower)/2;
+
+			node.value = this.histograms[dim].quantile(rangeMidpoint); // Need to traverse up for range
+			node.quantile = (float) 0.5;
 
 			node.leftChild = new RNode();
-			this.createTree(node.leftChild, depth - 1);
+			this.createTree(node.leftChild, depth - 1, allocation / 2);
 
 			node.rightChild = new RNode();
-			this.createTree(node.rightChild, depth - 1);
+			this.createTree(node.rightChild, depth - 1, allocation / 2);
 		} else {
 			Bucket b = new Bucket();
 			node.bucket = b;
@@ -100,43 +112,76 @@ public class RobustTree implements MDIndex {
 	}
 
 	/**
-	 * Finds the access cost of an attribute based on the tree
-	 * @param dimNo
+	 * Return the dimension which has the maximum
+	 * allocation unfulfilled
 	 * @return
 	 */
-	public float getAccessCost(int dimNo) {
+	public int getLeastAllocated() {
+		int index = 0;
+		double alloc = this.allocations[0];
+		for (int i=1; i<this.numDimensions; i++) {
+			if (this.allocations[i] > alloc) {
+				alloc = this.allocations[i];
+				index = i;
+			}
+		}
 
-		return 0;
+		return index;
 	}
 
+	public Bound findRangeMidpoint(RNode node, RNode source, int dim) {
+		// Happens only for the first node;
+		if (node == null) {
+			return new Bound(0, 1);
+		} else if (node.parent != null) {
+			Bound bound = this.findRangeMidpoint(node.parent, node, dim);
 
-	public int getLeastEffective() {
-		int index = 0;
-		float effectiveness = this.costs[0];
-
+			if (node.dimension == dim) {
+				if (node.leftChild == source) {
+					bound.upper = node.quantile;
+					return bound;
+				} else {
+					bound.lower = node.quantile;
+					return bound;
+				}
+			} else {
+				return bound;
+			}
+		} else {
+			// root
+			if (node.dimension == dim) {
+				if (node.leftChild == source) {
+					return new Bound(0, node.quantile);
+				} else {
+					return new Bound(node.quantile, 1);
+				}
+			} else {
+				return new Bound(0, 1);
+			}
+		}
 	}
 
 	public Object getBucketId(MDIndexKey key) {
-		return getBucketId(root, key);
+		return root.getBucketId(key);
 	}
 
-	public Object getBucketId(RNode node, MDIndexKey key) {
-        if (value == null) {
-            return start;
-        }
-        if (compareKey(value, dimension, type, key) > 0) {
-            if (leftChild == null) {
-                return start;
-            }
-            return leftChild.getBucketId(key, start*2);
-        }
-        else {
-            if (rightChild == null) {
-                return start;
-            }
-            return rightChild.getBucketId(key, start*2+1);
-        }
-	}
+//	public Object getBucketId(RNode node, MDIndexKey key) {
+//        if (value == null) {
+//            return start;
+//        }
+//        if (compareKey(value, dimension, type, key) > 0) {
+//            if (leftChild == null) {
+//                return start;
+//            }
+//            return leftChild.getBucketId(key, start*2);
+//        }
+//        else {
+//            if (rightChild == null) {
+//                return start;
+//            }
+//            return rightChild.getBucketId(key, start*2+1);
+//        }
+//	}
 
 	public Bucket search(MDIndexKey key) {
 		// TODO Auto-generated method stub
@@ -155,6 +200,25 @@ public class RobustTree implements MDIndex {
 
 	public void unmarshall(byte[] bytes) {
 		// TODO Auto-generated method stub
+	}
 
+	public static double nthroot(int n, double A) {
+		return nthroot(n, A, .001);
+	}
+
+	public static double nthroot(int n, double A, double p) {
+		if(A < 0) {
+			System.err.println("A < 0");// we handle only real positive numbers
+			return -1;
+		} else if(A == 0) {
+			return 0;
+		}
+		double x_prev = A;
+		double x = A / n;  // starting "guessed" value...
+		while(Math.abs(x - x_prev) > p) {
+			x_prev = x;
+			x = ((n - 1.0) * x + A / Math.pow(x, n - 1.0)) / n;
+		}
+		return x;
 	}
 }
