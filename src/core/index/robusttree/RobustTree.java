@@ -85,12 +85,12 @@ public class RobustTree implements MDIndex {
 			this.allocations[i] = allocation;
 		}
 
-		this.createTree(root, depth, 2);
+		this.createTree(root, depth, 2, 0);
 	}
 
-	public void createTree(RNode node, int depth, double allocation) {
+	public void createTree(RNode node, int depth, double allocation, long dimBitmap) {
 		if (depth > 0) {
-			int dim = this.getLeastAllocated();
+			int dim = this.getLeastAllocated(dimBitmap);
 			node.dimension = dim;
 			node.type = this.dimensionTypes[dim];
 
@@ -99,6 +99,8 @@ public class RobustTree implements MDIndex {
 
 			node.value = this.histograms[dim].quantile(rangeMidpoint); // Need to traverse up for range
 			node.quantile = (float) 0.5;
+
+
 
 			node.leftChild = new RNode();
 			this.createTree(node.leftChild, depth - 1, allocation / 2);
@@ -116,7 +118,7 @@ public class RobustTree implements MDIndex {
 	 * allocation unfulfilled
 	 * @return
 	 */
-	public int getLeastAllocated() {
+	public int getLeastAllocated(long dimBitmap) {
 		int index = 0;
 		double alloc = this.allocations[0];
 		for (int i=1; i<this.numDimensions; i++) {
