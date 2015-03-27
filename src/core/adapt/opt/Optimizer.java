@@ -5,15 +5,20 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import core.adapt.Predicate;
 import core.adapt.Query;
 import core.adapt.Query.FilterQuery;
 import core.index.key.CartilageIndexKey;
+import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTree;
 
 public class Optimizer {
 	RobustTree rt;
+	int rtDepth;
+
 	String dataset;
 
 	static final int BLOCK_SIZE = 64 * 1024;
@@ -30,7 +35,8 @@ public class Optimizer {
 
 			// Round up the number of nearest power of 2
 			int numBlocks = (int) (bytes/BLOCK_SIZE);
-			numBlocks = roundTo2(numBlocks);
+			rtDepth = getDepthOfIndex(numBlocks);
+			numBlocks = (int) Math.pow(2, rtDepth);
 
 			this.rt = new RobustTree(numBlocks);
 
@@ -63,17 +69,39 @@ public class Optimizer {
 		if (q instanceof FilterQuery) {
 			FilterQuery fq = (FilterQuery) q;
 			Predicate[] p = fq.getPredicates();
+			List<RNode> buckets = rt.getMatchingBuckets(p);
+
+			getBestPlan(buckets);
 		} else {
 			System.err.println("Unimplemented query - Unable to build plan");
 		}
 	}
 
-	public static int roundTo2(int numBlocks) {
+	public static class LevelNode {
+		RNode origin;
+		RNode current;
+	}
+
+	public void getBestPlan(List<RNode> buckets) {
+		// Create a list of level node
+		// Level node is the parent of bucket at the current level
+		List<LevelNode> nodes = new ArrayList<LevelNode>();
+		for (RNode node: buckets) {
+			LevelNode l = new LevelNode();
+			l.origin = node;
+			l.current = node.parent;
+			nodes.add(l);
+		}
+
+		//TODO: Multiple predicates seem to complicate the simple idea we had; think more :-/
+	}
+
+	public static int getDepthOfIndex(int numBlocks) {
 		int k = 31 - Integer.numberOfLeadingZeros(numBlocks);
 		if (numBlocks == (int)Math.pow(2, k)) {
-			return numBlocks;
+			return k;
 		} else {
-			return (int) Math.pow(2, k+1);
+			return k+1;
 		}
 	}
 }
