@@ -1,9 +1,11 @@
 package core.index.robusttree;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.hadoop.hive.ql.udf.generic.NumericHistogram;
 
+import core.adapt.Predicate;
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
 import core.index.key.MDIndexKey;
@@ -24,10 +26,14 @@ public class RobustTree implements MDIndex {
 		public double upper;
 		public double lower;
 
-		public Bound(double upper, double lower) {
+		public Bound(double lower, double upper) {
 			this.upper = upper;
 			this.lower = lower;
 		}
+	}
+
+	public RobustTree(int maxBuckets){
+		this.initBuild(maxBuckets);
 	}
 
 	@Override
@@ -38,22 +44,25 @@ public class RobustTree implements MDIndex {
 
 	public void initBuild(int buckets) {
         this.maxBuckets = buckets;
-        this.numDimensions = 5;
-        this.histograms = new NumericHistogram[this.numDimensions];
-
-        for (int i=0; i<numDimensions; i++) {
-        	this.histograms[i].allocate(10);
-        }
-
 		root = new RNode();
 	}
 
+	/***************************************************
+	 ************* UPFRONT PARTITIONING ****************
+	 ***************************************************/
 	public void insert(MDIndexKey key) {
         if (dimensionTypes == null) {
             CartilageIndexKey k = (CartilageIndexKey)key;
 
         	this.dimensionTypes = k.detectTypes(true);
             this.numDimensions = dimensionTypes.length;
+
+            this.histograms = new NumericHistogram[this.numDimensions];
+
+            for (int i=0; i<numDimensions; i++) {
+            	this.histograms[i] = new NumericHistogram();
+            	this.histograms[i].allocate(10);
+            }
         }
 
         for (int i=0; i<numDimensions; i++) {
@@ -72,15 +81,10 @@ public class RobustTree implements MDIndex {
 	 * Created the tree based on the histograms
 	 */
 	public void initProbe() {
-//		root.dimension = 0;
-//		root.type = this.dimensionTypes[0];
-//		root.value = this.histograms[0].quantile(0.5); // Get median
-//
-//		this.costs[0] = getAccessCost(0);
-
 		int depth = 31 - Integer.numberOfLeadingZeros(this.maxBuckets); // Computes log(this.maxBuckets)
 		double allocation = RobustTree.nthroot(this.numDimensions, this.maxBuckets);
 
+		this.allocations = new double[this.numDimensions];
 		for (int i=0; i<this.numDimensions; i++) {
 			this.allocations[i] = allocation;
 		}
@@ -93,25 +97,28 @@ public class RobustTree implements MDIndex {
 			int dim = this.getLeastAllocated(dimBitmap);
 			node.dimension = dim;
 			node.type = this.dimensionTypes[dim];
+			this.allocations[dim] -= allocation;
 
 			Bound range = this.findRangeMidpoint(node.parent, node, dim);
 			double rangeMidpoint = (range.upper + range.lower)/2;
 
 			node.value = this.histograms[dim].quantile(rangeMidpoint); // Need to traverse up for range
-			node.quantile = (float) 0.5;
+			node.quantile = (float) rangeMidpoint;
 
-
+			dimBitmap = dimBitmap | 1 << dim;
 
 			node.leftChild = new RNode();
-			this.createTree(node.leftChild, depth - 1, allocation / 2);
+			this.createTree(node.leftChild, depth - 1, allocation / 2, dimBitmap);
 
 			node.rightChild = new RNode();
-			this.createTree(node.rightChild, depth - 1, allocation / 2);
+			this.createTree(node.rightChild, depth - 1, allocation / 2, dimBitmap);
 		} else {
 			Bucket b = new Bucket();
 			node.bucket = b;
 		}
 	}
+
+	static List<Integer> leastAllocated  = new ArrayList<Integer>();
 
 	/**
 	 * Return the dimension which has the maximum
@@ -119,16 +126,30 @@ public class RobustTree implements MDIndex {
 	 * @return
 	 */
 	public int getLeastAllocated(long dimBitmap) {
-		int index = 0;
+		leastAllocated.clear();
+		leastAllocated.add(0);
+
 		double alloc = this.allocations[0];
 		for (int i=1; i<this.numDimensions; i++) {
 			if (this.allocations[i] > alloc) {
 				alloc = this.allocations[i];
-				index = i;
+				leastAllocated.clear();
+				leastAllocated.add(i);
+			} else if (this.allocations[i] == alloc) {
+				leastAllocated.add(i);
 			}
 		}
 
-		return index;
+		if (leastAllocated.size() == 1) {
+			return leastAllocated.get(0);
+		} else {
+			for (int i=0; i < leastAllocated.size(); i++) {
+				if ((dimBitmap & (1 << leastAllocated.get(i))) == 0) {
+					return leastAllocated.get(i);
+				}
+			}
+			return leastAllocated.get(0);
+		}
 	}
 
 	public Bound findRangeMidpoint(RNode node, RNode source, int dim) {
@@ -163,31 +184,31 @@ public class RobustTree implements MDIndex {
 		}
 	}
 
+	/**
+	 * Used in the 2nd phase of upfront to assign each tuple to the right
+	 */
 	public Object getBucketId(MDIndexKey key) {
 		return root.getBucketId(key);
 	}
 
-//	public Object getBucketId(RNode node, MDIndexKey key) {
-//        if (value == null) {
-//            return start;
-//        }
-//        if (compareKey(value, dimension, type, key) > 0) {
-//            if (leftChild == null) {
-//                return start;
-//            }
-//            return leftChild.getBucketId(key, start*2);
-//        }
-//        else {
-//            if (rightChild == null) {
-//                return start;
-//            }
-//            return rightChild.getBucketId(key, start*2+1);
-//        }
-//	}
+	/***************************************************
+	 ***************** RUNTIME METHODS *****************
+	 ***************************************************/
 
-	public Bucket search(MDIndexKey key) {
-		// TODO Auto-generated method stub
-		return null;
+	public List<RNode> getMatchingBuckets(Predicate[] predicates) {
+		List<RNode> results = root.search(predicates);
+		return results;
+	}
+
+	public int getNumTuples(Predicate[] predicates) {
+		int total = 0;
+		List<RNode> matchingBuckets = getMatchingBuckets(predicates);
+		// Note that the above list is a linked-list; don't use .get over it
+		for (RNode node: matchingBuckets) {
+			total += node.bucket.getNumTuples();
+		}
+
+		return total;
 	}
 
 	public List<Bucket> range(MDIndexKey low, MDIndexKey high) {
@@ -222,5 +243,29 @@ public class RobustTree implements MDIndex {
 			x = ((n - 1.0) * x + A / Math.pow(x, n - 1.0)) / n;
 		}
 		return x;
+	}
+
+	/**
+	 * Prints the tree created. Call only after initProbe is done.
+	 */
+	public void printTree() {
+		printNode(root);
+	}
+
+	public static void printNode(RNode node) {
+		if (node.bucket != null) {
+			System.out.format("B");
+		} else {
+			System.out.format("Node: %d %f { ", node.dimension, node.quantile);
+			printNode(node.leftChild);
+			System.out.print(" }{ ");
+			printNode(node.rightChild);
+			System.out.print(" }");
+		}
+	}
+
+	public List<Bucket> search(Predicate[] predicates) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

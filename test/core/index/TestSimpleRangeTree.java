@@ -27,7 +27,7 @@ public class TestSimpleRangeTree extends TestCase {
 		tuple2 = "1|674|75|2|36|56688.12|0.09|0.06|N|O|1996-04-12|1996-02-28|1996-04-20|TAKE BACK RETURN|MAIL|ly final dependencies: slyly bold ";
 
 		t = new SimpleRangeTree(100);
-		key = new CartilageIndexKey('|', new int[]{13,14});
+		key = new CartilageIndexKey('|', new int[]{0,1,2,3,4,5});
 		bucketSize = 1024*1024*10;	// 10mb
 
 		//r = new CartilageBinaryRecord('|');
@@ -40,18 +40,15 @@ public class TestSimpleRangeTree extends TestCase {
 
 	public void testInsert(){
 		key.setBytes(tuple1.getBytes());
-		//key.setTuple(r);
 		t.insert(key);
 		assert(true);
 	}
 
 	public void testInitProbe(){
 		key.setBytes(tuple1.getBytes());
-		//key.setTuple(r);
 		t.insert(key);
 
 		key.setBytes(tuple2.getBytes());
-		//key.setTuple(r);
 		t.insert(key);
 
 		t.initProbe();

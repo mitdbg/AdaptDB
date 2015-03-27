@@ -1,18 +1,17 @@
 package core.adapt;
 
 import core.utils.RangeUtils.Range;
-import core.utils.Schema.Attribute;
 
 public class Predicate {
-	private Attribute attribute;
+	private int attribute;
 	private Range range;
 
-	public Predicate(Attribute attr, Range r) {
+	public Predicate(int attr, Range r) {
 		this.range = r;
 		this.attribute = attr;
 	}
-	
-	public Attribute getAttribute() {
+
+	public int getAttribute() {
 		return attribute;
 	}
 

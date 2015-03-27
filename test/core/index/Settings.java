@@ -1,8 +1,8 @@
 package core.index;
 
 public class Settings {
-	public static String tpchPath = "/Users/alekh/Work/Cartilage/support/datasets/tpch_0.01/";
-	public static String localPartitionDir = "/Users/alekh/Work/tmp";
+	public static String tpchPath = "/Users/anil/Dev/repos/mdindex/test/";
+	public static String localPartitionDir = "/tmp";
 	public static String hdfsPartitionDir = "/mydir";
-	public static String cartilageConf = "/Users/alekh/Work/Cartilage/MDIndex/conf/cartilage.properties";
+	public static String cartilageConf = "/Users/anil/Dev/repos/client/conf/cartilage.properties ";
 }

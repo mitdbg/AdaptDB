@@ -2,6 +2,7 @@ package core.index.kdtree;
 
 import java.util.List;
 
+import core.adapt.Predicate;
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
 import core.index.key.MDIndexKey;
@@ -53,9 +54,8 @@ public class KDDTree implements MDIndex {
         return Integer.toString(this.root.getBucketId(key, 1));
 	}
 
-	public Bucket search(MDIndexKey key) {
+	public List<Bucket> search(Predicate[] predicates) {
 		// TODO Auto-generated method stub
-		// very similar to the above method!
 		return null;
 	}
 

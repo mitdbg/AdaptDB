@@ -1,6 +1,7 @@
 package core.index;
 import java.util.List;
 
+import core.adapt.Predicate;
 import core.index.key.MDIndexKey;
 
 
@@ -16,8 +17,30 @@ public interface MDIndex {
 	 * Placeholder class for the index leaves.
 	 *
 	 */
-	public static class Bucket{
-		public int bucketId;
+
+	public final static class Bucket{
+		int bucketId;
+		int numTuples;
+
+		public static int maxBucketId = 0;
+
+		public Bucket() {
+			bucketId = maxBucketId;
+			numTuples = -1;
+			maxBucketId += 1;
+		}
+
+		public void setNumTuples(int t) {
+			numTuples = t;
+		}
+
+		public int getNumTuples() {
+			return numTuples;
+		}
+
+		public int getBucketId() {
+			return bucketId;
+		}
 	}
 
 
@@ -78,24 +101,25 @@ public interface MDIndex {
 	public Object getBucketId(MDIndexKey key);
 
 
-	/**
-	 * Point query.
-	 *
-	 * @param key
-	 * @return the bucket containing the key.
-	 */
-	public Bucket search(MDIndexKey key);
+//	/**
+//	 * Point query.
+//	 *
+//	 * @param key
+//	 * @return the bucket containing the key.
+//	 */
+//	public Bucket search(MDIndexKey key);
+//
+//
+//	/**
+//	 * Range query.
+//	 *
+//	 * @param low
+//	 * @param high
+//	 * @return the set of buckets containing the given range.
+//	 */
+//	public List<Bucket> range(MDIndexKey low, MDIndexKey high);
 
-
-	/**
-	 * Range query.
-	 *
-	 * @param low
-	 * @param high
-	 * @return the set of buckets containing the given range.
-	 */
-	public List<Bucket> range(MDIndexKey low, MDIndexKey high);
-
+	public List<Bucket> search(Predicate[] predicates);
 
 	/*
 	 *
