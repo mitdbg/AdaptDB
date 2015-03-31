@@ -113,14 +113,14 @@ public class ScanTest {
 
 	}
 
-    public Map<Integer, Integer> countBuckets(String filename, MDIndex index, CartilageIndexKey key) {
+    public Map<String, Integer> countBuckets(String filename, MDIndex index, CartilageIndexKey key) {
         byteArray = new byte[bufferSize];
         bb = ByteBuffer.wrap(byteArray);
         previous = 0;
         byteArrayIdx = 0;
         nRead = 0;
         newLine = '\n';
-        Map<Integer, Integer> bucketCounts = new HashMap<Integer, Integer>();
+        Map<String, Integer> bucketCounts = new HashMap<String, Integer>();
 
         index.initProbe();
 
@@ -165,7 +165,7 @@ public class ScanTest {
 
                         lineCount++;
                         //offsets[tupleId++] = key.getOffsets();
-                        int bucketId = (Integer) index.getBucketId(key);
+                        String bucketId = (String) index.getBucketId(key);
                         if (!bucketCounts.containsKey(bucketId)) {
                             bucketCounts.put(bucketId, 1);
                         } else {
@@ -209,7 +209,7 @@ public class ScanTest {
 		//t.FileChannelScan("/Users/alekh/Work/Cartilage/support/datasets/tpch_0.01/lineitem.tbl", index, key);
 		//t.FileChannelScan("/Users/alekh/Work/Cartilage/support/datasets/scale_1/lineitem.tbl", index, key);
         t.FileChannelScan("test/lineitem.tbl", index, key);
-        Map<Integer, Integer> buckets = t.countBuckets("test/lineitem.tbl", index, key);
+        Map<String, Integer> buckets = t.countBuckets("test/lineitem.tbl", index, key);
         try{
         	TreeUtils.plot(buckets,  "BarChart.jpeg" );
         } catch (IOException ex) {

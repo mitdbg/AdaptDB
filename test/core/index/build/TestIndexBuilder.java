@@ -63,7 +63,8 @@ public class TestIndexBuilder extends TestCase{
     public void testBuildKDMedianTreeLocal(){
         File f = new File(inputFilename);
         Runtime runtime = Runtime.getRuntime();
-        double samplingRate = runtime.freeMemory() / (2 * f.length());
+        double samplingRate = runtime.freeMemory() / (2.0 * f.length());
+        System.out.println("Sampling rate: "+samplingRate);
         builder.build(
                 new KDMedianTree(samplingRate),
                 key,
