@@ -3,6 +3,7 @@ package core.index;
 import core.index.build.CountingPartitionWriter;
 import core.index.build.InputReader;
 import core.index.kdtree.KDDTree;
+import core.index.kdtree.KDMedianTree;
 import core.index.key.CartilageIndexKey;
 import core.utils.TreeUtils;
 import org.junit.After;
@@ -29,6 +30,8 @@ public class CompareIndices {
 
     String localPartitionDir;
     int attributes;
+
+    long fileSize;
     int maxBuckets;
 
     @Rule
@@ -46,7 +49,8 @@ public class CompareIndices {
         writer = new CountingPartitionWriter(localPartitionDir);
 
         File f = new File(inputFilename);
-        maxBuckets = (int) (f.length() / bucketSize) + 1;
+        fileSize = f.length();
+        maxBuckets = (int) (fileSize / bucketSize) + 1;
         System.out.println("Max buckets: "+maxBuckets);
     }
 
@@ -73,7 +77,6 @@ public class CompareIndices {
         System.out.println("Number of buckets: "+n);
         System.out.println("Mean size: "+mean);
         System.out.println("Size st dev: "+stdev);
-        System.out.println(counts);
         try{
             TreeUtils.plot(counts, String.format("BarChart_%s.jpeg", name.getMethodName()));
         } catch (IOException ex) {
@@ -85,6 +88,25 @@ public class CompareIndices {
     public void testBasicKDTree() {
         MDIndex index = new KDDTree();
         InputReader r = new InputReader(index, key);
+
+        long startTime = System.nanoTime();
+        index.initBuild(maxBuckets);
+        r.scan(inputFilename);
+        index.initProbe();
+        double time1 = (double)(System.nanoTime()-startTime)/1E9;
+        System.out.println("Index Build Time = "+time1+" sec");
+
+        r.scan(inputFilename, writer);
+    }
+
+    @Test
+    public void testKDMedianTree() {
+        MDIndex index = new KDMedianTree(1);
+        InputReader r = new InputReader(index, key);
+
+        Runtime runtime = Runtime.getRuntime();
+        double samplingRate = runtime.freeMemory() / (2.0 * fileSize);
+        System.out.println("Sampling rate: "+samplingRate);
 
         long startTime = System.nanoTime();
         index.initBuild(maxBuckets);
