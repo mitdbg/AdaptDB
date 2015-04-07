@@ -125,6 +125,9 @@ public class CartilageIndexKeySet {
     }
 
     private static int getFirstIndexOfAttributeVal(int attributeIdx, TYPE type, Object val, List<Object[]> sublist, int start) {
+        if (sublist.size() == 0) {
+            return -1;
+        }
         Object middle = sublist.get(sublist.size()/2)[attributeIdx];
         int comparison;
         switch(type) {
@@ -144,15 +147,9 @@ public class CartilageIndexKeySet {
                 return firstIndex;
             }
         } else if (comparison > 0) {
-            if (sublist.size() == 1) {
-                return -1;
-            }
             return getFirstIndexOfAttributeVal(attributeIdx, type, val, sublist.subList(0,sublist.size()/2), start);
         } else {
-            if (sublist.size() == 1) {
-                return -1;
-            }
-            return getFirstIndexOfAttributeVal(attributeIdx, type, val, sublist.subList(sublist.size()/2, sublist.size()), start+sublist.size()/2);
+            return getFirstIndexOfAttributeVal(attributeIdx, type, val, sublist.subList(sublist.size()/2+1, sublist.size()), start+sublist.size()/2+1);
         }
     }
 	

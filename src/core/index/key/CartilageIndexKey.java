@@ -3,6 +3,7 @@ package core.index.key;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -36,7 +37,8 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
 
 	public CartilageIndexKey(char delimiter, int[] keyAttrIdx){
 		this.delimiter = delimiter;
-		this.keyAttrIdx = keyAttrIdx;
+		this.keyAttrIdx = Arrays.copyOf(keyAttrIdx, keyAttrIdx.length);
+        Arrays.sort(this.keyAttrIdx);
 	}
 
 	@Override
@@ -49,6 +51,10 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
 	public void setKeys(int[] keyAttrIdx){
 		this.keyAttrIdx = keyAttrIdx;
 	}
+
+    public int[] getKeys() {
+        return keyAttrIdx;
+    }
 
 	public void setBytes(byte[] bytes, int[] offsets) {
 		this.bytes = bytes;
@@ -200,8 +206,8 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
 			strSize = attributeOffsets[index+1] - off - 1;
 		else
 			strSize = offset+length - off;
-		return strSize > maxSize ? "" : new String(bytes, off, strSize);
-		//return new String(bytes, off, strSize);
+		//return strSize > maxSize ? "" : new String(bytes, off, strSize);
+		return new String(bytes, off, Math.min(strSize, maxSize));
 	}
 
 	public int getIntAttribute(int index) {

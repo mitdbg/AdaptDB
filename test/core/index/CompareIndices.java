@@ -26,7 +26,6 @@ public class CompareIndices {
     CountingPartitionWriter writer;
 
     String inputFilename;
-    CartilageIndexKey key;
 
     String localPartitionDir;
     int attributes;
@@ -42,8 +41,6 @@ public class CompareIndices {
         inputFilename = Settings.tpchPath + "lineitem.tbl";
 
         localPartitionDir = Settings.localPartitionDir;
-
-        key = new CartilageIndexKey('|');
 
         attributes = 16;
         writer = new CountingPartitionWriter(localPartitionDir);
@@ -87,6 +84,7 @@ public class CompareIndices {
     @Test
     public void testBasicKDTree() {
         MDIndex index = new KDDTree();
+        CartilageIndexKey key = new CartilageIndexKey('|');
         InputReader r = new InputReader(index, key);
 
         long startTime = System.nanoTime();
@@ -102,6 +100,7 @@ public class CompareIndices {
     @Test
     public void testKDMedianTree() {
         MDIndex index = new KDMedianTree(1);
+        CartilageIndexKey key = new CartilageIndexKey('|');
         InputReader r = new InputReader(index, key);
 
         Runtime runtime = Runtime.getRuntime();
