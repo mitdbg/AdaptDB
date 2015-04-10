@@ -17,11 +17,16 @@ public class KDMedianTree extends KDDTree implements MDIndex {
     private double samplingRate;
 
     public KDMedianTree(double samplingRate) {
+        this(samplingRate, null);
+    }
+
+    public KDMedianTree(double samplingRate, int[] attrs) {
+        super(attrs);
         this.samplingRate = samplingRate;
     }
 
     @Override
-    public MDIndex clone() { return new KDMedianTree(samplingRate); }
+    public MDIndex clone() { return new KDMedianTree(samplingRate, attrOrder); }
 
     @Override
     public void initBuild(int numBuckets) {
@@ -36,8 +41,7 @@ public class KDMedianTree extends KDDTree implements MDIndex {
     public void insert(MDIndexKey key) {
         CartilageIndexKey k = (CartilageIndexKey) key;
         if (dimensionTypes == null) {
-            dimensionTypes = k.detectTypes(true);
-            numDimensions = dimensionTypes.length;
+            initializeDimensions(k);
         }
         if (Math.random() < samplingRate) {
             this.buckets.get(0).insert(k);
@@ -48,8 +52,10 @@ public class KDMedianTree extends KDDTree implements MDIndex {
     public void initProbe() {
         int numSplits = (int) (Math.log(maxBuckets) / Math.log(2)) + 1;
         System.out.println("Depth is " + numSplits);
+        int currentDim = -1;
         for (int i = 0; i < numSplits; i++) {
-            splitTree(buckets, i % numDimensions);
+            splitTree(buckets, nextAttrIdx.get(currentDim));
+            currentDim = nextAttrIdx.get(currentDim);
         }
     }
 
@@ -61,7 +67,8 @@ public class KDMedianTree extends KDDTree implements MDIndex {
                 Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = keys.sortAndSplit(dim);
                 buckets.add(halves.first);
                 buckets.add(halves.second);
-                super.insert(halves.second.iterator().next());
+                CartilageIndexKey key = halves.second.iterator().next();
+                super.insert(key);
             }
         }
     }
