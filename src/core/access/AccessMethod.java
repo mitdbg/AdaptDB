@@ -1,9 +1,6 @@
-package core.adapt;
-
-import java.util.List;
+package core.access;
 
 import core.adapt.opt.Optimizer;
-import core.adapt.split.Split;
 
 /**
  * This access method class considers filter access method over the distributed dataset.
@@ -39,6 +36,17 @@ public class AccessMethod {
 	}
 
 	/**
+	 * This method returns whether or not a given partition qualifies for the predicate.
+	 * 
+	 * @param partition
+	 * @param predicate
+	 * @return
+	 */
+	public boolean isRelevant(Partition partition, Predicate predicate){
+		return true;
+	}
+	
+	/**
 	 * This method is used to:
 	 * 1. lookup the partition index for relevant partitions
 	 * 2. and, to create splits of partitions which could be assigned to different node.
@@ -51,8 +59,8 @@ public class AccessMethod {
 	 * @param n	- the number of splits to produce
 	 * @return
 	 */
-	public List<Split> getPartitionSplits(List<Predicate> predicates, int n){
-		// TODO
+	public Partition[][] getPartitionSplits(Partition[] partitions, Predicate[] predicates, int n){
+		// TODO: one way could be to look at the partition lineage ids and group partitions with similar lineage into the same split! 
 		return null;
 	}
 

@@ -3,7 +3,7 @@ package core.index;
 import java.util.List;
 import java.util.Random;
 
-import core.adapt.Predicate;
+import core.access.Predicate;
 import core.index.key.CartilageIndexKey;
 import core.index.key.MDIndexKey;
 import core.utils.RangeUtils;

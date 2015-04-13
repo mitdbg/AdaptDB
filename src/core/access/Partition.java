@@ -1,4 +1,4 @@
-package core.adapt.partition;
+package core.access;
 
 import java.io.File;
 
@@ -62,6 +62,7 @@ public class Partition {
 		if(path==null || path.equals(""))
 			return false;
 		bytes = IOUtils.readByteArray(path);
+		offset = bytes.length;
 		return true;	// load the physical block for this partition 
 	}
 	
@@ -89,7 +90,15 @@ public class Partition {
 		return bytes;
 	}
 	
+	public int getSize(){
+		return offset;
+	}
+	
 	public boolean equals(Object p){
 		return ((Partition)p).path.equals(path);
+	}
+	
+	public int hashCode(){
+		return path.hashCode();
 	}
 }

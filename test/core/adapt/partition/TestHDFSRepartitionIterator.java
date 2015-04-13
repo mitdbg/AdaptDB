@@ -8,14 +8,15 @@ import org.apache.hadoop.fs.Path;
 
 import com.google.common.collect.Lists;
 
-import core.adapt.partition.HDFSPartition;
-import core.adapt.partition.Partition;
-import core.adapt.partition.TestRepartitionIterator;
+import core.access.HDFSPartition;
+import core.access.Partition;
+import core.access.Predicate;
 import core.adapt.partition.merger.PartitionMerger.KWayMerge;
 import core.index.Settings;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.RangeUtils;
+import core.utils.RangeUtils.Range;
 
 public class TestHDFSRepartitionIterator extends TestRepartitionIterator {
 
@@ -25,8 +26,9 @@ public class TestHDFSRepartitionIterator extends TestRepartitionIterator {
 	public void setUp(){
 		propertiesFile = Settings.cartilageConf;
 		partitionDir = Settings.hdfsPartitionDir;
-		attributeIdx = 0;
-		r = RangeUtils.closed(3000000, 6000000);
+		int attributeIdx = 0;
+		Range r = RangeUtils.closed(3000000, 6000000);
+		predicates = new Predicate[]{new Predicate(attributeIdx, r)};
 
 		merger = new KWayMerge(0,2);
 		partitionPaths = Lists.newArrayList();

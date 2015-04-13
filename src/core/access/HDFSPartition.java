@@ -1,4 +1,4 @@
-package core.adapt.partition;
+package core.access;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.fs.FileSystem;
@@ -24,6 +24,16 @@ public class HDFSPartition extends Partition{
 		this.replication = replication;
 		CartilageConf conf = ConfUtils.create(propertiesFile, "defaultHDFSPath");		
 		hdfs = HDFSUtils.getFS(conf.getHadoopHome()+"/etc/hadoop/core-site.xml");
+	}
+	
+	public HDFSPartition(FileSystem hdfs, String path) {
+		this(hdfs, path, (short)3);
+	}
+	
+	public HDFSPartition(FileSystem hdfs, String path, short replication) {
+		super(path);
+		this.hdfs = hdfs;
+		this.replication = replication;
 	}
 
 	public Partition createChild(int childId){

@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import core.adapt.Predicate;
+import core.access.Predicate;
 import core.adapt.Query;
 import core.adapt.Query.FilterQuery;
 import core.index.key.CartilageIndexKey;
