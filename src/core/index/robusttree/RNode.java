@@ -17,7 +17,7 @@ import core.utils.SchemaUtils.TYPE;
  */
 public class RNode {
 
-    public int dimension;
+    public int attribute;
     public TYPE type;
     public Object value;
     public float quantile;
@@ -32,8 +32,22 @@ public class RNode {
 
     }
 
+    @Override
+	public RNode clone() {
+    	RNode r = new RNode();
+    	r.attribute = this.attribute;
+    	r.type = this.type;
+    	r.value = this.value;
+    	r.quantile = this.quantile;
+    	r.parent = this.parent;
+    	r.leftChild = this.leftChild;
+    	r.rightChild = this.rightChild;
+    	r.bucket = this.bucket;
+    	return r;
+    }
+
     public void setValues(int dimension, TYPE type, MDIndexKey key) {
-        this.dimension = dimension;
+        this.attribute = dimension;
         this.type = type;
         this.value = getValue(dimension, type, key);
     }
@@ -74,7 +88,7 @@ public class RNode {
     }
 
     public int getBucketId(MDIndexKey key) {
-        if (compareKey(value, dimension, type, key) > 0) {
+        if (compareKey(value, attribute, type, key) > 0) {
             if (leftChild == null) {
                 return bucket.getBucketId();
             }
@@ -94,7 +108,7 @@ public class RNode {
         	boolean goRight = true;
         	for (int i = 0; i < ps.length; i++) {
         		Predicate p = ps[i];
-        		if (p.getAttribute() == dimension) {
+        		if (p.getAttribute() == attribute) {
         			Range r = p.getRange();
         			Object high = r.getHigh();
         			Object low  = r.getLow();

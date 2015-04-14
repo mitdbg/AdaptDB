@@ -95,7 +95,7 @@ public class RobustTree implements MDIndex {
 	public void createTree(RNode node, int depth, double allocation, long dimBitmap) {
 		if (depth > 0) {
 			int dim = this.getLeastAllocated(dimBitmap);
-			node.dimension = dim;
+			node.attribute = dim;
 			node.type = this.dimensionTypes[dim];
 			this.allocations[dim] -= allocation;
 
@@ -159,7 +159,7 @@ public class RobustTree implements MDIndex {
 		} else if (node.parent != null) {
 			Bound bound = this.findRangeMidpoint(node.parent, node, dim);
 
-			if (node.dimension == dim) {
+			if (node.attribute == dim) {
 				if (node.leftChild == source) {
 					bound.upper = node.quantile;
 					return bound;
@@ -172,7 +172,7 @@ public class RobustTree implements MDIndex {
 			}
 		} else {
 			// root
-			if (node.dimension == dim) {
+			if (node.attribute == dim) {
 				if (node.leftChild == source) {
 					return new Bound(0, node.quantile);
 				} else {
@@ -256,7 +256,7 @@ public class RobustTree implements MDIndex {
 		if (node.bucket != null) {
 			System.out.format("B");
 		} else {
-			System.out.format("Node: %d %f { ", node.dimension, node.quantile);
+			System.out.format("Node: %d %f { ", node.attribute, node.quantile);
 			printNode(node.leftChild);
 			System.out.print(" }{ ");
 			printNode(node.rightChild);

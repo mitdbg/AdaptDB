@@ -1,21 +1,15 @@
 package core.adapt;
 
-import core.utils.RangeUtils.Range;
+import core.utils.SchemaUtils.TYPE;
 
 public class Predicate {
-	private int attribute;
-	private Range range;
+	public int attribute;
+    public TYPE type;
+    public Object value;
 
-	public Predicate(int attr, Range r) {
-		this.range = r;
+	public Predicate(int attr, TYPE t, Object val) {
 		this.attribute = attr;
-	}
-
-	public int getAttribute() {
-		return attribute;
-	}
-
-	public Range getRange() {
-		return range;
+		this.type = t;
+		this.value = val;
 	}
 }

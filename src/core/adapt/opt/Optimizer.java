@@ -14,6 +14,7 @@ import core.adapt.Query.FilterQuery;
 import core.index.key.CartilageIndexKey;
 import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTree;
+import core.utils.SchemaUtils.TYPE;
 
 public class Optimizer {
 	RobustTree rt;
@@ -71,29 +72,130 @@ public class Optimizer {
 			Predicate[] p = fq.getPredicates();
 			List<RNode> buckets = rt.getMatchingBuckets(p);
 
-			getBestPlan(buckets);
+			getBestPlan(buckets, p);
 		} else {
 			System.err.println("Unimplemented query - Unable to build plan");
 		}
 	}
 
 	public static class LevelNode {
-		RNode origin;
+		RNode origin; // The bucket
+		RNode previous;
 		RNode current;
+		int status;
 	}
 
-	public void getBestPlan(List<RNode> buckets) {
+	public static class Plan {
+
+	}
+
+	public Plan getBestPlan(List<RNode> buckets, Predicate[] ps) {
 		// Create a list of level node
 		// Level node is the parent of bucket at the current level
 		List<LevelNode> nodes = new ArrayList<LevelNode>();
 		for (RNode node: buckets) {
 			LevelNode l = new LevelNode();
 			l.origin = node;
+			l.previous = node;
 			l.current = node.parent;
 			nodes.add(l);
 		}
 
 		//TODO: Multiple predicates seem to complicate the simple idea we had; think more :-/
+		Plan plan = null;
+		for (Predicate p: ps) {
+			Plan option = getBestPlanForPredicate(nodes, p);
+			if (plan == null) {
+				plan = option;
+			} else {
+				plan = option;
+			}
+
+			for (LevelNode l: nodes) {
+				l.current = l.origin.parent;
+			}
+		}
+
+		return plan;
+	}
+
+	public boolean checkValid(RNode node, int attrId, TYPE t, Object val) {
+		// TODO:
+		return true;
+	}
+
+	/**
+	 * Puts the new estimated number of tuples in each bucket after change
+	 * @param changed
+	 */
+	public void populateBucketEstimates(RNode changed) {
+
+	}
+
+	/**
+	 * Gives the number of tuples accessed
+	 * @param changed
+	 * @return
+	 */
+	public int getNumTuplesAccessed(RNode changed) {
+
+		return 0;
+	}
+
+	/**
+	 * Replaces node old by node r in the tree
+	 * @param old
+	 * @param r
+	 */
+	public void replaceInTree(RNode old, RNode r) {
+        old.leftChild.parent = r;
+        old.rightChild.parent = r;
+        if (old.parent.rightChild == old) {
+        	old.parent.rightChild = r;
+        } else {
+        	old.parent.leftChild = r;
+        }
+	}
+
+	public Plan getBestPlanForPredicate(List<LevelNode> nodes, Predicate p) {
+		while (true) {
+			for (int i=0; i<nodes.size(); i++) {
+				if (i < nodes.size() - 1) {
+					if (nodes.get(i).current == nodes.get(i+1).current) {
+						RNode old = nodes.get(i).current;
+						if (checkValid(old, p.attribute, p.type, p.value)) {
+							RNode r = old.clone();
+							r.attribute = p.attribute;
+							r.type = p.type;
+							r.value = p.value;
+							replaceInTree(old, r);
+
+					        populateBucketEstimates(r);
+					        int numAccessedOld = 0;
+					        int numAcccessedNew = getNumTuplesAccessed(r);
+					        int benefit = numAccessedOld - numAcccessedNew;
+
+					        if (benefit > 0) {
+					        	// compute cost
+					        }
+
+					        // Restore
+					        replaceInTree(r, old);
+						}
+					} else {
+						RNode old = nodes.get(i).current;
+
+						// Reached a choke point
+						if (old.attribute == p.attribute) {
+
+						} else {
+							// No go - this is the end of our journey
+							// This can happen when we have multiple predicates
+						}
+					}
+				}
+			}
+		}
 	}
 
 	public static int getDepthOfIndex(int numBlocks) {
