@@ -47,6 +47,10 @@ public class RobustTree implements MDIndex {
 		root = new RNode();
 	}
 
+	public RNode getRoot() {
+		return root;
+	}
+
 	/***************************************************
 	 ************* UPFRONT PARTITIONING ****************
 	 ***************************************************/
