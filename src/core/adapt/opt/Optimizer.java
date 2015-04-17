@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Date;
 
 import core.adapt.Predicate;
 import core.adapt.Query;
@@ -76,17 +77,14 @@ public class Optimizer {
 		}
 	}
 
-	public static class LevelNode {
-		RNode origin; // The bucket
-		RNode previous;
-		RNode current;
-		int status;
-	}
-
 	public static class Plan {
 		public Action actions; // Tree of actions
 		public float cost;
 		public float benefit;
+
+		public Plan() {
+			cost = -1;
+		}
 	}
 
 	public static class Action {
@@ -115,11 +113,8 @@ public class Optimizer {
 			if (plan == null) {
 				plan = option;
 			} else {
+				// TODO: Store the best
 				plan = option;
-			}
-
-			for (LevelNode l: nodes) {
-				l.current = l.origin.parent;
 			}
 		}
 
@@ -184,7 +179,6 @@ public class Optimizer {
 			dest.cost = source.cost;
 			dest.actions = source.actions;
 		}
-
 	}
 
 	public Plans getBestPlanForSubtree(RNode node, Predicate p) {
@@ -197,12 +191,15 @@ public class Optimizer {
 		} else {
 			Plan pTop = new Plan();
 			Plan best = new Plan();
+			Plans ret = new Plans();
 
 			Plans leftPlan = getBestPlanForSubtree(node.rightChild, p);
 			Plans rightPlan = getBestPlanForSubtree(node.rightChild, p);
 
 			// replace attribute by one in the predicate
 			if (leftPlan.fullAccess && rightPlan.fullAccess) {
+				ret.fullAccess = true;
+
 				// If we traverse to root and see that there is no node with cutoff point less than
 				// that of predicate, we can do this
 				if (checkValid(node, p.attribute, p.type, p.value)) {
@@ -282,11 +279,60 @@ public class Optimizer {
 			}
 
 			if (node.attribute == p.attribute) {
+				int c = checkEquals(node.value, p.value, node.type);
+				if (c != 0) {
+					assert (c < 0 && leftPlan.PTop == null) || (c > 0 && rightPlan.PTop == null);
+					if (c < 0 && rightPlan.PTop != null) {
+						Plan p6 = new Plan();
+						p6.cost = rightPlan.PTop.cost;
+						p6.benefit = rightPlan.PTop.benefit;
+						Action a6 = new Action();
+						a6.option = 6;
+						a6.right = rightPlan.PTop.actions;
 
+			        	updatePlan(pTop, p6);
+			        	updatePlan(best, p6);
+					}
+					if (c > 0 && leftPlan.PTop != null) {
+						Plan p6 = new Plan();
+						p6.cost = leftPlan.PTop.cost;
+						p6.benefit = leftPlan.PTop.benefit;
+						Action a6 = new Action();
+						a6.option = 6;
+						a6.left = leftPlan.PTop.actions;
+
+						updatePlan(pTop, p6);
+			        	updatePlan(best, p6);
+					}
+				}
 			}
 
-			return new Plans();
+			if (pTop.cost != -1) ret.PTop = pTop;
+			if (best.cost != -1) ret.Best = best;
+
+			return ret;
 		}
+	}
+
+	public static int checkEquals(Object v1, Object v2, TYPE type) {
+		switch (type) {
+			case INT:
+				return ((Integer)v1).compareTo((Integer)v2);
+			case FLOAT:
+				return ((Float)v1).compareTo((Float)v2);
+			case LONG:
+				return ((Long)v1).compareTo((Long)v2);
+			case BOOLEAN:
+				return ((Boolean)v1).compareTo((Boolean)v2);
+			case STRING:
+				return ((String)v1).compareTo((String)v2);
+			case DATE:
+				return ((Date)v1).compareTo((Date)v2);
+			case VARCHAR:
+				return 0; // TODO: What is this ?
+		}
+
+		return 0;
 	}
 
 //	public Plan getBestPlanForPredicate(List<LevelNode> nodes, Predicate p) {
