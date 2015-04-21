@@ -41,6 +41,11 @@ public interface MDIndex {
 		public int getBucketId() {
 			return bucketId;
 		}
+
+		// Needed for unmarshall
+		public void setBucketId(int id) {
+			this.bucketId = id;
+		}
 	}
 
 

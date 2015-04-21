@@ -1,7 +1,12 @@
 package core.index.robusttree;
 
+import java.text.Format;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Scanner;
 
 import org.apache.hadoop.hive.ql.udf.generic.NumericHistogram;
 
@@ -13,14 +18,10 @@ import core.utils.SchemaUtils.TYPE;
 
 public class RobustTree implements MDIndex {
 	int maxBuckets;
-	int numDimensions;
+	int numAttributes;
 	NumericHistogram[] histograms;
 	TYPE[] dimensionTypes;
 	RNode root;
-
-	// Access costs of each attribute
-	// Used only for the initial run
-	double[] allocations;
 
 	public static class Bound {
 		public double upper;
@@ -59,17 +60,17 @@ public class RobustTree implements MDIndex {
             CartilageIndexKey k = (CartilageIndexKey)key;
 
         	this.dimensionTypes = k.detectTypes(true);
-            this.numDimensions = dimensionTypes.length;
+            this.numAttributes = dimensionTypes.length;
 
-            this.histograms = new NumericHistogram[this.numDimensions];
+            this.histograms = new NumericHistogram[this.numAttributes];
 
-            for (int i=0; i<numDimensions; i++) {
+            for (int i=0; i<numAttributes; i++) {
             	this.histograms[i] = new NumericHistogram();
             	this.histograms[i].allocate(10);
             }
         }
 
-        for (int i=0; i<numDimensions; i++) {
+        for (int i=0; i<numAttributes; i++) {
     		histograms[i].add(key.getDoubleAttribute(i));
         }
 	}
@@ -86,22 +87,24 @@ public class RobustTree implements MDIndex {
 	 */
 	public void initProbe() {
 		int depth = 31 - Integer.numberOfLeadingZeros(this.maxBuckets); // Computes log(this.maxBuckets)
-		double allocation = RobustTree.nthroot(this.numDimensions, this.maxBuckets);
+		double allocation = RobustTree.nthroot(this.numAttributes, this.maxBuckets);
 
-		this.allocations = new double[this.numDimensions];
-		for (int i=0; i<this.numDimensions; i++) {
-			this.allocations[i] = allocation;
+		double[] allocations = new double[this.numAttributes];
+		for (int i=0; i<this.numAttributes; i++) {
+			allocations[i] = allocation;
 		}
 
-		this.createTree(root, depth, 2, 0);
+		int[] counter = new int[this.numAttributes];
+
+		this.createTree(root, depth, 2, counter, allocations);
 	}
 
-	public void createTree(RNode node, int depth, double allocation, long dimBitmap) {
+	public void createTree(RNode node, int depth, double allocation, int[] counter, double[] allocations) {
 		if (depth > 0) {
-			int dim = this.getLeastAllocated(dimBitmap);
+			int dim = getLeastAllocated(allocations, counter);
 			node.attribute = dim;
 			node.type = this.dimensionTypes[dim];
-			this.allocations[dim] -= allocation;
+			allocations[dim] -= allocation;
 
 			Bound range = this.findRangeMidpoint(node.parent, node, dim);
 			double rangeMidpoint = (range.upper + range.lower)/2;
@@ -109,13 +112,15 @@ public class RobustTree implements MDIndex {
 			node.value = this.histograms[dim].quantile(rangeMidpoint); // Need to traverse up for range
 			node.quantile = (float) rangeMidpoint;
 
-			dimBitmap = dimBitmap | 1 << dim;
+			counter[dim] += 1;
 
 			node.leftChild = new RNode();
-			this.createTree(node.leftChild, depth - 1, allocation / 2, dimBitmap);
+			this.createTree(node.leftChild, depth - 1, allocation / 2, counter, allocations);
 
 			node.rightChild = new RNode();
-			this.createTree(node.rightChild, depth - 1, allocation / 2, dimBitmap);
+			this.createTree(node.rightChild, depth - 1, allocation / 2, counter, allocations);
+
+			counter[dim] -= 1;
 		} else {
 			Bucket b = new Bucket();
 			node.bucket = b;
@@ -129,17 +134,20 @@ public class RobustTree implements MDIndex {
 	 * allocation unfulfilled
 	 * @return
 	 */
-	public int getLeastAllocated(long dimBitmap) {
+	public static int getLeastAllocated(double[] allocations, int[] counter) {
+		int numAttributes = allocations.length;
+		assert allocations.length == counter.length;
+
 		leastAllocated.clear();
 		leastAllocated.add(0);
 
-		double alloc = this.allocations[0];
-		for (int i=1; i<this.numDimensions; i++) {
-			if (this.allocations[i] > alloc) {
-				alloc = this.allocations[i];
+		double alloc = allocations[0];
+		for (int i=1; i < numAttributes; i++) {
+			if (allocations[i] > alloc) {
+				alloc = allocations[i];
 				leastAllocated.clear();
 				leastAllocated.add(i);
-			} else if (this.allocations[i] == alloc) {
+			} else if (allocations[i] == alloc) {
 				leastAllocated.add(i);
 			}
 		}
@@ -147,12 +155,16 @@ public class RobustTree implements MDIndex {
 		if (leastAllocated.size() == 1) {
 			return leastAllocated.get(0);
 		} else {
-			for (int i=0; i < leastAllocated.size(); i++) {
-				if ((dimBitmap & (1 << leastAllocated.get(i))) == 0) {
-					return leastAllocated.get(i);
+			int count = counter[leastAllocated.get(0)];
+			int index = 0;
+			for (int i=1; i < leastAllocated.size(); i++) {
+				int iCount = counter[leastAllocated.get(i)];
+				if (iCount < count) {
+					count = iCount;
+					index = i;
 				}
 			}
-			return leastAllocated.get(0);
+			return index;
 		}
 	}
 
@@ -220,13 +232,113 @@ public class RobustTree implements MDIndex {
 		return null;
 	}
 
+	/**
+	 * Serializes the index to string
+	 * Very brittle - Consider rewriting
+	 */
 	public byte[] marshall() {
-		// TODO Auto-generated method stub
-		return null;
+		// JVM optimizes shit so no need to use string builder / buffer
+		// Format:
+		// maxBuckets, numAttributes
+		// types
+		// nodes in pre-order
+
+		String robustTree = "";
+		robustTree += String.format("%d %d\n", this.maxBuckets, this.numAttributes);
+
+		String types = "";
+		for (int i=0; i<this.numAttributes; i++) {
+			types += this.dimensionTypes[i].toString() + " ";
+		}
+		types += "\n";
+		robustTree += types;
+
+		LinkedList<RNode> stack = new LinkedList<RNode>();
+		stack.add(root);
+		while (stack.size() != 0) {
+			RNode n = stack.removeLast();
+			String nStr;
+			if (n.bucket == null) {
+				nStr = String.format("b %d %d \n", n.bucket.getBucketId(), n.bucket.getNumTuples());
+			} else {
+				if (n.type == TYPE.DATE) {
+					Format formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+					nStr = String.format("n %d %d %s\n", n.attribute, n.type.toString(), formatter.format(n.value));
+				} else {
+					nStr = String.format("n %d %d %s\n", n.attribute, n.type.toString(), n.value.toString());
+				}
+
+				stack.add(n.rightChild);
+				stack.add(n.leftChild);
+			}
+			robustTree += nStr;
+		}
+
+		return robustTree.getBytes();
 	}
 
 	public void unmarshall(byte[] bytes) {
-		// TODO Auto-generated method stub
+		String tree = bytes.toString();
+		Scanner sc = new Scanner(tree);
+		this.maxBuckets = sc.nextInt();
+		this.numAttributes = sc.nextInt();
+
+		this.dimensionTypes = new TYPE[this.numAttributes];
+		for(int i=0; i<this.numAttributes; i++) {
+			this.dimensionTypes[i] = TYPE.valueOf(sc.next());
+		}
+
+		this.root = this.parseNode(sc);
+	}
+
+	public RNode parseNode(Scanner sc) {
+		String type = sc.next();
+		RNode r = new RNode();
+		if (type == "n") {
+			r.attribute = sc.nextInt();
+			r.type = TYPE.valueOf(sc.next());
+
+			switch (r.type) {
+			case INT:
+				r.value = sc.nextInt();
+				break;
+			case FLOAT:
+				r.value = sc.nextFloat();
+				break;
+			case LONG:
+				r.value = sc.nextLong();
+				break;
+			case DATE:
+				Format formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+				try {
+					r.value = formatter.parseObject(sc.next());
+				} catch (ParseException e) {
+					e.printStackTrace();
+				}
+				break;
+			case BOOLEAN:
+				r.value = sc.nextBoolean();
+				break;
+			case STRING:
+				r.value = sc.next();
+				break;
+			case VARCHAR:
+				r.value = sc.next();
+				break;
+			}
+
+			r.leftChild = this.parseNode(sc);
+			r.rightChild = this.parseNode(sc);
+		} else if (type == "b") {
+			Bucket b = new Bucket();
+			b.setBucketId(sc.nextInt());
+			b.setNumTuples(sc.nextInt());
+			r.bucket = b;
+		} else {
+			System.out.println("Bad things have happened in unmarshall");
+		}
+
+		return r;
 	}
 
 	public static double nthroot(int n, double A) {
