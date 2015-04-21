@@ -4,6 +4,8 @@ import java.util.Set;
 
 import com.google.common.collect.Sets;
 
+import core.access.Partition;
+
 public class DirtyPartitionBuffer {
 
 	private Set<Partition> dirtyPartitions;

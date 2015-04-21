@@ -4,7 +4,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
-import core.adapt.Predicate;
+import core.access.Predicate;
 import core.index.MDIndex.Bucket;
 import core.index.key.MDIndexKey;
 import core.utils.RangeUtils.Range;

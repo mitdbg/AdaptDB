@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.apache.hadoop.hive.ql.udf.generic.NumericHistogram;
 
-import core.adapt.Predicate;
+import core.access.Predicate;
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
 import core.index.key.MDIndexKey;

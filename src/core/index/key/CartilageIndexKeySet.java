@@ -110,6 +110,48 @@ public class CartilageIndexKeySet {
 		CartilageIndexKeySet k2 = new CartilageIndexKeySet(values.subList(values.size()/2, values.size()), types);
 		return new Pair<CartilageIndexKeySet,CartilageIndexKeySet>(k1,k2);
 	}
+
+    /**
+     * Split this key set by the median on the specified attribute.
+     * All keys with the specified attribute equal to the median go in the second set.
+     * @return
+     */
+    public Pair<CartilageIndexKeySet,CartilageIndexKeySet> splitByMedian(int attributeIdx) {
+        Object medianVal = values.get(values.size()/2)[attributeIdx];
+        int firstIndex = getFirstIndexOfAttributeVal(attributeIdx, types[attributeIdx], medianVal, values, 0);
+        CartilageIndexKeySet k1 = new CartilageIndexKeySet(values.subList(0, firstIndex), types);
+        CartilageIndexKeySet k2 = new CartilageIndexKeySet(values.subList(firstIndex, values.size()), types);
+        return new Pair<CartilageIndexKeySet,CartilageIndexKeySet>(k1,k2);
+    }
+
+    private static int getFirstIndexOfAttributeVal(int attributeIdx, TYPE type, Object val, List<Object[]> sublist, int start) {
+        if (sublist.size() == 0) {
+            return -1;
+        }
+        Object middle = sublist.get(sublist.size()/2)[attributeIdx];
+        int comparison;
+        switch(type) {
+            case INT:       comparison = ((Integer)middle).compareTo((Integer)val); break;
+            case LONG:		comparison = ((Long)middle).compareTo((Long)val); break;
+            case FLOAT:		comparison = ((Float)middle).compareTo((Float)val); break;
+            case DATE:		comparison = ((SimpleDate)middle).compareTo((SimpleDate)val); break;
+            case STRING:	comparison = ((String)middle).compareTo((String)val); break;
+            case VARCHAR:	throw new RuntimeException("sorting over varchar is not supported"); // skip partitioning on varchar attribute
+            default:		throw new RuntimeException("Unknown dimension type: "+type);
+        }
+        if (comparison == 0) {
+            int firstIndex = getFirstIndexOfAttributeVal(attributeIdx, type, val, sublist.subList(0,sublist.size()/2), start);
+            if (firstIndex == -1) {
+                return start + sublist.size()/2;
+            } else {
+                return firstIndex;
+            }
+        } else if (comparison > 0) {
+            return getFirstIndexOfAttributeVal(attributeIdx, type, val, sublist.subList(0,sublist.size()/2), start);
+        } else {
+            return getFirstIndexOfAttributeVal(attributeIdx, type, val, sublist.subList(sublist.size()/2+1, sublist.size()), start+sublist.size()/2+1);
+        }
+    }
 	
 	
 	/**
@@ -119,7 +161,8 @@ public class CartilageIndexKeySet {
 	 */
 	public Pair<CartilageIndexKeySet,CartilageIndexKeySet> sortAndSplit(final int attributeIdx){
 		sort(attributeIdx);
-		return splitInTwo();
+		return splitByMedian(attributeIdx);
+        //return splitInTwo();
 	}
 	
 	public List<Object[]> getValues(){

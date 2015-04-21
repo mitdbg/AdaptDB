@@ -1,5 +1,7 @@
 package core.adapt;
 
+import core.access.Predicate;
+
 
 public class Query {
 	public static class FilterQuery extends Query{

@@ -1,7 +1,7 @@
 package core.index;
 import java.util.List;
 
-import core.adapt.Predicate;
+import core.access.Predicate;
 import core.index.key.MDIndexKey;
 
 

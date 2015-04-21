@@ -33,13 +33,13 @@ public class TreeUtils {
 		return true;
 	}
 	
-    public static void plot(Map<Integer, Integer> buckets, String chartFileName) throws IOException{
+    public static void plot(Map<String, Integer> buckets, String chartFileName) throws IOException{
         final String cnt = "COUNT";
 
 
         final DefaultCategoryDataset dataset = new DefaultCategoryDataset( );
 
-        for(Entry<Integer, Integer> kv : buckets.entrySet()){
+        for(Entry<String, Integer> kv : buckets.entrySet()){
         	dataset.addValue( kv.getValue() , cnt , kv.getKey());
         }
 

@@ -7,7 +7,9 @@ import junit.framework.TestCase;
 
 import com.google.common.collect.Lists;
 
-import core.adapt.partition.iterator.ScanIterator;
+import core.access.Partition;
+import core.access.Predicate;
+import core.access.iterator.PostFilterIterator;
 import core.index.Settings;
 import core.utils.RangeUtils;
 import core.utils.RangeUtils.Range;
@@ -17,14 +19,14 @@ public class TestScanIterator extends TestCase{
 	protected String partitionDir;
 	protected List<String> partitionPaths;
 
-	protected int attributeIdx;
-	protected Range r;
+	protected Predicate[] predicate;
 
 	@Override
 	public void setUp(){
 		partitionDir = Settings.localPartitionDir;
-		attributeIdx = 0;
-		r = RangeUtils.closed(3000000, 6000000);
+		int attributeIdx = 0;
+		Range r = RangeUtils.closed(3000000, 6000000);
+		predicate = new Predicate[]{new Predicate(attributeIdx, r)};
 
 		partitionPaths = Lists.newArrayList();
 
@@ -44,8 +46,8 @@ public class TestScanIterator extends TestCase{
 	public void testScan(){
 		Partition partition = getPartitionInstance(partitionDir+"/0");
 		partition.load();
-		ScanIterator itr =  new ScanIterator();
-		itr.setPartition(partition, attributeIdx, r);
+		PostFilterIterator itr =  new PostFilterIterator();
+		itr.setPartition(partition, predicate);
 
 		int recCount = 0;
 		while(itr.hasNext()){
@@ -57,14 +59,14 @@ public class TestScanIterator extends TestCase{
 
 	public void testScanAll(){
 		Partition partition = getPartitionInstance("");
-		ScanIterator itr =  new ScanIterator();
+		PostFilterIterator itr =  new PostFilterIterator();
 
 		int recCount = 0;
 		long startTime = System.nanoTime();
 		for(String partitionPath: partitionPaths){
 			partition.setPath(partitionPath);
 			partition.load();
-			itr.setPartition(partition, attributeIdx, r);
+			itr.setPartition(partition, predicate);
 
 			while(itr.hasNext()){
 				itr.next();

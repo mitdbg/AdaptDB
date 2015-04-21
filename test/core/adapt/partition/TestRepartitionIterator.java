@@ -7,14 +7,14 @@ import junit.framework.TestCase;
 
 import com.google.common.collect.Lists;
 
-import core.adapt.partition.Partition;
-import core.adapt.partition.iterator.PartitionIterator;
-import core.adapt.partition.iterator.RepartitionIterator;
-import core.adapt.partition.iterator.ScanIterator;
+import core.access.Partition;
+import core.access.Predicate;
+import core.access.iterator.PartitionIterator;
+import core.access.iterator.PostFilterIterator;
+import core.access.iterator.RepartitionIterator;
 import core.adapt.partition.merger.PartitionMerger;
 import core.adapt.partition.merger.PartitionMerger.KWayMerge;
 import core.index.Settings;
-import core.index.key.CartilageIndexKey;
 import core.utils.RangeUtils;
 import core.utils.RangeUtils.Range;
 
@@ -23,8 +23,7 @@ public class TestRepartitionIterator extends TestCase{
 	protected String partitionDir;
 	protected List<String> partitionPaths;
 
-	protected int attributeIdx;
-	protected Range r;
+	protected Predicate[] predicates;
 
 	protected PartitionMerger merger;
 
@@ -32,8 +31,9 @@ public class TestRepartitionIterator extends TestCase{
 	@Override
 	public void setUp(){
 		partitionDir = Settings.localPartitionDir;
-		attributeIdx = 0;
-		r = RangeUtils.closed(3000000, 6000000);
+		int attributeIdx = 0;
+		Range r = RangeUtils.closed(3000000, 6000000);
+		predicates = new Predicate[]{new Predicate(attributeIdx, r)};
 
 		merger = new KWayMerge(0,2);
 		partitionPaths = Lists.newArrayList();
@@ -56,7 +56,7 @@ public class TestRepartitionIterator extends TestCase{
 		Partition partition = getPartitionInstance(partitionDir+"/0");
 		partition.load();
 		RepartitionIterator itr =  new RepartitionIterator(merger);
-		itr.setPartition(partition, attributeIdx, r);
+		itr.setPartition(partition, predicates);
 
 		int recCount = 0;
 		while(itr.hasNext()){
@@ -77,7 +77,7 @@ public class TestRepartitionIterator extends TestCase{
 		for(String partitionPath: partitionPaths){
 			partition.setPath(partitionPath);
 			partition.load();
-			itr.setPartition(partition, attributeIdx, r);
+			itr.setPartition(partition, predicates);
 
 			while(itr.hasNext()){
 				itr.next();
@@ -93,7 +93,7 @@ public class TestRepartitionIterator extends TestCase{
 	public void testRepartitionFraction(){
 		Partition partition = getPartitionInstance("");
 		RepartitionIterator itr1 =  new RepartitionIterator(merger);
-		ScanIterator itr2 =  new ScanIterator();
+		PostFilterIterator itr2 =  new PostFilterIterator();
 
 
 		double fraction = 0.4;
@@ -104,13 +104,13 @@ public class TestRepartitionIterator extends TestCase{
 		for(int i=0; i<partitionPaths.size(); i++){
 			partition.setPath(partitionPaths.get(i));
 			partition.load();
-			PartitionIterator<CartilageIndexKey> itr;
+			PartitionIterator itr;
 			if(i<repartitionCount)
 				itr = itr1;
 			else
 				itr = itr2;
 
-			itr.setPartition(partition, attributeIdx, r);
+			itr.setPartition(partition, predicates);
 
 			while(itr.hasNext()){
 				itr.next();

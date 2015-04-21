@@ -1,6 +1,10 @@
 package core.adapt.partition.merger;
 
-import core.adapt.partition.Partition;
+import java.util.List;
+
+import com.google.common.collect.Lists;
+
+import core.access.Partition;
 
 public abstract class PartitionMerger {
 
@@ -11,14 +15,24 @@ public abstract class PartitionMerger {
 		this.mergeAttrIdx = mergeAttrIdx;
 	}
 	
-	public Partition getMergedPartition(Partition p){
+	public Partition[] getMergedPartitions(Partition...partitions){
+		List<Partition> mergedPartitions = Lists.newArrayList();
+		for(Partition p: partitions)
+			mergedPartitions.add(getMergedPartition(p));
+		return (Partition[])mergedPartitions.toArray();
+				
+		//TODO: re-balance the partitions in case of very low/high selectivity
+		// TODO: repartitioning is futile if the selected portion is very low selectivity (almost all)
+	}
+	
+	protected Partition getMergedPartition(Partition p){
 		currentPartition = p; 
 		p.lineage[mergeAttrIdx] = mapMerge(p.lineage[mergeAttrIdx]);
 		return p;
 	}
 	
 	// return new id
-	public abstract int mapMerge(int oldId);
+	protected abstract int mapMerge(int oldId);
 	
 
 	/**
@@ -30,7 +44,7 @@ public abstract class PartitionMerger {
 			super(mergeAttrIdx);
 			this.k = k;
 		}
-		public int mapMerge(int oldId) {
+		protected int mapMerge(int oldId) {
 			return oldId / k;
 		}
 	}
@@ -44,9 +58,11 @@ public abstract class PartitionMerger {
 			super(mergeAttrIdx);
 			this.maxSize = maxSize;
 		}
-		public int mapMerge(int oldId) {
-			int k = maxSize / currentPartition.getBytes().length;
+		protected int mapMerge(int oldId) {
+			int k = maxSize / currentPartition.getSize();
 			return oldId / k;
 		}
 	}
+	
+	//TODO: need a merger which sorts each merged partition (in order to create balanced partitions)
 }

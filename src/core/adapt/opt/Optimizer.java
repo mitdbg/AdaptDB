@@ -7,7 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Date;
 
-import core.adapt.Predicate;
+import core.access.Predicate;
 import core.adapt.Query;
 import core.adapt.Query.FilterQuery;
 import core.index.key.CartilageIndexKey;

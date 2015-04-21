@@ -8,12 +8,13 @@ import org.apache.hadoop.fs.Path;
 
 import com.google.common.collect.Lists;
 
-import core.adapt.partition.HDFSPartition;
-import core.adapt.partition.Partition;
-import core.adapt.partition.TestScanIterator;
+import core.access.HDFSPartition;
+import core.access.Partition;
+import core.access.Predicate;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.RangeUtils;
+import core.utils.RangeUtils.Range;
 
 public class TestHDFSScanIterator extends TestScanIterator{
 
@@ -23,8 +24,9 @@ public class TestHDFSScanIterator extends TestScanIterator{
 	public void setUp(){
 		propertiesFile = "/Users/alekh/Work/Cartilage/MDIndex/conf/cartilage.properties";
 		partitionDir = "/mydir";
-		attributeIdx = 0;
-		r = RangeUtils.closed(3000000, 6000000);
+		int attributeIdx = 0;
+		Range r = RangeUtils.closed(3000000, 6000000);
+		predicate = new Predicate[]{new Predicate(attributeIdx, r)};
 
 		partitionPaths = Lists.newArrayList();
 
