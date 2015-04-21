@@ -8,19 +8,19 @@ import org.apache.hadoop.fs.PathFilter;
 
 import core.access.AccessMethod;
 import core.access.Partition;
-import core.access.Predicate;
+import core.adapt.Predicate;
 
-public class SparkPathFilter implements PathFilter, Configurable  { 
+public class SparkPathFilter implements PathFilter, Configurable  {
 
 	protected Configuration conf;
 	protected AccessMethod am;
-	
+
 	protected Predicate[] predicates;
 	protected Partition partition;
-	
+
 	public void setConf(Configuration conf) {
 		this.conf = conf;
-		SparkQueryConf queryConf = new SparkQueryConf(conf);		
+		SparkQueryConf queryConf = new SparkQueryConf(conf);
 		am = new AccessMethod();
 		am.init(queryConf.getDataset());
 		predicates = queryConf.getPredicates();
@@ -34,7 +34,7 @@ public class SparkPathFilter implements PathFilter, Configurable  {
 				return false;
 		return true;
 	}
-	
+
 	public Configuration getConf() {
 		return conf;
 	}

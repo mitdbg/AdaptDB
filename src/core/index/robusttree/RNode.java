@@ -1,15 +1,14 @@
 package core.index.robusttree;
 
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
-import core.access.Predicate;
+import core.adapt.Predicate;
 import core.index.MDIndex.Bucket;
 import core.index.key.MDIndexKey;
-import core.utils.RangeUtils.Range;
 import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
 import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils;
 
 /**
  * Internal node in robust tree datastructure
@@ -108,51 +107,25 @@ public class RNode {
         	boolean goRight = true;
         	for (int i = 0; i < ps.length; i++) {
         		Predicate p = ps[i];
-        		if (p.getAttribute() == attribute) {
-        			Range r = p.getRange();
-        			Object high = r.getHigh();
-        			Object low  = r.getLow();
-
-        			// TODO: One of these should be >=/<=; Check which
-        			switch (type) {
-	                    case INT:
-	                    	if ((Integer)value > (Integer)high){
-	                    		goRight = false;
-	                    	} else if ((Integer) value < (Integer)low){
-	                    		goLeft = false;
-	                    	}
-
-	                    case LONG:
-	                    	if ((Long)value > (Long)high){
-	                    		goRight = false;
-	                    	} else if ((Long) value < (Long)low){
-	                    		goLeft = false;
-	                    	}
-
-	                    case FLOAT:
-	                    	if ((Float)value > (Float)high){
-	                    		goRight = false;
-	                    	} else if ((Float) value < (Float)low){
-	                    		goLeft = false;
-	                    	}
-
-	                    case DATE:
-	                    	if (((Date)value).compareTo((Date)high) > 0) {
-	                    		goRight = false;
-	                    	} else if (((Date)value).compareTo((Date)low) < 0) {
-	                    		goLeft = false;
-	                    	}
-
-	                    case STRING:
-	                    	if (value.hashCode() > high.hashCode()) {
-	                    		goRight = false;
-	                    	} else if (value.hashCode() < low.hashCode()){
-	                    		goLeft = false;
-	                    	}
-
-	                    default:
-	                        throw new RuntimeException("Unknown dimension type: "+type);
-        			}
+        		if (p.attribute == attribute) {
+        			switch (p.predtype) {
+	                	case GEQ:
+	                		if (TypeUtils.compareTo(p.value, value, type) > 0) goLeft = false;
+	                		break;
+	                	case LEQ:
+	                		if (TypeUtils.compareTo(p.value, value, type) <= 0) goRight = false;
+	                		break;
+	                	case GT:
+	                		if (TypeUtils.compareTo(p.value, value, type) >= 0) goLeft = false;
+	                		break;
+	                	case LT:
+	                		if (TypeUtils.compareTo(p.value, value, type) < 0) goRight = false;
+	                		break;
+	                	case EQ:
+	                		if (TypeUtils.compareTo(p.value, value, type) <= 0) goRight = false;
+	                		else goLeft = false;
+	                		break;
+                	}
         		}
         	}
 

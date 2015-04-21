@@ -1,15 +1,15 @@
 package core.access.iterator;
 
-import core.access.Predicate;
+import core.adapt.Predicate;
 import core.utils.RangeUtils.Range;
 
 
-
 public class PostFilterIterator extends PartitionIterator{
-	
+
+	@Override
 	protected boolean isRelevant(IteratorRecord record){
 		boolean qualify = true;
-		for(Predicate p: predicates){
+		for (Predicate p: predicates) {
 			Range range = p.getRange();
 			int attrIdx = p.getAttribute();
 			switch(record.types[attrIdx]){
@@ -25,5 +25,5 @@ public class PostFilterIterator extends PartitionIterator{
 		}
 		return qualify;
 	}
-		
+
 }

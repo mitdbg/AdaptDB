@@ -5,15 +5,18 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
-import core.access.Predicate;
+import core.adapt.Predicate;
 import core.adapt.Query;
 import core.adapt.Query.FilterQuery;
 import core.index.key.CartilageIndexKey;
 import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTree;
 import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils;
 
 public class Optimizer {
 	RobustTree rt;
@@ -22,6 +25,38 @@ public class Optimizer {
 	String dataset;
 
 	static final int BLOCK_SIZE = 64 * 1024;
+	static final float DISK_MULTIPLIER = 4;
+	static final float NETWORK_MULTIPLIER = 7;
+
+	List<Query> queryWindow = new ArrayList<Query>();
+
+	public static class Plan {
+		public Action actions; // Tree of actions
+		public float cost;
+		public float benefit;
+
+		public Plan() {
+			cost = -1;
+		}
+	}
+
+	public static class Action {
+		public int option; // Says which if I used to create this plan
+		public Action left;
+		public Action right;
+	}
+
+	public static class Plans {
+		boolean fullAccess;
+		Plan PTop;
+		Plan Best;
+
+		public Plans() {
+			this.fullAccess = false;
+			this.PTop = null;
+			this.Best = null;
+		}
+	}
 
 	public Optimizer(String dataset) {
 		this.dataset = dataset;
@@ -69,39 +104,11 @@ public class Optimizer {
 		if (q instanceof FilterQuery) {
 			FilterQuery fq = (FilterQuery) q;
 			Predicate[] ps = fq.getPredicates();
-//			List<RNode> buckets = rt.getMatchingBuckets(ps);
-
-//			getBestPlan(ps);
+			Plan best = getBestPlan(ps);
+			this.getPartitionSplits(best, numWorkers);
+			this.queryWindow.add(q);
 		} else {
 			System.err.println("Unimplemented query - Unable to build plan");
-		}
-	}
-
-	public static class Plan {
-		public Action actions; // Tree of actions
-		public float cost;
-		public float benefit;
-
-		public Plan() {
-			cost = -1;
-		}
-	}
-
-	public static class Action {
-		public int option; // Says which if I used to create this plan
-		public Action left;
-		public Action right;
-	}
-
-	public static class Plans {
-		boolean fullAccess;
-		Plan PTop;
-		Plan Best;
-
-		public Plans() {
-			this.fullAccess = false;
-			this.PTop = null;
-			this.Best = null;
 		}
 	}
 
@@ -113,16 +120,39 @@ public class Optimizer {
 			if (plan == null) {
 				plan = option;
 			} else {
-				// TODO: Store the best
-				plan = option;
+				this.updatePlan(plan, option);
 			}
 		}
 
 		return plan;
 	}
 
+	public void getPartitionSplits (Plan best, int numWorkers) {
+
+	}
+
+	/**
+	 * Checks if it is valid to partition on attrId with value val at node
+	 * @param node
+	 * @param attrId
+	 * @param t
+	 * @param val
+	 * @return
+	 */
 	public boolean checkValid(RNode node, int attrId, TYPE t, Object val) {
-		// TODO:
+		while (node.parent != null) {
+			if (node.parent.attribute == attrId) {
+				int ret = TypeUtils.compareTo(node.parent.value, val, t);
+				if (node.parent.leftChild == node && ret <= 0) {
+					return false;
+				} else if (ret >= 0) {
+					return false;
+				}
+			}
+
+			node = node.parent;
+		}
+
 		return true;
 	}
 
@@ -140,6 +170,62 @@ public class Optimizer {
 	 * @return
 	 */
 	public int getNumTuplesAccessed(RNode changed) {
+		// First traverse to parent to see if query accesses node
+		//
+		int numTuples = 0;
+
+		for (Query q: queryWindow) {
+			Predicate[] ps = ((FilterQuery)q).getPredicates();
+
+			RNode node = changed;
+			boolean accessed = true;
+			while (node.parent != null) {
+				for (Predicate p: ps) {
+					if (p.attribute == node.parent.attribute) {
+						if (node.parent.leftChild == node) {
+		        			switch (p.predtype) {
+		                	case EQ:
+		        			case GEQ:
+		                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) > 0) accessed = false;
+		                		break;
+		                	case GT:
+		                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) >= 0) accessed = false;
+		                		break;
+							default:
+								break;
+		        			}
+						} else {
+		        			switch (p.predtype) {
+		                	case EQ:
+		        			case LEQ:
+		                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) <= 0) accessed = false;
+		                		break;
+		                	case LT:
+		                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) < 0) accessed = false;
+		                		break;
+							default:
+								break;
+		        			}
+						}
+					}
+
+					if (!accessed) break;
+				}
+
+				if (!accessed) break;
+			}
+
+			if (accessed) {
+				List<RNode> nodesAccessed = changed.search(ps);
+				int tCount = 0;
+				for (RNode n: nodesAccessed) {
+					tCount += n.bucket.getNumTuples();
+				}
+
+				// TODO: Possible exponential distribution
+				numTuples += tCount;
+			}
+		}
 
 		return 0;
 	}
@@ -170,9 +256,9 @@ public class Optimizer {
 		boolean copy = false;
 		if (dest.cost == -1) {
 			copy = true;
+		} else if (dest.benefit / dest.cost < source.benefit / source.cost) {
+			copy = true;
 		}
-
-		// TODO: Write the comparison condition
 
 		if (copy) {
 			dest.benefit = source.benefit;
@@ -334,47 +420,6 @@ public class Optimizer {
 
 		return 0;
 	}
-
-//	public Plan getBestPlanForPredicate(List<LevelNode> nodes, Predicate p) {
-//		while (true) {
-//			for (int i=0; i<nodes.size(); i++) {
-//				if (i < nodes.size() - 1) {
-//					if (nodes.get(i).current == nodes.get(i+1).current) {
-//						RNode old = nodes.get(i).current;
-//						if (checkValid(old, p.attribute, p.type, p.value)) {
-//							RNode r = old.clone();
-//							r.attribute = p.attribute;
-//							r.type = p.type;
-//							r.value = p.value;
-//							replaceInTree(old, r);
-//
-//					        populateBucketEstimates(r);
-//					        int numAccessedOld = 0;
-//					        int numAcccessedNew = getNumTuplesAccessed(r);
-//					        int benefit = numAccessedOld - numAcccessedNew;
-//
-//					        if (benefit > 0) {
-//					        	// compute cost
-//					        }
-//
-//					        // Restore
-//					        replaceInTree(r, old);
-//						}
-//					} else {
-//						RNode old = nodes.get(i).current;
-//
-//						// Reached a choke point
-//						if (old.attribute == p.attribute) {
-//
-//						} else {
-//							// No go - this is the end of our journey
-//							// This can happen when we have multiple predicates
-//						}
-//					}
-//				}
-//			}
-//		}
-//	}
 
 	public static int getDepthOfIndex(int numBlocks) {
 		int k = 31 - Integer.numberOfLeadingZeros(numBlocks);

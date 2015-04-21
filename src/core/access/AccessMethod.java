@@ -1,7 +1,7 @@
 package core.access;
 
+import core.adapt.Predicate;
 import core.adapt.opt.Optimizer;
-
 /**
  * This access method class considers filter access method over the distributed dataset.
  * The filter could be extracted as:
@@ -37,7 +37,7 @@ public class AccessMethod {
 
 	/**
 	 * This method returns whether or not a given partition qualifies for the predicate.
-	 * 
+	 *
 	 * @param partition
 	 * @param predicate
 	 * @return
@@ -45,7 +45,7 @@ public class AccessMethod {
 	public boolean isRelevant(Partition partition, Predicate predicate){
 		return true;
 	}
-	
+
 	/**
 	 * This method is used to:
 	 * 1. lookup the partition index for relevant partitions
@@ -60,7 +60,7 @@ public class AccessMethod {
 	 * @return
 	 */
 	public Partition[][] getPartitionSplits(Partition[] partitions, Predicate[] predicates, int n){
-		// TODO: one way could be to look at the partition lineage ids and group partitions with similar lineage into the same split! 
+		// TODO: one way could be to look at the partition lineage ids and group partitions with similar lineage into the same split!
 		return null;
 	}
 

@@ -14,32 +14,33 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import core.access.HDFSPartition;
 import core.access.Partition;
-import core.access.Predicate;
 import core.access.iterator.PartitionIterator;
 import core.access.iterator.PartitionIterator.IteratorRecord;
+import core.adapt.Predicate;
 
 public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord> {
 
 	protected Configuration conf;
-	
+
 	protected CombineFileSplit combinedSplit;
 	private int currentFile;
-	
+
 	protected Predicate[] predicates;
 	protected PartitionIterator iterator;
-	
+
 	private LongWritable key;
 	private long recordId;
-	
+
+	@Override
 	public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
 		conf = context.getConfiguration();
 		SparkQueryConf queryConf = new SparkQueryConf(conf);
 		predicates = queryConf.getPredicates();
 		iterator = new PartitionIterator();		//TODO: the iterator must be chosen based on how we want to read ..
-		
+
 		key = new LongWritable();
 		recordId = 0;
-		
+
 		if(split instanceof CombineFileSplit){
 			combinedSplit = (CombineFileSplit)split;
 			currentFile = 0;
@@ -48,7 +49,7 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		else
 			initializeIterator(((FileSplit) split).getPath());
 	}
-	
+
 	protected boolean initializeNext() throws IOException{
 		if(currentFile >= combinedSplit.getStartOffsets().length)
 			return false;
@@ -58,7 +59,7 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 			return true;
 		}
 	}
-	
+
 	private void initializeIterator(Path filePath) throws IOException{
 		final FileSystem fs = filePath.getFileSystem(conf);
 		Partition partition = new HDFSPartition(fs, filePath.toString());
@@ -66,28 +67,33 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		iterator.setPartition(partition, predicates);
 	}
 
+	@Override
 	public boolean nextKeyValue() throws IOException, InterruptedException {
 		if(iterator.hasNext() || (combinedSplit!=null && initializeNext())){
 			recordId++;
 			return true;
 		}
 		else
-			return false; 
+			return false;
 	}
-	
+
+	@Override
 	public LongWritable getCurrentKey() throws IOException, InterruptedException {
 		key.set(recordId);
 		return key;
 	}
 
+	@Override
 	public IteratorRecord getCurrentValue() throws IOException, InterruptedException {
 		return iterator.next();
 	}
 
+	@Override
 	public float getProgress() throws IOException, InterruptedException {
 		return combinedSplit==null ? 0 : (float)currentFile / combinedSplit.getStartOffsets().length;
 	}
-	
+
+	@Override
 	public void close() throws IOException {
 	}
 }
