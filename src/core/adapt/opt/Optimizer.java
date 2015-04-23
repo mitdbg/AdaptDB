@@ -7,19 +7,28 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 
 import core.adapt.Predicate;
 import core.adapt.Query;
 import core.adapt.Query.FilterQuery;
 import core.index.key.CartilageIndexKey;
+import core.index.key.CartilageIndexKeySet;
 import core.index.robusttree.RNode;
-import core.index.robusttree.RobustTree;
+import core.index.robusttree.RobustTreeHs;
+import core.utils.Pair;
 import core.utils.SchemaUtils.TYPE;
 import core.utils.TypeUtils;
 
+/**
+ *
+ * @author anil
+ *
+ */
+
 public class Optimizer {
-	RobustTree rt;
+	RobustTreeHs rt;
 	int rtDepth;
 
 	String dataset;
@@ -48,7 +57,7 @@ public class Optimizer {
 
 	public static class Plans {
 		boolean fullAccess;
-		Plan PTop;
+		Plan PTop; // TODO: Think if this is needed at all
 		Plan Best;
 
 		public Plans() {
@@ -73,7 +82,7 @@ public class Optimizer {
 			rtDepth = getDepthOfIndex(numBlocks);
 			numBlocks = (int) Math.pow(2, rtDepth);
 
-			this.rt = new RobustTree(numBlocks);
+			this.rt = new RobustTreeHs(numBlocks, 0.01);
 
 			CartilageIndexKey key;
 			key = new CartilageIndexKey('|', new int[]{0,1,2,3,4,5});
@@ -161,7 +170,46 @@ public class Optimizer {
 	 * @param changed
 	 */
 	public void populateBucketEstimates(RNode changed) {
+		CartilageIndexKeySet collector = null;
+		float numTuples = 0;
+		int numSamples = 0;
 
+		LinkedList<RNode> stack = new LinkedList<RNode>();
+		stack.add(changed);
+
+		while (stack.size() > 0) {
+			RNode n = stack.removeLast();
+			if (n.bucket != null) {
+				CartilageIndexKeySet bucketSample = n.bucket.getSample();
+				if (collector == null) {
+					collector = new CartilageIndexKeySet();
+					collector.setTypes(bucketSample.getTypes());
+				}
+
+				numSamples += bucketSample.getValues().size();
+				numTuples += n.bucket.getNumTuples();
+				collector.addValues(bucketSample.getValues());
+			} else {
+				stack.add(n.rightChild);
+				stack.add(n.leftChild);
+			}
+		}
+
+		populateBucketEstimates(changed, collector, numTuples/numSamples);
+	}
+
+
+	public void populateBucketEstimates(RNode n, CartilageIndexKeySet sample, float scaleFactor) {
+		if (n.bucket != null) {
+			n.bucket.estimatedTuples = sample.size() * scaleFactor;
+		} else {
+			// By sorting we avoid memory allocation
+			// Will most probably be faster
+			sample.sort(n.attribute);
+			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample.splitAt(n.attribute, n.value);
+			populateBucketEstimates(n.leftChild, halves.first, scaleFactor);
+			populateBucketEstimates(n.rightChild, halves.second, scaleFactor);
+		}
 	}
 
 	/**
@@ -171,7 +219,7 @@ public class Optimizer {
 	 */
 	public int getNumTuplesAccessed(RNode changed) {
 		// First traverse to parent to see if query accesses node
-		//
+		// If yes, find the number of tuples accessed.
 		int numTuples = 0;
 
 		for (Query q: queryWindow) {
@@ -227,7 +275,7 @@ public class Optimizer {
 			}
 		}
 
-		return 0;
+		return numTuples;
 	}
 
 	/**

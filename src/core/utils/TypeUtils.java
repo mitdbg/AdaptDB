@@ -2,8 +2,10 @@ package core.utils;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Comparator;
 import java.util.Date;
 
+import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
 import core.utils.SchemaUtils.TYPE;
 
 public class TypeUtils {
@@ -61,12 +63,12 @@ public class TypeUtils {
 			else if ((Integer)x < (Integer)y) return -1;
 			else return 0;
 		case FLOAT:
-			if ((Integer)x > (Integer)y) return 1;
-			else if ((Integer)x < (Integer)y) return -1;
+			if ((Float)x > (Float)y) return 1;
+			else if ((Float)x < (Float)y) return -1;
 			else return 0;
 		case LONG:
-			if ((Integer)x > (Integer)y) return 1;
-			else if ((Integer)x < (Integer)y) return -1;
+			if ((Long)x > (Long)y) return 1;
+			else if ((Long)x < (Long)y) return -1;
 			else return 0;
 		case DATE:
 			return ((Date)x).compareTo((Date)y);
@@ -78,6 +80,46 @@ public class TypeUtils {
 		default:
 			System.err.println("Unknown TYPE in compareTo");
 			return 0;
+		}
+	}
+
+	// TODO: Make this compatible with the one in TypeUtils
+	public static Comparator<Object> getComparatorForType(TYPE type) {
+		switch(type){
+		case INT:
+			return new Comparator<Object> (){
+				public int compare(Object o1, Object o2) {
+					return ((Integer)o1).compareTo((Integer)o2);
+				}
+			};
+		case LONG:
+			return new Comparator<Object> (){
+				public int compare(Object o1, Object o2) {
+					return ((Long)o1).compareTo((Long)o2);
+				}
+			};
+		case FLOAT:
+			return new Comparator<Object> (){
+				public int compare(Object o1, Object o2) {
+					return ((Float)o1).compareTo((Float)o2);
+				}
+			};
+		case DATE:
+			return new Comparator<Object> (){
+				public int compare(Object o1, Object o2) {
+					return ((SimpleDate)o1).compareTo((SimpleDate)o2);
+				}
+			};
+		case STRING:
+			return new Comparator<Object> (){
+				public int compare(Object o1, Object o2) {
+					return ((String)o1).compareTo((String)o2);
+				}
+			};
+		case VARCHAR:
+			throw new RuntimeException("sorting over varchar is not supported"); // skip partitioning on varchar attribute
+		default:
+			throw new RuntimeException("Unknown dimension type: "+ type);
 		}
 	}
 }

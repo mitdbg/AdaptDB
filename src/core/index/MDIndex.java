@@ -2,6 +2,7 @@ package core.index;
 import java.util.List;
 
 import core.adapt.Predicate;
+import core.index.key.CartilageIndexKeySet;
 import core.index.key.MDIndexKey;
 
 
@@ -19,8 +20,13 @@ public interface MDIndex {
 	 */
 
 	public final static class Bucket{
+		/* Actual Values */
 		int bucketId;
 		int numTuples;
+		CartilageIndexKeySet sample;
+
+		/* Estimates */
+		public float estimatedTuples;
 
 		public static int maxBucketId = 0;
 
@@ -45,6 +51,14 @@ public interface MDIndex {
 		// Needed for unmarshall
 		public void setBucketId(int id) {
 			this.bucketId = id;
+		}
+
+		public CartilageIndexKeySet getSample() {
+			return sample;
+		}
+
+		public void setSample(CartilageIndexKeySet sample) {
+			this.sample = sample;
 		}
 	}
 
