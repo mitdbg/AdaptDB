@@ -2,7 +2,7 @@ package core.access;
 
 
 import core.access.iterator.PartitionIterator;
-import core.adapt.Predicate;
+import core.access.Predicate;
 import core.adapt.opt.Optimizer;
 /**
  * This access method class considers filter access method over the distributed dataset.

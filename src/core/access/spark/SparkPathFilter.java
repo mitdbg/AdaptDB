@@ -7,7 +7,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 
 import core.access.AccessMethod;
-import core.adapt.Predicate;
+import core.access.Predicate;
 
 public class SparkPathFilter implements PathFilter, Configurable  {
 
