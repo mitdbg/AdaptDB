@@ -1,4 +1,4 @@
-package core.adapt.partition;
+package core.access.iterator;
 
 import java.io.IOException;
 
@@ -11,22 +11,24 @@ import com.google.common.collect.Lists;
 import core.access.HDFSPartition;
 import core.access.Partition;
 import core.access.Predicate;
+import core.access.Query.FilterQuery;
+import core.index.Settings;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.RangeUtils;
 import core.utils.RangeUtils.Range;
 
-public class TestHDFSScanIterator extends TestScanIterator{
+public class TestHDFSRepartitionIterator extends TestRepartitionIterator {
 
 	String propertiesFile;
 
 	@Override
 	public void setUp(){
-		propertiesFile = "/Users/alekh/Work/Cartilage/MDIndex/conf/cartilage.properties";
-		partitionDir = "/mydir";
+		propertiesFile = Settings.cartilageConf;
+		partitionDir = Settings.hdfsPartitionDir;
 		int attributeIdx = 0;
 		Range r = RangeUtils.closed(3000000, 6000000);
-		predicate = new Predicate[]{new Predicate(attributeIdx, r)};
+		query = new FilterQuery(new Predicate[]{new Predicate(attributeIdx, r)});
 
 		partitionPaths = Lists.newArrayList();
 
@@ -38,6 +40,7 @@ public class TestHDFSScanIterator extends TestScanIterator{
 			}
 		} catch (IOException e) {
 			System.out.println("No files to repartition");
+			//e.printStackTrace();
 		}
 	}
 
@@ -47,12 +50,17 @@ public class TestHDFSScanIterator extends TestScanIterator{
 	}
 
 	@Override
-	public void testScan(){
-		super.testScan();
+	public void testRepartition(){
+		super.testRepartition();
 	}
 
 	@Override
-	public void testScanAll(){
-		super.testScanAll();
+	public void testRepartitionAll(){
+		super.testRepartitionAll();
+	}
+
+	@Override
+	public void testRepartitionFraction(){
+		super.testRepartitionFraction();
 	}
 }

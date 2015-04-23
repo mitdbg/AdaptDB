@@ -9,8 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import core.access.Predicate;
-import core.adapt.Query;
-import core.adapt.Query.FilterQuery;
+import core.access.Query;
+import core.access.Query.FilterQuery;
 import core.index.key.CartilageIndexKey;
 import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTree;

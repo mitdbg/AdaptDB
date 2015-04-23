@@ -1,5 +1,8 @@
 package core.access.iterator;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.commons.lang.ArrayUtils;
@@ -11,7 +14,7 @@ import core.index.key.CartilageIndexKey;
 
 public class PartitionIterator implements Iterator<IteratorRecord>{
 
-	public static enum ITER_TYPE {SCAN,SPLIT,CRACK};
+	public static enum ITERATOR {SCAN,FILTER,REPART};
 	
 	private IteratorRecord record;
 	private byte[] recordBytes;
@@ -23,6 +26,7 @@ public class PartitionIterator implements Iterator<IteratorRecord>{
 	private int bytesLength, offset, previous;
 	
 	protected Partition partition;
+	
 	protected Predicate[] predicates;
 	
 	
@@ -55,10 +59,8 @@ public class PartitionIterator implements Iterator<IteratorRecord>{
 		}
 	}
 	
-	public void setPartition(Partition partition, Predicate[] predicates){
+	public void setPartition(Partition partition){
 		this.partition = partition;
-		this.predicates = predicates;
-		
 		record = new IteratorRecord();
 		bytes = partition.getBytes();
 		bytesLength = partition.getSize();
@@ -94,4 +96,10 @@ public class PartitionIterator implements Iterator<IteratorRecord>{
 		return record;
 	}
 	
+	
+	public void write(DataOutput out) throws IOException{
+	}
+	
+	public void readFields(DataInput in) throws IOException{
+	}
 }
