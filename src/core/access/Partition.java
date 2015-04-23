@@ -5,11 +5,10 @@ import java.io.File;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
-import core.utils.ArrayUtils;
 import core.utils.IOUtils;
 
 
-public class Partition {
+public class Partition implements Cloneable{
 	
 	public static enum State {ORIG,NEW,MODIFIED};
 	State state;
@@ -18,45 +17,68 @@ public class Partition {
 	protected byte[] bytes;
 	protected int offset;
 	
-	public int[] lineage;
+	protected int partitionId;
+	
+	//public int[] lineage;
 	
 	/**
 	 * Create an existing  partition object.
-	 * @param path
+	 * @param pathAndPartitionId
 	 */
-	public Partition(String path){
-		this.path = path;
-		this.state = State.ORIG;
-		this.offset = 0;
-		this.lineage = ArrayUtils.splitWithException("_", FilenameUtils.getBaseName(path));
+	public Partition(String pathAndPartitionId){
+		this(FilenameUtils.getPath(pathAndPartitionId), 
+				Integer.parseInt(FilenameUtils.getBaseName(pathAndPartitionId)));		
 	}
 	
-
+	public Partition(String path, int partitionId){
+		this.path = path;
+		this.partitionId = partitionId;
+		this.state = State.ORIG;
+		this.offset = 0;
+	}
+	
+	public Partition clone() {
+		Partition p = new Partition(path, partitionId);
+		p.bytes = new byte[bytes.length];
+		p.state = State.NEW;
+        return p;
+    }
+	
+	
 	/**
 	 * Create a new partition
 	 * 
 	 * @param childId
 	 * @return
 	 */
-	public Partition createChild(int childId){
-		Partition p = new Partition(path+"_"+childId);
-		p.bytes = new byte[bytes.length];	// child cannot have more bytes than parent
-		//p.bytes = new byte[8*1024*1024];	// child cannot have more than 8m bytes
-		p.state = State.NEW;
-		return p;
-	}
+//	public Partition createChild(int childId){
+//		Partition p = new Partition(path+"_"+childId);
+//		p.bytes = new byte[bytes.length];	// child cannot have more bytes than parent
+//		//p.bytes = new byte[8*1024*1024];	// child cannot have more than 8m bytes
+//		p.state = State.NEW;
+//		return p;
+//	}
+//	
+//	public void setAsParent(Partition p){
+//		for(int i=0;i<p.lineage.length;i++)
+//			lineage[i] = p.lineage[i];
+//		this.offset = 0;
+//	}
 	
-	public void setAsParent(Partition p){
-		for(int i=0;i<p.lineage.length;i++)
-			lineage[i] = p.lineage[i];
+	public void setPathAndPartitionId(String pathAndPartitionId){
+		this.path = FilenameUtils.getPath(pathAndPartitionId); 
+		this.partitionId = Integer.parseInt(FilenameUtils.getBaseName(pathAndPartitionId));
+//		this.path = pathAndPartitionId;
+//		this.lineage = ArrayUtils.splitWithException("_", FilenameUtils.getBaseName(pathAndPartitionId));
 		this.offset = 0;
 	}
 	
-	public void setPath(String path){
-		this.path = path;
-		this.lineage = ArrayUtils.splitWithException("_", FilenameUtils.getBaseName(path));
-		this.offset = 0;
+	public void setPartitionId(int partitionId){
+		this.partitionId = partitionId;
 	}
+	
+	
+	
 	
 	public boolean load(){
 		if(path==null || path.equals(""))
@@ -76,7 +98,8 @@ public class Partition {
 	}
 	
 	public void store(boolean append){
-		String storePath = FilenameUtils.getFullPath(path) + ArrayUtils.join("_", lineage);
+		//String storePath = FilenameUtils.getFullPath(path) + ArrayUtils.join("_", lineage);
+		String storePath = path + "/" + partitionId;
 		IOUtils.writeByteArray(storePath, bytes, 0, offset, append);
 	}
 	
@@ -95,10 +118,10 @@ public class Partition {
 	}
 	
 	public boolean equals(Object p){
-		return ((Partition)p).path.equals(path);
+		return ((Partition)p).path.equals(path) && ((Partition)p).partitionId==partitionId;
 	}
 	
 	public int hashCode(){
-		return path.hashCode();
+		return (path+partitionId).hashCode();
 	}
 }

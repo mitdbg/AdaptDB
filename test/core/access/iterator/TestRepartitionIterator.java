@@ -1,4 +1,4 @@
-package core.adapt.partition;
+package core.access.iterator;
 
 import java.io.File;
 import java.util.List;
@@ -9,11 +9,8 @@ import com.google.common.collect.Lists;
 
 import core.access.Partition;
 import core.access.Predicate;
-import core.access.iterator.PartitionIterator;
-import core.access.iterator.PostFilterIterator;
-import core.access.iterator.RepartitionIterator;
-import core.adapt.partition.merger.PartitionMerger;
-import core.adapt.partition.merger.PartitionMerger.KWayMerge;
+import core.access.Query.FilterQuery;
+import core.index.MDIndex;
 import core.index.Settings;
 import core.utils.RangeUtils;
 import core.utils.RangeUtils.Range;
@@ -23,9 +20,8 @@ public class TestRepartitionIterator extends TestCase{
 	protected String partitionDir;
 	protected List<String> partitionPaths;
 
-	protected Predicate[] predicates;
-
-	protected PartitionMerger merger;
+	protected FilterQuery query;
+	protected MDIndex newIndexTree;
 
 
 	@Override
@@ -33,9 +29,8 @@ public class TestRepartitionIterator extends TestCase{
 		partitionDir = Settings.localPartitionDir;
 		int attributeIdx = 0;
 		Range r = RangeUtils.closed(3000000, 6000000);
-		predicates = new Predicate[]{new Predicate(attributeIdx, r)};
+		query = new FilterQuery(new Predicate[]{new Predicate(attributeIdx, r)});
 
-		merger = new KWayMerge(0,2);
 		partitionPaths = Lists.newArrayList();
 
 		File dir = new File(partitionDir);
@@ -55,8 +50,8 @@ public class TestRepartitionIterator extends TestCase{
 	public void testRepartition(){
 		Partition partition = getPartitionInstance(partitionDir+"/0");
 		partition.load();
-		RepartitionIterator itr =  new RepartitionIterator(merger);
-		itr.setPartition(partition, predicates);
+		PartitionIterator itr =  new RepartitionIterator(query, newIndexTree);
+		itr.setPartition(partition);
 
 		int recCount = 0;
 		while(itr.hasNext()){
@@ -70,14 +65,14 @@ public class TestRepartitionIterator extends TestCase{
 
 	public void testRepartitionAll(){
 		Partition partition = getPartitionInstance("");
-		RepartitionIterator itr =  new RepartitionIterator(merger);
+		PartitionIterator itr =  new RepartitionIterator(query, newIndexTree);
 
 		int recCount = 0;
 		long startTime = System.nanoTime();
 		for(String partitionPath: partitionPaths){
-			partition.setPath(partitionPath);
+			partition.setPathAndPartitionId(partitionPath);
 			partition.load();
-			itr.setPartition(partition, predicates);
+			itr.setPartition(partition);
 
 			while(itr.hasNext()){
 				itr.next();
@@ -92,7 +87,7 @@ public class TestRepartitionIterator extends TestCase{
 
 	public void testRepartitionFraction(){
 		Partition partition = getPartitionInstance("");
-		RepartitionIterator itr1 =  new RepartitionIterator(merger);
+		PartitionIterator itr1 =  new RepartitionIterator(query, newIndexTree);
 		PostFilterIterator itr2 =  new PostFilterIterator();
 
 
@@ -102,7 +97,7 @@ public class TestRepartitionIterator extends TestCase{
 		int recCount = 0;
 		long startTime = System.nanoTime();
 		for(int i=0; i<partitionPaths.size(); i++){
-			partition.setPath(partitionPaths.get(i));
+			partition.setPathAndPartitionId(partitionPaths.get(i));
 			partition.load();
 			PartitionIterator itr;
 			if(i<repartitionCount)
@@ -110,7 +105,7 @@ public class TestRepartitionIterator extends TestCase{
 			else
 				itr = itr2;
 
-			itr.setPartition(partition, predicates);
+			itr.setPartition(partition);
 
 			while(itr.hasNext()){
 				itr.next();

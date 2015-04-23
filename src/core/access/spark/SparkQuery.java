@@ -3,9 +3,11 @@ package core.access.spark;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 
 import core.access.iterator.PartitionIterator.IteratorRecord;
-import core.adapt.Predicate;
+import core.access.Predicate;
 import core.utils.ConfUtils;
 
 public class SparkQuery {

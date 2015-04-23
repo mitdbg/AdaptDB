@@ -4,7 +4,7 @@ import org.apache.hadoop.conf.Configuration;
 
 import com.google.common.base.Joiner;
 
-import core.adapt.Predicate;
+import core.access.Predicate;
 
 public class SparkQueryConf {
 

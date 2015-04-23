@@ -7,16 +7,14 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 
 import core.access.AccessMethod;
-import core.access.Partition;
-import core.adapt.Predicate;
+import core.access.Predicate;
 
 public class SparkPathFilter implements PathFilter, Configurable  {
 
 	protected Configuration conf;
 	protected AccessMethod am;
-
 	protected Predicate[] predicates;
-	protected Partition partition;
+	
 
 	public void setConf(Configuration conf) {
 		this.conf = conf;
@@ -24,13 +22,11 @@ public class SparkPathFilter implements PathFilter, Configurable  {
 		am = new AccessMethod();
 		am.init(queryConf.getDataset());
 		predicates = queryConf.getPredicates();
-		partition = new Partition("");
 	}
 
 	public boolean accept(Path arg0) {
-		partition.setPath(FilenameUtils.getName(arg0.toString()));
 		for(Predicate predicate: predicates)
-			if(!am.isRelevant(partition, predicate))
+			if(!am.isRelevant(FilenameUtils.getName(arg0.toString()), predicate))
 				return false;
 		return true;
 	}

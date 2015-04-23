@@ -10,9 +10,9 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
+import core.access.Query;
+import core.access.Query.FilterQuery;
 import core.adapt.Predicate;
-import core.adapt.Query;
-import core.adapt.Query.FilterQuery;
 import core.index.key.CartilageIndexKey;
 import core.index.key.CartilageIndexKeySet;
 import core.index.robusttree.RNode;
