@@ -24,10 +24,11 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 	private int currentFile;
 	
 	protected PartitionIterator iterator;
-	
+
 	private LongWritable key;
 	private long recordId;
-	
+
+	@Override
 	public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
 		conf = context.getConfiguration();				
 		sparkSplit = (SparkFileSplit)split;
@@ -38,8 +39,9 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		
 		key = new LongWritable();
 		recordId = 0;		
+
 	}
-	
+
 	protected boolean initializeNext() throws IOException{
 		if(currentFile >= sparkSplit.getStartOffsets().length)
 			return false;
@@ -54,29 +56,33 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 			return true;
 		}
 	}
-	
+
 	public boolean nextKeyValue() throws IOException, InterruptedException {
 		if(iterator.hasNext() || (sparkSplit!=null && initializeNext())){
 			recordId++;
 			return true;
 		}
 		else
-			return false; 
+			return false;
 	}
-	
+
+	@Override
 	public LongWritable getCurrentKey() throws IOException, InterruptedException {
 		key.set(recordId);
 		return key;
 	}
 
+	@Override
 	public IteratorRecord getCurrentValue() throws IOException, InterruptedException {
 		return iterator.next();
 	}
 
+	@Override
 	public float getProgress() throws IOException, InterruptedException {
 		return (float)currentFile / sparkSplit.getStartOffsets().length;
 	}
-	
+
+	@Override
 	public void close() throws IOException {
 	}
 }

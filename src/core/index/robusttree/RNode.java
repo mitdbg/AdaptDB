@@ -1,15 +1,14 @@
 package core.index.robusttree;
 
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
-import core.access.Predicate;
+import core.adapt.Predicate;
 import core.index.MDIndex.Bucket;
 import core.index.key.MDIndexKey;
-import core.utils.RangeUtils.Range;
 import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
 import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils;
 
 /**
  * Internal node in robust tree datastructure
@@ -17,7 +16,7 @@ import core.utils.SchemaUtils.TYPE;
  */
 public class RNode {
 
-    public int dimension;
+    public int attribute;
     public TYPE type;
     public Object value;
     public float quantile;
@@ -32,8 +31,22 @@ public class RNode {
 
     }
 
+    @Override
+	public RNode clone() {
+    	RNode r = new RNode();
+    	r.attribute = this.attribute;
+    	r.type = this.type;
+    	r.value = this.value;
+    	r.quantile = this.quantile;
+    	r.parent = this.parent;
+    	r.leftChild = this.leftChild;
+    	r.rightChild = this.rightChild;
+    	r.bucket = this.bucket;
+    	return r;
+    }
+
     public void setValues(int dimension, TYPE type, MDIndexKey key) {
-        this.dimension = dimension;
+        this.attribute = dimension;
         this.type = type;
         this.value = getValue(dimension, type, key);
     }
@@ -74,7 +87,7 @@ public class RNode {
     }
 
     public int getBucketId(MDIndexKey key) {
-        if (compareKey(value, dimension, type, key) > 0) {
+        if (compareKey(value, attribute, type, key) > 0) {
             if (leftChild == null) {
                 return bucket.getBucketId();
             }
@@ -94,51 +107,25 @@ public class RNode {
         	boolean goRight = true;
         	for (int i = 0; i < ps.length; i++) {
         		Predicate p = ps[i];
-        		if (p.getAttribute() == dimension) {
-        			Range r = p.getRange();
-        			Object high = r.getHigh();
-        			Object low  = r.getLow();
-
-        			// TODO: One of these should be >=/<=; Check which
-        			switch (type) {
-	                    case INT:
-	                    	if ((Integer)value > (Integer)high){
-	                    		goRight = false;
-	                    	} else if ((Integer) value < (Integer)low){
-	                    		goLeft = false;
-	                    	}
-
-	                    case LONG:
-	                    	if ((Long)value > (Long)high){
-	                    		goRight = false;
-	                    	} else if ((Long) value < (Long)low){
-	                    		goLeft = false;
-	                    	}
-
-	                    case FLOAT:
-	                    	if ((Float)value > (Float)high){
-	                    		goRight = false;
-	                    	} else if ((Float) value < (Float)low){
-	                    		goLeft = false;
-	                    	}
-
-	                    case DATE:
-	                    	if (((Date)value).compareTo((Date)high) > 0) {
-	                    		goRight = false;
-	                    	} else if (((Date)value).compareTo((Date)low) < 0) {
-	                    		goLeft = false;
-	                    	}
-
-	                    case STRING:
-	                    	if (value.hashCode() > high.hashCode()) {
-	                    		goRight = false;
-	                    	} else if (value.hashCode() < low.hashCode()){
-	                    		goLeft = false;
-	                    	}
-
-	                    default:
-	                        throw new RuntimeException("Unknown dimension type: "+type);
-        			}
+        		if (p.attribute == attribute) {
+        			switch (p.predtype) {
+	                	case GEQ:
+	                		if (TypeUtils.compareTo(p.value, value, type) > 0) goLeft = false;
+	                		break;
+	                	case LEQ:
+	                		if (TypeUtils.compareTo(p.value, value, type) <= 0) goRight = false;
+	                		break;
+	                	case GT:
+	                		if (TypeUtils.compareTo(p.value, value, type) >= 0) goLeft = false;
+	                		break;
+	                	case LT:
+	                		if (TypeUtils.compareTo(p.value, value, type) < 0) goRight = false;
+	                		break;
+	                	case EQ:
+	                		if (TypeUtils.compareTo(p.value, value, type) <= 0) goRight = false;
+	                		else goLeft = false;
+	                		break;
+                	}
         		}
         	}
 

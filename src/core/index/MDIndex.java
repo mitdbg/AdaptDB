@@ -1,7 +1,7 @@
 package core.index;
 import java.util.List;
 
-import core.access.Predicate;
+import core.adapt.Predicate;
 import core.index.key.MDIndexKey;
 
 
@@ -40,6 +40,11 @@ public interface MDIndex {
 
 		public int getBucketId() {
 			return bucketId;
+		}
+
+		// Needed for unmarshall
+		public void setBucketId(int id) {
+			this.bucketId = id;
 		}
 	}
 
