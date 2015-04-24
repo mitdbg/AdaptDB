@@ -7,9 +7,7 @@ import java.util.Map;
 
 import core.access.Partition;
 import core.access.Query.FilterQuery;
-import core.index.MDIndex;
 import core.index.robusttree.RNode;
-import core.utils.ReflectionUtils;
 
 public class RepartitionIterator extends PartitionIterator{
 
@@ -56,8 +54,8 @@ public class RepartitionIterator extends PartitionIterator{
 	@Override
 	public void write(DataOutput out) throws IOException{
 		query.write(out);
-		byte[] indexBytes = newIndexTree.marshall();
-		out.writeBytes(newIndexTree.getClass().getName()+"\n");
+		byte[] indexBytes = newIndexTree.marshall().getBytes();
+//		out.writeBytes(newIndexTree.getClass().getName()+"\n");
 		out.writeInt(indexBytes.length);
 		out.write(indexBytes);
 	}
@@ -65,7 +63,8 @@ public class RepartitionIterator extends PartitionIterator{
 	@Override
 	public void readFields(DataInput in) throws IOException{
 		query.readFields(in);
-		newIndexTree = (MDIndex)ReflectionUtils.getInstance(in.readLine());
+		newIndexTree = new RNode();
+//		newIndexTree = (RNode)ReflectionUtils.getInstance(in.readLine());
 		byte[] indexBytes = new byte[in.readInt()];
 		in.readFully(indexBytes);
 		newIndexTree.unmarshall(indexBytes);

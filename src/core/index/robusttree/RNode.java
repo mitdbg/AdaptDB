@@ -1,7 +1,11 @@
 package core.index.robusttree;
 
+import java.text.Format;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Scanner;
 
 import core.access.Predicate;
 import core.index.MDIndex.Bucket;
@@ -183,4 +187,88 @@ public class RNode {
 
     	return total;
     }
+
+    public String marshall() {
+    	String ret = "";
+		LinkedList<RNode> stack = new LinkedList<RNode>();
+		stack.add(this);
+		while (stack.size() != 0) {
+			RNode n = stack.removeLast();
+			String nStr;
+			if (n.bucket == null) {
+				nStr = String.format("b %d %d \n", n.bucket.getBucketId(), n.bucket.getNumTuples());
+			} else {
+				if (n.type == TYPE.DATE) {
+					Format formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+					nStr = String.format("n %d %d %s\n", n.attribute, n.type.toString(), formatter.format(n.value));
+				} else {
+					nStr = String.format("n %d %d %s\n", n.attribute, n.type.toString(), n.value.toString());
+				}
+
+				stack.add(n.rightChild);
+				stack.add(n.leftChild);
+			}
+			ret += nStr;
+		}
+
+		return ret;
+    }
+
+	public void unmarshall(byte[] bytes) {
+		String tree = bytes.toString();
+		Scanner sc = new Scanner(tree);
+
+		this.parseNode(sc);
+	}
+
+	public RNode parseNode(Scanner sc) {
+		String type = sc.next();
+		if (type == "n") {
+			this.attribute = sc.nextInt();
+			this.type = TYPE.valueOf(sc.next());
+
+			switch (this.type) {
+			case INT:
+				this.value = sc.nextInt();
+				break;
+			case FLOAT:
+				this.value = sc.nextFloat();
+				break;
+			case LONG:
+				this.value = sc.nextLong();
+				break;
+			case DATE:
+				Format formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+				try {
+					this.value = formatter.parseObject(sc.next());
+				} catch (ParseException e) {
+					e.printStackTrace();
+				}
+				break;
+			case BOOLEAN:
+				this.value = sc.nextBoolean();
+				break;
+			case STRING:
+				this.value = sc.next();
+				break;
+			case VARCHAR:
+				this.value = sc.next();
+				break;
+			}
+
+			this.leftChild = new RNode();
+			this.leftChild.parseNode(sc);
+			this.rightChild = new RNode();
+			this.rightChild.parseNode(sc);
+		} else if (type == "b") {
+			Bucket b = new Bucket();
+			b.setBucketId(sc.nextInt());
+			b.setNumTuples(sc.nextInt());
+			this.bucket = b;
+		} else {
+			System.out.println("Bad things have happened in unmarshall");
+		}
+
+		return this;
+	}
 }
