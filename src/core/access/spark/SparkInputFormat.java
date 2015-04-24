@@ -4,6 +4,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +23,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.CombineFileSplit;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import core.access.AccessMethod;
@@ -73,6 +75,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			partitionIdFileMap.put(FilenameUtils.getName(file.getPath().toString()), file);
 		
 		PartitionSplit[] splits = am.getPartitionSplits(queryConf.getPredicates(), queryConf.getWorkers());
+		splits = resizeSplits(splits, queryConf.getMaxSplitSize());
 
 		for(PartitionSplit split: splits){
 			String[] partitionIds = split.getPartitions();
@@ -101,6 +104,38 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 
 		return finalSplits;
 	}
+	
+	/**
+	 * The goal of this method is to check the size of each and break large splits into 
+	 * multiple smaller splits.
+	 * 
+	 * The maximum split size is read from the configuration and it depends on the size of each machine.
+	 * 
+	 * @param initialSplits
+	 * @return
+	 */
+	public PartitionSplit[] resizeSplits(PartitionSplit[] initialSplits, int maxSplitSize){
+		
+		List<PartitionSplit> resizedSplits = Lists.newArrayList();
+		
+		for(PartitionSplit split: initialSplits){
+			String[] partitions = split.getPartitions();
+			if(partitions.length > maxSplitSize){
+				// need to split the partition into smaller ones
+				for(int i=0;i<partitions.length;i+=maxSplitSize){
+					int to = i + maxSplitSize > partitions.length ? partitions.length : i + maxSplitSize;
+					String[] subPartitions = Arrays.copyOfRange(partitions, i, to);
+					resizedSplits.add(new PartitionSplit(subPartitions, split.getIterator()));
+				}
+			}
+			else{
+				resizedSplits.add(split);
+			}
+		}
+		
+		return (PartitionSplit[])resizedSplits.toArray();
+	}
+	
 	
 		
 	public RecordReader<LongWritable, IteratorRecord> createRecordReader(InputSplit arg0, TaskAttemptContext arg1) throws IOException, InterruptedException {

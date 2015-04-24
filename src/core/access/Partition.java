@@ -77,6 +77,10 @@ public class Partition implements Cloneable{
 		this.partitionId = partitionId;
 	}
 	
+	public int getPartitionId(){
+		return this.partitionId;
+	}
+	
 	
 	
 	
