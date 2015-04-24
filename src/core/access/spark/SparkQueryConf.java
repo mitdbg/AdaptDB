@@ -11,6 +11,7 @@ public class SparkQueryConf {
 	public final static String DATASET = "DATASET";
 	public final static String PREDICATES = "PREDICATES";
 	public final static String WORKERS = "WORKERS";
+	public final static String MAX_SPLIT_SIZE = "MAX_SPLIT_SIZE";
 
 	private Configuration conf;
 
@@ -44,5 +45,13 @@ public class SparkQueryConf {
 
 	public int getWorkers(){
 		return Integer.parseInt(conf.get(WORKERS));
+	}
+	
+	public void setMaxSplitSize(int maxSplitSize){
+		conf.set(MAX_SPLIT_SIZE, ""+maxSplitSize);
+	}
+	
+	public int getMaxSplitSize(){
+		return Integer.parseInt(conf.get(MAX_SPLIT_SIZE));
 	}
 }
