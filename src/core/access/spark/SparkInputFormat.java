@@ -28,6 +28,7 @@ import com.google.common.collect.Maps;
 
 import core.access.AccessMethod;
 import core.access.AccessMethod.PartitionSplit;
+import core.access.Query.FilterQuery;
 import core.access.iterator.PartitionIterator;
 import core.access.iterator.PartitionIterator.IteratorRecord;
 import core.utils.ReflectionUtils;
@@ -70,15 +71,15 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		AccessMethod am = new AccessMethod();
 		am.init(queryConf.getDataset());
 		
-		Map<String,FileStatus> partitionIdFileMap = Maps.newHashMap();		
+		Map<Integer,FileStatus> partitionIdFileMap = Maps.newHashMap();		
 		for(FileStatus file: files)
-			partitionIdFileMap.put(FilenameUtils.getName(file.getPath().toString()), file);
+			partitionIdFileMap.put(Integer.parseInt(FilenameUtils.getName(file.getPath().toString())), file);
 		
-		PartitionSplit[] splits = am.getPartitionSplits(queryConf.getPredicates(), queryConf.getWorkers());
+		PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers());
 		splits = resizeSplits(splits, queryConf.getMaxSplitSize());
 
 		for(PartitionSplit split: splits){
-			String[] partitionIds = split.getPartitions();
+			int[] partitionIds = split.getPartitions();
 			Path[] splitFiles = new Path[partitionIds.length];
 			long[] start = new long[partitionIds.length];
 			long[] lengths = new long[partitionIds.length]; 
@@ -119,12 +120,12 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		List<PartitionSplit> resizedSplits = Lists.newArrayList();
 		
 		for(PartitionSplit split: initialSplits){
-			String[] partitions = split.getPartitions();
+			int[] partitions = split.getPartitions();
 			if(partitions.length > maxSplitSize){
 				// need to split the partition into smaller ones
 				for(int i=0;i<partitions.length;i+=maxSplitSize){
 					int to = i + maxSplitSize > partitions.length ? partitions.length : i + maxSplitSize;
-					String[] subPartitions = Arrays.copyOfRange(partitions, i, to);
+					int[] subPartitions = Arrays.copyOfRange(partitions, i, to);
 					resizedSplits.add(new PartitionSplit(subPartitions, split.getIterator()));
 				}
 			}

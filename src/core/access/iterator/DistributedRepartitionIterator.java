@@ -17,7 +17,7 @@ import com.google.common.collect.Maps;
 
 import core.access.Partition;
 import core.access.Query.FilterQuery;
-import core.index.MDIndex;
+import core.index.robusttree.RNode;
 
 public class DistributedRepartitionIterator extends RepartitionIterator {
 
@@ -26,7 +26,7 @@ public class DistributedRepartitionIterator extends RepartitionIterator {
 	public DistributedRepartitionIterator() {
 	}
 	
-	public DistributedRepartitionIterator(FilterQuery query, MDIndex newIndexTree, String zookeeperHosts) {
+	public DistributedRepartitionIterator(FilterQuery query, RNode newIndexTree, String zookeeperHosts) {
 		super(query, newIndexTree);
 		this.zookeeperHosts = zookeeperHosts;
 	}
