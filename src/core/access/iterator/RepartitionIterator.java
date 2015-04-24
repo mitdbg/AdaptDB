@@ -14,8 +14,11 @@ public class RepartitionIterator extends PartitionIterator{
 	private FilterQuery query;
 	private RNode newIndexTree;
 
-	private Map<Integer,Partition> newPartitions;
+	protected Map<Integer,Partition> newPartitions;
 
+	public RepartitionIterator(){
+	}
+	
 	public RepartitionIterator(FilterQuery query, RNode newIndexTree){
 		this.query = query;
 		this.newIndexTree = newIndexTree;

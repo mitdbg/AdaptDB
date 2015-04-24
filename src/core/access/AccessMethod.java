@@ -77,15 +77,15 @@ public class AccessMethod {
 	 *
 	 */
 	public static class PartitionSplit {
-		private String[] partitionIds;
+		private int[] partitionIds;
 		private PartitionIterator iterator;
 
-		public PartitionSplit(String[] partitionIds, PartitionIterator iterator){
+		public PartitionSplit(int[] partitionIds, PartitionIterator iterator){
 			this.partitionIds = partitionIds;
 			this.iterator = iterator;
 		}
 
-		public String[] getPartitions(){
+		public int[] getPartitions(){
 			return this.partitionIds;
 		}
 
