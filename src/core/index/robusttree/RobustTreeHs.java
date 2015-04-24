@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
-import core.adapt.Predicate;
+import core.access.Predicate;
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
 import core.index.key.CartilageIndexKeySet;

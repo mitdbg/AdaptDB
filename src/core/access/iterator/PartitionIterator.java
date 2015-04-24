@@ -8,8 +8,8 @@ import java.util.Iterator;
 import org.apache.commons.lang.ArrayUtils;
 
 import core.access.Partition;
+import core.access.Predicate;
 import core.access.iterator.PartitionIterator.IteratorRecord;
-import core.adapt.Predicate;
 import core.index.key.CartilageIndexKey;
 
 public class PartitionIterator implements Iterator<IteratorRecord>{

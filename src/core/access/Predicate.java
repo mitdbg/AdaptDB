@@ -1,32 +1,45 @@
 package core.access;
 
-import core.utils.RangeUtils;
-import core.utils.RangeUtils.Range;
+import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils;
 
 public class Predicate {
-	private int attribute;
-	private Range range;
-	
-	public Predicate(String predicateString) {
-		String[] tokens = predicateString.split("=");
-		this.attribute = Integer.parseInt(tokens[0]);
-		this.range = RangeUtils.parse(tokens[1]);		
-	}
-	
-	public Predicate(int attr, Range r) {
-		this.range = r;
+	public enum PREDTYPE {LEQ, GEQ, GT, LT, EQ};
+	public int attribute;
+    public TYPE type;
+    public Object value;
+    public PREDTYPE predtype;
+
+	public Predicate(int attr, TYPE t, Object val, PREDTYPE predtype) {
 		this.attribute = attr;
+		this.type = t;
+		this.value = val;
+		this.predtype = predtype;
 	}
 
-	public int getAttribute() {
-		return attribute;
-	}
+	/**
+	 * Check if tuple with value for attribute is accepted (true) or rejected (false) by predicate
+	 * @param value
+	 * @return
+	 */
+	public boolean isRelevant(Object value) {
+		switch (this.predtype) {
+		case GEQ:
+			if (TypeUtils.compareTo(this.value, value, this.type) <= 0) return true;
+			break;
+		case LEQ:
+			if (TypeUtils.compareTo(this.value, value, this.type) >= 0) return true;
+			break;
+		case GT:
+			if (TypeUtils.compareTo(this.value, value, this.type) < 0) return true;
+			break;
+		case LT:
+			if (TypeUtils.compareTo(this.value, value, this.type) < 0) return true;
+			break;
+		case EQ:
+			if (TypeUtils.compareTo(this.value, value, this.type) == 0) return true;
+		}
 
-	public Range getRange() {
-		return range;
-	}
-	
-	public String toString(){
-		return attribute +"="+ RangeUtils.toString(range);
+		return false;
 	}
 }

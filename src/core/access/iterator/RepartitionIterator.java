@@ -8,27 +8,30 @@ import java.util.Map;
 import core.access.Partition;
 import core.access.Query.FilterQuery;
 import core.index.MDIndex;
+import core.index.robusttree.RNode;
 import core.utils.ReflectionUtils;
 
 public class RepartitionIterator extends PartitionIterator{
 
 	private FilterQuery query;
-	private MDIndex newIndexTree;
-	
+	private RNode newIndexTree;
+
 	private Map<Integer,Partition> newPartitions;
-	
-	public RepartitionIterator(FilterQuery query, MDIndex newIndexTree){
+
+	public RepartitionIterator(FilterQuery query, RNode newIndexTree){
 		this.query = query;
 		this.newIndexTree = newIndexTree;
 	}
-	
+
+	@Override
 	public void setPartition(Partition partition){
 		super.setPartition(partition);
 	}
-	
+
+	@Override
 	protected boolean isRelevant(IteratorRecord record){
-		
-		int id = (Integer)newIndexTree.getBucketId(record);		
+
+		int id = newIndexTree.getBucketId(record);
 		Partition p;
 		if(newPartitions.containsKey(id)){
 			p = newPartitions.get(id);
@@ -39,16 +42,18 @@ public class RepartitionIterator extends PartitionIterator{
 			newPartitions.put(id, p);
 		}
 		p.write(record.getBytes(), record.getOffset(), record.getLength());
-		
+
 		return query.qualifies(record);
 	}
-	
+
+	@Override
 	protected void finalize(){
 		for(Partition p: newPartitions.values())
-			p.store(true);		
+			p.store(true);
 		partition.drop();
-	}	
-	
+	}
+
+	@Override
 	public void write(DataOutput out) throws IOException{
 		query.write(out);
 		byte[] indexBytes = newIndexTree.marshall();
@@ -56,7 +61,8 @@ public class RepartitionIterator extends PartitionIterator{
 		out.writeInt(indexBytes.length);
 		out.write(indexBytes);
 	}
-	
+
+	@Override
 	public void readFields(DataInput in) throws IOException{
 		query.readFields(in);
 		newIndexTree = (MDIndex)ReflectionUtils.getInstance(in.readLine());

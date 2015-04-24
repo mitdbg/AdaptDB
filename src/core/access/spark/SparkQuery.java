@@ -6,8 +6,8 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
-import core.access.iterator.PartitionIterator.IteratorRecord;
 import core.access.Predicate;
+import core.access.iterator.PartitionIterator.IteratorRecord;
 import core.utils.ConfUtils;
 
 public class SparkQuery {
@@ -20,7 +20,7 @@ public class SparkQuery {
 
 	private Predicate[] predicates;
 
-	public SparkQuery(Predicate[] predicates){
+	public SparkQuery(Predicate[] predicates) {
 		this.predicates = predicates;
 		ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName(), cfg.getSPARK_HOME(), cfg.getSPARK_JAR());
 		queryConf = new SparkQueryConf(ctx.hadoopConfiguration());

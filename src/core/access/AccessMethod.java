@@ -1,8 +1,9 @@
 package core.access;
 
 
+import com.google.common.base.Predicates;
+
 import core.access.iterator.PartitionIterator;
-import core.access.Predicate;
 import core.adapt.opt.Optimizer;
 /**
  * This access method class considers filter access method over the distributed dataset.
@@ -61,34 +62,33 @@ public class AccessMethod {
 	 * @param n	- the number of splits to produce
 	 * @return
 	 */
-	public PartitionSplit[] getPartitionSplits(Predicate[] predicates, int n){
-		// TODO: one way could be to look at the partition lineage ids and group partitions with similar lineage into the same split!
-		return null;
+	public PartitionSplit[] getPartitionSplits(Query q, int n){
+		return opt.buildPlan(q, n);
 	}
-	
-	
-	
+
+
+
 	/**
-	 * This class encapsulates a set of partitions which should be 
+	 * This class encapsulates a set of partitions which should be
 	 * accessed in a similar fashion. Each split gets assigned to a
 	 * node as a whole.
-	 * 
+	 *
 	 * @author alekh
 	 *
 	 */
 	public static class PartitionSplit {
 		private String[] partitionIds;
 		private PartitionIterator iterator;
-		
+
 		public PartitionSplit(String[] partitionIds, PartitionIterator iterator){
 			this.partitionIds = partitionIds;
 			this.iterator = iterator;
 		}
-		
+
 		public String[] getPartitions(){
 			return this.partitionIds;
 		}
-		
+
 		public PartitionIterator getIterator(){
 			return this.iterator;
 		}

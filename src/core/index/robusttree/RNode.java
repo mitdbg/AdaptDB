@@ -3,7 +3,7 @@ package core.index.robusttree;
 import java.util.LinkedList;
 import java.util.List;
 
-import core.adapt.Predicate;
+import core.access.Predicate;
 import core.index.MDIndex.Bucket;
 import core.index.key.MDIndexKey;
 import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
@@ -148,5 +148,39 @@ public class RNode {
     		ret.add(this);
     		return ret;
     	}
+    }
+
+    public int numTuplesInSubtree() {
+    	LinkedList<RNode> stack = new LinkedList<RNode>();
+    	stack.add(this);
+    	int total = 0;
+    	while (stack.size() > 0) {
+    		RNode t = stack.removeLast();
+    		if (t.bucket != null) {
+    			total += t.bucket.getNumTuples();
+    		} else {
+    			stack.add(t.rightChild);
+    			stack.add(t.leftChild);
+    		}
+    	}
+
+    	return total;
+    }
+
+    public int getAll() {
+    	LinkedList<RNode> stack = new LinkedList<RNode>();
+    	stack.add(this);
+    	int total = 0;
+    	while (stack.size() > 0) {
+    		RNode t = stack.removeLast();
+    		if (t.bucket != null) {
+    			total += t.bucket.getNumTuples();
+    		} else {
+    			stack.add(t.rightChild);
+    			stack.add(t.leftChild);
+    		}
+    	}
+
+    	return total;
     }
 }

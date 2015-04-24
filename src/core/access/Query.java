@@ -7,7 +7,6 @@ import java.io.IOException;
 import com.google.common.base.Joiner;
 
 import core.access.iterator.PartitionIterator.IteratorRecord;
-import core.adapt.Predicate;
 
 
 public class Query {
