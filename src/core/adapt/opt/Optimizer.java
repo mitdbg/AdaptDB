@@ -53,7 +53,8 @@ public class Optimizer {
 		public float benefit;
 
 		public Plan() {
-			cost = -1;
+			cost = 0;
+			benefit = 0;
 		}
 	}
 
@@ -439,6 +440,10 @@ public class Optimizer {
         } else {
         	old.parent.leftChild = r;
         }
+
+        r.leftChild = old.leftChild;
+        r.rightChild = old.rightChild;
+        r.parent = old.parent;
 	}
 
 	public Plan getBestPlanForPredicate(Predicate[] ps, int i) {
@@ -450,7 +455,9 @@ public class Optimizer {
 	// Update the dest with source if source is a better plan
 	public void updatePlan(Plan dest, Plan source) {
 		boolean copy = false;
-		if (dest.cost == -1) {
+		if (source.cost == 0) {
+
+		} else if (dest.benefit == 0) {
 			copy = true;
 		} else if (dest.benefit / dest.cost < source.benefit / source.cost) {
 			copy = true;
