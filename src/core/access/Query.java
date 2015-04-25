@@ -21,11 +21,10 @@ public class Query {
 	}
 
 	public void readFields(DataInput in) throws IOException{
-		// TODO: What is this ?
-//		String[] tokens = in.readLine().split(",");
-//		predicates = new Predicate[tokens.length];
-//		for(int i=0; i<predicates.length; i++)
-//			predicates[i] = new Predicate(tokens[i]);
+		String[] tokens = in.readLine().split(",");
+		predicates = new Predicate[tokens.length];
+		for(int i=0; i<predicates.length; i++)
+			predicates[i] = new Predicate(tokens[i]);
 	}
 
 
@@ -59,6 +58,6 @@ public class Query {
 	}
 
 	public class JoinQuery extends Query{
-		//TODO:
+
 	}
 }

@@ -14,11 +14,10 @@ import org.jfree.data.category.DefaultCategoryDataset;
 public class TreeUtils {
 
 	public TreeUtils() {
-		// TODO Auto-generated constructor stub
 	}
 
 	/**
-	 * Coarse estimate 
+	 * Coarse estimate
 	 * @param file
 	 * @return
 	 */
@@ -28,11 +27,11 @@ public class TreeUtils {
 			if (file.length() > runtime.freeMemory()){
 				return false;
 			}
-			
+
 		}
 		return true;
 	}
-	
+
     public static void plot(Map<String, Integer> buckets, String chartFileName) throws IOException{
         final String cnt = "COUNT";
 
@@ -45,19 +44,19 @@ public class TreeUtils {
 
 
         JFreeChart barChart = ChartFactory.createBarChart(
-           "Bucket Counts", 
-           "Bucket", "Count", 
-           dataset,PlotOrientation.VERTICAL, 
+           "Bucket Counts",
+           "Bucket", "Count",
+           dataset,PlotOrientation.VERTICAL,
            true, true, false);
-           
+
         int width = 640; /* Width of the image */
-        int height = 480; /* Height of the image */ 
-        File BarChart = new File(chartFileName); 
+        int height = 480; /* Height of the image */
+        File BarChart = new File(chartFileName);
         ChartUtilities.saveChartAsJPEG( BarChart , barChart , width , height );
-    	
+
     }
-	
-	
+
+
 	public static void main(String[] args){
 		File f = new File("test/lineitem.tbl");
 		System.out.print(String.format("file exits: %s smaller than free mem %s", f.exists(), fileLargerThanFree(f)));

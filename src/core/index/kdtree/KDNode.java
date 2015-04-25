@@ -1,11 +1,11 @@
 package core.index.kdtree;
 
+import java.util.List;
+
 import core.index.MDIndex;
 import core.index.key.MDIndexKey;
 import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
 import core.utils.SchemaUtils.TYPE;
-
-import java.util.List;
 
 /**
  * Created by qui on 1/31/15.
@@ -57,7 +57,6 @@ public class KDNode {
             default:
                 throw new RuntimeException("Unknown dimension type: "+type);
         }
-        // TODO(qui): deal with VARCHAR somewhere
     }
 
     private int compareKey(Object value, int dimension, TYPE type, MDIndexKey key) {

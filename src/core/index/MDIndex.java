@@ -1,7 +1,4 @@
 package core.index;
-import java.util.List;
-
-import core.access.Predicate;
 import core.index.key.CartilageIndexKeySet;
 import core.index.key.MDIndexKey;
 
@@ -138,7 +135,7 @@ public interface MDIndex {
 //	 */
 //	public List<Bucket> range(MDIndexKey low, MDIndexKey high);
 
-	public List<Bucket> search(Predicate[] predicates);
+//	public List<Bucket> search(Predicate[] predicates);
 
 	/*
 	 *

@@ -1,5 +1,6 @@
 package core.utils;
 
+import java.text.Format;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
@@ -120,6 +121,41 @@ public class TypeUtils {
 			throw new RuntimeException("sorting over varchar is not supported"); // skip partitioning on varchar attribute
 		default:
 			throw new RuntimeException("Unknown dimension type: "+ type);
+		}
+	}
+
+	public static String serializeValue(Object value, TYPE t) {
+		if (t == TYPE.DATE) {
+			Format formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+			return formatter.format(value);
+		} else {
+			return value.toString();
+		}
+	}
+
+	public static Object deserializeValue(TYPE t, String token) {
+		switch(t) {
+		case INT:
+			return Integer.parseInt(token);
+		case LONG:
+			return Integer.parseInt(token);
+		case FLOAT:
+			return Integer.parseInt(token);
+		case DATE:
+			Format formatter = new SimpleDateFormat();
+			try {
+				return formatter.parseObject(token);
+			} catch (ParseException e) {
+				e.printStackTrace();
+			}
+		case BOOLEAN:
+			return Boolean.parseBoolean(token);
+		case STRING:
+			return token;
+		case VARCHAR:
+			return token;
+		default:
+			return token;
 		}
 	}
 }

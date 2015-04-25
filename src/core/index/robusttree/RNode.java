@@ -1,8 +1,5 @@
 package core.index.robusttree;
 
-import java.text.Format;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
@@ -70,7 +67,6 @@ public class RNode {
             default:
                 throw new RuntimeException("Unknown dimension type: "+type);
         }
-        // TODO(qui): deal with VARCHAR somewhere
     }
 
     private int compareKey(Object value, int dimension, TYPE type, MDIndexKey key) {
@@ -198,12 +194,7 @@ public class RNode {
 			if (n.bucket == null) {
 				nStr = String.format("b %d %d \n", n.bucket.getBucketId(), n.bucket.getNumTuples());
 			} else {
-				if (n.type == TYPE.DATE) {
-					Format formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
-					nStr = String.format("n %d %d %s\n", n.attribute, n.type.toString(), formatter.format(n.value));
-				} else {
-					nStr = String.format("n %d %d %s\n", n.attribute, n.type.toString(), n.value.toString());
-				}
+				nStr = String.format("n %d %d %s\n", n.attribute, n.type.toString(), TypeUtils.serializeValue(n.value, n.type));
 
 				stack.add(n.rightChild);
 				stack.add(n.leftChild);
@@ -226,35 +217,7 @@ public class RNode {
 		if (type == "n") {
 			this.attribute = sc.nextInt();
 			this.type = TYPE.valueOf(sc.next());
-
-			switch (this.type) {
-			case INT:
-				this.value = sc.nextInt();
-				break;
-			case FLOAT:
-				this.value = sc.nextFloat();
-				break;
-			case LONG:
-				this.value = sc.nextLong();
-				break;
-			case DATE:
-				Format formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
-				try {
-					this.value = formatter.parseObject(sc.next());
-				} catch (ParseException e) {
-					e.printStackTrace();
-				}
-				break;
-			case BOOLEAN:
-				this.value = sc.nextBoolean();
-				break;
-			case STRING:
-				this.value = sc.next();
-				break;
-			case VARCHAR:
-				this.value = sc.next();
-				break;
-			}
+			this.value = TypeUtils.deserializeValue(this.type, sc.next());
 
 			this.leftChild = new RNode();
 			this.leftChild.parseNode(sc);

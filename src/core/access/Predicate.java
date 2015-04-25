@@ -1,3 +1,4 @@
+
 package core.access;
 
 import core.utils.SchemaUtils.TYPE;
@@ -15,6 +16,14 @@ public class Predicate {
 		this.type = t;
 		this.value = val;
 		this.predtype = predtype;
+	}
+
+	public Predicate(String predString) {
+		String[] tokens = predString.split(":");
+		this.attribute = Integer.parseInt(tokens[0]);
+		this.type = TYPE.valueOf(tokens[1]);
+		this.value = TypeUtils.deserializeValue(this.type, tokens[2]);
+		this.predtype = PREDTYPE.valueOf(tokens[3]);
 	}
 
 	/**
@@ -41,5 +50,10 @@ public class Predicate {
 		}
 
 		return false;
+	}
+
+	@Override
+	public String toString() {
+		return "" + attribute + ":" + type.toString() + ":" + TypeUtils.serializeValue(value, type) + ":" + predtype.toString();
 	}
 }

@@ -34,9 +34,8 @@ public class SparkQueryConf {
 	public Predicate[] getPredicates(){
 		String[] tokens = conf.get(PREDICATES).split(",");
 		Predicate[] predicates = new Predicate[tokens.length];
-		// TODO: Do predicate parsing
-		// for(int i=0; i<predicates.length; i++)
-			// predicates[i] = new Predicate();
+		for(int i=0; i<predicates.length; i++)
+			predicates[i] = new Predicate(tokens[i]);
 		return predicates;
 	}
 
@@ -47,11 +46,11 @@ public class SparkQueryConf {
 	public int getWorkers(){
 		return Integer.parseInt(conf.get(WORKERS));
 	}
-	
+
 	public void setMaxSplitSize(int maxSplitSize){
 		conf.set(MAX_SPLIT_SIZE, ""+maxSplitSize);
 	}
-	
+
 	public int getMaxSplitSize(){
 		return Integer.parseInt(conf.get(MAX_SPLIT_SIZE));
 	}

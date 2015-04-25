@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -14,6 +15,7 @@ import core.access.Predicate;
 import core.access.Query;
 import core.access.Query.FilterQuery;
 import core.access.iterator.PartitionIterator;
+import core.access.iterator.PostFilterIterator;
 import core.access.iterator.RepartitionIterator;
 import core.index.key.CartilageIndexKey;
 import core.index.key.CartilageIndexKeySet;
@@ -116,13 +118,13 @@ public class Optimizer {
 		return false;
 	}
 
-	public PartitionSplit[] buildPlan(Query q, int numWorkers) {
+	public PartitionSplit[] buildPlan(final Query q, int numWorkers) {
 		if (q instanceof FilterQuery) {
 			FilterQuery fq = (FilterQuery) q;
-			Predicate[] ps = fq.getPredicates();
-			Plan best = getBestPlan(ps);
-			PartitionSplit[] psplits = this.getPartitionSplits(best, ps, numWorkers);
+			Plan best = getBestPlan(fq.getPredicates());
+			PartitionSplit[] psplits = this.getPartitionSplits(best, fq, numWorkers);
 			this.queryWindow.add(q);
+			this.updateIndex(best, fq.getPredicates());
 			return psplits;
 		} else {
 			System.err.println("Unimplemented query - Unable to build plan");
@@ -145,7 +147,60 @@ public class Optimizer {
 		return plan;
 	}
 
-	public PartitionSplit[] getPartitionSplits (Plan best, Predicate[] ps, int numWorkers) {
+	public void updateIndex(Plan best, Predicate[] ps) {
+		this.applyActions(this.rt.getRoot(), best.actions, ps);
+	}
+
+	public void applyActions(RNode n, Action a, Predicate[] ps) {
+		if (a.left != null) {
+			this.applyActions(n.leftChild, a.left, ps);
+		}
+
+		if (a.right != null) {
+			this.applyActions(n.rightChild, a.right, ps);
+		}
+
+		switch (a.option) {
+		case 0:
+			break;
+		case 1:
+			Predicate p = ps[a.pid];
+			RNode r = n.clone();
+			r.attribute = p.attribute;
+			r.type = p.type;
+			r.value = p.value;
+			replaceInTree(n, r);
+			break;
+		case 2:
+			Predicate p2 = ps[a.pid];
+			assert p2.attribute == n.leftChild.attribute;
+			assert p2.attribute == n.rightChild.attribute;
+			RNode n2 = n.clone();
+			RNode right = n.rightChild.clone();
+			replaceInTree(n.leftChild, n2);
+			replaceInTree(n, right);
+			replaceInTree(right.rightChild, n);
+			break;
+		case 3:
+			assert a.right == null || a.left == null;
+			if (a.left == null) {
+				RNode t = n.rightChild.clone();
+				replaceInTree(n, t);
+				replaceInTree(t.rightChild, n);
+			} else {
+				RNode t = n.leftChild.clone();
+				replaceInTree(n, t);
+				replaceInTree(t.leftChild, n);
+			}
+			break;
+		case 4:
+			break;
+		case 5:
+			break;
+		}
+	}
+
+	public PartitionSplit[] getPartitionSplits (Plan best, FilterQuery fq, int numWorkers) {
 		List<PartitionSplit> lps = new ArrayList<PartitionSplit>();
 		final int[] modifyingOptions = new int[]{1};
 		Action acTree = best.actions;
@@ -156,6 +211,9 @@ public class Optimizer {
 		LinkedList<Action> actionStack = new LinkedList<Action>();
 		actionStack.add(acTree);
 
+		List<Integer> unmodifiedBuckets = new ArrayList<Integer>();
+
+		Predicate[] ps = fq.getPredicates();
 		while (nodeStack.size() > 0) {
 			RNode n = nodeStack.removeLast();
 			Action a = actionStack.removeLast();
@@ -176,9 +234,10 @@ public class Optimizer {
 					r.value = p.value;
 					replaceInTree(n, r);
 
-		        	PartitionIterator pi = new RepartitionIterator(r);
-		        	PartionSplit psplit = new PartitionSplit(bucketIds, pi);
+		        	PartitionIterator pi = new RepartitionIterator(fq, r);
+		        	PartitionSplit psplit = new PartitionSplit(bucketIds, pi);
 		        	lps.add(psplit);
+		        	isModifying = true;
 		        	break;
 		        }
 		    }
@@ -194,7 +253,22 @@ public class Optimizer {
 					actionStack.add(a.left);
 					nodeStack.add(n.leftChild);
 				}
+
+				if (n.bucket != null) {
+					unmodifiedBuckets.add(n.bucket.getBucketId());
+				}
 			}
+		}
+
+		if (unmodifiedBuckets.size() > 0) {
+			PartitionIterator pi = new PostFilterIterator(fq);
+			int[] bids = new int[unmodifiedBuckets.size()];
+			Iterator<Integer> it = unmodifiedBuckets.iterator();
+		    for (int i=0; i<bids.length; i++) {
+		    	bids[i] = it.next();
+		    }
+			PartitionSplit psplit = new PartitionSplit(bids, pi);
+			lps.add(psplit);
 		}
 
 		PartitionSplit[] splits =  lps.toArray(new PartitionSplit[lps.size()]);
@@ -278,23 +352,23 @@ public class Optimizer {
 	 * @param changed
 	 * @return
 	 */
-	public int getNumTuplesAccessed(RNode changed) {
+	public float getNumTuplesAccessed(RNode changed, boolean real) {
 		// First traverse to parent to see if query accesses node
 		// If yes, find the number of tuples accessed.
-		int numTuples = 0;
+		float numTuples = 0;
 
 		for (Query q: queryWindow) {
 			// TODO: Possible exp distribution
-			numTuples += getNumTuplesAccessed(changed, q);
+			numTuples += getNumTuplesAccessed(changed, q, real);
 		}
 
 		return numTuples;
 	}
 
-	public int getNumTuplesAccessed(RNode changed, Query q) {
+	public float getNumTuplesAccessed(RNode changed, Query q, boolean real) {
 		// First traverse to parent to see if query accesses node
 		// If yes, find the number of tuples accessed.
-		int numTuples = 0;
+		float numTuples = 0;
 		Predicate[] ps = ((FilterQuery)q).getPredicates();
 
 		RNode node = changed;
@@ -337,9 +411,13 @@ public class Optimizer {
 
 		if (accessed) {
 			List<RNode> nodesAccessed = changed.search(ps);
-			int tCount = 0;
+			float tCount = 0;
 			for (RNode n: nodesAccessed) {
-				tCount += n.bucket.getNumTuples();
+				if (real) {
+					tCount += n.bucket.getNumTuples();
+				} else {
+					tCount += n.bucket.estimatedTuples;
+				}
 			}
 
 			numTuples += tCount;
@@ -466,7 +544,7 @@ public class Optimizer {
 				// If we traverse to root and see that there is no node with cutoff point less than
 				// that of predicate, we can do this
 				if (checkValid(node, p.attribute, p.type, p.value)) {
-			        int numAccessedOld = getNumTuplesAccessed(node);
+			        float numAccessedOld = getNumTuplesAccessed(node, true);
 
 					RNode r = node.clone();
 					r.attribute = p.attribute;
@@ -475,8 +553,8 @@ public class Optimizer {
 					replaceInTree(node, r);
 
 			        populateBucketEstimates(r);
-			        int numAcccessedNew = getNumTuplesAccessed(r);
-			        float benefit = (float) numAccessedOld - numAcccessedNew;
+			        float numAcccessedNew = getNumTuplesAccessed(r, false);
+			        float benefit = numAccessedOld - numAcccessedNew;
 
 			        if (benefit > 0) {
 			        	// TODO: Better cost model ?

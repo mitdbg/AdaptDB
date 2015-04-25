@@ -39,7 +39,6 @@ public class RobustTree implements MDIndex {
 
 	@Override
 	public MDIndex clone() throws CloneNotSupportedException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 

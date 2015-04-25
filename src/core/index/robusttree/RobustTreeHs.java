@@ -38,7 +38,6 @@ public class RobustTreeHs implements MDIndex {
 
 	@Override
 	public MDIndex clone() throws CloneNotSupportedException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
@@ -224,11 +223,6 @@ public class RobustTreeHs implements MDIndex {
 		return total;
 	}
 
-	public List<Bucket> range(MDIndexKey low, MDIndexKey high) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 	/**
 	 * Serializes the index to string
 	 * Very brittle - Consider rewriting
@@ -266,7 +260,8 @@ public class RobustTreeHs implements MDIndex {
 			this.dimensionTypes[i] = TYPE.valueOf(sc.next());
 		}
 
-		this.root = this.parseNode(sc);
+		this.root = new RNode();
+		this.root.parseNode(sc);
 	}
 
 	public static double nthroot(int n, double A) {
@@ -306,10 +301,5 @@ public class RobustTreeHs implements MDIndex {
 			printNode(node.rightChild);
 			System.out.print(" }");
 		}
-	}
-
-	public List<Bucket> search(Predicate[] predicates) {
-		// TODO Auto-generated method stub
-		return null;
 	}
 }

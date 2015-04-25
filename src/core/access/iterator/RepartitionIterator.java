@@ -18,7 +18,7 @@ public class RepartitionIterator extends PartitionIterator{
 
 	public RepartitionIterator(){
 	}
-	
+
 	public RepartitionIterator(FilterQuery query, RNode newIndexTree){
 		this.query = query;
 		this.newIndexTree = newIndexTree;
@@ -58,7 +58,6 @@ public class RepartitionIterator extends PartitionIterator{
 	public void write(DataOutput out) throws IOException{
 		query.write(out);
 		byte[] indexBytes = newIndexTree.marshall().getBytes();
-//		out.writeBytes(newIndexTree.getClass().getName()+"\n");
 		out.writeInt(indexBytes.length);
 		out.write(indexBytes);
 	}
@@ -67,7 +66,6 @@ public class RepartitionIterator extends PartitionIterator{
 	public void readFields(DataInput in) throws IOException{
 		query.readFields(in);
 		newIndexTree = new RNode();
-//		newIndexTree = (RNode)ReflectionUtils.getInstance(in.readLine());
 		byte[] indexBytes = new byte[in.readInt()];
 		in.readFully(indexBytes);
 		newIndexTree.unmarshall(indexBytes);
