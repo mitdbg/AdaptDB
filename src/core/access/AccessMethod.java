@@ -1,8 +1,6 @@
 package core.access;
 
 
-import com.google.common.base.Predicates;
-
 import core.access.iterator.PartitionIterator;
 import core.adapt.opt.Optimizer;
 /**
@@ -62,8 +60,12 @@ public class AccessMethod {
 	 * @param n	- the number of splits to produce
 	 * @return
 	 */
-	public PartitionSplit[] getPartitionSplits(Query q, int n){
-		return opt.buildPlan(q, n);
+	public PartitionSplit[] getPartitionSplits(Query q, int n, boolean justAccess){
+		if (justAccess) {
+			return opt.buildAccessPlan(q, n);
+		} else {
+			return opt.buildPlan(q, n);
+		}
 	}
 
 

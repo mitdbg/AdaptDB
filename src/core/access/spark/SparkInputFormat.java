@@ -36,8 +36,8 @@ import core.utils.ReflectionUtils;
 public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorRecord>{
 
 	private static final Log LOG = LogFactory.getLog(FileInputFormat.class);
-	
-	
+
+
 	public static class SparkFileSplit extends CombineFileSplit{
 		private PartitionIterator iterator;
 		public SparkFileSplit(){
@@ -49,40 +49,43 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		public PartitionIterator getIterator(){
 			return this.iterator;
 		}
+		@Override
 		public void write(DataOutput out) throws IOException{
 			super.write(out);
 			out.writeBytes(iterator.getClass().getName()+"\n");
-			iterator.write(out);			
+			iterator.write(out);
 		}
+		@Override
 		public void readFields(DataInput in) throws IOException{
 			super.readFields(in);
 			iterator = (PartitionIterator)ReflectionUtils.getInstance(in.readLine());
 			iterator.readFields(in);
 		}
 	}
-	
-	
+
+
+	@Override
 	public List<InputSplit> getSplits(JobContext job) throws IOException {
-		
+
 		List<InputSplit> finalSplits = new ArrayList<InputSplit>();
 		List<FileStatus> files = listStatus(job);
 
 		SparkQueryConf queryConf = new SparkQueryConf(job.getConfiguration());
 		AccessMethod am = new AccessMethod();
 		am.init(queryConf.getDataset());
-		
-		Map<Integer,FileStatus> partitionIdFileMap = Maps.newHashMap();		
+
+		Map<Integer,FileStatus> partitionIdFileMap = Maps.newHashMap();
 		for(FileStatus file: files)
 			partitionIdFileMap.put(Integer.parseInt(FilenameUtils.getName(file.getPath().toString())), file);
-		
-		PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers());
+
+		PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), false);
 		splits = resizeSplits(splits, queryConf.getMaxSplitSize());
 
 		for(PartitionSplit split: splits){
 			int[] partitionIds = split.getPartitions();
 			Path[] splitFiles = new Path[partitionIds.length];
 			long[] start = new long[partitionIds.length];
-			long[] lengths = new long[partitionIds.length]; 
+			long[] lengths = new long[partitionIds.length];
 			String[] locations = new String[partitionIds.length];
 
 			for(int i=0;i<partitionIds.length;i++){
@@ -105,20 +108,20 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 
 		return finalSplits;
 	}
-	
+
 	/**
-	 * The goal of this method is to check the size of each and break large splits into 
+	 * The goal of this method is to check the size of each and break large splits into
 	 * multiple smaller splits.
-	 * 
+	 *
 	 * The maximum split size is read from the configuration and it depends on the size of each machine.
-	 * 
+	 *
 	 * @param initialSplits
 	 * @return
 	 */
 	public PartitionSplit[] resizeSplits(PartitionSplit[] initialSplits, int maxSplitSize){
-		
+
 		List<PartitionSplit> resizedSplits = Lists.newArrayList();
-		
+
 		for(PartitionSplit split: initialSplits){
 			int[] partitions = split.getPartitions();
 			if(partitions.length > maxSplitSize){
@@ -133,12 +136,13 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 				resizedSplits.add(split);
 			}
 		}
-		
+
 		return (PartitionSplit[])resizedSplits.toArray();
 	}
-	
-	
-		
+
+
+
+	@Override
 	public RecordReader<LongWritable, IteratorRecord> createRecordReader(InputSplit arg0, TaskAttemptContext arg1) throws IOException, InterruptedException {
 		return new SparkRecordReader();
 	}

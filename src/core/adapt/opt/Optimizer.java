@@ -119,6 +119,27 @@ public class Optimizer {
 		return false;
 	}
 
+	public PartitionSplit[] buildAccessPlan(final Query q, int numWorkers) {
+		if (q instanceof FilterQuery) {
+			FilterQuery fq = (FilterQuery) q;
+			List<RNode> nodes = this.rt.getRoot().search(fq.getPredicates());
+			PartitionIterator pi = new PostFilterIterator(fq);
+			int[] bids = new int[nodes.size()];
+			Iterator<RNode> it = nodes.iterator();
+		    for (int i=0; i<bids.length; i++) {
+		    	bids[i] = it.next().bucket.getBucketId();
+		    }
+
+			PartitionSplit psplit = new PartitionSplit(bids, pi);
+			PartitionSplit[] ps = new PartitionSplit[1];
+			ps[0] = psplit;
+			return ps;
+		} else {
+			System.err.println("Unimplemented query - Unable to build plan");
+			return null;
+		}
+	}
+
 	public PartitionSplit[] buildPlan(final Query q, int numWorkers) {
 		if (q instanceof FilterQuery) {
 			FilterQuery fq = (FilterQuery) q;
