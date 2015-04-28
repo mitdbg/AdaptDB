@@ -13,12 +13,12 @@ import core.utils.Pair;
 import core.utils.SchemaUtils.TYPE;
 
 public class RobustTreeHs implements MDIndex {
-	int maxBuckets;
-	int numAttributes;
+	public int maxBuckets;
+	public int numAttributes;
     private CartilageIndexKeySet sample;
     private double samplingRate;
 
-	TYPE[] dimensionTypes;
+	public TYPE[] dimensionTypes;
 	RNode root;
 
 	public static class Bound {
@@ -31,8 +31,7 @@ public class RobustTreeHs implements MDIndex {
 		}
 	}
 
-	public RobustTreeHs(int maxBuckets, double samplingRate){
-		this.initBuild(maxBuckets);
+	public RobustTreeHs(double samplingRate){
         this.samplingRate = samplingRate;
 	}
 
@@ -41,10 +40,10 @@ public class RobustTreeHs implements MDIndex {
 		return null;
 	}
 
+	@Override
 	public void initBuild(int buckets) {
         this.maxBuckets = buckets;
 		root = new RNode();
-        // this.sample = new ArrayList<CartilageIndexKeySet>();
         this.sample = new CartilageIndexKeySet();
 	}
 
@@ -52,9 +51,38 @@ public class RobustTreeHs implements MDIndex {
 		return root;
 	}
 
+	// Only used for testing
+	public void setRoot(RNode root) {
+		this.root = root;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+        if(obj instanceof RobustTreeHs){
+        	RobustTreeHs rhs = (RobustTreeHs) obj;
+        	boolean allGood = true;
+        	allGood &= rhs.numAttributes == this.numAttributes;
+        	allGood &= rhs.maxBuckets == this.maxBuckets;
+        	allGood &= rhs.dimensionTypes.length == this.dimensionTypes.length;
+        	if (!allGood)
+        		return false;
+
+        	for (int i=0; i<this.dimensionTypes.length; i++) {
+        		allGood &= this.dimensionTypes[i] == rhs.dimensionTypes[i];
+        	}
+        	if (!allGood)
+        		return false;
+
+        	allGood = this.root == rhs.root;
+        	return allGood;
+        }
+        return false;
+    }
+
 	/***************************************************
 	 ************* UPFRONT PARTITIONING ****************
 	 ***************************************************/
+	@Override
 	public void insert(MDIndexKey key) {
         CartilageIndexKey k = (CartilageIndexKey)key;
 
@@ -68,6 +96,7 @@ public class RobustTreeHs implements MDIndex {
         }
 	}
 
+	@Override
 	public void bulkLoad(MDIndexKey[] keys) {
 		for (int i=0; i<keys.length; i++) {
 			this.insert(keys[i]);
@@ -78,6 +107,7 @@ public class RobustTreeHs implements MDIndex {
 	/**
 	 * Created the tree based on the histograms
 	 */
+	@Override
 	public void initProbe() {
 		int depth = 31 - Integer.numberOfLeadingZeros(this.maxBuckets); // Computes log(this.maxBuckets)
 		double allocation = RobustTree.nthroot(this.numAttributes, this.maxBuckets);
@@ -199,6 +229,7 @@ public class RobustTreeHs implements MDIndex {
 	/**
 	 * Used in the 2nd phase of upfront to assign each tuple to the right
 	 */
+	@Override
 	public Object getBucketId(MDIndexKey key) {
 		return root.getBucketId(key);
 	}
@@ -227,6 +258,7 @@ public class RobustTreeHs implements MDIndex {
 	 * Serializes the index to string
 	 * Very brittle - Consider rewriting
 	 */
+	@Override
 	public byte[] marshall() {
 		// JVM optimizes shit so no need to use string builder / buffer
 		// Format:
@@ -249,8 +281,9 @@ public class RobustTreeHs implements MDIndex {
 		return robustTree.getBytes();
 	}
 
+	@Override
 	public void unmarshall(byte[] bytes) {
-		String tree = bytes.toString();
+		String tree = new String(bytes);
 		Scanner sc = new Scanner(tree);
 		this.maxBuckets = sc.nextInt();
 		this.numAttributes = sc.nextInt();

@@ -1,5 +1,7 @@
 package core.index;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.Random;
 
@@ -181,4 +183,14 @@ public class SimpleRangeTree implements MDIndex {
 //			System.out.println("fanout = "+getFanout(b, a, l));
 //
 //	}
+
+	public static void main(String[] args) {
+		try {
+			FileInputStream fs = new FileInputStream("/Users/anil/Dev/repos/client/conf/cartilage.properties");
+			System.out.println("Done");
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 }

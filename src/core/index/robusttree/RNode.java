@@ -20,6 +20,8 @@ public class RNode {
     public int attribute;
     public TYPE type;
     public Object value;
+
+    // Not used - left for legacy
     public float quantile;
 
     public RNode parent;
@@ -44,6 +46,29 @@ public class RNode {
     	r.rightChild = this.rightChild;
     	r.bucket = this.bucket;
     	return r;
+    }
+
+    @Override
+	public boolean equals(Object val) {
+    	if (val instanceof RNode) {
+    		RNode r = (RNode) val;
+    		boolean allGood = true;
+    		allGood &= this.attribute == r.attribute;
+    		allGood &= this.type == r.type;
+    		allGood &= TypeUtils.compareTo(this.value, r.value, this.type) == 0;
+
+    		if (!allGood) return false;
+
+    		allGood = this.leftChild == r.leftChild;
+      		if (!allGood) return false;
+
+    		allGood = this.rightChild == r.rightChild;
+      		if (!allGood) return false;
+
+      		return true;
+    	}
+
+    	return false;
     }
 
     public void setValues(int dimension, TYPE type, MDIndexKey key) {
@@ -87,18 +112,17 @@ public class RNode {
     }
 
     public int getBucketId(MDIndexKey key) {
-        if (compareKey(value, attribute, type, key) > 0) {
-            if (leftChild == null) {
-                return bucket.getBucketId();
+    	if (this.bucket != null) {
+    		return bucket.getBucketId();
+    	}
+    	else {
+            if (compareKey(value, attribute, type, key) > 0) {
+                return leftChild.getBucketId(key);
             }
-            return leftChild.getBucketId(key);
-        }
-        else {
-            if (rightChild == null) {
-                return bucket.getBucketId();
+            else {
+                return rightChild.getBucketId(key);
             }
-            return rightChild.getBucketId(key);
-        }
+    	}
     }
 
     public List<RNode> search(Predicate[] ps) {
@@ -191,10 +215,10 @@ public class RNode {
 		while (stack.size() != 0) {
 			RNode n = stack.removeLast();
 			String nStr;
-			if (n.bucket == null) {
+			if (n.bucket != null) {
 				nStr = String.format("b %d %d \n", n.bucket.getBucketId(), n.bucket.getNumTuples());
 			} else {
-				nStr = String.format("n %d %d %s\n", n.attribute, n.type.toString(), TypeUtils.serializeValue(n.value, n.type));
+				nStr = String.format("n %d %s %s\n", n.attribute, n.type.toString(), TypeUtils.serializeValue(n.value, n.type));
 
 				stack.add(n.rightChild);
 				stack.add(n.leftChild);

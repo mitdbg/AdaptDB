@@ -7,8 +7,9 @@ import core.index.Settings;
 import core.index.SimpleRangeTree;
 import core.index.kdtree.KDMedianTree;
 import core.index.key.CartilageIndexKey;
+import core.index.robusttree.RobustTreeHs;
 
-public class TestIndexBuilder extends TestCase{
+public class TestIndexBuilder extends TestCase {
 
 	String inputFilename;
 	CartilageIndexKey key;
@@ -28,7 +29,7 @@ public class TestIndexBuilder extends TestCase{
 	public void setUp(){
 		inputFilename = Settings.tpchPath + "lineitem.tbl";
 		partitionBufferSize = 5*1024*1024;
-		numPartitions = 100;
+		numPartitions = 16;
 
 		localPartitionDir = Settings.localPartitionDir;
 		hdfsPartitionDir = Settings.hdfsPartitionDir;
@@ -49,8 +50,6 @@ public class TestIndexBuilder extends TestCase{
 	private PartitionWriter getHDFSWriter(String partitionDir, short replication){
 		return new HDFSPartitionWriter(partitionDir, partitionBufferSize, numPartitions, replication, propertiesFile);
 	}
-
-
 
 	public void testBuildSimpleRangeTreeLocal(){
 		builder.build(new SimpleRangeTree(numPartitions),
@@ -101,4 +100,10 @@ public class TestIndexBuilder extends TestCase{
 					);
 	}
 
+	public void testBuildRobustTree() {
+		builder.build(new RobustTreeHs(0.01),
+						key,
+						inputFilename,
+						getHDFSWriter(hdfsPartitionDir, (short)replication));
+	}
 }

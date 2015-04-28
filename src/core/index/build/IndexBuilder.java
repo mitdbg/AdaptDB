@@ -14,29 +14,37 @@ import core.index.key.CartilageIndexKey;
 public class IndexBuilder {
 
 	int bucketSize = 64*1024*1024;
-	
+
 	public void build(MDIndex index, CartilageIndexKey key, String inputFilename, PartitionWriter writer){
-		
+
 		long startTime = System.nanoTime();
         File f = new File(inputFilename);
-        index.initBuild((int) (f.length() / bucketSize) + 1);
+        long fileSize = f.length();
+        index.initBuild((int) (fileSize / bucketSize) + 1);
 		InputReader r = new InputReader(index, key);
-		r.scan(inputFilename);		
+		r.scan(inputFilename);
 		index.initProbe();
-		double time1 = (double)(System.nanoTime()-startTime)/1E9;
+		double time1 = (System.nanoTime()-startTime)/1E9;
 		System.out.println("Index Build Time = "+time1+" sec");
-		
+
 		startTime = System.nanoTime();
-		r.scan(inputFilename, writer);		
+		r.scan(inputFilename, writer);
 		writer.flush();
-		double time2 = (double)(System.nanoTime()-startTime)/1E9;
+		double time2 = (System.nanoTime()-startTime)/1E9;
 		System.out.println("Index Probe Time = "+time2+" sec");
-		
-		System.out.println("Total time = "+(time1+time2)+" sec");
+
+		startTime = System.nanoTime();
+		byte[] indexBytes = index.marshall();
+		writer.writeToPartition("index", indexBytes, 0, indexBytes.length);
+		writer.flush();
+		double time3 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Index Write Time = "+time3+" sec");
+
+		System.out.println("Total time = "+(time1+time2+time3)+" sec");
 	}
-	
+
 	public void build(MDIndex[] indexes, CartilageIndexKey[] keys, String inputFilename, PartitionWriter[] writers){
-		
+
 		long startTime = System.nanoTime();
 		for(MDIndex index: indexes)
 			index.initBuild(bucketSize);
@@ -44,19 +52,19 @@ public class IndexBuilder {
 		r.scan(inputFilename);
 		for(MDIndex index: indexes)
 			index.initProbe();
-		double time1 = (double)(System.nanoTime()-startTime)/1E9;
+		double time1 = (System.nanoTime()-startTime)/1E9;
 		System.out.println("Index Build Time = "+time1+" sec");
-		
+
 		startTime = System.nanoTime();
 		r.scan(inputFilename, writers);
 		for(PartitionWriter writer: writers)
 			writer.flush();
-		double time2 = (double)(System.nanoTime()-startTime)/1E9;
+		double time2 = (System.nanoTime()-startTime)/1E9;
 		System.out.println("Index Probe Time = "+time2+" sec");
-		
+
 		System.out.println("Total time = "+(time1+time2)+" sec");
 	}
-	
+
 	public void build(MDIndex index, CartilageIndexKey key, String inputFilename, PartitionWriter writer, int attributes, int replication){
 		int attrPerReplica = attributes / replication;
 
@@ -65,26 +73,26 @@ public class IndexBuilder {
 			int r = j/attrPerReplica >= replication ? replication-1 : j/attrPerReplica;
 			if(!replicaAttrs.containsKey(r))
 				replicaAttrs.put(r, new ArrayList<Integer>());
-			replicaAttrs.get(r).add(j);			
+			replicaAttrs.get(r).add(j);
 		}
 
 		MDIndex[] indexes = new MDIndex[replication];
 		CartilageIndexKey[] keys = new CartilageIndexKey[replication];
 		PartitionWriter[] writers = new PartitionWriter[replication];
-		
+
 		for(int i=0;i<replication;i++){
 			try {
-				keys[i] = (CartilageIndexKey) key.clone();
+				keys[i] = key.clone();
 				keys[i].setKeys(Ints.toArray(replicaAttrs.get(i)));
 				indexes[i] = index.clone();
-				writers[i] = (PartitionWriter) writer.clone();
+				writers[i] = writer.clone();
 				writers[i].setPartitionDir(writer.getPartitionDir()+"/"+i);
 				writers[i].createPartitionDir();
 			} catch (CloneNotSupportedException e) {
 				e.printStackTrace();
 			}
 		}
-		
+
 		build(indexes, keys, inputFilename, writers);
 	}
 

@@ -1,10 +1,5 @@
 package core.adapt.opt;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -17,7 +12,6 @@ import core.access.Query.FilterQuery;
 import core.access.iterator.PartitionIterator;
 import core.access.iterator.PostFilterIterator;
 import core.access.iterator.RepartitionIterator;
-import core.index.key.CartilageIndexKey;
 import core.index.key.CartilageIndexKeySet;
 import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTreeHs;
@@ -79,44 +73,6 @@ public class Optimizer {
 
 	public Optimizer(String dataset) {
 		this.dataset = dataset;
-	}
-
-	// TODO: Someone should fill into the bucket object the number of tuples it contains
-	public boolean buildIndex() {
-		File file = new File(this.dataset);
-		if (file.exists()) {
-			long bytes = file.length();
-
-			// Round up the number of nearest power of 2
-			int numBlocks = (int) (bytes/BLOCK_SIZE);
-			rtDepth = getDepthOfIndex(numBlocks);
-			numBlocks = (int) Math.pow(2, rtDepth);
-
-			this.rt = new RobustTreeHs(numBlocks, 0.01);
-
-			CartilageIndexKey key;
-			key = new CartilageIndexKey('|', new int[]{0,1,2,3,4,5});
-
-			BufferedReader br;
-			try {
-				br = new BufferedReader(new FileReader(dataset));
-				String line;
-				while ((line = br.readLine()) != null) {
-					key.setBytes(line.getBytes());
-					rt.insert(key);
-				}
-				br.close();
-				rt.initProbe();
-
-				return true;
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-
-		return false;
 	}
 
 	public PartitionSplit[] buildAccessPlan(final Query q, int numWorkers) {

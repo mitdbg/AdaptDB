@@ -33,5 +33,4 @@ public class SparkQuery {
 		ctx.hadoopConfiguration().setClass(FileInputFormat.PATHFILTER_CLASS, SparkPathFilter.class, PathFilter.class);
 		return ctx.newAPIHadoopFile(hdfsPath, SparkInputFormat.class, LongWritable.class, IteratorRecord.class, ctx.hadoopConfiguration());
 	}
-
 }
