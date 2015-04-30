@@ -15,7 +15,8 @@ public class Partition implements Cloneable{
 	
 	protected String path;
 	protected byte[] bytes;
-	protected int offset;
+	protected int offset;	
+	protected int recordCount;
 	
 	protected int partitionId;
 	
@@ -35,6 +36,7 @@ public class Partition implements Cloneable{
 		this.partitionId = partitionId;
 		this.state = State.ORIG;
 		this.offset = 0;
+		this.recordCount = 0;
 	}
 	
 	public Partition clone() {
@@ -99,6 +101,7 @@ public class Partition implements Cloneable{
 		this.offset += length;
 		bytes[this.offset] = '\n';
 		this.offset++;
+		this.recordCount++;
 	}
 	
 	public void store(boolean append){
@@ -127,5 +130,9 @@ public class Partition implements Cloneable{
 	
 	public int hashCode(){
 		return (path+partitionId).hashCode();
+	}
+	
+	public int getRecordCount(){
+		return this.recordCount;	// returns the number of records written to this partition
 	}
 }

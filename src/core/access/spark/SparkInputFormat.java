@@ -29,14 +29,18 @@ import com.google.common.collect.Maps;
 import core.access.AccessMethod;
 import core.access.AccessMethod.PartitionSplit;
 import core.access.Query.FilterQuery;
+import core.access.iterator.DistributedRepartitionIterator;
 import core.access.iterator.PartitionIterator;
 import core.access.iterator.PartitionIterator.IteratorRecord;
+import core.access.iterator.RepartitionIterator;
 import core.utils.ReflectionUtils;
 
 public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorRecord>{
 
 	private static final Log LOG = LogFactory.getLog(FileInputFormat.class);
 
+	private SparkQueryConf queryConf;
+	
 
 	public static class SparkFileSplit extends CombineFileSplit{
 		private PartitionIterator iterator;
@@ -70,7 +74,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		List<InputSplit> finalSplits = new ArrayList<InputSplit>();
 		List<FileStatus> files = listStatus(job);
 
-		SparkQueryConf queryConf = new SparkQueryConf(job.getConfiguration());
+		queryConf = new SparkQueryConf(job.getConfiguration());
 		AccessMethod am = new AccessMethod();
 		am.init(queryConf.getDataset());
 
@@ -129,7 +133,12 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 				for(int i=0;i<partitions.length;i+=maxSplitSize){
 					int to = i + maxSplitSize > partitions.length ? partitions.length : i + maxSplitSize;
 					int[] subPartitions = Arrays.copyOfRange(partitions, i, to);
-					resizedSplits.add(new PartitionSplit(subPartitions, split.getIterator()));
+					
+					PartitionIterator itr = split.getIterator();
+					if(itr instanceof RepartitionIterator)
+						itr = new DistributedRepartitionIterator((RepartitionIterator)itr, queryConf.getZookeeperHosts());
+					
+					resizedSplits.add(new PartitionSplit(subPartitions, itr));
 				}
 			}
 			else{

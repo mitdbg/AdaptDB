@@ -1,6 +1,9 @@
 package core.index;
+import org.apache.curator.framework.CuratorFramework;
+
 import core.index.key.CartilageIndexKeySet;
 import core.index.key.MDIndexKey;
+import core.utils.CuratorUtils;
 
 
 /**
@@ -63,6 +66,37 @@ public interface MDIndex {
 			this.sample = sample;
 		}
 	}
+	
+	public static class BucketCounts{
+		
+		private CuratorFramework client;
+		private String counterPathBase = "partition-count-";
+		
+		public BucketCounts(String zookeeperHosts){
+			client = CuratorUtils.createAndStartClient(zookeeperHosts);
+		}
+		
+		public BucketCounts(CuratorFramework client){
+			this.client = client;
+		}
+		
+		public void setBucketCount(int bucketId, int count){			
+			CuratorUtils.addCounter(client, counterPathBase + bucketId, count);
+		}
+		
+		public int getBucketCount(int bucketId){
+			return CuratorUtils.getCounter(client, counterPathBase + bucketId);
+		}
+		
+		public void close(){
+			client.close();
+		}
+		
+		public CuratorFramework getClient(){
+			return this.client;					
+		}
+	}
+	
 
 
 	public MDIndex clone() throws CloneNotSupportedException;

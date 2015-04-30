@@ -24,6 +24,15 @@ public class RepartitionIterator extends PartitionIterator{
 		this.newIndexTree = newIndexTree;
 	}
 
+	public FilterQuery getQuery(){
+		return this.query;
+	}
+	
+	public RNode getIndexTree(){
+		return this.newIndexTree;
+	}
+	
+	
 	@Override
 	public void setPartition(Partition partition){
 		super.setPartition(partition);

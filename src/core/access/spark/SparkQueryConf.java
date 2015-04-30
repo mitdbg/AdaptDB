@@ -12,6 +12,8 @@ public class SparkQueryConf {
 	public final static String PREDICATES = "PREDICATES";
 	public final static String WORKERS = "WORKERS";
 	public final static String MAX_SPLIT_SIZE = "MAX_SPLIT_SIZE";
+	public final static String ZOOKEEPER_HOSTS = "ZOOKEEPER_HOSTS";
+	
 
 	private Configuration conf;
 
@@ -53,5 +55,13 @@ public class SparkQueryConf {
 
 	public int getMaxSplitSize(){
 		return Integer.parseInt(conf.get(MAX_SPLIT_SIZE));
+	}
+	
+	public void setZookeeperHosts(String hosts){
+		conf.set(ZOOKEEPER_HOSTS, ""+hosts);
+	}
+
+	public String getZookeeperHosts(){
+		return conf.get(ZOOKEEPER_HOSTS);
 	}
 }
