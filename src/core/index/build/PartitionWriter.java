@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+
 import com.google.common.collect.Maps;
 
 public abstract class PartitionWriter implements Cloneable{
@@ -15,6 +17,8 @@ public abstract class PartitionWriter implements Cloneable{
 	protected String partitionDir;
 	
 	protected Map<String,OutputStream> buffer;
+	protected Map<String,MutableInt> partitionRecordCount;
+	
 	
 	public PartitionWriter(String partitionDir, int bufferPartitionSize, int maxBufferPartitions){
 		this(partitionDir);
@@ -25,11 +29,13 @@ public abstract class PartitionWriter implements Cloneable{
 	public PartitionWriter(String partitionDir) {
 		this.partitionDir = partitionDir;
 		this.buffer = Maps.newHashMap();
+		this.partitionRecordCount = Maps.newHashMap();
 	}
 	
 	public PartitionWriter clone() throws CloneNotSupportedException {
 		PartitionWriter w = (PartitionWriter) super.clone();
 		w.buffer = Maps.newHashMap();
+		w.partitionRecordCount = Maps.newHashMap();
         return w;
 	}
 	
@@ -55,6 +61,14 @@ public abstract class PartitionWriter implements Cloneable{
 		try {
 			b.write(bytes, b_offset, b_length);
 			b.write('\n');
+
+			// update the counters
+			MutableInt count = partitionRecordCount.get(partitionId);
+			if (count == null)
+				partitionRecordCount.put(partitionId, new MutableInt());
+			else
+				count.increment();
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

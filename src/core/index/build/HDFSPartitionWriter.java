@@ -7,14 +7,19 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import core.conf.CartilageConf;
+import core.index.MDIndex.BucketCounts;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 
 public class HDFSPartitionWriter extends PartitionWriter{
 
 	private String propertiesFile;
+	private CartilageConf conf;
+	
 	private short replication = 3;
 	private FileSystem hdfs;
+	
+	//private String zookeeperHosts;
 	
 	public HDFSPartitionWriter(String partitionDir, int bufferPartitionSize, int maxBufferPartitions, short replication, String propertiesFile){
 		super(partitionDir, bufferPartitionSize, maxBufferPartitions);
@@ -40,7 +45,7 @@ public class HDFSPartitionWriter extends PartitionWriter{
 	
 	private void createHDFS(String propertiesFile){
 		this.propertiesFile = propertiesFile;
-		CartilageConf conf = ConfUtils.create(propertiesFile, "defaultHDFSPath");		
+		this.conf = ConfUtils.create(propertiesFile, "defaultHDFSPath");		
 		this.hdfs = HDFSUtils.getFS(conf.getHadoopHome()+"/etc/hadoop/core-site.xml");
 	}
 	
@@ -54,5 +59,13 @@ public class HDFSPartitionWriter extends PartitionWriter{
 
 	protected OutputStream getOutputStream(String path){
 		return HDFSUtils.getHDFSOutputStream(hdfs, path, replication, bufferPartitionSize);
+	}
+	
+	public void flush(){
+		BucketCounts c = new BucketCounts(conf.getZookeeperHosts());
+		for(String k: buffer.keySet())
+			c.setBucketCount(Integer.parseInt(k), partitionRecordCount.get(k).intValue());			
+		c.close();		
+		super.flush();
 	}
 }
