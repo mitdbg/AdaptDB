@@ -10,6 +10,7 @@ import com.google.common.primitives.Ints;
 
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
+import core.index.robusttree.RobustTreeHs;
 
 public class IndexBuilder {
 
@@ -37,8 +38,13 @@ public class IndexBuilder {
 		byte[] indexBytes = index.marshall();
 		writer.writeToPartition("index", indexBytes, 0, indexBytes.length);
 		writer.flush();
+
+		byte[] sampleBytes = ((RobustTreeHs)index).serializeSample();
+		writer.writeToPartition("index", indexBytes, 0, indexBytes.length);
+		writer.flush();
+
 		double time3 = (System.nanoTime()-startTime)/1E9;
-		System.out.println("Index Write Time = "+time3+" sec");
+		System.out.println("Index+Sample Write Time = "+time3+" sec");
 
 		System.out.println("Total time = "+(time1+time2+time3)+" sec");
 	}

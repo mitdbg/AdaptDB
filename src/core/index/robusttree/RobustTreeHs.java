@@ -297,6 +297,29 @@ public class RobustTreeHs implements MDIndex {
 		this.root.parseNode(sc);
 	}
 
+	public void loadSample(byte[] bytes) {
+		this.sample.unmarshall(bytes);
+		this.initializeBucketSamples(this.root, this.sample);
+	}
+
+	public void initializeBucketSamples(RNode n, CartilageIndexKeySet sample) {
+		if (n.bucket != null) {
+			n.bucket.setSample(sample);
+		} else {
+			// By sorting we avoid memory allocation
+			// Will most probably be faster
+			sample.sort(n.attribute);
+			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample.splitAt(n.attribute, n.value);
+			initializeBucketSamples(n.leftChild, halves.first);
+			initializeBucketSamples(n.rightChild, halves.second);
+		}
+	}
+
+
+	public byte[] serializeSample() {
+		return this.sample.marshall();
+	}
+
 	public static double nthroot(int n, double A) {
 		return nthroot(n, A, .001);
 	}

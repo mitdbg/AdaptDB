@@ -12,16 +12,16 @@ import core.utils.ConfUtils;
 
 public class SparkQuery {
 
-	public final static String propertyFile = "cartilage.properties";
-	public final static ConfUtils cfg = new ConfUtils(propertyFile);
-
 	private SparkQueryConf queryConf;
 	private JavaSparkContext ctx;
 
 	private Predicate[] predicates;
 
-	public SparkQuery(Predicate[] predicates) {
+	private ConfUtils cfg;
+
+	public SparkQuery(Predicate[] predicates, ConfUtils config) {
 		this.predicates = predicates;
+		this.cfg = config;
 		ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName(), cfg.getSPARK_HOME(), cfg.getSPARK_JAR());
 		queryConf = new SparkQueryConf(ctx.hadoopConfiguration());
 	}

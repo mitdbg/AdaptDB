@@ -5,6 +5,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.hadoop.fs.FileSystem;
+
 import core.access.AccessMethod.PartitionSplit;
 import core.access.Predicate;
 import core.access.Query;
@@ -15,6 +17,7 @@ import core.access.iterator.RepartitionIterator;
 import core.index.key.CartilageIndexKeySet;
 import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTreeHs;
+import core.utils.HDFSUtils;
 import core.utils.Pair;
 import core.utils.SchemaUtils.TYPE;
 import core.utils.TypeUtils;
@@ -73,6 +76,18 @@ public class Optimizer {
 
 	public Optimizer(String dataset) {
 		this.dataset = dataset;
+	}
+
+	public void loadIndex() {
+		FileSystem fs = HDFSUtils.getFS();
+		String pathToIndex = this.dataset + "/index";
+		String pathToSample = this.dataset + "/sample";
+		byte[] indexBytes = HDFSUtils.readFile(fs, pathToIndex);
+		this.rt = new RobustTreeHs(0.01);
+		this.rt.unmarshall(indexBytes);
+
+		byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
+		this.rt.loadSample(sampleBytes);
 	}
 
 	public PartitionSplit[] buildAccessPlan(final Query q, int numWorkers) {
@@ -212,6 +227,9 @@ public class Optimizer {
 					r.value = p.value;
 					replaceInTree(n, r);
 
+					// Give new bucket ids to all nodes below this
+					updateBucketIds(r);
+
 		        	PartitionIterator pi = new RepartitionIterator(fq, r);
 		        	PartitionSplit psplit = new PartitionSplit(bucketIds, pi);
 		        	lps.add(psplit);
@@ -310,7 +328,6 @@ public class Optimizer {
 
 		populateBucketEstimates(changed, collector, numTuples/numSamples);
 	}
-
 
 	public void populateBucketEstimates(RNode n, CartilageIndexKeySet sample, float scaleFactor) {
 		if (n.bucket != null) {
@@ -427,6 +444,21 @@ public class Optimizer {
 		RNode root = rt.getRoot();
 		Plans plans = getBestPlanForSubtree(root, ps, i);
 		return plans.Best;
+	}
+
+	public void updateBucketIds(RNode r) {
+		LinkedList<RNode> stack = new LinkedList<RNode>();
+		stack.add(r);
+
+		while (stack.size() > 0) {
+			RNode n = stack.removeLast();
+			if (n.bucket != null) {
+				n.bucket.updateId();
+			} else {
+				stack.add(n.rightChild);
+				stack.add(n.leftChild);
+			}
+		}
 	}
 
 	// Update the dest with source if source is a better plan

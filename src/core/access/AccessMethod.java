@@ -33,7 +33,7 @@ public class AccessMethod {
 	 */
 	public void init(String dataset){
 		opt = new Optimizer(dataset);
-//		opt.buildIndex();
+		opt.loadIndex();
 	}
 
 	/**

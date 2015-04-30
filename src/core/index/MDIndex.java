@@ -50,6 +50,11 @@ public interface MDIndex {
 			this.bucketId = id;
 		}
 
+		public void updateId() {
+			this.bucketId = maxBucketId;
+			maxBucketId += 1;
+		}
+
 		public CartilageIndexKeySet getSample() {
 			return sample;
 		}
