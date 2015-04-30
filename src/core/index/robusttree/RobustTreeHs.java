@@ -110,7 +110,7 @@ public class RobustTreeHs implements MDIndex {
 	@Override
 	public void initProbe() {
 		int depth = 31 - Integer.numberOfLeadingZeros(this.maxBuckets); // Computes log(this.maxBuckets)
-		double allocation = RobustTree.nthroot(this.numAttributes, this.maxBuckets);
+		double allocation = RobustTreeHs.nthroot(this.numAttributes, this.maxBuckets);
 
 		double[] allocations = new double[this.numAttributes];
 		for (int i=0; i<this.numAttributes; i++) {

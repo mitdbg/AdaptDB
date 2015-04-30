@@ -1,4 +1,6 @@
 package core.index;
+import java.util.HashMap;
+
 import org.apache.curator.framework.CuratorFramework;
 
 import core.index.key.CartilageIndexKeySet;
@@ -22,25 +24,36 @@ public interface MDIndex {
 	public final static class Bucket{
 		/* Actual Values */
 		int bucketId;
-		int numTuples;
 		CartilageIndexKeySet sample;
 
 		/* Estimates */
 		public float estimatedTuples;
 
 		public static int maxBucketId = 0;
+		public static HashMap<Integer, Integer> bucketCounts = new HashMap<Integer, Integer>();
 
 		public Bucket() {
 			bucketId = maxBucketId;
-			numTuples = -1;
+			bucketCounts.put(bucketId, -1);
 			maxBucketId += 1;
 		}
 
+		public Bucket(int id) {
+			bucketId = id;
+			maxBucketId = Math.max(bucketId+1, maxBucketId);
+			bucketCounts.put(bucketId, -1);
+		}
+
 		public void setNumTuples(int t) {
-			numTuples = t;
+			bucketCounts.put(bucketId, t);
 		}
 
 		public int getNumTuples() {
+			int numTuples = bucketCounts.get(bucketId);
+			if (numTuples == -1) {
+				// Error
+			}
+
 			return numTuples;
 		}
 
@@ -48,13 +61,11 @@ public interface MDIndex {
 			return bucketId;
 		}
 
-		// Needed for unmarshall
-		public void setBucketId(int id) {
-			this.bucketId = id;
-		}
-
 		public void updateId() {
+			// int numTuples = bucketCounts.get(this.bucketId);
+			bucketCounts.remove(this.bucketId);
 			this.bucketId = maxBucketId;
+			bucketCounts.put(this.bucketId, -1);
 			maxBucketId += 1;
 		}
 
@@ -66,37 +77,37 @@ public interface MDIndex {
 			this.sample = sample;
 		}
 	}
-	
+
 	public static class BucketCounts{
-		
+
 		private CuratorFramework client;
 		private String counterPathBase = "partition-count-";
-		
+
 		public BucketCounts(String zookeeperHosts){
 			client = CuratorUtils.createAndStartClient(zookeeperHosts);
 		}
-		
+
 		public BucketCounts(CuratorFramework client){
 			this.client = client;
 		}
-		
-		public void setBucketCount(int bucketId, int count){			
+
+		public void setBucketCount(int bucketId, int count){
 			CuratorUtils.addCounter(client, counterPathBase + bucketId, count);
 		}
-		
+
 		public int getBucketCount(int bucketId){
 			return CuratorUtils.getCounter(client, counterPathBase + bucketId);
 		}
-		
+
 		public void close(){
 			client.close();
 		}
-		
+
 		public CuratorFramework getClient(){
-			return this.client;					
+			return this.client;
 		}
 	}
-	
+
 
 
 	public MDIndex clone() throws CloneNotSupportedException;

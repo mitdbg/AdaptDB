@@ -248,8 +248,7 @@ public class RNode {
 			this.rightChild = new RNode();
 			this.rightChild.parseNode(sc);
 		} else if (type == "b") {
-			Bucket b = new Bucket();
-			b.setBucketId(sc.nextInt());
+			Bucket b = new Bucket(sc.nextInt());
 			b.setNumTuples(sc.nextInt());
 			this.bucket = b;
 		} else {
