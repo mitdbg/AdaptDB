@@ -120,9 +120,6 @@ public class RobustTreeHs implements MDIndex {
 		int[] counter = new int[this.numAttributes];
 
 		this.createTree(root, depth, 2, counter, allocations, this.sample);
-
-		// No longer need the sample
-		this.sample = null;
 	}
 
 	public void createTree(RNode node, int depth, double allocation, int[] counter, double[] allocations, CartilageIndexKeySet sample) {
@@ -314,7 +311,6 @@ public class RobustTreeHs implements MDIndex {
 			initializeBucketSamples(n.rightChild, halves.second);
 		}
 	}
-
 
 	public byte[] serializeSample() {
 		return this.sample.marshall();

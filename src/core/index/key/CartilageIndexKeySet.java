@@ -73,7 +73,7 @@ public class CartilageIndexKeySet {
 			default:		throw new RuntimeException("Unknown dimension type: "+key.types[i]);
 			}
 		}
-		values.add(keyValues);		
+		values.add(keyValues);
 		sampleSize++;
 	}
 
@@ -91,30 +91,35 @@ public class CartilageIndexKeySet {
 		switch(type){
 		case INT:
 			return new Comparator<Object[]> (){
+				@Override
 				public int compare(Object[] o1, Object[] o2) {
 					return ((Integer)o1[attributeIdx]).compareTo((Integer)o2[attributeIdx]);
 				}
 			};
 		case LONG:
 			return new Comparator<Object[]> (){
+				@Override
 				public int compare(Object[] o1, Object[] o2) {
 					return ((Long)o1[attributeIdx]).compareTo((Long)o2[attributeIdx]);
 				}
 			};
 		case FLOAT:
 			return new Comparator<Object[]> (){
+				@Override
 				public int compare(Object[] o1, Object[] o2) {
 					return ((Float)o1[attributeIdx]).compareTo((Float)o2[attributeIdx]);
 				}
 			};
 		case DATE:
 			return new Comparator<Object[]> (){
+				@Override
 				public int compare(Object[] o1, Object[] o2) {
 					return ((SimpleDate)o1[attributeIdx]).compareTo((SimpleDate)o2[attributeIdx]);
 				}
 			};
 		case STRING:
 			return new Comparator<Object[]> (){
+				@Override
 				public int compare(Object[] o1, Object[] o2) {
 					return ((String)o1[attributeIdx]).compareTo((String)o2[attributeIdx]);
 				}
@@ -280,47 +285,55 @@ public class CartilageIndexKeySet {
 			this.valueItr = values.iterator();
 			key = new ParsedIndexKey();
 		}
+		@Override
 		public boolean hasNext() {
 			return valueItr.hasNext();
 		}
+		@Override
 		public CartilageIndexKey next() {
 			key.setValues(valueItr.next());
 			return key;
 		}
+		@Override
 		public void remove() {
 			next();
 		}
 	}
-	
-	
+
+
 	public byte[] marshall(){
 		List<byte[]> byteArrays = Lists.newArrayList();
-		
+
 		byteArrays.add(Joiner.on(",").join(types).getBytes());
 		byteArrays.add(new byte[]{'\n'});
-		
+
 		int initialSize = sampleSize * 100;	// assumption: each record could be of max size 100 bytes
 		byte[] recordBytes = new byte[initialSize];
-		
+
 		int offset = 0;
 		for(Object[] v: values){
 			byte[] vBytes = Joiner.on(",").join(v).getBytes();
-			if(offset + vBytes.length + 1 < recordBytes.length){
+			if(offset + vBytes.length + 1 > recordBytes.length){
 				byteArrays.add(recordBytes);
 				recordBytes = new byte[initialSize];
+				offset = 0;
 			}
-			BinaryUtils.append(recordBytes, offset, vBytes);
+			try {
+				BinaryUtils.append(recordBytes, offset, vBytes);
+			} catch (ArrayIndexOutOfBoundsException e) {
+				System.out.println("ABCD");
+			}
 			offset += vBytes.length;
 			recordBytes[offset++] = '\n';
 		}
-		
+
 		return Bytes.concat((byte[][])byteArrays.toArray());
 	}
-	
+
 	public void unmarshall(byte[] bytes){
 		CartilageIndexKey record = new CartilageIndexKey(',');
 		int offset=0, previous=0;
-		
+
 		for ( ; offset<bytes.length; offset++ ){
 	    	if(bytes[offset]=='\n'){
 	    		byte[] lineBytes = ArrayUtils.subarray(bytes, previous, offset);
@@ -336,7 +349,7 @@ public class CartilageIndexKeySet {
 	    		}
 	    		previous = ++offset;
 	    	}
-		}		
+		}
 	}
-	
+
 }

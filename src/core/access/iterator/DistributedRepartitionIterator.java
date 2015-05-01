@@ -15,83 +15,84 @@ import core.utils.CuratorUtils;
 
 public class DistributedRepartitionIterator extends RepartitionIterator {
 
-	
+
 	public DistributedRepartitionIterator() {
 	}
-	
+
 	public DistributedRepartitionIterator(FilterQuery query, RNode newIndexTree){
 		super(query, newIndexTree);
 	}
-	
+
+	@Override
 	protected void finalize(){
 		PartitionLock l = new PartitionLock(zookeeperHosts);
 		BucketCounts c = new BucketCounts(l.getClient());
-		
+
 		for(Partition p: newPartitions.values()){
 			l.lockPartition(p.getPartitionId());
-			p.store(true);			
+			p.store(true);
 			c.addToBucketCount(p.getPartitionId(), p.getRecordCount());
 			l.unlockPartition(p.getPartitionId());
 		}
 		partition.drop();
-		
+
 		c.removeBucketCount(partition.getPartitionId());
 		c.close();
 		l.close();
 	}
-	
+
 //	public void write(DataOutput out) throws IOException{
 //		super.write(out);
 //		out.writeBytes(zookeeperHosts+"\n");
 //	}
-//	
+//
 //	public void readFields(DataInput in) throws IOException{
 //		super.readFields(in);
 //		this.zookeeperHosts = in.readLine();
 //	}
-	
-	
-	
-	
-	
+
+
+
+
+
 	public class PartitionLock {
-		
-		private CuratorFramework client;		
-		private String lockPathBase = "partition-lock-";
+
+		private CuratorFramework client;
+		private String lockPathBase = "/partition-lock-";
 		private Map<Integer,InterProcessLock> partitionLocks;
-		
-		
+
+
 		public PartitionLock(String zookeeperHosts){
 			client = CuratorUtils.createAndStartClient(zookeeperHosts);
 			partitionLocks = Maps.newHashMap();
 		}
-		
-		public void lockPartition(int partitionId){			
+
+		public void lockPartition(int partitionId){
 			partitionLocks.put(
-					partitionId, 
+					partitionId,
 					CuratorUtils.acquireLock(client, lockPathBase + partitionId)
 				);
 		}
-		
+
 		public void unlockPartition(int partitionId){
 			if(!partitionLocks.containsKey(partitionId))
 				throw new RuntimeException("Trying to unlock a partition which does not locked: "+ partitionId);
-			
+
 			CuratorUtils.releaseLock(
 					partitionLocks.get(partitionId)
 				);
 		}
-		
+
 		public void close(){
 			// close any stay locks
 			for(int partitionId: partitionLocks.keySet())
 				unlockPartition(partitionId);
 			client.close();
 		}
-		
+
 		public CuratorFramework getClient(){
-			return this.client;					
+			return this.client;
 		}
 	}
-	
+
 }
