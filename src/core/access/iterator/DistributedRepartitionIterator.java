@@ -1,8 +1,5 @@
 package core.access.iterator;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.util.Map;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -11,19 +8,19 @@ import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import com.google.common.collect.Maps;
 
 import core.access.Partition;
+import core.access.Query.FilterQuery;
 import core.index.MDIndex.BucketCounts;
+import core.index.robusttree.RNode;
 import core.utils.CuratorUtils;
 
 public class DistributedRepartitionIterator extends RepartitionIterator {
 
-	private String zookeeperHosts;
 	
 	public DistributedRepartitionIterator() {
 	}
 	
-	public DistributedRepartitionIterator(RepartitionIterator itr, String zookeeperHosts){
-		super(itr.getQuery(), itr.getIndexTree());
-		this.zookeeperHosts = zookeeperHosts;
+	public DistributedRepartitionIterator(FilterQuery query, RNode newIndexTree, String zookeeperHosts){
+		super(query, newIndexTree, zookeeperHosts);
 	}
 	
 	protected void finalize(){
@@ -33,24 +30,25 @@ public class DistributedRepartitionIterator extends RepartitionIterator {
 		for(Partition p: newPartitions.values()){
 			l.lockPartition(p.getPartitionId());
 			p.store(true);			
-			c.setBucketCount(p.getPartitionId(), p.getRecordCount());
+			c.addToBucketCount(p.getPartitionId(), p.getRecordCount());
 			l.unlockPartition(p.getPartitionId());
 		}
 		partition.drop();
 		
+		c.removeBucketCount(partition.getPartitionId());
 		c.close();
 		l.close();
 	}
 	
-	public void write(DataOutput out) throws IOException{
-		super.write(out);
-		out.writeBytes(zookeeperHosts+"\n");
-	}
-	
-	public void readFields(DataInput in) throws IOException{
-		super.readFields(in);
-		this.zookeeperHosts = in.readLine();
-	}
+//	public void write(DataOutput out) throws IOException{
+//		super.write(out);
+//		out.writeBytes(zookeeperHosts+"\n");
+//	}
+//	
+//	public void readFields(DataInput in) throws IOException{
+//		super.readFields(in);
+//		this.zookeeperHosts = in.readLine();
+//	}
 	
 	
 	

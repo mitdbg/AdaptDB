@@ -5,8 +5,13 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import com.google.common.collect.Lists;
+import org.apache.commons.lang.ArrayUtils;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
+import com.google.common.primitives.Bytes;
+
+import core.utils.BinaryUtils;
 import core.utils.Pair;
 import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
 import core.utils.SchemaUtils.TYPE;
@@ -23,13 +28,14 @@ public class CartilageIndexKeySet {
 
 	private List<Object[]> values;
 	private TYPE[] types;
-
+	private int sampleSize;
 
 	/**
 	 * Create an empty key set.
 	 */
 	public CartilageIndexKeySet() {
 		values = Lists.newArrayList();
+		sampleSize = 0;
 	}
 
 	/**
@@ -39,6 +45,7 @@ public class CartilageIndexKeySet {
 	public CartilageIndexKeySet(List<Object[]> values, TYPE[] types) {
         this.values = values;
         this.types = types;
+        this.sampleSize = 0;
 	}
 
 	/**
@@ -66,7 +73,8 @@ public class CartilageIndexKeySet {
 			default:		throw new RuntimeException("Unknown dimension type: "+key.types[i]);
 			}
 		}
-		values.add(keyValues);
+		values.add(keyValues);		
+		sampleSize++;
 	}
 
 	/**
@@ -283,4 +291,52 @@ public class CartilageIndexKeySet {
 			next();
 		}
 	}
+	
+	
+	public byte[] marshall(){
+		List<byte[]> byteArrays = Lists.newArrayList();
+		
+		byteArrays.add(Joiner.on(",").join(types).getBytes());
+		byteArrays.add(new byte[]{'\n'});
+		
+		int initialSize = sampleSize * 100;	// assumption: each record could be of max size 100 bytes
+		byte[] recordBytes = new byte[initialSize];
+		
+		int offset = 0;
+		for(Object[] v: values){
+			byte[] vBytes = Joiner.on(",").join(v).getBytes();
+			if(offset + vBytes.length + 1 < recordBytes.length){
+				byteArrays.add(recordBytes);
+				recordBytes = new byte[initialSize];
+			}
+			BinaryUtils.append(recordBytes, offset, vBytes);
+			offset += vBytes.length;
+			recordBytes[offset++] = '\n';
+		}
+		
+		return Bytes.concat((byte[][])byteArrays.toArray());
+	}
+	
+	public void unmarshall(byte[] bytes){
+		CartilageIndexKey record = new CartilageIndexKey(',');
+		int offset=0, previous=0;
+		
+		for ( ; offset<bytes.length; offset++ ){
+	    	if(bytes[offset]=='\n'){
+	    		byte[] lineBytes = ArrayUtils.subarray(bytes, previous, offset);
+	    		if(previous==0){
+	    			String[] tokens = new String(lineBytes).split(",");
+	    			this.types = new TYPE[tokens.length];
+	    			for(int i=0;i <tokens.length; i++)
+	    				types[i] = TYPE.valueOf(tokens[i]);
+	    		}
+	    		else{
+		    		record.setBytes(lineBytes);
+		    		insert(record);
+	    		}
+	    		previous = ++offset;
+	    	}
+		}		
+	}
+	
 }

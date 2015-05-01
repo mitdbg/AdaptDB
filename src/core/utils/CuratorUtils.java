@@ -139,4 +139,17 @@ public class CuratorUtils {
 			throw new RuntimeException("Failed to add the counter: "+counterPath+"\n"+e.getMessage());
 		}
 	}
+	
+	public static void setCounter(CuratorFramework client, String counterPath, int value){
+		SharedCount c = new SharedCount(client, counterPath, 0);
+		try {
+			c.start();
+			c.setCount(value);
+			c.close();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("Failed to add the counter: "+counterPath+"\n"+e.getMessage());
+		}
+	}
 }

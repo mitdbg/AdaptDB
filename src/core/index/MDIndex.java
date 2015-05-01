@@ -91,12 +91,16 @@ public interface MDIndex {
 			this.client = client;
 		}
 
-		public void setBucketCount(int bucketId, int count){
+		public void addToBucketCount(int bucketId, int count){
 			CuratorUtils.addCounter(client, counterPathBase + bucketId, count);
 		}
 
 		public int getBucketCount(int bucketId){
 			return CuratorUtils.getCounter(client, counterPathBase + bucketId);
+		}
+		
+		public void removeBucketCount(int bucketId){
+			CuratorUtils.setCounter(client, counterPathBase + bucketId, 0);
 		}
 
 		public void close(){

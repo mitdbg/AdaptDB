@@ -29,7 +29,6 @@ import com.google.common.collect.Maps;
 import core.access.AccessMethod;
 import core.access.AccessMethod.PartitionSplit;
 import core.access.Query.FilterQuery;
-import core.access.iterator.DistributedRepartitionIterator;
 import core.access.iterator.PartitionIterator;
 import core.access.iterator.PartitionIterator.IteratorRecord;
 import core.access.iterator.RepartitionIterator;
@@ -136,7 +135,8 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 					
 					PartitionIterator itr = split.getIterator();
 					if(itr instanceof RepartitionIterator)
-						itr = new DistributedRepartitionIterator((RepartitionIterator)itr, queryConf.getZookeeperHosts());
+						itr = ((RepartitionIterator)itr).createDistributedIterator();
+						//itr = new DistributedRepartitionIterator((RepartitionIterator)itr, queryConf.getZookeeperHosts());
 					
 					resizedSplits.add(new PartitionSplit(subPartitions, itr));
 				}

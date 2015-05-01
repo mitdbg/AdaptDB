@@ -7,21 +7,28 @@ import java.util.Map;
 
 import core.access.Partition;
 import core.access.Query.FilterQuery;
+import core.index.MDIndex.BucketCounts;
 import core.index.robusttree.RNode;
 
 public class RepartitionIterator extends PartitionIterator{
 
 	private FilterQuery query;
 	private RNode newIndexTree;
+	protected String zookeeperHosts;
 
 	protected Map<Integer,Partition> newPartitions;
 
 	public RepartitionIterator(){
 	}
 
-	public RepartitionIterator(FilterQuery query, RNode newIndexTree){
+	public RepartitionIterator(FilterQuery query, RNode newIndexTree, String zookeeperHosts){
 		this.query = query;
 		this.newIndexTree = newIndexTree;
+		this.zookeeperHosts = zookeeperHosts;
+	}
+	
+	public DistributedRepartitionIterator createDistributedIterator(){
+		return new DistributedRepartitionIterator(query, newIndexTree, zookeeperHosts);
 	}
 
 	public FilterQuery getQuery(){
@@ -58,9 +65,14 @@ public class RepartitionIterator extends PartitionIterator{
 
 	@Override
 	protected void finalize(){
-		for(Partition p: newPartitions.values())
+		BucketCounts c = new BucketCounts(zookeeperHosts);
+		for(Partition p: newPartitions.values()){
 			p.store(true);
+			c.addToBucketCount(p.getPartitionId(), p.getRecordCount());			
+		}
 		partition.drop();
+		c.removeBucketCount(partition.getPartitionId());
+		c.close();
 	}
 
 	@Override
@@ -69,6 +81,7 @@ public class RepartitionIterator extends PartitionIterator{
 		byte[] indexBytes = newIndexTree.marshall().getBytes();
 		out.writeInt(indexBytes.length);
 		out.write(indexBytes);
+		out.writeBytes(zookeeperHosts+"\n");
 	}
 
 	@Override
@@ -78,5 +91,6 @@ public class RepartitionIterator extends PartitionIterator{
 		byte[] indexBytes = new byte[in.readInt()];
 		in.readFully(indexBytes);
 		newIndexTree.unmarshall(indexBytes);
+		zookeeperHosts = in.readLine();
 	}
 }

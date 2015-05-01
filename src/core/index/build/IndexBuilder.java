@@ -40,7 +40,7 @@ public class IndexBuilder {
 		writer.flush();
 
 		byte[] sampleBytes = ((RobustTreeHs)index).serializeSample();
-		writer.writeToPartition("index", indexBytes, 0, indexBytes.length);
+		writer.writeToPartition("sample", sampleBytes, 0, sampleBytes.length);
 		writer.flush();
 
 		double time3 = (System.nanoTime()-startTime)/1E9;
@@ -49,6 +49,7 @@ public class IndexBuilder {
 		System.out.println("Total time = "+(time1+time2+time3)+" sec");
 	}
 
+	//WARN: not up to date!
 	public void build(MDIndex[] indexes, CartilageIndexKey[] keys, String inputFilename, PartitionWriter[] writers){
 
 		long startTime = System.nanoTime();
@@ -71,6 +72,7 @@ public class IndexBuilder {
 		System.out.println("Total time = "+(time1+time2)+" sec");
 	}
 
+	//WARN: not up to date!
 	public void build(MDIndex index, CartilageIndexKey key, String inputFilename, PartitionWriter writer, int attributes, int replication){
 		int attrPerReplica = attributes / replication;
 
