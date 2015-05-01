@@ -318,16 +318,16 @@ public class CartilageIndexKeySet {
 				recordBytes = new byte[initialSize];
 				offset = 0;
 			}
-			try {
-				BinaryUtils.append(recordBytes, offset, vBytes);
-			} catch (ArrayIndexOutOfBoundsException e) {
-				System.out.println("ABCD");
-			}
+			BinaryUtils.append(recordBytes, offset, vBytes);
 			offset += vBytes.length;
 			recordBytes[offset++] = '\n';
 		}
 
-		return Bytes.concat((byte[][])byteArrays.toArray());
+		byte[][] finalByteArrays = new byte[byteArrays.size()][];
+		for(int i=0; i<finalByteArrays.length; i++)
+			finalByteArrays[i] = byteArrays.get(i);
+
+		return Bytes.concat(finalByteArrays);
 	}
 
 	public void unmarshall(byte[] bytes){
@@ -351,5 +351,4 @@ public class CartilageIndexKeySet {
 	    	}
 		}
 	}
-
 }
