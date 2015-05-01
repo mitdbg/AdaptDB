@@ -304,7 +304,7 @@ public class CartilageIndexKeySet {
 	public byte[] marshall(){
 		List<byte[]> byteArrays = Lists.newArrayList();
 
-		byteArrays.add(Joiner.on(",").join(types).getBytes());
+		byteArrays.add(Joiner.on("|").join(types).getBytes());
 		byteArrays.add(new byte[]{'\n'});
 
 		int initialSize = sampleSize * 100;	// assumption: each record could be of max size 100 bytes
@@ -312,9 +312,9 @@ public class CartilageIndexKeySet {
 
 		int offset = 0;
 		for(Object[] v: values){
-			byte[] vBytes = Joiner.on(",").join(v).getBytes();
+			byte[] vBytes = Joiner.on("|").join(v).getBytes();
 			if(offset + vBytes.length + 1 > recordBytes.length){
-				byteArrays.add(recordBytes);
+				byteArrays.add(BinaryUtils.resize(recordBytes, offset));
 				recordBytes = new byte[initialSize];
 				offset = 0;
 			}
@@ -322,6 +322,8 @@ public class CartilageIndexKeySet {
 			offset += vBytes.length;
 			recordBytes[offset++] = '\n';
 		}
+
+		byteArrays.add(BinaryUtils.resize(recordBytes, offset));
 
 		byte[][] finalByteArrays = new byte[byteArrays.size()][];
 		for(int i=0; i<finalByteArrays.length; i++)
@@ -331,21 +333,25 @@ public class CartilageIndexKeySet {
 	}
 
 	public void unmarshall(byte[] bytes){
-		CartilageIndexKey record = new CartilageIndexKey(',');
+		CartilageIndexKey record = new CartilageIndexKey('|');
 		int offset=0, previous=0;
 
 		for ( ; offset<bytes.length; offset++ ){
 	    	if(bytes[offset]=='\n'){
 	    		byte[] lineBytes = ArrayUtils.subarray(bytes, previous, offset);
 	    		if(previous==0){
-	    			String[] tokens = new String(lineBytes).split(",");
+	    			String[] tokens = new String(lineBytes).split("\\|");
 	    			this.types = new TYPE[tokens.length];
 	    			for(int i=0;i <tokens.length; i++)
 	    				types[i] = TYPE.valueOf(tokens[i]);
 	    		}
 	    		else{
 		    		record.setBytes(lineBytes);
-		    		insert(record);
+		    		try {
+			    		insert(record);
+		    		} catch (ArrayIndexOutOfBoundsException e) {
+		    			System.out.println("sadfasd");
+		    		}
 	    		}
 	    		previous = ++offset;
 	    	}

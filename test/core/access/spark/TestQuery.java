@@ -19,7 +19,7 @@ public class TestQuery extends TestCase{
 	public void testExecuteQuery(){
 		Predicate p = new Predicate(0, TYPE.INT, 3002147, PREDTYPE.LEQ);
 		SparkQuery sq = new SparkQuery(new Predicate[]{p}, cfg);
-		sq.createRDD("/home/anil/dodo").count();
+		sq.createRDD("/user/anil/dodo").count();
 
 	}
 }

@@ -31,9 +31,9 @@ public class AccessMethod {
 	 *
 	 * @param dataset
 	 */
-	public void init(String dataset){
+	public void init(String dataset, String hadoopHome){
 		opt = new Optimizer(dataset);
-		opt.loadIndex();
+		opt.loadIndex(hadoopHome);
 	}
 
 	/**

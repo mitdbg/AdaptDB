@@ -89,30 +89,35 @@ public class TypeUtils {
 		switch(type){
 		case INT:
 			return new Comparator<Object> (){
+				@Override
 				public int compare(Object o1, Object o2) {
 					return ((Integer)o1).compareTo((Integer)o2);
 				}
 			};
 		case LONG:
 			return new Comparator<Object> (){
+				@Override
 				public int compare(Object o1, Object o2) {
 					return ((Long)o1).compareTo((Long)o2);
 				}
 			};
 		case FLOAT:
 			return new Comparator<Object> (){
+				@Override
 				public int compare(Object o1, Object o2) {
 					return ((Float)o1).compareTo((Float)o2);
 				}
 			};
 		case DATE:
 			return new Comparator<Object> (){
+				@Override
 				public int compare(Object o1, Object o2) {
 					return ((SimpleDate)o1).compareTo((SimpleDate)o2);
 				}
 			};
 		case STRING:
 			return new Comparator<Object> (){
+				@Override
 				public int compare(Object o1, Object o2) {
 					return ((String)o1).compareTo((String)o2);
 				}
@@ -126,7 +131,7 @@ public class TypeUtils {
 
 	public static String serializeValue(Object value, TYPE t) {
 		if (t == TYPE.DATE) {
-			Format formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+			Format formatter = new SimpleDateFormat("yyyy-MM-dd");
 			return formatter.format(value);
 		} else {
 			return value.toString();
@@ -138,11 +143,11 @@ public class TypeUtils {
 		case INT:
 			return Integer.parseInt(token);
 		case LONG:
-			return Integer.parseInt(token);
+			return Long.parseLong(token);
 		case FLOAT:
-			return Integer.parseInt(token);
+			return Float.parseFloat(token);
 		case DATE:
-			Format formatter = new SimpleDateFormat();
+			Format formatter = new SimpleDateFormat("yyyy-MM-dd");
 			try {
 				return formatter.parseObject(token);
 			} catch (ParseException e) {

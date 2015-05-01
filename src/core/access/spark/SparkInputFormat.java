@@ -40,7 +40,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 	private static final Log LOG = LogFactory.getLog(FileInputFormat.class);
 
 	private SparkQueryConf queryConf;
-	
+
 
 	public static class SparkFileSplit extends CombineFileSplit{
 		private PartitionIterator iterator;
@@ -76,7 +76,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 
 		queryConf = new SparkQueryConf(job.getConfiguration());
 		AccessMethod am = new AccessMethod();
-		am.init(queryConf.getDataset());
+		am.init(queryConf.getDataset(), queryConf.getHadoopHome());
 
 		Map<Integer,FileStatus> partitionIdFileMap = Maps.newHashMap();
 		for(FileStatus file: files)
@@ -103,7 +103,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 				locations[i] = blkLocations[blkIndex].getHosts()[0];		// Assumption: replication factor  = 1
 			}
 
-			PartitionIterator itr = split.getIterator(); 
+			PartitionIterator itr = split.getIterator();
 			if(itr instanceof RepartitionIterator || itr instanceof DistributedRepartitionIterator)		// hack to set the zookeeper hosts
 				((RepartitionIterator)itr).setZookeeper(queryConf.getZookeeperHosts());
 			SparkFileSplit thissplit = new SparkFileSplit(splitFiles, start, lengths, locations, itr);
@@ -136,12 +136,12 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 				for(int i=0;i<partitions.length;i+=maxSplitSize){
 					int to = i + maxSplitSize > partitions.length ? partitions.length : i + maxSplitSize;
 					int[] subPartitions = Arrays.copyOfRange(partitions, i, to);
-					
+
 					PartitionIterator itr = split.getIterator();
 					if(itr instanceof RepartitionIterator)
 						itr = ((RepartitionIterator)itr).createDistributedIterator();
 						//itr = new DistributedRepartitionIterator((RepartitionIterator)itr, queryConf.getZookeeperHosts());
-					
+
 					resizedSplits.add(new PartitionSplit(subPartitions, itr));
 				}
 			}

@@ -295,6 +295,7 @@ public class RobustTreeHs implements MDIndex {
 	}
 
 	public void loadSample(byte[] bytes) {
+        this.sample = new CartilageIndexKeySet();
 		this.sample.unmarshall(bytes);
 		this.initializeBucketSamples(this.root, this.sample);
 	}

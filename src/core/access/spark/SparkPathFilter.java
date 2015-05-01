@@ -14,16 +14,18 @@ public class SparkPathFilter implements PathFilter, Configurable  {
 	protected Configuration conf;
 	protected AccessMethod am;
 	protected Predicate[] predicates;
-	
 
+
+	@Override
 	public void setConf(Configuration conf) {
 		this.conf = conf;
 		SparkQueryConf queryConf = new SparkQueryConf(conf);
 		am = new AccessMethod();
-		am.init(queryConf.getDataset());
+		am.init(queryConf.getDataset(), queryConf.getHadoopHome());
 		predicates = queryConf.getPredicates();
 	}
 
+	@Override
 	public boolean accept(Path arg0) {
 		for(Predicate predicate: predicates)
 			if(!am.isRelevant(FilenameUtils.getName(arg0.toString()), predicate))
@@ -31,6 +33,7 @@ public class SparkPathFilter implements PathFilter, Configurable  {
 		return true;
 	}
 
+	@Override
 	public Configuration getConf() {
 		return conf;
 	}

@@ -5,37 +5,37 @@ import junit.framework.TestCase;
 import org.apache.hadoop.conf.Configuration;
 
 import core.access.Predicate;
-import core.utils.RangeUtils;
+import core.access.Predicate.PREDTYPE;
+import core.utils.SchemaUtils.TYPE;
 
 public class TestSparkQueryConf extends TestCase{
 
-	SparkQueryConf sparkConf;	
+	SparkQueryConf sparkConf;
 	String dummyDataset;
 	int dummyWorkers;
 	Predicate[] dummyPredicates;
-	
+
+	@Override
 	public void setUp(){
 		Configuration conf = new Configuration();
 		sparkConf = new SparkQueryConf(conf);
-		
+
 		dummyDataset = "data123";
 		dummyWorkers = 1;
-		dummyPredicates = new Predicate[3];
-		dummyPredicates[0] = new Predicate(0, RangeUtils.closed(1,10));
-		dummyPredicates[1] = new Predicate(1, RangeUtils.closed(1,10));
-		dummyPredicates[2] = new Predicate(2, RangeUtils.closed(1,10));
+		dummyPredicates = new Predicate[1];
+		dummyPredicates[0] = new Predicate(0, TYPE.INT, 3002147, PREDTYPE.LEQ);
 	}
-	
+
 	public void testDataset(){
 		sparkConf.setDataset(dummyDataset);
 		assertEquals(dummyDataset, sparkConf.getDataset());
 	}
-	
+
 	public void testWorkers(){
 		sparkConf.setWorkers(dummyWorkers);
 		assertEquals(dummyWorkers, sparkConf.getWorkers());
 	}
-	
+
 	public void testPredicates(){
 		sparkConf.setPredicates(dummyPredicates);
 		Predicate[] actualPredicates = sparkConf.getPredicates();

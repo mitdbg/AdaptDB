@@ -78,8 +78,8 @@ public class Optimizer {
 		this.dataset = dataset;
 	}
 
-	public void loadIndex() {
-		FileSystem fs = HDFSUtils.getFS();
+	public void loadIndex(String hadoopHome) {
+		FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
 		String pathToIndex = this.dataset + "/index";
 		String pathToSample = this.dataset + "/sample";
 		byte[] indexBytes = HDFSUtils.readFile(fs, pathToIndex);

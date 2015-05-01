@@ -238,7 +238,7 @@ public class RNode {
 
 	public RNode parseNode(Scanner sc) {
 		String type = sc.next();
-		if (type == "n") {
+		if (type.equals("n")) {
 			this.attribute = sc.nextInt();
 			this.type = TYPE.valueOf(sc.next());
 			this.value = TypeUtils.deserializeValue(this.type, sc.next());
@@ -247,9 +247,8 @@ public class RNode {
 			this.leftChild.parseNode(sc);
 			this.rightChild = new RNode();
 			this.rightChild.parseNode(sc);
-		} else if (type == "b") {
+		} else if (type.equals("b")) {
 			Bucket b = new Bucket(sc.nextInt());
-			//b.setNumTuples(sc.nextInt());
 			this.bucket = b;
 		} else {
 			System.out.println("Bad things have happened in unmarshall");

@@ -1,8 +1,6 @@
 package core.access.spark;
 
-import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
@@ -30,7 +28,8 @@ public class SparkQuery {
 		queryConf.setDataset(hdfsPath);
 		queryConf.setPredicates(predicates);
 		queryConf.setWorkers(cfg.getNUM_RACKS() * cfg.getNODES_PER_RACK() * cfg.getMAP_TASKS());
-		ctx.hadoopConfiguration().setClass(FileInputFormat.PATHFILTER_CLASS, SparkPathFilter.class, PathFilter.class);
-		return ctx.newAPIHadoopFile(hdfsPath, SparkInputFormat.class, LongWritable.class, IteratorRecord.class, ctx.hadoopConfiguration());
+		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
+		// ctx.hadoopConfiguration().setClass(FileInputFormat.PATHFILTER_CLASS, SparkPathFilter.class, PathFilter.class);
+		return ctx.newAPIHadoopFile("hdfs://localhost:8020" +  hdfsPath, SparkInputFormat.class, LongWritable.class, IteratorRecord.class, ctx.hadoopConfiguration());
 	}
 }
