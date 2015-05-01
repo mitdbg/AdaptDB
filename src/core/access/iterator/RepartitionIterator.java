@@ -21,14 +21,19 @@ public class RepartitionIterator extends PartitionIterator{
 	public RepartitionIterator(){
 	}
 
-	public RepartitionIterator(FilterQuery query, RNode newIndexTree, String zookeeperHosts){
+	public RepartitionIterator(FilterQuery query, RNode newIndexTree){
 		this.query = query;
 		this.newIndexTree = newIndexTree;
+	}
+	
+	public void setZookeeper(String zookeeperHosts){
 		this.zookeeperHosts = zookeeperHosts;
 	}
 	
 	public DistributedRepartitionIterator createDistributedIterator(){
-		return new DistributedRepartitionIterator(query, newIndexTree, zookeeperHosts);
+		DistributedRepartitionIterator itr = new DistributedRepartitionIterator(query, newIndexTree);
+		itr.setZookeeper(zookeeperHosts);
+		return itr;
 	}
 
 	public FilterQuery getQuery(){

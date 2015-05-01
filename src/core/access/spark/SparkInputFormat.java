@@ -29,6 +29,7 @@ import com.google.common.collect.Maps;
 import core.access.AccessMethod;
 import core.access.AccessMethod.PartitionSplit;
 import core.access.Query.FilterQuery;
+import core.access.iterator.DistributedRepartitionIterator;
 import core.access.iterator.PartitionIterator;
 import core.access.iterator.PartitionIterator.IteratorRecord;
 import core.access.iterator.RepartitionIterator;
@@ -102,7 +103,10 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 				locations[i] = blkLocations[blkIndex].getHosts()[0];		// Assumption: replication factor  = 1
 			}
 
-			CombineFileSplit thissplit = new CombineFileSplit(splitFiles, start, lengths, locations);
+			PartitionIterator itr = split.getIterator(); 
+			if(itr instanceof RepartitionIterator || itr instanceof DistributedRepartitionIterator)		// hack to set the zookeeper hosts
+				((RepartitionIterator)itr).setZookeeper(queryConf.getZookeeperHosts());
+			SparkFileSplit thissplit = new SparkFileSplit(splitFiles, start, lengths, locations, itr);
 			finalSplits.add(thissplit);
 		}
 

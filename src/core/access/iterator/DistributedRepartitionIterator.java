@@ -19,8 +19,8 @@ public class DistributedRepartitionIterator extends RepartitionIterator {
 	public DistributedRepartitionIterator() {
 	}
 	
-	public DistributedRepartitionIterator(FilterQuery query, RNode newIndexTree, String zookeeperHosts){
-		super(query, newIndexTree, zookeeperHosts);
+	public DistributedRepartitionIterator(FilterQuery query, RNode newIndexTree){
+		super(query, newIndexTree);
 	}
 	
 	protected void finalize(){
