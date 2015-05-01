@@ -178,13 +178,14 @@ public class RobustTreeHs implements MDIndex {
 		if (leastAllocated.size() == 1) {
 			return leastAllocated.get(0);
 		} else {
-			int count = counter[leastAllocated.get(0)];
-			int index = 0;
+			int index = leastAllocated.get(0);
+			int count = counter[index];
 			for (int i=1; i < leastAllocated.size(); i++) {
-				int iCount = counter[leastAllocated.get(i)];
+				int iIndex = leastAllocated.get(i);
+				int iCount = counter[iIndex];
 				if (iCount < count) {
 					count = iCount;
-					index = i;
+					index = iIndex;
 				}
 			}
 			return index;
