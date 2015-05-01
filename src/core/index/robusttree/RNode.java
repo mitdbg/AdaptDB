@@ -216,7 +216,7 @@ public class RNode {
 			RNode n = stack.removeLast();
 			String nStr;
 			if (n.bucket != null) {
-				nStr = String.format("b %d %d \n", n.bucket.getBucketId(), n.bucket.getNumTuples());
+				nStr = String.format("b %d\n", n.bucket.getBucketId());
 			} else {
 				nStr = String.format("n %d %s %s\n", n.attribute, n.type.toString(), TypeUtils.serializeValue(n.value, n.type));
 
@@ -249,7 +249,7 @@ public class RNode {
 			this.rightChild.parseNode(sc);
 		} else if (type == "b") {
 			Bucket b = new Bucket(sc.nextInt());
-			b.setNumTuples(sc.nextInt());
+			//b.setNumTuples(sc.nextInt());
 			this.bucket = b;
 		} else {
 			System.out.println("Bad things have happened in unmarshall");

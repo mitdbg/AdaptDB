@@ -1,6 +1,4 @@
 package core.index;
-import java.util.HashMap;
-
 import org.apache.curator.framework.CuratorFramework;
 
 import core.index.key.CartilageIndexKeySet;
@@ -30,31 +28,27 @@ public interface MDIndex {
 		public float estimatedTuples;
 
 		public static int maxBucketId = 0;
-		public static HashMap<Integer, Integer> bucketCounts = new HashMap<Integer, Integer>();
+		//public static HashMap<Integer, Integer> bucketCounts = new HashMap<Integer, Integer>();
+		public static BucketCounts counters;
+		
+		private int bucketCount;
 
 		public Bucket() {
 			bucketId = maxBucketId;
-			bucketCounts.put(bucketId, -1);
+			bucketCount = -1;
 			maxBucketId += 1;
 		}
 
 		public Bucket(int id) {
 			bucketId = id;
 			maxBucketId = Math.max(bucketId+1, maxBucketId);
-			bucketCounts.put(bucketId, -1);
-		}
-
-		public void setNumTuples(int t) {
-			bucketCounts.put(bucketId, t);
+			bucketCount = -1;
 		}
 
 		public int getNumTuples() {
-			int numTuples = bucketCounts.get(bucketId);
-			if (numTuples == -1) {
-				// Error
-			}
-
-			return numTuples;
+			if(bucketCount == -1)
+				bucketCount = counters.getBucketCount(bucketId);
+			return bucketCount;
 		}
 
 		public int getBucketId() {
@@ -62,11 +56,9 @@ public interface MDIndex {
 		}
 
 		public void updateId() {
-			// int numTuples = bucketCounts.get(this.bucketId);
-			bucketCounts.remove(this.bucketId);
 			this.bucketId = maxBucketId;
-			bucketCounts.put(this.bucketId, -1);
 			maxBucketId += 1;
+			bucketCount = -1;
 		}
 
 		public CartilageIndexKeySet getSample() {
