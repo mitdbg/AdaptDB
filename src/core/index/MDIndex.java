@@ -81,7 +81,7 @@ public interface MDIndex {
 	public static class BucketCounts{
 
 		private CuratorFramework client;
-		private String counterPathBase = "partition-count-";
+		private String counterPathBase = "/partition-count-";
 
 		public BucketCounts(String zookeeperHosts){
 			client = CuratorUtils.createAndStartClient(zookeeperHosts);
@@ -98,7 +98,7 @@ public interface MDIndex {
 		public int getBucketCount(int bucketId){
 			return CuratorUtils.getCounter(client, counterPathBase + bucketId);
 		}
-		
+
 		public void removeBucketCount(int bucketId){
 			CuratorUtils.setCounter(client, counterPathBase + bucketId, 0);
 		}
