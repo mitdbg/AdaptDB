@@ -308,13 +308,18 @@ public class CartilageIndexKeySet {
 			if(offset + vBytes.length + 1 < recordBytes.length){
 				byteArrays.add(recordBytes);
 				recordBytes = new byte[initialSize];
+				offset = 0;
 			}
 			BinaryUtils.append(recordBytes, offset, vBytes);
 			offset += vBytes.length;
 			recordBytes[offset++] = '\n';
 		}
+				
+		byte[][] finalByteArrays = new byte[byteArrays.size()][];
+		for(int i=0; i<finalByteArrays.length; i++)
+			finalByteArrays[i] = byteArrays.get(i);
 		
-		return Bytes.concat((byte[][])byteArrays.toArray());
+		return Bytes.concat(finalByteArrays);
 	}
 	
 	public void unmarshall(byte[] bytes){
