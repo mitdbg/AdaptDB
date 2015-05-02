@@ -80,7 +80,10 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 
 		Map<Integer,FileStatus> partitionIdFileMap = Maps.newHashMap();
 		for(FileStatus file: files)
-			partitionIdFileMap.put(Integer.parseInt(FilenameUtils.getName(file.getPath().toString())), file);
+			try{
+				partitionIdFileMap.put(Integer.parseInt(FilenameUtils.getName(file.getPath().toString())), file);
+			} catch (NumberFormatException e){
+			}
 
 		PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), false);
 		splits = resizeSplits(splits, queryConf.getMaxSplitSize());

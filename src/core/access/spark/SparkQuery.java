@@ -20,7 +20,8 @@ public class SparkQuery {
 	public SparkQuery(Predicate[] predicates, ConfUtils config) {
 		this.predicates = predicates;
 		this.cfg = config;
-		ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName(), cfg.getSPARK_HOME(), cfg.getSPARK_JAR());
+		ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName());
+		//ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName(), cfg.getSPARK_HOME(), cfg.getSPARK_JAR());
 		queryConf = new SparkQueryConf(ctx.hadoopConfiguration());
 	}
 
@@ -30,6 +31,6 @@ public class SparkQuery {
 		queryConf.setWorkers(cfg.getNUM_RACKS() * cfg.getNODES_PER_RACK() * cfg.getMAP_TASKS());
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		// ctx.hadoopConfiguration().setClass(FileInputFormat.PATHFILTER_CLASS, SparkPathFilter.class, PathFilter.class);
-		return ctx.newAPIHadoopFile("hdfs://localhost:8020" +  hdfsPath, SparkInputFormat.class, LongWritable.class, IteratorRecord.class, ctx.hadoopConfiguration());
+		return ctx.newAPIHadoopFile("hdfs://localhost:9000" +  hdfsPath, SparkInputFormat.class, LongWritable.class, IteratorRecord.class, ctx.hadoopConfiguration());
 	}
 }
