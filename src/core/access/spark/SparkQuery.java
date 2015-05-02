@@ -33,7 +33,7 @@ public class SparkQuery {
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
 		// ctx.hadoopConfiguration().setClass(FileInputFormat.PATHFILTER_CLASS, SparkPathFilter.class, PathFilter.class);
 		return ctx.newAPIHadoopFile(
-				new ConfUtils(queryConf.getCartilageProperties()).getHADOOP_NAMENODE() +  hdfsPath, 
+				cfg.getHADOOP_NAMENODE() +  hdfsPath, 
 				SparkInputFormat.class, 
 				LongWritable.class, 
 				IteratorRecord.class, 
