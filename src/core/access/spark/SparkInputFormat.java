@@ -87,6 +87,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			}
 
 		PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), false);
+		System.out.println("Number of partition splits = "+splits.length);
 		splits = resizeSplits(splits, queryConf.getMaxSplitSize());		
 		
 		for(PartitionSplit split: splits){
