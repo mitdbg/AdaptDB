@@ -2,6 +2,7 @@ package core.access;
 
 
 import core.access.iterator.PartitionIterator;
+import core.access.spark.SparkQueryConf;
 import core.adapt.opt.Optimizer;
 /**
  * This access method class considers filter access method over the distributed dataset.
@@ -31,9 +32,9 @@ public class AccessMethod {
 	 *
 	 * @param dataset
 	 */
-	public void init(String dataset, String hadoopHome){
-		opt = new Optimizer(dataset);
-		opt.loadIndex(hadoopHome);
+	public void init(SparkQueryConf conf){
+		opt = new Optimizer(conf.getDataset());
+		opt.loadIndex(conf.getHadoopHome(), conf.getZookeeperHosts());
 	}
 
 	/**

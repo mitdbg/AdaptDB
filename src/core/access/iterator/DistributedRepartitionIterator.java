@@ -15,7 +15,6 @@ import core.utils.CuratorUtils;
 
 public class DistributedRepartitionIterator extends RepartitionIterator {
 
-
 	public DistributedRepartitionIterator() {
 	}
 

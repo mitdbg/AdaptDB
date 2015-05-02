@@ -76,7 +76,8 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 
 		queryConf = new SparkQueryConf(job.getConfiguration());
 		AccessMethod am = new AccessMethod();
-		am.init(queryConf.getDataset(), queryConf.getHadoopHome());
+		am.init(queryConf);
+		// am.init(queryConf.getDataset(), queryConf.getHadoopHome());
 
 		Map<Integer,FileStatus> partitionIdFileMap = Maps.newHashMap();
 		for(FileStatus file: files)

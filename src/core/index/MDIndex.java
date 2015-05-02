@@ -28,7 +28,6 @@ public interface MDIndex {
 		public float estimatedTuples;
 
 		public static int maxBucketId = 0;
-		//public static HashMap<Integer, Integer> bucketCounts = new HashMap<Integer, Integer>();
 		public static BucketCounts counters;
 		
 		private int bucketCount;

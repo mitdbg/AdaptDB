@@ -245,8 +245,10 @@ public class RNode {
 
 			this.leftChild = new RNode();
 			this.leftChild.parseNode(sc);
+			this.leftChild.parent = this;
 			this.rightChild = new RNode();
 			this.rightChild.parseNode(sc);
+			this.rightChild.parent = this;
 		} else if (type.equals("b")) {
 			Bucket b = new Bucket(sc.nextInt());
 			this.bucket = b;

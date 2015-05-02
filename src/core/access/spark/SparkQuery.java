@@ -30,6 +30,7 @@ public class SparkQuery {
 		queryConf.setPredicates(predicates);
 		queryConf.setWorkers(cfg.getNUM_RACKS() * cfg.getNODES_PER_RACK() * cfg.getMAP_TASKS());
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
+		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
 		// ctx.hadoopConfiguration().setClass(FileInputFormat.PATHFILTER_CLASS, SparkPathFilter.class, PathFilter.class);
 		return ctx.newAPIHadoopFile("hdfs://localhost:9000" +  hdfsPath, SparkInputFormat.class, LongWritable.class, IteratorRecord.class, ctx.hadoopConfiguration());
 	}

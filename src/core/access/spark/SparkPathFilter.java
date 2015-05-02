@@ -21,7 +21,7 @@ public class SparkPathFilter implements PathFilter, Configurable  {
 		this.conf = conf;
 		SparkQueryConf queryConf = new SparkQueryConf(conf);
 		am = new AccessMethod();
-		am.init(queryConf.getDataset(), queryConf.getHadoopHome());
+		am.init(queryConf);
 		predicates = queryConf.getPredicates();
 	}
 

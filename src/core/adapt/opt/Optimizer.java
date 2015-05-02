@@ -14,6 +14,8 @@ import core.access.Query.FilterQuery;
 import core.access.iterator.PartitionIterator;
 import core.access.iterator.PostFilterIterator;
 import core.access.iterator.RepartitionIterator;
+import core.index.MDIndex.Bucket;
+import core.index.MDIndex.BucketCounts;
 import core.index.key.CartilageIndexKeySet;
 import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTreeHs;
@@ -51,7 +53,7 @@ public class Optimizer {
 
 		public Plan() {
 			cost = 0;
-			benefit = 0;
+			benefit = -1;
 		}
 	}
 
@@ -78,7 +80,9 @@ public class Optimizer {
 		this.dataset = dataset;
 	}
 
-	public void loadIndex(String hadoopHome) {
+	public void loadIndex(String hadoopHome, String zookeeperHosts) {
+		Bucket.counters = new BucketCounts(zookeeperHosts);
+		
 		FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
 		String pathToIndex = this.dataset + "/index";
 		String pathToSample = this.dataset + "/sample";
@@ -429,10 +433,12 @@ public class Optimizer {
 	public void replaceInTree(RNode old, RNode r) {
         old.leftChild.parent = r;
         old.rightChild.parent = r;
-        if (old.parent.rightChild == old) {
-        	old.parent.rightChild = r;
-        } else {
-        	old.parent.leftChild = r;
+        if (old.parent != null) {
+        	if (old.parent.rightChild == old) {
+            	old.parent.rightChild = r;
+            } else {
+            	old.parent.leftChild = r;
+            }	
         }
 
         r.leftChild = old.leftChild;
@@ -464,9 +470,11 @@ public class Optimizer {
 	// Update the dest with source if source is a better plan
 	public void updatePlan(Plan dest, Plan source) {
 		boolean copy = false;
-		if (source.cost == 0) {
+		if (dest.benefit == -1) {
+			copy = true;
+		} else if (source.cost == 0) {
 
-		} else if (dest.benefit == 0) {
+		} else if (dest.cost == 0) {
 			copy = true;
 		} else if (dest.benefit / dest.cost < source.benefit / source.cost) {
 			copy = true;
@@ -481,7 +489,6 @@ public class Optimizer {
 
 	public Plans getBestPlanForSubtree(RNode node, Predicate[] ps, int pid) {
 		// Option Index
-		// 0 => Just Filter
 		// 1 => Replace
 		// 2 => Swap down X
 		// 3 =>
@@ -495,15 +502,19 @@ public class Optimizer {
 			p1.cost = 0;
 			p1.benefit = 0;
 			Action a1 = new Action();
-			a1.option = 0;
+			a1.option = 5;
 			p1.actions = a1;
 			pl.Best = p1;
 			return pl;
 		} else {
 			Predicate p = ps[pid];
 			Plan pTop = new Plan();
+			
 			Plan best = new Plan();
+			
 			Plans ret = new Plans();
+			ret.PTop = pTop;
+			ret.Best = best;
 
 			// Check if both sides are accessed
         	boolean goLeft = true;
@@ -534,7 +545,7 @@ public class Optimizer {
 
 			Plans leftPlan;
 			if (goLeft) {
-				leftPlan = getBestPlanForSubtree(node.rightChild, ps, pid);
+				leftPlan = getBestPlanForSubtree(node.leftChild, ps, pid);
 			} else {
 				leftPlan = new Plans();
 				leftPlan.Best = null;
@@ -551,7 +562,6 @@ public class Optimizer {
 				rightPlan.PTop = null;
 				rightPlan.fullAccess = false;
 			}
-
 
 			// replace attribute by one in the predicate
 			if (leftPlan.fullAccess && rightPlan.fullAccess) {
@@ -575,16 +585,16 @@ public class Optimizer {
 			        if (benefit > 0) {
 			        	// TODO: Better cost model ?
 			        	float cost = this.computeCost(r); // Note that buckets haven't changed
-			        	Plan p1 = new Plan();
-			        	p1.cost = cost;
-			        	p1.benefit = benefit;
-			        	Action a1 = new Action();
-			        	a1.pid = pid;
-			        	a1.option = 1;
-			        	p1.actions = a1;
+			        	Plan pl = new Plan();
+			        	pl.cost = cost;
+			        	pl.benefit = benefit;
+			        	Action ac = new Action();
+			        	ac.pid = pid;
+			        	ac.option = 1;
+			        	pl.actions = ac;
 
-			        	updatePlan(pTop, p1);
-			        	updatePlan(best, p1);
+			        	updatePlan(pTop, pl);
+			        	updatePlan(best, pl);
 			        }
 
 			        // Restore
@@ -594,17 +604,17 @@ public class Optimizer {
 
 			// Swap down the attribute and bring p above
 			if (leftPlan.PTop != null && rightPlan.PTop != null) {
-				Plan p2 = new Plan();
-				p2.cost = leftPlan.PTop.cost + rightPlan.PTop.cost;
-				p2.benefit = leftPlan.PTop.benefit + rightPlan.PTop.benefit;
-				Action a2 = new Action();
-				a2.pid = pid;
-				a2.option = 2;
-				a2.left = leftPlan.PTop.actions;
-				a2.right = rightPlan.PTop.actions;
-
-	        	updatePlan(pTop, p2);
-	        	updatePlan(best, p2);
+				Plan pl = new Plan();
+				pl.cost = leftPlan.PTop.cost + rightPlan.PTop.cost;
+				pl.benefit = leftPlan.PTop.benefit + rightPlan.PTop.benefit;
+				Action ac = new Action();
+				ac.pid = pid;
+				ac.option = 2;
+				ac.left = leftPlan.PTop.actions;
+				ac.right = rightPlan.PTop.actions;
+				pl.actions = ac;
+	        	updatePlan(pTop, pl);
+	        	updatePlan(best, pl);
 			}
 
 			if (node.attribute == p.attribute) {
@@ -612,68 +622,65 @@ public class Optimizer {
 				if (c != 0) {
 					assert (c < 0 && leftPlan.PTop == null) || (c > 0 && rightPlan.PTop == null);
 					if (c < 0 && rightPlan.PTop != null) {
-						Plan p6 = new Plan();
-						p6.cost = rightPlan.PTop.cost;
-						p6.benefit = rightPlan.PTop.benefit;
-						Action a6 = new Action();
-						a6.pid = pid;
-						a6.option = 3;
-						a6.right = rightPlan.PTop.actions;
-
-			        	updatePlan(pTop, p6);
-			        	updatePlan(best, p6);
+						Plan pl = new Plan();
+						pl.cost = rightPlan.PTop.cost;
+						pl.benefit = rightPlan.PTop.benefit;
+						Action ac = new Action();
+						ac.pid = pid;
+						ac.option = 3;
+						ac.right = rightPlan.PTop.actions;
+						pl.actions = ac;
+			        	updatePlan(pTop, pl);
+			        	updatePlan(best, pl);
 					}
 					if (c > 0 && leftPlan.PTop != null) {
-						Plan p6 = new Plan();
-						p6.cost = leftPlan.PTop.cost;
-						p6.benefit = leftPlan.PTop.benefit;
-						Action a6 = new Action();
-						a6.pid = pid;
-						a6.option = 3;
-						a6.left = leftPlan.PTop.actions;
-
-						updatePlan(pTop, p6);
-			        	updatePlan(best, p6);
+						Plan pl = new Plan();
+						pl.cost = leftPlan.PTop.cost;
+						pl.benefit = leftPlan.PTop.benefit;
+						Action ac = new Action();
+						ac.pid = pid;
+						ac.option = 3;
+						ac.left = leftPlan.PTop.actions;
+						pl.actions = ac;
+						updatePlan(pTop, pl);
+			        	updatePlan(best, pl);
 					}
 				}
 			}
 
 			// Just Re-Use the Best Plans found for the left/right subtree
 			if (leftPlan.Best != null && rightPlan.Best != null) {
-				Plan p3 = new Plan();
-				p3.cost = leftPlan.Best.cost + rightPlan.Best.cost;
-				p3.benefit = leftPlan.Best.benefit + rightPlan.Best.benefit;
-				Action a3 = new Action();
-				a3.pid = pid;
-				a3.option = 5;
-				a3.left = leftPlan.Best.actions;
-				a3.right = rightPlan.Best.actions;
-
-	        	updatePlan(best, p3);
+				Plan pl = new Plan();
+				pl.cost = leftPlan.Best.cost + rightPlan.Best.cost;
+				pl.benefit = leftPlan.Best.benefit + rightPlan.Best.benefit;
+				Action ac = new Action();
+				ac.pid = pid;
+				ac.option = 5;
+				ac.left = leftPlan.Best.actions;
+				ac.right = rightPlan.Best.actions;
+				pl.actions = ac;
+	        	updatePlan(best, pl);
 			} else if (rightPlan.Best != null) {
-				Plan p4 = new Plan();
-				p4.cost = rightPlan.Best.cost;
-				p4.benefit = rightPlan.Best.benefit;
-				Action a4 = new Action();
-				a4.pid = pid;
-				a4.option = 5;
-				a4.right = rightPlan.Best.actions;
-
-	        	updatePlan(best, p4);
+				Plan pl = new Plan();
+				pl.cost = rightPlan.Best.cost;
+				pl.benefit = rightPlan.Best.benefit;
+				Action ac = new Action();
+				ac.pid = pid;
+				ac.option = 5;
+				ac.right = rightPlan.Best.actions;
+				pl.actions = ac;
+	        	updatePlan(best, pl);
 			} else if (leftPlan.Best != null) {
-				Plan p5 = new Plan();
-				p5.cost = leftPlan.Best.cost;
-				p5.benefit = leftPlan.Best.benefit;
-				Action a5 = new Action();
-				a5.pid = pid;
-				a5.option = 5;
-				a5.left = leftPlan.Best.actions;
-
-	        	updatePlan(best, p5);
+				Plan pl = new Plan();
+				pl.cost = leftPlan.Best.cost;
+				pl.benefit = leftPlan.Best.benefit;
+				Action ac = new Action();
+				ac.pid = pid;
+				ac.option = 5;
+				ac.left = leftPlan.Best.actions;
+				pl.actions = ac;
+	        	updatePlan(best, pl);
 			}
-
-			if (pTop.cost != -1) ret.PTop = pTop;
-			if (best.cost != -1) ret.Best = best;
 
 			return ret;
 		}
