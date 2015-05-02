@@ -73,7 +73,7 @@ public class RepartitionIterator extends PartitionIterator{
 		BucketCounts c = new BucketCounts(zookeeperHosts);
 		for(Partition p: newPartitions.values()){
 			p.store(true);
-			c.addToBucketCount(p.getPartitionId(), p.getRecordCount());			
+			c.setToBucketCount(p.getPartitionId(), p.getRecordCount());			
 		}
 		partition.drop();
 		c.removeBucketCount(partition.getPartitionId());

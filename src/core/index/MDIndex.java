@@ -90,6 +90,10 @@ public interface MDIndex {
 		public int getBucketCount(int bucketId){
 			return CuratorUtils.getCounter(client, counterPathBase + bucketId);
 		}
+		
+		public void setToBucketCount(int bucketId, int count){
+			CuratorUtils.setCounter(client, counterPathBase + bucketId, count);
+		}
 
 		public void removeBucketCount(int bucketId){
 			CuratorUtils.setCounter(client, counterPathBase + bucketId, 0);

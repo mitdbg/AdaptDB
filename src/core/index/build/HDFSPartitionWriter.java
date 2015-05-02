@@ -69,7 +69,7 @@ public class HDFSPartitionWriter extends PartitionWriter{
 		BucketCounts c = new BucketCounts(conf.getZookeeperHosts());
 		for(String k: buffer.keySet())
 			try {
-				c.addToBucketCount(Integer.parseInt(k), partitionRecordCount.get(k).intValue());
+				c.setToBucketCount(Integer.parseInt(k), partitionRecordCount.get(k).intValue());
 			} catch (NumberFormatException e) {
 
 			}
