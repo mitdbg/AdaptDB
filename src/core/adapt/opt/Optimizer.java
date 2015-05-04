@@ -82,7 +82,7 @@ public class Optimizer {
 
 	public void loadIndex(String hadoopHome, String zookeeperHosts) {
 		Bucket.counters = new BucketCounts(zookeeperHosts);
-		
+
 		FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
 		String pathToIndex = this.dataset + "/index";
 		String pathToSample = this.dataset + "/sample";
@@ -438,7 +438,7 @@ public class Optimizer {
             	old.parent.rightChild = r;
             } else {
             	old.parent.leftChild = r;
-            }	
+            }
         }
 
         r.leftChild = old.leftChild;
@@ -509,12 +509,10 @@ public class Optimizer {
 		} else {
 			Predicate p = ps[pid];
 			Plan pTop = new Plan();
-			
+
 			Plan best = new Plan();
-			
+
 			Plans ret = new Plans();
-			ret.PTop = pTop;
-			ret.Best = best;
 
 			// Check if both sides are accessed
         	boolean goLeft = true;
@@ -681,6 +679,9 @@ public class Optimizer {
 				pl.actions = ac;
 	        	updatePlan(best, pl);
 			}
+
+			if (pTop.benefit != -1) ret.PTop = pTop;
+			if (best.benefit != -1) ret.Best = best;
 
 			return ret;
 		}

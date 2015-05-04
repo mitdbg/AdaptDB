@@ -88,8 +88,8 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 
 		PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), false);
 		System.out.println("Number of partition splits = "+splits.length);
-		splits = resizeSplits(splits, queryConf.getMaxSplitSize());		
-		
+		splits = resizeSplits(splits, queryConf.getMaxSplitSize());
+
 		for(PartitionSplit split: splits){
 			int[] partitionIds = split.getPartitions();
 			Path[] splitFiles = new Path[partitionIds.length];
@@ -155,10 +155,8 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			}
 		}
 
-		return (PartitionSplit[])resizedSplits.toArray();
+		return resizedSplits.toArray(new PartitionSplit[resizedSplits.size()]);
 	}
-
-
 
 	@Override
 	public RecordReader<LongWritable, IteratorRecord> createRecordReader(InputSplit arg0, TaskAttemptContext arg1) throws IOException, InterruptedException {
