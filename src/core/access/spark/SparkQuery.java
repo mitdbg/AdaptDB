@@ -33,6 +33,12 @@ public class SparkQuery {
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
 		queryConf.setMaxSplitSize(1024 / 64);	// number of 64 MB partitions that can fit for each worker (we assume 1GB memory for each worker)
 		// ctx.hadoopConfiguration().setClass(FileInputFormat.PATHFILTER_CLASS, SparkPathFilter.class, PathFilter.class);
+		
+		System.setProperty("spark.executor.memory","4g");
+		System.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
+//		System.setProperty("spark.serializer", "spark.KryoSerializer");
+//		System.setProperty("spark.kryo.registrator", "mypackage.MyRegistrator");
+		
 		return ctx.newAPIHadoopFile(
 				cfg.getHADOOP_NAMENODE() +  hdfsPath, 
 				SparkInputFormat.class, 
