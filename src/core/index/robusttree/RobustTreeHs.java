@@ -40,7 +40,6 @@ public class RobustTreeHs implements MDIndex {
 		return null;
 	}
 
-	@Override
 	public void initBuild(int buckets) {
         this.maxBuckets = buckets;
 		root = new RNode();
@@ -82,7 +81,6 @@ public class RobustTreeHs implements MDIndex {
 	/***************************************************
 	 ************* UPFRONT PARTITIONING ****************
 	 ***************************************************/
-	@Override
 	public void insert(MDIndexKey key) {
         CartilageIndexKey k = (CartilageIndexKey)key;
 
@@ -96,7 +94,6 @@ public class RobustTreeHs implements MDIndex {
         }
 	}
 
-	@Override
 	public void bulkLoad(MDIndexKey[] keys) {
 		for (int i=0; i<keys.length; i++) {
 			this.insert(keys[i]);
@@ -107,7 +104,6 @@ public class RobustTreeHs implements MDIndex {
 	/**
 	 * Created the tree based on the histograms
 	 */
-	@Override
 	public void initProbe() {
 		int depth = 31 - Integer.numberOfLeadingZeros(this.maxBuckets); // Computes log(this.maxBuckets)
 		double allocation = RobustTreeHs.nthroot(this.numAttributes, this.maxBuckets);
@@ -227,7 +223,6 @@ public class RobustTreeHs implements MDIndex {
 	/**
 	 * Used in the 2nd phase of upfront to assign each tuple to the right
 	 */
-	@Override
 	public Object getBucketId(MDIndexKey key) {
 		return root.getBucketId(key);
 	}
@@ -256,7 +251,6 @@ public class RobustTreeHs implements MDIndex {
 	 * Serializes the index to string
 	 * Very brittle - Consider rewriting
 	 */
-	@Override
 	public byte[] marshall() {
 		// JVM optimizes shit so no need to use string builder / buffer
 		// Format:
@@ -279,7 +273,6 @@ public class RobustTreeHs implements MDIndex {
 		return robustTree.getBytes();
 	}
 
-	@Override
 	public void unmarshall(byte[] bytes) {
 		String tree = new String(bytes);
 		Scanner sc = new Scanner(tree);

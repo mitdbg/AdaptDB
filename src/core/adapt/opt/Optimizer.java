@@ -1,11 +1,14 @@
 package core.adapt.opt;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Scanner;
 
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
 import core.access.AccessMethod.PartitionSplit;
 import core.access.Predicate;
@@ -35,6 +38,7 @@ public class Optimizer {
 	int rtDepth;
 
 	String dataset;
+	String hadoopHome;
 
 	static final int BLOCK_SIZE = 64 * 1024;
 	static final float DISK_MULTIPLIER = 4;
@@ -76,11 +80,12 @@ public class Optimizer {
 		}
 	}
 
-	public Optimizer(String dataset) {
+	public Optimizer(String dataset, String hadoopHome) {
 		this.dataset = dataset;
+		this.hadoopHome = hadoopHome;
 	}
 
-	public void loadIndex(String hadoopHome, String zookeeperHosts) {
+	public void loadIndex(String zookeeperHosts) {
 		Bucket.counters = new BucketCounts(zookeeperHosts);
 
 		FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
@@ -120,7 +125,7 @@ public class Optimizer {
 			FilterQuery fq = (FilterQuery) q;
 			Plan best = getBestPlan(fq.getPredicates());
 			PartitionSplit[] psplits = this.getPartitionSplits(best, fq, numWorkers);
-			this.queryWindow.add(q);
+			this.updateQueryWindow(fq);
 			this.updateIndex(best, fq.getPredicates());
 			return psplits;
 		} else {
@@ -703,5 +708,33 @@ public class Optimizer {
 		} else {
 			return k+1;
 		}
+	}
+
+	public void loadQueries() {
+		FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
+		String pathToQueries = this.dataset + "/queries";
+		try {
+			if (fs.exists(new Path(pathToQueries))) {
+				byte[] queryBytes = HDFSUtils.readFile(fs, pathToQueries);
+				String queries = new String(queryBytes);
+				Scanner sc = new Scanner(queries);
+				while (sc.hasNextLine()) {
+					String query = sc.nextLine();
+					FilterQuery f = new FilterQuery(query);
+					queryWindow.add(f);
+				}
+				sc.close();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void updateQueryWindow(FilterQuery fq) {
+		this.queryWindow.add(fq);
+		FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
+		String pathToQueries = this.dataset + "/queries";
+		HDFSUtils.safeCreateFile(fs, pathToQueries);
+		HDFSUtils.appendLine(fs, pathToQueries, fq.toString());
 	}
 }

@@ -89,35 +89,30 @@ public class TypeUtils {
 		switch(type){
 		case INT:
 			return new Comparator<Object> (){
-				@Override
 				public int compare(Object o1, Object o2) {
 					return ((Integer)o1).compareTo((Integer)o2);
 				}
 			};
 		case LONG:
 			return new Comparator<Object> (){
-				@Override
 				public int compare(Object o1, Object o2) {
 					return ((Long)o1).compareTo((Long)o2);
 				}
 			};
 		case FLOAT:
 			return new Comparator<Object> (){
-				@Override
 				public int compare(Object o1, Object o2) {
 					return ((Float)o1).compareTo((Float)o2);
 				}
 			};
 		case DATE:
 			return new Comparator<Object> (){
-				@Override
 				public int compare(Object o1, Object o2) {
 					return ((SimpleDate)o1).compareTo((SimpleDate)o2);
 				}
 			};
 		case STRING:
 			return new Comparator<Object> (){
-				@Override
 				public int compare(Object o1, Object o2) {
 					return ((String)o1).compareTo((String)o2);
 				}

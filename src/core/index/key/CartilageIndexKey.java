@@ -194,12 +194,10 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
 		return typeArr;
 	}
 
-	@Override
 	public String getKeyString() {
 		return new String(bytes,offset,length);
 	}
 
-	@Override
 	public String getStringAttribute(int index, int maxSize) {
 		index = keyAttrIdx[index];
 		int off = attributeOffsets[index];
@@ -212,7 +210,6 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
 		return new String(bytes, off, Math.min(strSize, maxSize));
 	}
 
-	@Override
 	public int getIntAttribute(int index) {
 		index = keyAttrIdx[index];
 		int off = attributeOffsets[index];
@@ -239,7 +236,6 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
 	    return sign * num;
 	}
 
-	@Override
 	public long getLongAttribute(int index) {
 		index = keyAttrIdx[index];
 		int off = attributeOffsets[index];
@@ -266,7 +262,6 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
 	    return sign * num;
 	}
 
-	@Override
 	public float getFloatAttribute(int index) {
 		index = keyAttrIdx[index];
 		int off = attributeOffsets[index];
@@ -306,7 +301,6 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
 		return ret;
 	}
 
-	@Override
 	public double getDoubleAttribute(int index) {
 		index = keyAttrIdx[index];
 		int off = attributeOffsets[index];
@@ -356,7 +350,6 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
 		}
 	}
 
-	@Override
 	public SimpleDate getDateAttribute(int index){
 		index = keyAttrIdx[index];
 		// parse date assuming the format: "yyyy-MM-dd"
@@ -391,7 +384,6 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
 			throw new RuntimeException("Cannot parse the boolean attribute: "+ bytes[off]);
 	}
 
-	@Override
 	public void setTuple(Object tuple) {
 		// TODO Auto-generated method stub
 

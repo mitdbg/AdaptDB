@@ -91,35 +91,30 @@ public class CartilageIndexKeySet {
 		switch(type){
 		case INT:
 			return new Comparator<Object[]> (){
-				@Override
 				public int compare(Object[] o1, Object[] o2) {
 					return ((Integer)o1[attributeIdx]).compareTo((Integer)o2[attributeIdx]);
 				}
 			};
 		case LONG:
 			return new Comparator<Object[]> (){
-				@Override
 				public int compare(Object[] o1, Object[] o2) {
 					return ((Long)o1[attributeIdx]).compareTo((Long)o2[attributeIdx]);
 				}
 			};
 		case FLOAT:
 			return new Comparator<Object[]> (){
-				@Override
 				public int compare(Object[] o1, Object[] o2) {
 					return ((Float)o1[attributeIdx]).compareTo((Float)o2[attributeIdx]);
 				}
 			};
 		case DATE:
 			return new Comparator<Object[]> (){
-				@Override
 				public int compare(Object[] o1, Object[] o2) {
 					return ((SimpleDate)o1[attributeIdx]).compareTo((SimpleDate)o2[attributeIdx]);
 				}
 			};
 		case STRING:
 			return new Comparator<Object[]> (){
-				@Override
 				public int compare(Object[] o1, Object[] o2) {
 					return ((String)o1[attributeIdx]).compareTo((String)o2[attributeIdx]);
 				}
@@ -285,16 +280,13 @@ public class CartilageIndexKeySet {
 			this.valueItr = values.iterator();
 			key = new ParsedIndexKey();
 		}
-		@Override
 		public boolean hasNext() {
 			return valueItr.hasNext();
 		}
-		@Override
 		public CartilageIndexKey next() {
 			key.setValues(valueItr.next());
 			return key;
 		}
-		@Override
 		public void remove() {
 			next();
 		}

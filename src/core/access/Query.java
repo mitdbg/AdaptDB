@@ -34,6 +34,14 @@ public class Query {
 			this.predicates = null;
 		}
 
+		public FilterQuery(String predString) {
+			String[] parts = predString.split(";");
+			this.predicates = new Predicate[parts.length - 1];
+			for (int i=0; i<parts.length - 1; i++) {
+				this.predicates[i] = new Predicate(parts[i]);
+			}
+		}
+
 		public FilterQuery(Predicate[] predicates) {
 			this.predicates = predicates;
 		}
@@ -54,6 +62,16 @@ public class Query {
 				}
 			}
 			return qualify;
+		}
+
+		@Override
+		public String toString() {
+			String ret = "";
+			for (int i=0; i<this.predicates.length; i++) {
+				ret += this.predicates[i].toString() + ";";
+			}
+			ret += "\n";
+			return ret;
 		}
 	}
 
