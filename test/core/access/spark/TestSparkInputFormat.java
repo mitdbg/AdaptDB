@@ -7,13 +7,23 @@ import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 import junit.framework.TestCase;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
+import core.access.Predicate;
+import core.access.Predicate.PREDTYPE;
 import core.access.iterator.PartitionIterator;
 import core.access.spark.SparkInputFormat.SparkFileSplit;
+import core.index.Settings;
+import core.utils.ConfUtils;
+import core.utils.SchemaUtils.TYPE;
 
 public class TestSparkInputFormat extends TestCase{
 
@@ -105,16 +115,54 @@ public class TestSparkInputFormat extends TestCase{
 
 	
 	SparkInputFormat sparkInputFormat;
+	Job job;
 	
 	public void setUp(){
-		sparkInputFormat = new SparkInputFormat();
+		
+		Predicate[] predicates = new Predicate[]{new Predicate(0, TYPE.INT, 3002147, PREDTYPE.LEQ)};
+		String hdfsPath = "hdfs://localhost:9000/user/alekh/dodo";
+		
+		Configuration conf = new Configuration();
+		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
+		
+		SparkQueryConf queryConf = new SparkQueryConf(conf);
+		queryConf.setDataset(hdfsPath);
+		queryConf.setPredicates(predicates);
+		queryConf.setWorkers(cfg.getNUM_RACKS() * cfg.getNODES_PER_RACK() * cfg.getMAP_TASKS());
+		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
+		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
+		queryConf.setMaxSplitSize(1024 / 64);
+		
+		try {
+			job = Job.getInstance(conf);
+			FileInputFormat.setInputPaths(job, hdfsPath);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}		
 	}
 	
 	public void testGetSplits(){
-		
+		try {
+			sparkInputFormat = new SparkInputFormat();
+			List<InputSplit> splits = sparkInputFormat.getSplits(job);
+			System.out.println(splits.size());
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public void testCreateRecordReader(){
+		try {
+			sparkInputFormat = new SparkInputFormat();
+			List<InputSplit> splits = sparkInputFormat.getSplits(job);
+			for(InputSplit split: splits)
+				sparkInputFormat.createRecordReader(split, null);
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
-	
 }
