@@ -241,7 +241,8 @@ public class RNode {
 		if (type.equals("n")) {
 			this.attribute = sc.nextInt();
 			this.type = TYPE.valueOf(sc.next());
-			this.value = TypeUtils.deserializeValue(this.type, sc.next());
+			// For string tokens; we may have to read more than one token, so read till end of line
+			this.value = TypeUtils.deserializeValue(this.type, sc.nextLine().trim());
 
 			this.leftChild = new RNode();
 			this.leftChild.parseNode(sc);
