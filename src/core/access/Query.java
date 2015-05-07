@@ -3,13 +3,16 @@ package core.access;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.Serializable;
 
 import com.google.common.base.Joiner;
 
 import core.access.iterator.PartitionIterator.IteratorRecord;
 
 
-public class Query {
+public class Query implements Serializable{
+	private static final long serialVersionUID = 1L;
+	
 	protected Predicate[] predicates;
 
 	public Predicate[] getPredicates() {
@@ -28,16 +31,17 @@ public class Query {
 	}
 
 
-	public static class FilterQuery extends Query{
-
+	public static class FilterQuery extends Query implements Serializable{
+		private static final long serialVersionUID = 1L;
+		
 		public FilterQuery() {
 			this.predicates = null;
 		}
 
 		public FilterQuery(String predString) {
 			String[] parts = predString.split(";");
-			this.predicates = new Predicate[parts.length - 1];
-			for (int i=0; i<parts.length - 1; i++) {
+			this.predicates = new Predicate[parts.length];
+			for (int i=0; i<parts.length; i++) {
 				this.predicates[i] = new Predicate(parts[i]);
 			}
 		}
@@ -66,16 +70,17 @@ public class Query {
 
 		@Override
 		public String toString() {
-			String ret = "";
-			for (int i=0; i<this.predicates.length; i++) {
-				ret += this.predicates[i].toString() + ";";
-			}
-			ret += "\n";
-			return ret;
+			return Joiner.on(";").join(predicates);	// simpler impl			
+//			String ret = "";
+//			for (int i=0; i<this.predicates.length; i++) {
+//				ret += this.predicates[i].toString() + ";";
+//			}
+//			ret += "\n";
+//			return ret;
 		}
 	}
 
 	public class JoinQuery extends Query{
-
+		private static final long serialVersionUID = 1L;
 	}
 }
