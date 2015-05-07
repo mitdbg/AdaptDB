@@ -365,6 +365,20 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
 		return dummyDate;
 	}
 
+	public SimpleDate getDateAttribute(int index, SimpleDate date){
+		index = keyAttrIdx[index];
+		// parse date assuming the format: "yyyy-MM-dd"
+		int off = attributeOffsets[index];
+		int year = 1000*(bytes[off]-'0') + 100*(bytes[off+1]-'0') + 10*(bytes[off+2]-'0') + (bytes[off+3]-'0');
+		int month = 10*(bytes[off+5]-'0') + (bytes[off+6]-'0');
+		int day = 10*(bytes[off+8]-'0') + (bytes[off+9]-'0');
+
+		date.setYear(year);
+		date.setMonth(month);
+		date.setDay(day);
+
+		return date;
+	}
 
 	/**
 	 * Assumes that the boolean data is represented as a single character in the ascii file.

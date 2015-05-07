@@ -732,7 +732,6 @@ public class Optimizer {
 
 	public void updateQueryWindow(FilterQuery fq) {
 		this.queryWindow.add(fq);
-		//FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
 		String pathToQueries = this.dataset + "/queries";
 		HDFSUtils.createFile(hadoopHome, pathToQueries, (short)1);
 		HDFSUtils.appendLine(hadoopHome, pathToQueries, fq.toString());

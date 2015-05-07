@@ -1,6 +1,5 @@
 package core.utils;
 
-import java.text.Format;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
@@ -125,12 +124,7 @@ public class TypeUtils {
 	}
 
 	public static String serializeValue(Object value, TYPE t) {
-		if (t == TYPE.DATE) {
-			Format formatter = new SimpleDateFormat("yyyy-MM-dd");
-			return formatter.format(value);
-		} else {
-			return value.toString();
-		}
+		return value.toString();
 	}
 
 	public static Object deserializeValue(TYPE t, String token) {
@@ -142,12 +136,13 @@ public class TypeUtils {
 		case FLOAT:
 			return Float.parseFloat(token);
 		case DATE:
-			Format formatter = new SimpleDateFormat("yyyy-MM-dd");
-			try {
-				return formatter.parseObject(token);
-			} catch (ParseException e) {
-				e.printStackTrace();
-			}
+			byte[] bytes = token.getBytes();
+			int off = 0;
+			int year = 1000*(bytes[off]-'0') + 100*(bytes[off+1]-'0') + 10*(bytes[off+2]-'0') + (bytes[off+3]-'0');
+			int month = 10*(bytes[off+5]-'0') + (bytes[off+6]-'0');
+			int day = 10*(bytes[off+8]-'0') + (bytes[off+9]-'0');
+
+			return new SimpleDate(year, month, day);
 		case BOOLEAN:
 			return Boolean.parseBoolean(token);
 		case STRING:

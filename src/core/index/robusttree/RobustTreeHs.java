@@ -120,29 +120,50 @@ public class RobustTreeHs implements MDIndex {
 
 	public void createTree(RNode node, int depth, double allocation, int[] counter, double[] allocations, CartilageIndexKeySet sample) {
 		if (depth > 0) {
-			int dim = getLeastAllocated(allocations, counter);
-			node.attribute = dim;
-			node.type = this.dimensionTypes[dim];
-			allocations[dim] -= allocation;
+		    int dim = -1;
+		    int round = 0;
+		    Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = null;
 
-			// TODO: This is brittle; Some places we might not have sample
-			// OR there might no value - in this case we should choose some other dim
-            Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample.sortAndSplit(dim);
-			node.value = halves.first.getLast(dim);; // Need to traverse up for range
+		    while (dim == -1 && round < allocations.length) {
+	            int testDim = getLeastAllocated(allocations, counter);
+	            allocations[testDim] -= allocation;
+	            counter[testDim] += 1;
 
-			counter[dim] += 1;
+	            // TODO: For low cardinality values, it might be better to
+				// choose some set of values on each side.
+				// TPCH attribute 9 for example has only two distinct values
+				halves = sample.sortAndSplit(testDim);
+				if (halves.first.size() > 0 && halves.second.size() > 0) {
+				    dim = testDim;
+				} else {
+				    System.err.println("WARN: Skipping attribute " + testDim);
+				}
 
-			node.leftChild = new RNode();
-			this.createTree(node.leftChild, depth - 1, allocation / 2, counter, allocations, halves.first);
+				round++;
+		    }
 
-			node.rightChild = new RNode();
-			this.createTree(node.rightChild, depth - 1, allocation / 2, counter, allocations, halves.second);
+		    if (dim == -1) {
+	            System.err.println("ERR: No attribute to partition on");
+	            Bucket b = new Bucket();
+	            b.setSample(sample);
+	            node.bucket = b;
+		    } else {
+	            node.attribute = dim;
+	            node.type = this.dimensionTypes[dim];
+	            node.value = halves.first.getLast(dim); // Need to traverse up for range
 
-			counter[dim] -= 1;
+                node.leftChild = new RNode();
+                this.createTree(node.leftChild, depth - 1, allocation / 2, counter, allocations, halves.first);
+                node.leftChild.parent = node;
+
+                node.rightChild = new RNode();
+                this.createTree(node.rightChild, depth - 1, allocation / 2, counter, allocations, halves.second);
+                node.rightChild.parent = node;
+            }
 		} else {
-			Bucket b = new Bucket();
-			b.setSample(sample);
-			node.bucket = b;
+		     Bucket b = new Bucket();
+		     b.setSample(sample);
+		     node.bucket = b;
 		}
 	}
 

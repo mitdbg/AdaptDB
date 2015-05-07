@@ -65,7 +65,7 @@ public class CartilageIndexKeySet {
 							break;
 			case FLOAT:		keyValues[i] = key.getFloatAttribute(i);
 							break;
-			case DATE:		keyValues[i] = key.getDateAttribute(i);
+			case DATE:		keyValues[i] = key.getDateAttribute(i, new SimpleDate(0,0,0));
 							break;
 			case STRING:	keyValues[i] = key.getStringAttribute(i,20);
 							break;
@@ -75,6 +75,15 @@ public class CartilageIndexKeySet {
 		}
 		values.add(keyValues);
 		sampleSize++;
+	}
+
+	/**
+	 * Return the last entry in the keyset
+	 */
+	public Object getFirst(int dim) {
+		assert values.size() > 0;
+		assert dim < types.length;
+		return values.get(0)[dim];
 	}
 
 	/**
