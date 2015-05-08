@@ -1,69 +1,56 @@
 package core.opt.simulator;
 
-import java.io.IOException;
-import java.util.List;
-
 import junit.framework.TestCase;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
-import core.access.spark.SparkInputFormat;
-import core.access.spark.SparkQueryConf;
+import core.access.Query.FilterQuery;
+import core.adapt.opt.Optimizer;
 import core.index.Settings;
 import core.utils.ConfUtils;
+import core.utils.HDFSUtils;
+import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
 import core.utils.SchemaUtils.TYPE;
 
 public class Simulator extends TestCase{
-	SparkInputFormat sparkInputFormat;
-	SparkQueryConf queryConf;
 	String hdfsPath;
 	Job job;
+	Optimizer opt;
+	int sf;
+	final int TUPLES_PER_SF = 6000000;
 
 	@Override
 	public void setUp(){
+		sf = 1;
 		hdfsPath = "hdfs://localhost:9000/user/anil/dodo";
 
-		Configuration conf = new Configuration();
 		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
 
-		queryConf = new SparkQueryConf(conf);
-		queryConf.setDataset(hdfsPath);
-		queryConf.setWorkers(cfg.getNUM_RACKS() * cfg.getNODES_PER_RACK() * cfg.getMAP_TASKS());
-		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
-		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
-		queryConf.setMaxSplitSize(1024 / 64);
+		// Cleanup queries file - to remove past query workload
+		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
+							"/user/anil/dodo/queries", false);
+
+		opt = new Optimizer(hdfsPath, cfg.getHADOOP_HOME());
+		opt.loadIndex(cfg.getZOOKEEPER_HOSTS());
 	}
 
-	public void testGetSplits(){
+	public void testRunQuery(){
 		Predicate[] predicates = new Predicate[]{new Predicate(0, TYPE.INT, 3002147, PREDTYPE.LEQ)};
-		queryConf.setPredicates(predicates);
-		try {
-			job = Job.getInstance(queryConf.getConf());
-			FileInputFormat.setInputPaths(job, hdfsPath);
-			sparkInputFormat = new SparkInputFormat();
-			List<InputSplit> splits = sparkInputFormat.getSplits(job);
-			System.out.println(splits.size());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		opt.buildPlan(new FilterQuery(predicates));
 	}
 
-	public void testCreateRecordReader(){
-		try {
-			sparkInputFormat = new SparkInputFormat();
-			List<InputSplit> splits = sparkInputFormat.getSplits(job);
-			for(InputSplit split: splits)
-				sparkInputFormat.createRecordReader(split, null);
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+	public void testSingleAttributeRun() {
+		int numQueries = 50;
+		for (int i=1; i <= numQueries; i++) {
+			int year = 1993 + numQueries % 5;
+			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(year,1,1), PREDTYPE.GEQ);
+			// Predicate p2 = new Predicate(10, TYPE.DATE, new SimpleDate(year+1,1,1), PREDTYPE.LT);
+			opt.buildPlan(new FilterQuery(new Predicate[]{p1}));
+			System.out.println("Completed Query " + i);
+			opt.updateCountsBasedOnSample(sf * TUPLES_PER_SF);
+			System.out.println("Updated Bucket Counts");
 		}
 	}
 }

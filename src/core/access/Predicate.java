@@ -56,4 +56,22 @@ public class Predicate {
 	public String toString() {
 		return "" + attribute + ":" + type.toString() + ":" + TypeUtils.serializeValue(value, type) + ":" + predtype.toString();
 	}
+
+	public Object getHelpfulCutpoint() {
+		switch (this.predtype) {
+		case EQ:
+		case GT:
+		case LEQ:
+			return value;
+
+		// TODO: LT is still wrong in this implementation
+		// Avoid using LT anywhere in the evaluation
+		case GEQ:
+		case LT:
+			return TypeUtils.deltaLess(value, type);
+		default:
+			break;
+		}
+		return value;
+	}
 }

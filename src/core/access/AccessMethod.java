@@ -64,9 +64,9 @@ public class AccessMethod {
 	 */
 	public PartitionSplit[] getPartitionSplits(Query q, int n, boolean justAccess){
 		if (justAccess) {
-			return opt.buildAccessPlan(q, n);
+			return opt.buildAccessPlan(q);
 		} else {
-			return opt.buildPlan(q, n);
+			return opt.buildPlan(q);
 		}
 	}
 

@@ -15,7 +15,7 @@ import core.utils.SchemaUtils.TYPE;
 public class RobustTreeHs implements MDIndex {
 	public int maxBuckets;
 	public int numAttributes;
-    private CartilageIndexKeySet sample;
+    public CartilageIndexKeySet sample;
     private double samplingRate;
 
 	public TYPE[] dimensionTypes;
@@ -325,6 +325,22 @@ public class RobustTreeHs implements MDIndex {
 			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample.splitAt(n.attribute, n.value);
 			initializeBucketSamples(n.leftChild, halves.first);
 			initializeBucketSamples(n.rightChild, halves.second);
+		}
+	}
+
+	/** Use only in the simulator **/
+	public void initializeBucketSamplesAndCounts(RNode n, CartilageIndexKeySet sample, final int totalSamples, final int totalTuples) {
+		if (n.bucket != null) {
+			int numTuples = (sample.size() * totalTuples) / totalSamples;
+			n.bucket.setSample(sample);
+			Bucket.counters.setToBucketCount(n.bucket.getBucketId(), numTuples);
+		} else {
+			// By sorting we avoid memory allocation
+			// Will most probably be faster
+			sample.sort(n.attribute);
+			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample.splitAt(n.attribute, n.value);
+			initializeBucketSamplesAndCounts(n.leftChild, halves.first, totalSamples, totalTuples);
+			initializeBucketSamplesAndCounts(n.rightChild, halves.second, totalSamples, totalTuples);
 		}
 	}
 

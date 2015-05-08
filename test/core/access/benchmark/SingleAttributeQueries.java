@@ -23,7 +23,7 @@ public class SingleAttributeQueries extends TestCase{
 		while (numQueries > 0) {
 			int year = 1993 + numQueries % 5;
 			Predicate p1 = new Predicate(0, TYPE.DATE, new SimpleDate(year,1,1), PREDTYPE.GEQ);
-			Predicate p2 = new Predicate(0, TYPE.DATE, new SimpleDate(year,1,1), PREDTYPE.LT);
+			Predicate p2 = new Predicate(0, TYPE.DATE, new SimpleDate(year,12,31), PREDTYPE.LEQ);
 			SparkQuery sq = new SparkQuery(new Predicate[]{p1,p2}, cfg);
 			sq.createRDD("/home/anil/dodo").count();
 			numQueries--;

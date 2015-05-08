@@ -3,7 +3,6 @@ package core.utils;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
-import java.util.Date;
 
 import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
 import core.utils.SchemaUtils.TYPE;
@@ -71,7 +70,7 @@ public class TypeUtils {
 			else if ((Long)x < (Long)y) return -1;
 			else return 0;
 		case DATE:
-			return ((Date)x).compareTo((Date)y);
+			return ((SimpleDate)x).compareTo((SimpleDate)y);
 		case STRING:
 		case VARCHAR:
 			if (x.hashCode() > y.hashCode()) return 1;
@@ -151,6 +150,31 @@ public class TypeUtils {
 			return token;
 		default:
 			return token;
+		}
+	}
+
+	public static Object deltaLess(Object value, TYPE t) {
+		switch(t) {
+		case INT:
+			return (Integer)value - 1;
+		case LONG:
+			return (Long)value - 1;
+		case FLOAT:
+			return (Float)value - 0.001;
+		case DATE:
+			SimpleDate d = (SimpleDate)value;
+			return d.oneDayLess();
+		case BOOLEAN:
+			return false;
+		case STRING:
+			System.err.println("ERR: Called deltaLess on string");
+			return value;
+		case VARCHAR:
+			System.err.println("ERR: Called deltaLess on string");
+			return value;
+		default:
+			System.err.println("ERR: Called deltaLess on unknown type");
+			return value;
 		}
 	}
 }

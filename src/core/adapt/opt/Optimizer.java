@@ -99,7 +99,7 @@ public class Optimizer {
 		this.rt.loadSample(sampleBytes);
 	}
 
-	public PartitionSplit[] buildAccessPlan(final Query q, int numWorkers) {
+	public PartitionSplit[] buildAccessPlan(final Query q) {
 		if (q instanceof FilterQuery) {
 			FilterQuery fq = (FilterQuery) q;
 			List<RNode> nodes = this.rt.getRoot().search(fq.getPredicates());
@@ -120,13 +120,30 @@ public class Optimizer {
 		}
 	}
 
-	public PartitionSplit[] buildPlan(final Query q, int numWorkers) {
+	public PartitionSplit[] buildPlan(final Query q) {
 		if (q instanceof FilterQuery) {
 			FilterQuery fq = (FilterQuery) q;
+			this.queryWindow.add(fq);
 			Plan best = getBestPlan(fq.getPredicates());
-			PartitionSplit[] psplits = this.getPartitionSplits(best, fq, numWorkers);
-			this.updateQueryWindow(fq);
-			this.updateIndex(best, fq.getPredicates());
+			PartitionSplit[] psplits = this.getPartitionSplits(best, fq);
+
+			// Check if we are updating the index ?
+			boolean updated = true;
+			if (psplits.length == 1) {
+				if (psplits[0].getIterator().getClass() == PostFilterIterator.class) {
+					updated = false;
+				}
+			}
+
+			this.persistQueryToDisk(fq);
+			if (updated) {
+				System.out.println("INFO: Index being updated");
+				this.updateIndex(best, fq.getPredicates());
+				this.persistIndexToDisk();
+			} else {
+				System.out.println("INFO: No index update");
+			}
+
 			return psplits;
 		} else {
 			System.err.println("Unimplemented query - Unable to build plan");
@@ -202,7 +219,7 @@ public class Optimizer {
 		}
 	}
 
-	public PartitionSplit[] getPartitionSplits (Plan best, FilterQuery fq, int numWorkers) {
+	public PartitionSplit[] getPartitionSplits (Plan best, FilterQuery fq) {
 		List<PartitionSplit> lps = new ArrayList<PartitionSplit>();
 		final int[] modifyingOptions = new int[]{1};
 		Action acTree = best.actions;
@@ -372,62 +389,58 @@ public class Optimizer {
 	public float getNumTuplesAccessed(RNode changed, Query q, boolean real) {
 		// First traverse to parent to see if query accesses node
 		// If yes, find the number of tuples accessed.
-		float numTuples = 0;
 		Predicate[] ps = ((FilterQuery)q).getPredicates();
 
-		RNode node = changed;
-		boolean accessed = true;
-		while (node.parent != null) {
-			for (Predicate p: ps) {
-				if (p.attribute == node.parent.attribute) {
-					if (node.parent.leftChild == node) {
-	        			switch (p.predtype) {
-	                	case EQ:
-	        			case GEQ:
-	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) > 0) accessed = false;
-	                		break;
-	                	case GT:
-	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) >= 0) accessed = false;
-	                		break;
-						default:
-							break;
-	        			}
-					} else {
-	        			switch (p.predtype) {
-	                	case EQ:
-	        			case LEQ:
-	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) <= 0) accessed = false;
-	                		break;
-	                	case LT:
-	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) < 0) accessed = false;
-	                		break;
-						default:
-							break;
-	        			}
-					}
-				}
+//		// Not necessary? We never ask for nodes which are not accessed
+//		RNode node = changed;
+//		boolean accessed = true;
+//		while (node.parent != null) {
+//			for (Predicate p: ps) {
+//				if (p.attribute == node.parent.attribute) {
+//					if (node.parent.leftChild == node) {
+//	        			switch (p.predtype) {
+//	                	case EQ:
+//	        			case GEQ:
+//	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) > 0) accessed = false;
+//	                		break;
+//	                	case GT:
+//	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) >= 0) accessed = false;
+//	                		break;
+//						default:
+//							break;
+//	        			}
+//					} else {
+//	        			switch (p.predtype) {
+//	                	case EQ:
+//	        			case LEQ:
+//	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) <= 0) accessed = false;
+//	                		break;
+//	                	case LT:
+//	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) < 0) accessed = false;
+//	                		break;
+//						default:
+//							break;
+//	        			}
+//					}
+//				}
+//
+//				if (!accessed) break;
+//			}
+//
+//			if (!accessed) break;
+//		}
 
-				if (!accessed) break;
+		List<RNode> nodesAccessed = changed.search(ps);
+		float tCount = 0;
+		for (RNode n: nodesAccessed) {
+			if (real) {
+				tCount += n.bucket.getNumTuples();
+			} else {
+				tCount += n.bucket.estimatedTuples;
 			}
-
-			if (!accessed) break;
 		}
 
-		if (accessed) {
-			List<RNode> nodesAccessed = changed.search(ps);
-			float tCount = 0;
-			for (RNode n: nodesAccessed) {
-				if (real) {
-					tCount += n.bucket.getNumTuples();
-				} else {
-					tCount += n.bucket.estimatedTuples;
-				}
-			}
-
-			numTuples += tCount;
-		}
-
-		return numTuples;
+		return tCount;
 	}
 
 	/**
@@ -578,7 +591,7 @@ public class Optimizer {
 					RNode r = node.clone();
 					r.attribute = p.attribute;
 					r.type = p.type;
-					r.value = p.value;
+					r.value = p.getHelpfulCutpoint();
 					replaceInTree(node, r);
 
 			        populateBucketEstimates(r);
@@ -730,10 +743,21 @@ public class Optimizer {
 		}
 	}
 
-	public void updateQueryWindow(FilterQuery fq) {
-		this.queryWindow.add(fq);
+	public void persistQueryToDisk(FilterQuery fq) {
 		String pathToQueries = this.dataset + "/queries";
-		HDFSUtils.createFile(hadoopHome, pathToQueries, (short)1);
+		HDFSUtils.safeCreateFile(hadoopHome, pathToQueries, (short)1);
 		HDFSUtils.appendLine(hadoopHome, pathToQueries, fq.toString());
+	}
+
+	public void persistIndexToDisk() {
+		String pathToIndex = this.dataset + "/index";
+		HDFSUtils.safeCreateFile(hadoopHome, pathToIndex, (short)1);
+		byte[] indexBytes = this.rt.marshall();
+		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome), pathToIndex, (short) 1, this.rt.marshall(), 0, indexBytes.length, false);
+	}
+
+	/** Used only in simulator **/
+	public void updateCountsBasedOnSample(int totalTuples) {
+		this.rt.initializeBucketSamplesAndCounts(this.rt.getRoot(), this.rt.sample, this.rt.sample.size(), totalTuples);
 	}
 }
