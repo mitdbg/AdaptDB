@@ -329,9 +329,10 @@ public class RobustTreeHs implements MDIndex {
 	}
 
 	/** Use only in the simulator **/
-	public void initializeBucketSamplesAndCounts(RNode n, CartilageIndexKeySet sample, final int totalSamples, final int totalTuples) {
+	public void initializeBucketSamplesAndCounts(RNode n, CartilageIndexKeySet sample, final long totalSamples, final long totalTuples) {
 		if (n.bucket != null) {
-			int numTuples = (sample.size() * totalTuples) / totalSamples;
+			long sampleSize = sample.size();
+			int numTuples = (int)( (sampleSize * totalTuples) / totalSamples);
 			n.bucket.setSample(sample);
 			Bucket.counters.setToBucketCount(n.bucket.getBucketId(), numTuples);
 		} else {
