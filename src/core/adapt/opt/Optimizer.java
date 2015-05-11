@@ -41,12 +41,12 @@ public class Optimizer {
 	String hadoopHome;
 
 	static final int BLOCK_SIZE = 64 * 1024;
-	static final float DISK_MULTIPLIER = 4;
-	static final float NETWORK_MULTIPLIER = 7;
+	static final float DISK_MULTIPLIER = 1;
+	static final float NETWORK_MULTIPLIER = 1;
 
-	static final int NODE_MEM_SIZE = 1024 * 1024 * 1024 * 2;
-	static final int TUPLE_SIZE = 48;
-	static final int NODE_TUPLE_LIMIT = NODE_MEM_SIZE / TUPLE_SIZE;
+	static final long NODE_MEM_SIZE = 1024 * 1024 * 1024 * 2;
+	static final int TUPLE_SIZE = 64;
+	static final int NODE_TUPLE_LIMIT = 33554432; // NODE_MEM_SIZE / TUPLE_SIZE
 
 	List<Query> queryWindow = new ArrayList<Query>();
 
@@ -125,7 +125,12 @@ public class Optimizer {
 			FilterQuery fq = (FilterQuery) q;
 			this.queryWindow.add(fq);
 			Plan best = getBestPlan(fq.getPredicates());
-			PartitionSplit[] psplits = this.getPartitionSplits(best, fq);
+			PartitionSplit[] psplits;
+			if (best != null) {
+				psplits = this.getPartitionSplits(best, fq);
+			} else {
+				psplits = this.buildAccessPlan(fq);
+			}
 
 			// Check if we are updating the index ?
 			boolean updated = true;
@@ -134,6 +139,16 @@ public class Optimizer {
 					updated = false;
 				}
 			}
+
+			// Debug
+			int numTuplesAccessed = 0;
+			for (int i=0; i<psplits.length; i++) {
+				int[] bids = psplits[i].getPartitions();
+				for (int j=0; j<bids.length; j++) {
+					numTuplesAccessed += Bucket.counters.getBucketCount(bids[i]);
+				}
+			}
+			System.out.println("Query Cost: " + numTuplesAccessed);
 
 			this.persistQueryToDisk(fq);
 			if (updated) {
@@ -163,7 +178,12 @@ public class Optimizer {
 			}
 		}
 
-		return plan;
+		System.out.println("plan.cost: " + plan.cost + " plan.benefit: " + plan.benefit);
+		if (plan.cost <= plan.benefit) {
+			return plan;
+		} else {
+			return null;
+		}
 	}
 
 	public void updateIndex(Plan best, Predicate[] ps) {
@@ -171,6 +191,10 @@ public class Optimizer {
 	}
 
 	public void applyActions(RNode n, Action a, Predicate[] ps) {
+		boolean isRoot = false;
+		if (n.parent == null)
+			isRoot = true;
+
 		if (a.left != null) {
 			this.applyActions(n.leftChild, a.left, ps);
 		}
@@ -187,8 +211,12 @@ public class Optimizer {
 			RNode r = n.clone();
 			r.attribute = p.attribute;
 			r.type = p.type;
-			r.value = p.value;
+			r.value = p.getHelpfulCutpoint();
 			replaceInTree(n, r);
+
+			// This is the root
+			if (isRoot) rt.setRoot(r);
+
 			break;
 		case 2:
 			Predicate p2 = ps[a.pid];
@@ -199,17 +227,42 @@ public class Optimizer {
 			replaceInTree(n.leftChild, n2);
 			replaceInTree(n, right);
 			replaceInTree(right.rightChild, n);
+			if (isRoot) rt.setRoot(right);
 			break;
 		case 3:
 			assert a.right == null || a.left == null;
 			if (a.left == null) {
-				RNode t = n.rightChild.clone();
+				RNode t = n.rightChild;
+				RNode tr = t.rightChild;
+				RNode tl = t.leftChild;
+
 				replaceInTree(n, t);
-				replaceInTree(t.rightChild, n);
+				t.rightChild = tr;
+				t.rightChild.parent = t;
+				t.leftChild = n;
+				t.leftChild.parent = t;
+				// As side-effect of replace, n.leftChild.parent points to t
+				n.leftChild.parent = n;
+
+				n.rightChild = tl;
+				n.rightChild.parent = n;
+
+				if (isRoot) rt.setRoot(t);
 			} else {
-				RNode t = n.leftChild.clone();
+				RNode t = n.leftChild;
+				RNode tr = t.rightChild;
+				RNode tl = t.leftChild;
+
 				replaceInTree(n, t);
-				replaceInTree(t.leftChild, n);
+				t.leftChild = tl;
+				t.leftChild.parent = t;
+				t.rightChild = n;
+				t.rightChild.parent = t;
+				n.rightChild.parent = n;
+				n.leftChild = tr;
+				n.leftChild.parent = n;
+
+				if (isRoot) rt.setRoot(t);
 			}
 			break;
 		case 4:
@@ -311,7 +364,7 @@ public class Optimizer {
 				int ret = TypeUtils.compareTo(node.parent.value, val, t);
 				if (node.parent.leftChild == node && ret <= 0) {
 					return false;
-				} else if (ret >= 0) {
+				} else if (node.parent.rightChild == node && ret >= 0) {
 					return false;
 				}
 			}
@@ -391,44 +444,44 @@ public class Optimizer {
 		// If yes, find the number of tuples accessed.
 		Predicate[] ps = ((FilterQuery)q).getPredicates();
 
-//		// Not necessary? We never ask for nodes which are not accessed
-//		RNode node = changed;
-//		boolean accessed = true;
-//		while (node.parent != null) {
-//			for (Predicate p: ps) {
-//				if (p.attribute == node.parent.attribute) {
-//					if (node.parent.leftChild == node) {
-//	        			switch (p.predtype) {
-//	                	case EQ:
-//	        			case GEQ:
-//	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) > 0) accessed = false;
-//	                		break;
-//	                	case GT:
-//	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) >= 0) accessed = false;
-//	                		break;
-//						default:
-//							break;
-//	        			}
-//					} else {
-//	        			switch (p.predtype) {
-//	                	case EQ:
-//	        			case LEQ:
-//	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) <= 0) accessed = false;
-//	                		break;
-//	                	case LT:
-//	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) < 0) accessed = false;
-//	                		break;
-//						default:
-//							break;
-//	        			}
-//					}
-//				}
-//
-//				if (!accessed) break;
-//			}
-//
-//			if (!accessed) break;
-//		}
+		RNode node = changed;
+		boolean accessed = true;
+		while (node.parent != null) {
+			for (Predicate p: ps) {
+				if (p.attribute == node.parent.attribute) {
+					if (node.parent.leftChild == node) {
+	        			switch (p.predtype) {
+	                	case EQ:
+	        			case GEQ:
+	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) > 0) accessed = false;
+	                		break;
+	                	case GT:
+	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) >= 0) accessed = false;
+	                		break;
+						default:
+							break;
+	        			}
+					} else {
+	        			switch (p.predtype) {
+	                	case EQ:
+	        			case LEQ:
+	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) <= 0) accessed = false;
+	                		break;
+	                	case LT:
+	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) < 0) accessed = false;
+	                		break;
+						default:
+							break;
+	        			}
+					}
+				}
+
+				if (!accessed) break;
+			}
+
+			if (!accessed) break;
+			node = node.parent;
+		}
 
 		List<RNode> nodesAccessed = changed.search(ps);
 		float tCount = 0;
@@ -538,7 +591,7 @@ public class Optimizer {
         	for (int i = 0; i < ps.length; i++) {
         		Predicate pd = ps[i];
         		if (pd.attribute == node.attribute) {
-        			switch (p.predtype) {
+        			switch (pd.predtype) {
 	                	case GEQ:
 	                		if (TypeUtils.compareTo(pd.value, node.value, node.type) > 0) goLeft = false;
 	                		break;
@@ -585,13 +638,14 @@ public class Optimizer {
 
 				// If we traverse to root and see that there is no node with cutoff point less than
 				// that of predicate, we can do this
-				if (checkValid(node, p.attribute, p.type, p.value)) {
+				Object testVal = p.getHelpfulCutpoint();
+				if (checkValid(node, p.attribute, p.type, testVal)) {
 			        float numAccessedOld = getNumTuplesAccessed(node, true);
 
 					RNode r = node.clone();
 					r.attribute = p.attribute;
 					r.type = p.type;
-					r.value = p.getHelpfulCutpoint();
+					r.value = testVal;
 					replaceInTree(node, r);
 
 			        populateBucketEstimates(r);
@@ -707,6 +761,10 @@ public class Optimizer {
 
 	public float computeCost(RNode r) {
 		int numTuples = r.numTuplesInSubtree();
+		return this.computeCost(numTuples);
+	}
+
+	public float computeCost(float numTuples) {
 		if (numTuples > NODE_TUPLE_LIMIT) {
 			return (DISK_MULTIPLIER + NETWORK_MULTIPLIER) * numTuples;
 		} else {

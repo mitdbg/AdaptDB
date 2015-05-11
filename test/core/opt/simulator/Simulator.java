@@ -44,13 +44,13 @@ public class Simulator extends TestCase{
 	public void testSingleAttributeRun() {
 		int numQueries = 50;
 		for (int i=1; i <= numQueries; i++) {
-			int year = 1993 + numQueries % 5;
+			int year = 1993 + (i + 1) % 5;
 			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(year,1,1), PREDTYPE.GEQ);
 			// Predicate p2 = new Predicate(10, TYPE.DATE, new SimpleDate(year+1,1,1), PREDTYPE.LT);
-			opt.buildPlan(new FilterQuery(new Predicate[]{p1}));
-			System.out.println("Completed Query " + i);
 			opt.updateCountsBasedOnSample(sf * TUPLES_PER_SF);
 			System.out.println("Updated Bucket Counts");
+			opt.buildPlan(new FilterQuery(new Predicate[]{p1}));
+			System.out.println("Completed Query " + i);
 		}
 	}
 }
