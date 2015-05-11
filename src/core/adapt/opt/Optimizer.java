@@ -41,12 +41,12 @@ public class Optimizer {
 	String hadoopHome;
 
 	static final int BLOCK_SIZE = 64 * 1024;
-	static final float DISK_MULTIPLIER = 4;
-	static final float NETWORK_MULTIPLIER = 7;
+	static final float DISK_MULTIPLIER = 1;
+	static final float NETWORK_MULTIPLIER = 1;
 
-	static final int NODE_MEM_SIZE = 1024 * 1024 * 1024 * 2;
-	static final int TUPLE_SIZE = 48;
-	static final int NODE_TUPLE_LIMIT = NODE_MEM_SIZE / TUPLE_SIZE;
+	static final long NODE_MEM_SIZE = 1024 * 1024 * 1024 * 2;
+	static final int TUPLE_SIZE = 64;
+	static final int NODE_TUPLE_LIMIT = 33554432; // NODE_MEM_SIZE / TUPLE_SIZE
 
 	List<Query> queryWindow = new ArrayList<Query>();
 
@@ -125,7 +125,12 @@ public class Optimizer {
 			FilterQuery fq = (FilterQuery) q;
 			this.queryWindow.add(fq);
 			Plan best = getBestPlan(fq.getPredicates());
-			PartitionSplit[] psplits = this.getPartitionSplits(best, fq);
+			PartitionSplit[] psplits;
+			if (best != null) {
+				psplits = this.getPartitionSplits(best, fq);
+			} else {
+				psplits = this.buildAccessPlan(fq);
+			}
 
 			// Check if we are updating the index ?
 			boolean updated = true;
@@ -134,6 +139,16 @@ public class Optimizer {
 					updated = false;
 				}
 			}
+
+			// Debug
+			int numTuplesAccessed = 0;
+			for (int i=0; i<psplits.length; i++) {
+				int[] bids = psplits[i].getPartitions();
+				for (int j=0; j<bids.length; j++) {
+					numTuplesAccessed += Bucket.counters.getBucketCount(bids[i]);
+				}
+			}
+			System.out.println("Query Cost: " + numTuplesAccessed);
 
 			this.persistQueryToDisk(fq);
 			if (updated) {
@@ -163,7 +178,12 @@ public class Optimizer {
 			}
 		}
 
-		return plan;
+		System.out.println("plan.cost: " + plan.cost + " plan.benefit: " + plan.benefit);
+		if (plan.cost <= plan.benefit) {
+			return plan;
+		} else {
+			return null;
+		}
 	}
 
 	public void updateIndex(Plan best, Predicate[] ps) {
@@ -571,7 +591,7 @@ public class Optimizer {
         	for (int i = 0; i < ps.length; i++) {
         		Predicate pd = ps[i];
         		if (pd.attribute == node.attribute) {
-        			switch (p.predtype) {
+        			switch (pd.predtype) {
 	                	case GEQ:
 	                		if (TypeUtils.compareTo(pd.value, node.value, node.type) > 0) goLeft = false;
 	                		break;
@@ -741,6 +761,10 @@ public class Optimizer {
 
 	public float computeCost(RNode r) {
 		int numTuples = r.numTuplesInSubtree();
+		return this.computeCost(numTuples);
+	}
+
+	public float computeCost(float numTuples) {
 		if (numTuples > NODE_TUPLE_LIMIT) {
 			return (DISK_MULTIPLIER + NETWORK_MULTIPLIER) * numTuples;
 		} else {

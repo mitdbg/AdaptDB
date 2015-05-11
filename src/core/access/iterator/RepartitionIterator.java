@@ -25,11 +25,11 @@ public class RepartitionIterator extends PartitionIterator{
 		this.query = query;
 		this.newIndexTree = newIndexTree;
 	}
-	
+
 	public void setZookeeper(String zookeeperHosts){
 		this.zookeeperHosts = zookeeperHosts;
 	}
-	
+
 	public DistributedRepartitionIterator createDistributedIterator(){
 		DistributedRepartitionIterator itr = new DistributedRepartitionIterator(query, newIndexTree);
 		itr.setZookeeper(zookeeperHosts);
@@ -39,12 +39,12 @@ public class RepartitionIterator extends PartitionIterator{
 	public FilterQuery getQuery(){
 		return this.query;
 	}
-	
+
 	public RNode getIndexTree(){
 		return this.newIndexTree;
 	}
-	
-	
+
+
 	@Override
 	public void setPartition(Partition partition){
 		super.setPartition(partition);
@@ -70,14 +70,18 @@ public class RepartitionIterator extends PartitionIterator{
 
 	@Override
 	protected void finalize(){
-		BucketCounts c = new BucketCounts(zookeeperHosts);
-		for(Partition p: newPartitions.values()){
-			p.store(true);
-			c.setToBucketCount(p.getPartitionId(), p.getRecordCount());			
+		if (zookeeperHosts != null) {
+			BucketCounts c = new BucketCounts(zookeeperHosts);
+			for(Partition p: newPartitions.values()){
+				p.store(true);
+				c.setToBucketCount(p.getPartitionId(), p.getRecordCount());
+			}
+			partition.drop();
+			c.removeBucketCount(partition.getPartitionId());
+			c.close();
+		} else {
+			System.out.println("INFO: Zookeeper Hosts NULL");
 		}
-		partition.drop();
-		c.removeBucketCount(partition.getPartitionId());
-		c.close();
 	}
 
 	@Override

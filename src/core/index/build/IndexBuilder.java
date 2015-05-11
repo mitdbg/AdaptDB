@@ -51,6 +51,7 @@ public class IndexBuilder {
 
 	//WARN: not up to date!
 	public void build(MDIndex[] indexes, CartilageIndexKey[] keys, String inputFilename, PartitionWriter[] writers){
+		System.out.println("Not up to date/ Dont use");
 
 		long startTime = System.nanoTime();
 		for(MDIndex index: indexes)
@@ -75,6 +76,8 @@ public class IndexBuilder {
 	//WARN: not up to date!
 	public void build(MDIndex index, CartilageIndexKey key, String inputFilename, PartitionWriter writer, int attributes, int replication){
 		int attrPerReplica = attributes / replication;
+
+		System.out.println("Not up to date/ Dont use");
 
 		Map<Integer,List<Integer>> replicaAttrs = Maps.newHashMap();
 		for(int j=0;j<attributes;j++){
