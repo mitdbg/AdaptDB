@@ -5,6 +5,8 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Map;
 
+import com.google.common.io.ByteStreams;
+
 import core.access.Partition;
 import core.access.Query.FilterQuery;
 import core.index.MDIndex.BucketCounts;
@@ -19,6 +21,15 @@ public class RepartitionIterator extends PartitionIterator{
 	protected Map<Integer,Partition> newPartitions;
 
 	public RepartitionIterator(){
+	}
+	
+	public RepartitionIterator(String iteratorString){
+		try {
+			readFields(ByteStreams.newDataInput(iteratorString.getBytes()));
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new RuntimeException("Failed to read the fields");
+		}
 	}
 
 	public RepartitionIterator(FilterQuery query, RNode newIndexTree){
@@ -91,6 +102,7 @@ public class RepartitionIterator extends PartitionIterator{
 
 	@Override
 	public void readFields(DataInput in) throws IOException{
+		query = new FilterQuery();
 		query.readFields(in);
 		newIndexTree = new RNode();
 		byte[] indexBytes = new byte[in.readInt()];
@@ -98,4 +110,10 @@ public class RepartitionIterator extends PartitionIterator{
 		newIndexTree.unmarshall(indexBytes);
 		zookeeperHosts = in.readLine();
 	}
+	
+	public static RepartitionIterator read(DataInput in) throws IOException {
+		RepartitionIterator it = new RepartitionIterator();
+        it.readFields(in);
+        return it;
+	}	
 }
