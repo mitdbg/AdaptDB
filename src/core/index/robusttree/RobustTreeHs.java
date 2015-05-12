@@ -46,6 +46,16 @@ public class RobustTreeHs implements MDIndex {
         this.sample = new CartilageIndexKeySet();
 	}
 
+	public void loadSampleAndBuild(int buckets, byte[] bytes) {
+        this.maxBuckets = buckets;
+		root = new RNode();
+        this.sample = new CartilageIndexKeySet();
+		this.sample.unmarshall(bytes);
+
+    	this.dimensionTypes = this.sample.getTypes();
+        this.numAttributes = this.dimensionTypes.length;
+	}
+
 	public RNode getRoot() {
 		return root;
 	}
