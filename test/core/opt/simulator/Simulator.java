@@ -41,16 +41,33 @@ public class Simulator extends TestCase{
 		opt.buildPlan(new FilterQuery(predicates));
 	}
 
-	public void testSingleAttributeRun() {
+	public void testSinglePredicateRun() {
 		int numQueries = 50;
 		for (int i=1; i <= numQueries; i++) {
 			int year = 1993 + (i + 1) % 5;
-			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(year,1,1), PREDTYPE.GEQ);
+			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(year-1,12,31), PREDTYPE.GT);
 			// Predicate p2 = new Predicate(10, TYPE.DATE, new SimpleDate(year+1,1,1), PREDTYPE.LT);
 			opt.updateCountsBasedOnSample(sf * TUPLES_PER_SF);
 			System.out.println("Updated Bucket Counts");
 			opt.buildPlan(new FilterQuery(new Predicate[]{p1}));
 			System.out.println("Completed Query " + i);
+		}
+	}
+
+	public void testRangePredicateRun() {
+		int numQueries = 50;
+		for (int i=1; i <= numQueries; i++) {
+			int year = 1993 + (i + 1) % 5;
+			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(year-1,12,31), PREDTYPE.GT);
+			Predicate p2 = new Predicate(10, TYPE.DATE, new SimpleDate(year,12,31), PREDTYPE.LEQ);
+			opt.updateCountsBasedOnSample(sf * TUPLES_PER_SF);
+			System.out.println("INFO: Updated Bucket Counts");
+			opt.buildPlan(new FilterQuery(new Predicate[]{p1, p2}));
+			System.out.println("INFO: Completed Query " + i);
+
+			if (i == 48) {
+				System.out.println("Hola");
+			}
 		}
 	}
 }
