@@ -29,6 +29,7 @@ public class Query implements Serializable{
 		for(int i=0; i<predicates.length; i++)
 			predicates[i] = new Predicate(tokens[i]);
 	}
+	
 
 
 	public static class FilterQuery extends Query implements Serializable{
@@ -77,6 +78,12 @@ public class Query implements Serializable{
 //			}
 //			ret += "\n";
 //			return ret;
+		}
+		
+		public static FilterQuery read(DataInput in) throws IOException {
+			FilterQuery q = new FilterQuery();
+	        q.readFields(in);
+	        return q;
 		}
 	}
 

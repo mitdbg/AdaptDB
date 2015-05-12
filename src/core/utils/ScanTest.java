@@ -132,8 +132,8 @@ public class ScanTest {
             ch = f.getChannel();
 
             //byte[] line = null;
-            int totalLineSize=0;
-            int lineCount=0;
+            //int lineCount=0;
+            //int totalLineSize=0;
 
             while((nRead = ch.read(bb)) != -1){
                 if(nRead==0)
@@ -143,7 +143,7 @@ public class ScanTest {
                 for ( ; byteArrayIdx<nRead; byteArrayIdx++ ){
                     if(byteArray[byteArrayIdx]==newLine){
 
-                        totalLineSize += byteArrayIdx-previous;
+                        //totalLineSize += byteArrayIdx-previous;
                         //line = BinaryUtils.getBytes(byteArray, previous, byteArrayIdx-previous);
                         //key.setBytes(line);
                         key.setBytes(byteArray, previous, byteArrayIdx-previous);
@@ -157,13 +157,13 @@ public class ScanTest {
                             //line = BinaryUtils.concatenate(brokenLine, (byte[])line);
                             //key.setBytes(line);
 
-                            totalLineSize += brokenLine.length;
+                            //totalLineSize += brokenLine.length;
                             hasLeftover = false;
                         }
                         //System.out.println(new String((byte[])line));
                         previous = ++byteArrayIdx;
 
-                        lineCount++;
+                        //lineCount++;
                         //offsets[tupleId++] = key.getOffsets();
                         String bucketId = (String) index.getBucketId(key);
                         if (!bucketCounts.containsKey(bucketId)) {

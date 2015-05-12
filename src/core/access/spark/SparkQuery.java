@@ -27,8 +27,8 @@ public class SparkQuery {
 	public SparkQuery(Predicate[] predicates, ConfUtils config) {
 		this.predicates = predicates;
 		this.cfg = config;
-		ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName());
-		//ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName(), cfg.getSPARK_HOME(), cfg.getSPARK_JAR());
+		//ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName());
+		ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName(), cfg.getSPARK_HOME(), cfg.getSPARK_JAR());
 		queryConf = new SparkQueryConf(ctx.hadoopConfiguration());
 	}
 

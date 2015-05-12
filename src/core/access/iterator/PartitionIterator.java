@@ -3,14 +3,19 @@ package core.access.iterator;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Iterator;
 
 import org.apache.commons.lang.ArrayUtils;
+
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
 
 import core.access.Partition;
 import core.access.Predicate;
 import core.access.iterator.PartitionIterator.IteratorRecord;
 import core.index.key.CartilageIndexKey;
+import core.utils.ReflectionUtils;
 
 public class PartitionIterator implements Iterator<IteratorRecord>{
 
@@ -36,7 +41,12 @@ public class PartitionIterator implements Iterator<IteratorRecord>{
 	 * @author alekh
 	 *
 	 */
-	public static class IteratorRecord extends CartilageIndexKey{
+	public static class IteratorRecord extends CartilageIndexKey implements Serializable {
+
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
 
 		public IteratorRecord() {
 			super(PartitionIterator.delimiter);
@@ -59,6 +69,13 @@ public class PartitionIterator implements Iterator<IteratorRecord>{
 		}
 	}
 
+	public PartitionIterator(){
+	}
+	
+	public PartitionIterator(String itrString){
+	}
+	
+	
 	public void setPartition(Partition partition){
 		this.partition = partition;
 		record = new IteratorRecord();
@@ -100,5 +117,28 @@ public class PartitionIterator implements Iterator<IteratorRecord>{
 	}
 	
 	public void readFields(DataInput in) throws IOException{
+	}
+	
+	public static PartitionIterator read(DataInput in) throws IOException {
+		PartitionIterator it = new PartitionIterator();
+        it.readFields(in);
+        return it;
+	}
+	
+	
+	public static String iteratorToString(PartitionIterator itr){
+		ByteArrayDataOutput dat = ByteStreams.newDataOutput();
+		try {
+			itr.write(dat);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new RuntimeException("Failed to serialize the partitioner");
+		}
+		return itr.getClass().getName() +"@"+ new String(dat.toByteArray());		
+	}
+	
+	public static PartitionIterator stringToIterator(String itrString){
+		String[] tokens = itrString.split("@",2);
+		return (PartitionIterator) ReflectionUtils.getInstance(tokens[0], new Class<?>[]{String.class}, new Object[]{tokens[1]});
 	}
 }

@@ -9,18 +9,20 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.lib.input.CombineFileSplit;
+
+import com.google.common.base.Joiner;
 
 import core.access.HDFSPartition;
 import core.access.Partition;
 import core.access.iterator.PartitionIterator;
 import core.access.iterator.PartitionIterator.IteratorRecord;
-import core.access.spark.SparkInputFormat.SparkFileSplit;
 
 public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord> {
 
 	protected Configuration conf;
 	
-	protected SparkFileSplit sparkSplit;
+	protected CombineFileSplit sparkSplit;
 	private int currentFile;
 	
 	protected PartitionIterator iterator;
@@ -30,9 +32,20 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 
 	@Override
 	public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
-		conf = context.getConfiguration();				
-		sparkSplit = (SparkFileSplit)split;
-		iterator = sparkSplit.getIterator();
+		
+		System.out.println("Initializing SparkRecordReader");
+		
+		conf = context.getConfiguration();
+		System.out.println(conf);
+		sparkSplit = (CombineFileSplit)split;
+		
+		long splitID = Joiner.on(",").join(sparkSplit.getPaths()).hashCode();
+		System.out.println("splitID = "+splitID);
+		
+		String iteratorString = conf.get(SparkInputFormat.SPLIT_ITERATOR + splitID);
+		System.out.println("iteratorString = "+iteratorString);
+		
+		iterator = PartitionIterator.stringToIterator(iteratorString);
 		
 		currentFile = 0;
 		initializeNext();
@@ -43,6 +56,9 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 	}
 
 	protected boolean initializeNext() throws IOException{
+		
+		System.out.println("Initializing next partition in SparkRecordReader");
+		
 		if(currentFile >= sparkSplit.getStartOffsets().length)
 			return false;
 		else{

@@ -9,10 +9,10 @@ import com.google.common.collect.Lists;
 
 import core.access.Partition;
 import core.access.Predicate;
+import core.access.Predicate.PREDTYPE;
 import core.access.Query.FilterQuery;
 import core.index.Settings;
-import core.utils.RangeUtils;
-import core.utils.RangeUtils.Range;
+import core.utils.SchemaUtils.TYPE;
 
 public class TestScanIterator extends TestCase{
 
@@ -25,8 +25,10 @@ public class TestScanIterator extends TestCase{
 	public void setUp(){
 		partitionDir = Settings.localPartitionDir;
 		int attributeIdx = 0;
-		Range r = RangeUtils.closed(3000000, 6000000);
-		query = new FilterQuery(new Predicate[]{new Predicate(attributeIdx, r)});
+		//Range r = RangeUtils.closed(3000000, 6000000);
+		Predicate p1 = new Predicate(attributeIdx, TYPE.INT, 3000000, PREDTYPE.GEQ);
+		Predicate p2 = new Predicate(attributeIdx, TYPE.INT, 6000000, PREDTYPE.LEQ);
+		query = new FilterQuery(new Predicate[]{p1,p2});
 
 		partitionPaths = Lists.newArrayList();
 
