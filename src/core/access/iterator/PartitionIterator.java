@@ -80,7 +80,8 @@ public class PartitionIterator implements Iterator<IteratorRecord>{
 		this.partition = partition;
 		record = new IteratorRecord();
 		bytes = partition.getBytes();
-		bytesLength = partition.getSize();
+		//bytesLength = partition.getSize();
+		bytesLength = bytes.length;
 		offset = 0;
 		previous = 0;
 	}
@@ -92,8 +93,10 @@ public class PartitionIterator implements Iterator<IteratorRecord>{
 	    		recordBytes = ArrayUtils.subarray(bytes, previous, offset);
 	    		record.setBytes(recordBytes);
 	    		previous = ++offset;
-	    		if(isRelevant(record))
+	    		if(isRelevant(record)){
+	    			//System.out.println("relevant record found ..");
 	    			return true;
+	    		}
 	    		else
 	    			continue;
 	    	}
@@ -119,11 +122,11 @@ public class PartitionIterator implements Iterator<IteratorRecord>{
 	public void readFields(DataInput in) throws IOException{
 	}
 	
-	public static PartitionIterator read(DataInput in) throws IOException {
-		PartitionIterator it = new PartitionIterator();
-        it.readFields(in);
-        return it;
-	}
+//	public static PartitionIterator read(DataInput in) throws IOException {
+//		PartitionIterator it = new PartitionIterator();
+//        it.readFields(in);
+//        return it;
+//	}
 	
 	
 	public static String iteratorToString(PartitionIterator itr){

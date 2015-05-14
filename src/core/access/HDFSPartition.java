@@ -46,7 +46,7 @@ public class HDFSPartition extends Partition{
 	public boolean load(){
 		if(path==null || path.equals(""))
 			return false;		
-		bytes = HDFSUtils.readFile(hdfs, path);		
+		bytes = HDFSUtils.readFile(hdfs, path + "/" + partitionId);		
 		return true;	// load the physical block for this partition 
 	}
 	

@@ -9,20 +9,18 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.lib.input.CombineFileSplit;
-
-import com.google.common.base.Joiner;
 
 import core.access.HDFSPartition;
 import core.access.Partition;
 import core.access.iterator.PartitionIterator;
 import core.access.iterator.PartitionIterator.IteratorRecord;
+import core.access.spark.SparkInputFormat.SparkFileSplit;
 
 public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord> {
 
 	protected Configuration conf;
 	
-	protected CombineFileSplit sparkSplit;
+	protected SparkFileSplit sparkSplit;
 	private int currentFile;
 	
 	protected PartitionIterator iterator;
@@ -36,17 +34,9 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		System.out.println("Initializing SparkRecordReader");
 		
 		conf = context.getConfiguration();
-		System.out.println(conf);
-		sparkSplit = (CombineFileSplit)split;
+		sparkSplit = (SparkFileSplit)split;
 		
-		long splitID = Joiner.on(",").join(sparkSplit.getPaths()).hashCode();
-		System.out.println("splitID = "+splitID);
-		
-		String iteratorString = conf.get(SparkInputFormat.SPLIT_ITERATOR + splitID);
-		System.out.println("iteratorString = "+iteratorString);
-		
-		iterator = PartitionIterator.stringToIterator(iteratorString);
-		
+		iterator = sparkSplit.getIterator();
 		currentFile = 0;
 		initializeNext();
 		
@@ -57,7 +47,8 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 
 	protected boolean initializeNext() throws IOException{
 		
-		System.out.println("Initializing next partition in SparkRecordReader");
+		if(currentFile>0)
+			System.out.println("Records read = "+recordId);
 		
 		if(currentFile >= sparkSplit.getStartOffsets().length)
 			return false;
@@ -65,6 +56,7 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 			Path filePath = sparkSplit.getPath(currentFile);
 			final FileSystem fs = filePath.getFileSystem(conf);
 			Partition partition = new HDFSPartition(fs, filePath.toString());
+			System.out.println("loading path: "+filePath.toString());
 			partition.load();
 			iterator.setPartition(partition);
 			
@@ -74,12 +66,15 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 	}
 
 	public boolean nextKeyValue() throws IOException, InterruptedException {
-		if(iterator.hasNext() || (sparkSplit!=null && initializeNext())){
-			recordId++;
-			return true;
-		}
-		else
-			return false;
+		do{
+			if(iterator.hasNext()){
+				recordId++;
+				return true;
+			}	
+		} while(initializeNext());
+		
+		//System.out.println("Record read = "+recordId);
+		return false;		
 	}
 
 	@Override

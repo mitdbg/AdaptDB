@@ -5,6 +5,8 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.hadoop.io.Text;
+
 import com.google.common.io.ByteStreams;
 
 import core.access.Partition;
@@ -101,7 +103,8 @@ public class RepartitionIterator extends PartitionIterator{
 		byte[] indexBytes = newIndexTree.marshall().getBytes();
 		out.writeInt(indexBytes.length);
 		out.write(indexBytes);
-		out.writeBytes(zookeeperHosts+"\n");
+		Text.writeString(out, zookeeperHosts);
+		//out.writeBytes(zookeeperHosts+"\n");
 	}
 
 	@Override
@@ -112,7 +115,8 @@ public class RepartitionIterator extends PartitionIterator{
 		byte[] indexBytes = new byte[in.readInt()];
 		in.readFully(indexBytes);
 		newIndexTree.unmarshall(indexBytes);
-		zookeeperHosts = in.readLine();
+		//zookeeperHosts = in.readLine();
+		zookeeperHosts = Text.readString(in);
 	}
 	
 	public static RepartitionIterator read(DataInput in) throws IOException {

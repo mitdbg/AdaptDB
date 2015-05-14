@@ -5,6 +5,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TextInputFormat;
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -28,7 +29,18 @@ public class SparkQuery {
 		this.predicates = predicates;
 		this.cfg = config;
 		//ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName());
-		ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName(), cfg.getSPARK_HOME(), cfg.getSPARK_JAR());
+		
+		
+		SparkConf sconf = new SparkConf()
+								.setMaster(cfg.getSPARK_MASTER())
+								.setAppName(this.getClass().getName())
+								.setSparkHome(cfg.getSPARK_HOME())
+								.setJars(new String[]{cfg.getSPARK_JAR()})
+								.set("spark.hadoop.cloneConf", "false")
+								.set("spark.executor.memory", "4g");
+		
+		ctx = new JavaSparkContext(sconf);
+		//ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName(), cfg.getSPARK_HOME(), cfg.getSPARK_JAR());
 		queryConf = new SparkQueryConf(ctx.hadoopConfiguration());
 	}
 
@@ -85,7 +97,7 @@ public class SparkQuery {
 		queryConf.setMaxSplitSize(1024 / 64);	// number of 64 MB partitions that can fit for each worker (we assume 1GB memory for each worker)
 		// ctx.hadoopConfiguration().setClass(FileInputFormat.PATHFILTER_CLASS, SparkPathFilter.class, PathFilter.class);
 		
-//		System.setProperty("spark.executor.memory","4g");
+//	System.setProperty("spark.executor.memory","4g");
 //		System.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
 		
 		return ctx.newAPIHadoopFile(
