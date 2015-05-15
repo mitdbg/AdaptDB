@@ -95,7 +95,6 @@ public class CartilageIndexKeySet {
 		return values.get(values.size() - 1)[dim];
 	}
 
-	// TODO: Make this compatible with the one in TypeUtils
 	public Comparator<Object[]> getComparatorForType(TYPE type, final int attributeIdx) {
 		switch(type){
 		case INT:

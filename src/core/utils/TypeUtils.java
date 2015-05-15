@@ -72,6 +72,7 @@ public class TypeUtils {
 		case DATE:
 			return ((SimpleDate)x).compareTo((SimpleDate)y);
 		case STRING:
+			return ((String)x).compareTo((String)y);
 		case VARCHAR:
 			if (x.hashCode() > y.hashCode()) return 1;
 			else if (x.hashCode() < y.hashCode()) return -1;

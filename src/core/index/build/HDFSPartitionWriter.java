@@ -59,6 +59,14 @@ public class HDFSPartitionWriter extends PartitionWriter{
 		}
 	}
 
+	public void deletePartitionDir(){
+		try {
+			hdfs.delete(new Path(partitionDir), true);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	@Override
 	protected OutputStream getOutputStream(String path){
 		return HDFSUtils.getHDFSOutputStream(hdfs, path, replication, bufferPartitionSize);

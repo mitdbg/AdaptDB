@@ -116,7 +116,7 @@ public class RNode {
     		return bucket.getBucketId();
     	}
     	else {
-            if (compareKey(value, attribute, type, key) > 0) {
+            if (compareKey(value, attribute, type, key) >= 0) {
                 return leftChild.getBucketId(key);
             }
             else {

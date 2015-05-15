@@ -99,16 +99,21 @@ public class Optimizer {
 		this.rt.loadSample(sampleBytes);
 	}
 
+	public int[] getBidFromRNodes(List<RNode> nodes) {
+		int[] bids = new int[nodes.size()];
+		Iterator<RNode> it = nodes.iterator();
+	    for (int i=0; i<bids.length; i++) {
+	    	bids[i] = it.next().bucket.getBucketId();
+	    }
+	    return bids;
+	}
+
 	public PartitionSplit[] buildAccessPlan(final Query q) {
 		if (q instanceof FilterQuery) {
 			FilterQuery fq = (FilterQuery) q;
 			List<RNode> nodes = this.rt.getRoot().search(fq.getPredicates());
 			PartitionIterator pi = new PostFilterIterator(fq);
-			int[] bids = new int[nodes.size()];
-			Iterator<RNode> it = nodes.iterator();
-		    for (int i=0; i<bids.length; i++) {
-		    	bids[i] = it.next().bucket.getBucketId();
-		    }
+			int[] bids = this.getBidFromRNodes(nodes);
 
 			PartitionSplit psplit = new PartitionSplit(bids, pi);
 			PartitionSplit[] ps = new PartitionSplit[1];
@@ -125,6 +130,12 @@ public class Optimizer {
 			FilterQuery fq = (FilterQuery) q;
 			this.queryWindow.add(fq);
 			Plan best = getBestPlan(fq.getPredicates());
+
+			System.out.println("plan.cost: " + best.cost + " plan.benefit: " + best.benefit);
+			if (best.cost > best.benefit) {
+				best = null;
+			}
+
 			PartitionSplit[] psplits;
 			if (best != null) {
 				psplits = this.getPartitionSplits(best, fq);
@@ -166,6 +177,47 @@ public class Optimizer {
 		}
 	}
 
+//	public PartitionSplit[] buildMPPlan(final Query q) {
+//		if (q instanceof FilterQuery) {
+//			FilterQuery fq = (FilterQuery) q;
+//			Predicate[] ps = fq.getPredicates();
+//			int pLength = ps.length;
+//			// Find the initial set of buckets accessed
+//			List<RNode> nodes = this.rt.getRoot().search(ps);
+//			int[] initialBids = this.getBidFromRNodes(nodes);
+//
+//			for (int i=0; i<pLength; i++) {
+//				Plan best = getBestPlan(ps);
+//				this.updateIndex(best, ps);
+//				ps[best.actions.pid] = null;
+//			}
+//
+//			nodes = this.rt.getRoot().search(ps);
+//			int[] finalBids = this.getBidFromRNodes(nodes);
+//
+//			float totalTuples = 0;
+//			for (int i=0; i<initialBids.length; i++) {
+//				int bid = initialBids[i];
+//				boolean found = false;
+//				for (int j=0; j<finalBids.length; j++) {
+//					if (finalBids[j] == bid) {
+//						found = true;
+//						break;
+//					}
+//				}
+//
+//				if (!found) {
+//					totalTuples += Bucket.counters.getBucketCount(bid);
+//				}
+//			}
+//
+//			return null;
+//		} else {
+//			System.err.println("Unimplemented query - Unable to build plan");
+//			return null;
+//		}
+//	}
+
 	public Plan getBestPlan(Predicate[] ps) {
 		//TODO: Multiple predicates seem to complicate the simple idea we had; think more :-/
 		Plan plan = null;
@@ -178,12 +230,7 @@ public class Optimizer {
 			}
 		}
 
-		System.out.println("plan.cost: " + plan.cost + " plan.benefit: " + plan.benefit);
-		if (plan.cost <= plan.benefit) {
-			return plan;
-		} else {
-			return null;
-		}
+		return plan;
 	}
 
 	public void updateIndex(Plan best, Predicate[] ps) {
@@ -761,10 +808,6 @@ public class Optimizer {
 
 	public float computeCost(RNode r) {
 		int numTuples = r.numTuplesInSubtree();
-		return this.computeCost(numTuples);
-	}
-
-	public float computeCost(float numTuples) {
 		if (numTuples > NODE_TUPLE_LIMIT) {
 			return (DISK_MULTIPLIER + NETWORK_MULTIPLIER) * numTuples;
 		} else {

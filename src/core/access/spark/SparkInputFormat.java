@@ -41,7 +41,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 
 	public static String SPLIT_ITERATOR = "SPLIT_ITERATOR";
 	private static final long serialVersionUID = 1L;
-	
+
 	private static final Log LOG = LogFactory.getLog(FileInputFormat.class);
 
 	private SparkQueryConf queryConf;
@@ -49,7 +49,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 
 	public static class SparkFileSplit extends CombineFileSplit implements Serializable {
 		private static final long serialVersionUID = 1L;
-		
+
 		private PartitionIterator iterator;
 		public SparkFileSplit(){
 		}
@@ -72,7 +72,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			iterator = (PartitionIterator)ReflectionUtils.getInstance(Text.readString(in));
 			iterator.readFields(in);
 		}
-		
+
 		public static SparkFileSplit read(DataInput in) throws IOException {
 			SparkFileSplit s = new SparkFileSplit();
 	        s.readFields(in);
@@ -83,7 +83,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 
 //	@Override
 //	public List<InputSplit> getSplits(JobContext job) throws IOException {
-//		
+//
 //		List<InputSplit> finalSplits = new ArrayList<InputSplit>();
 //		List<FileStatus> files = listStatus(job);
 //
@@ -91,7 +91,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 //		AccessMethod am = new AccessMethod();
 //		am.init(queryConf);
 //		// am.init(queryConf.getDataset(), queryConf.getHadoopHome());
-//		
+//
 //		Map<Integer,FileStatus> partitionIdFileMap = Maps.newHashMap();
 //		for(FileStatus file: files)
 //			try{
@@ -125,24 +125,24 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 //			PartitionIterator itr = split.getIterator();
 //			if(itr instanceof RepartitionIterator || itr instanceof DistributedRepartitionIterator)		// hack to set the zookeeper hosts
 //				((RepartitionIterator)itr).setZookeeper(queryConf.getZookeeperHosts());
-//		
-//			
+//
+//
 //			//SparkFileSplit thissplit = new SparkFileSplit(splitFiles, start, lengths, locations, itr);
-//			
+//
 //			CombineFileSplit thissplit = new CombineFileSplit(splitFiles, start, lengths, locations);
 //			long splitID = Joiner.on(",").join(thissplit.getPaths()).hashCode();
 //			System.out.println("splitID = "+splitID);
-//			
+//
 //			String iteratorString = PartitionIterator.iteratorToString(itr);
 //			job.getConfiguration().set(SPLIT_ITERATOR + splitID, iteratorString);
 //			System.out.println("Set: iteratorString = "+iteratorString);
-//			
+//
 //			//iteratorString = job.getConfiguration().get(SparkInputFormat.SPLIT_ITERATOR + splitID);
 //			//System.out.println("Get: iteratorString = "+iteratorString);
-//			
+//
 //			finalSplits.add(thissplit);
 //		}
-//		
+//
 //		String iteratorString = job.getConfiguration().get(SparkInputFormat.SPLIT_ITERATOR + 2039259726);
 //		System.out.println("Get: iteratorString = "+iteratorString);
 //
@@ -150,15 +150,15 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 //		LOG.debug("Total # of splits: " + finalSplits.size());
 //
 //		System.out.println(job.getConfiguration());
-//		
-//		
+//
+//
 //		return finalSplits;
 //	}
-	
-	
+
+
 	@Override
 	public List<InputSplit> getSplits(JobContext job) throws IOException {
-		
+
 		List<InputSplit> finalSplits = new ArrayList<InputSplit>();
 		List<FileStatus> files = listStatus(job);
 
@@ -166,7 +166,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		AccessMethod am = new AccessMethod();
 		am.init(queryConf);
 		// am.init(queryConf.getDataset(), queryConf.getHadoopHome());
-		
+
 		Map<Integer,FileStatus> partitionIdFileMap = Maps.newHashMap();
 		for(FileStatus file: files)
 			try{
@@ -174,7 +174,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			} catch (NumberFormatException e){
 			}
 
-		PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), true);
+		PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), false);
 		System.out.println("Number of partition splits = "+splits.length);
 		splits = resizeSplits(splits, queryConf.getMaxSplitSize());
 
@@ -208,8 +208,8 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 
 		return finalSplits;
 	}
-	
-	
+
+
 
 	/**
 	 * The goal of this method is to check the size of each and break large splits into

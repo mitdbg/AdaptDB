@@ -16,47 +16,47 @@ public class TestQuery extends TestCase{
 
 	SparkQuery sq;
 	Predicate p;
-	
+
 	String sampleFile;
-	
+
+	@Override
 	public void setUp() {
-		p = new Predicate(0, TYPE.INT, 3002147, PREDTYPE.LEQ);
+		p = new Predicate(0, TYPE.INT, 30021470, PREDTYPE.LEQ);
 		//sq = new SparkQuery(new Predicate[]{p}, cfg);
 		sampleFile = "hdfs://localhost:9000/user/alekh/cartilage.properties";
 	}
 
-	
+
 	public void testCreateTextFile(){
 		new SparkQuery(new Predicate[]{p}, cfg).createTextFile(sampleFile);
 	}
-	
+
 	public void testCreateHadoopFile(){
 		new SparkQuery(new Predicate[]{p}, cfg).createHadoopFile(sampleFile);
 	}
-	
+
 	public void testCreateHadoopRDD(){
 		new SparkQuery(new Predicate[]{p}, cfg).createHadoopRDD(sampleFile);
 	}
-	
+
 	public void testCreateNewAPIHadoopRDD(){
 		new SparkQuery(new Predicate[]{p}, cfg).createNewAPIHadoopRDD("/user/alekh/LICENSE.txt");
 	}
-	
-	public void testExecuteQuery(){
-		long c = new SparkQuery(new Predicate[]{p}, cfg).createRDD("/user/alekh/dodo").count();
-		System.out.println("Count = "+c);
 
+	public void testExecuteQuery(){
+		long c = new SparkQuery(new Predicate[]{p}, cfg).createRDD("/user/anil/dodo").count();
+		System.out.println("Count = "+c);
 	}
-	
+
 	public void testSerialize(){
 		PostFilterIterator it = new PostFilterIterator(new FilterQuery(new Predicate[]{p}));
 		String s = PartitionIterator.iteratorToString(it);
 		assertNotNull(s);
-		
+
 		it = (PostFilterIterator)PartitionIterator.stringToIterator(s);
 		assertNotNull(it);
 	}
-	
+
 	public static void main(String[] args) {
 	}
 }
