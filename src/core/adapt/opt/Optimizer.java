@@ -156,7 +156,7 @@ public class Optimizer {
 			for (int i=0; i<psplits.length; i++) {
 				int[] bids = psplits[i].getPartitions();
 				for (int j=0; j<bids.length; j++) {
-					numTuplesAccessed += Bucket.counters.getBucketCount(bids[i]);
+					numTuplesAccessed += Bucket.counters.getBucketCount(bids[j]);
 				}
 			}
 			System.out.println("Query Cost: " + numTuplesAccessed);

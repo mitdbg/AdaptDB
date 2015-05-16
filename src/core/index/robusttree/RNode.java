@@ -225,12 +225,13 @@ public class RNode {
 			}
 			ret += nStr;
 		}
-
+		System.out.println("Tree:\n" + ret);
 		return ret;
     }
 
 	public void unmarshall(byte[] bytes) {
-		String tree = bytes.toString();
+		String tree = new String(bytes);
+		System.out.println("Tree:\n "+ tree);
 		Scanner sc = new Scanner(tree);
 
 		this.parseNode(sc);

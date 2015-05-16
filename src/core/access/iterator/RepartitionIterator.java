@@ -3,6 +3,7 @@ package core.access.iterator;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.hadoop.io.Text;
@@ -20,11 +21,11 @@ public class RepartitionIterator extends PartitionIterator{
 	private RNode newIndexTree;
 	protected String zookeeperHosts;
 
-	protected Map<Integer,Partition> newPartitions;
+	protected Map<Integer,Partition> newPartitions = new HashMap<Integer,Partition>();
 
 	public RepartitionIterator(){
 	}
-	
+
 	public RepartitionIterator(String iteratorString){
 		try {
 			readFields(ByteStreams.newDataInput(iteratorString.getBytes()));
@@ -65,7 +66,6 @@ public class RepartitionIterator extends PartitionIterator{
 
 	@Override
 	protected boolean isRelevant(IteratorRecord record){
-
 		int id = newIndexTree.getBucketId(record);
 		Partition p;
 		if(newPartitions.containsKey(id)){
@@ -76,7 +76,8 @@ public class RepartitionIterator extends PartitionIterator{
 			p.setPartitionId(id);
 			newPartitions.put(id, p);
 		}
-		p.write(record.getBytes(), record.getOffset(), record.getLength());
+		// p.write(record.getBytes(), record.getOffset(), record.getLength());
+		p.write(record.getBytes(), 0, record.getBytes().length);
 
 		return query.qualifies(record);
 	}
@@ -116,12 +117,13 @@ public class RepartitionIterator extends PartitionIterator{
 		in.readFully(indexBytes);
 		newIndexTree.unmarshall(indexBytes);
 		//zookeeperHosts = in.readLine();
+		System.out.println("Initialized Tree");
 		zookeeperHosts = Text.readString(in);
 	}
-	
+
 	public static RepartitionIterator read(DataInput in) throws IOException {
 		RepartitionIterator it = new RepartitionIterator();
         it.readFields(in);
         return it;
-	}	
+	}
 }

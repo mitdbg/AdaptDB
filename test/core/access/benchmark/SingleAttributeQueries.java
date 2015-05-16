@@ -20,12 +20,13 @@ public class SingleAttributeQueries extends TestCase{
 
 	public void testSinglePredicateQueries(){
 		int numQueries = 50;
-		for (int i=1; i <= numQueries; i++) {
+		SparkQuery sq = new SparkQuery(cfg);
+		for (int i=6; i <= 6; i++) {
 			int year = 1993 + (i + 1) % 5;
 			System.out.println("MDINDEX: Running Query " + i);
 			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(year-1,12,31), PREDTYPE.GT);
-			SparkQuery sq = new SparkQuery(new Predicate[]{p1}, cfg);
-			sq.createRDD("/user/anil/dodo").count();
+			long c = sq.createRDD("/user/anil/dodo", p1).count();
+			System.out.println("Count = "+c);
 			numQueries--;
 		}
 	}
