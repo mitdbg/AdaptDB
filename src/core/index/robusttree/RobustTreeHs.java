@@ -177,7 +177,7 @@ public class RobustTreeHs implements MDIndex {
 		}
 	}
 
-	static List<Integer> leastAllocated  = new ArrayList<Integer>();
+	static List<Integer> leastCounts = new ArrayList<Integer>();
 
 	/**
 	 * Return the dimension which has the maximum
@@ -185,33 +185,32 @@ public class RobustTreeHs implements MDIndex {
 	 * @return
 	 */
 	public static int getLeastAllocated(double[] allocations, int[] counter) {
-		int numAttributes = allocations.length;
 		assert allocations.length == counter.length;
 
-		leastAllocated.clear();
-		leastAllocated.add(0);
+		int count = counter[0];
+		leastCounts.clear();
+		leastCounts.add(0);
 
-		double alloc = allocations[0];
-		for (int i=1; i < numAttributes; i++) {
-			if (allocations[i] > alloc) {
-				alloc = allocations[i];
-				leastAllocated.clear();
-				leastAllocated.add(i);
-			} else if (allocations[i] == alloc) {
-				leastAllocated.add(i);
+		for (int i=1; i<counter.length; i++) {
+			if (counter[i] < count) {
+				count = counter[i];
+				leastCounts.clear();
+				leastCounts.add(i);
+			} else if (counter[i] == count) {
+				leastCounts.add(i);
 			}
 		}
 
-		if (leastAllocated.size() == 1) {
-			return leastAllocated.get(0);
+		if (leastCounts.size() == 1) {
+			return leastCounts.get(0);
 		} else {
-			int index = leastAllocated.get(0);
-			int count = counter[index];
-			for (int i=1; i < leastAllocated.size(); i++) {
-				int iIndex = leastAllocated.get(i);
-				int iCount = counter[iIndex];
-				if (iCount < count) {
-					count = iCount;
+			int index = leastCounts.get(0);
+			double alloc = allocations[index];
+			for (int i=1; i < leastCounts.size(); i++) {
+				int iIndex = leastCounts.get(i);
+				double iAlloc = allocations[iIndex];
+				if (iAlloc < alloc) {
+					alloc = iAlloc;
 					index = iIndex;
 				}
 			}
