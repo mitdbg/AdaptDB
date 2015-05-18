@@ -108,6 +108,10 @@ public class SparkQuery {
 				ctx.hadoopConfiguration()
 			);
 	}
+
+	public void stopContext() {
+		ctx.stop();
+	}
 	
 	
 	
