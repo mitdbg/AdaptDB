@@ -29,7 +29,7 @@ public class DistributedRepartitionIterator extends RepartitionIterator {
 	}
 
 	@Override
-	protected void finalize(){
+	public void finish(){
 		PartitionLock l = new PartitionLock(zookeeperHosts);
 		BucketCounts c = new BucketCounts(l.getClient());
 

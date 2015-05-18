@@ -95,5 +95,6 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 
 	@Override
 	public void close() throws IOException {
+		iterator.finish();		// this method could even be called earlier in case the entire split does not fit in main-memory
 	}
 }

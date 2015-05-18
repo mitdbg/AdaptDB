@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.apache.hadoop.io.Text;
 
+import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 
 import core.access.Partition;
@@ -22,6 +23,7 @@ public class RepartitionIterator extends PartitionIterator{
 	protected String zookeeperHosts;
 
 	protected Map<Integer,Partition> newPartitions = new HashMap<Integer,Partition>();
+	protected Map<Integer,Partition> oldPartitions = new HashMap<Integer,Partition>();
 
 	public RepartitionIterator(){
 	}
@@ -62,6 +64,7 @@ public class RepartitionIterator extends PartitionIterator{
 	@Override
 	public void setPartition(Partition partition){
 		super.setPartition(partition);
+		oldPartitions.put(partition.getPartitionId(), partition);
 	}
 
 	@Override
@@ -83,16 +86,24 @@ public class RepartitionIterator extends PartitionIterator{
 	}
 
 	@Override
-	protected void finalize(){
+	public void finish(){
 		if (zookeeperHosts != null) {
 			BucketCounts c = new BucketCounts(zookeeperHosts);
+			System.out.println("number of new partitions written = "+newPartitions.size());
 			for(Partition p: newPartitions.values()){
+				System.out.println("storing partition id "+p.getPartitionId());
 				p.store(true);
 				c.setToBucketCount(p.getPartitionId(), p.getRecordCount());
 			}
-			partition.drop();
-			c.removeBucketCount(partition.getPartitionId());
+			for(Partition p: oldPartitions.values()){
+				System.out.println("dropping old partition id "+p.getPartitionId());
+				p.drop();
+				c.removeBucketCount(p.getPartitionId());
+			}			
 			c.close();
+			oldPartitions = Maps.newHashMap();
+			newPartitions = Maps.newHashMap();
+			System.out.println("done finalize()");
 		} else {
 			System.out.println("INFO: Zookeeper Hosts NULL");
 		}
