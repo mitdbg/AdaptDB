@@ -23,7 +23,7 @@ public class Simulator extends TestCase{
 
 	@Override
 	public void setUp(){
-		sf = 1;
+		sf = 2;
 		hdfsPath = "hdfs://localhost:9000/user/anil/dodo";
 
 		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);

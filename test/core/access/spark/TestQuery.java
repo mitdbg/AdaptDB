@@ -44,7 +44,7 @@ public class TestQuery extends TestCase{
 	}
 
 	public void testExecuteQuery(){
-		long c = new SparkQuery(new Predicate[]{p}, cfg).createRDD("/user/anil/dodo").count();
+		long c = new SparkQuery(cfg).createRDD("/user/anil/dodo", p).count();
 		System.out.println("Count = "+c);
 	}
 
