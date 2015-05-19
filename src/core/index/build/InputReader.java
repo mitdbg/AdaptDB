@@ -21,6 +21,7 @@ public class InputReader {
 	boolean hasLeftover;
 
 	int totalLineSize, lineCount;
+	long arrayCopyTime, bucketIdTime;
 
 	MDIndex index;
 	CartilageIndexKey key;
@@ -31,6 +32,8 @@ public class InputReader {
 		this.index = index;
 		this.key = key;
 		this.firstPass = true;
+		arrayCopyTime = 0;
+		bucketIdTime = 0;
 	}
 
 
@@ -43,6 +46,8 @@ public class InputReader {
 
 		totalLineSize = 0;
 		lineCount = 0;
+		arrayCopyTime = 0;
+		bucketIdTime = 0;
 	}
 
 	public void scan(String filename){
@@ -79,6 +84,8 @@ public class InputReader {
 		//System.out.println("Time taken = "+(double)(System.nanoTime()-startTime)/1E9+" sec");
 		System.out.println("Line count = " + lineCount);
 		System.out.println("Average line size = " + (double) totalLineSize / lineCount);
+		System.out.println("Scan array copy time = "+arrayCopyTime/1E9);
+		System.out.println("Scan bucket id time = "+bucketIdTime/1E9);
 	}
 
 	public void scanWithBlockSampling(String filename, double samplingRate) {
@@ -125,22 +132,29 @@ public class InputReader {
 	    		//key.setBytes(line);
 	    		//key.setBytes(byteArray, previous, byteArrayIdx-previous);
 	    		if(hasLeftover){
-
+				long startTime = System.nanoTime();
 	    			byte[] a = new byte[brokenLine.length + byteArrayIdx-previous];
 	    			System.arraycopy(brokenLine, 0, a, 0, brokenLine.length);
 	    			System.arraycopy(byteArray, previous, a, brokenLine.length, byteArrayIdx-previous);
 	    			key.setBytes(a);
+				arrayCopyTime += System.nanoTime() - startTime;
 
 	    			totalLineSize += brokenLine.length;
 	    			hasLeftover = false;
 
 	    			if(writer!=null){
-	    				writer.writeToPartition(index.getBucketId(key).toString(), a, 0, a.length);
+					startTime = System.nanoTime();
+					String bucketId = index.getBucketId(key).toString();
+					bucketIdTime += System.nanoTime() - startTime;
+	    				writer.writeToPartition(bucketId, a, 0, a.length);
 	    			}
 				} else {
 					key.setBytes(byteArray, previous, byteArrayIdx-previous);
 	    			if(writer!=null){
-	    				writer.writeToPartition(index.getBucketId(key).toString(), byteArray, previous, byteArrayIdx-previous);
+					long startTime = System.nanoTime();
+					String bucketId = index.getBucketId(key).toString();
+					bucketIdTime += System.nanoTime() - startTime;
+	    				writer.writeToPartition(bucketId, byteArray, previous, byteArrayIdx-previous);
 	    			}
 	    		}
 

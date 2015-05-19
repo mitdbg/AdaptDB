@@ -24,15 +24,19 @@ public class IndexBuilder {
 		index.initBuild((int) (fileSize / bucketSize) + 1);
 		InputReader r = new InputReader(index, key);
 		r.scan(inputFilename);
-		index.initProbe();
 		double time1 = (System.nanoTime()-startTime)/1E9;
-		System.out.println("Index Build Time = "+time1+" sec");
+		System.out.println("Scanning and sampling time = "+time1+" sec");
+
+		startTime = System.nanoTime();
+		index.initProbe();
+		double time2 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Index Build Time = "+time2+" sec");
 
 		startTime = System.nanoTime();
 		r.scan(inputFilename, writer);
 		writer.flush();
-		double time2 = (System.nanoTime()-startTime)/1E9;
-		System.out.println("Index Probe Time = "+time2+" sec");
+		double time3 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Index Probe Time = "+time3+" sec");
 
 		startTime = System.nanoTime();
 		byte[] indexBytes = index.marshall();
@@ -43,10 +47,10 @@ public class IndexBuilder {
 		writer.writeToPartition("sample", sampleBytes, 0, sampleBytes.length);
 		writer.flush();
 
-		double time3 = (System.nanoTime()-startTime)/1E9;
-		System.out.println("Index+Sample Write Time = "+time3+" sec");
+		double time4 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Index+Sample Write Time = "+time4+" sec");
 
-		System.out.println("Total time = "+(time1+time2+time3)+" sec");
+		System.out.println("Total time = "+(time1+time2+time3+time4)+" sec");
 	}
 
 	public void buildWithBlockSampling(double samplingRate, MDIndex index, CartilageIndexKey key, String inputFilename, PartitionWriter writer){
@@ -57,15 +61,19 @@ public class IndexBuilder {
 		index.initBuild((int) (fileSize / bucketSize) + 1);
 		InputReader r = new InputReader(index, key);
 		r.scanWithBlockSampling(inputFilename, samplingRate);
-		index.initProbe();
 		double time1 = (System.nanoTime()-startTime)/1E9;
-		System.out.println("Index Build Time = "+time1+" sec");
+		System.out.println("Scanning and sampling time = "+time1+" sec");
+
+		startTime = System.nanoTime();
+		index.initProbe();
+		double time2 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Index Build Time = "+time2+" sec");
 
 		startTime = System.nanoTime();
 		r.scan(inputFilename, writer);
 		writer.flush();
-		double time2 = (System.nanoTime()-startTime)/1E9;
-		System.out.println("Index Probe Time = "+time2+" sec");
+		double time3 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Index Probe Time = "+time3+" sec");
 
 		startTime = System.nanoTime();
 		byte[] indexBytes = index.marshall();
@@ -76,10 +84,10 @@ public class IndexBuilder {
 		writer.writeToPartition("sample", sampleBytes, 0, sampleBytes.length);
 		writer.flush();
 
-		double time3 = (System.nanoTime()-startTime)/1E9;
-		System.out.println("Index+Sample Write Time = "+time3+" sec");
+		double time4 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Index+Sample Write Time = "+time4+" sec");
 
-		System.out.println("Total time = "+(time1+time2+time3)+" sec");
+		System.out.println("Total time = "+(time1+time2+time3+time4)+" sec");
 	}
 
 	//WARN: not up to date!

@@ -23,7 +23,9 @@ public class KDDTree implements MDIndex {
     }
 
     public KDDTree(int[] attrOrder) {
-        this.attrOrder = Arrays.copyOf(attrOrder, attrOrder.length);
+        if (attrOrder != null) {
+            this.attrOrder = Arrays.copyOf(attrOrder, attrOrder.length);
+        }
     }
 
     @Override
