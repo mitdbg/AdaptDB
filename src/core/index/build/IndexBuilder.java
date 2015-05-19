@@ -19,11 +19,44 @@ public class IndexBuilder {
 	public void build(MDIndex index, CartilageIndexKey key, String inputFilename, PartitionWriter writer){
 
 		long startTime = System.nanoTime();
-        File f = new File(inputFilename);
-        long fileSize = f.length();
-        index.initBuild((int) (fileSize / bucketSize) + 1);
+		File f = new File(inputFilename);
+		long fileSize = f.length();
+		index.initBuild((int) (fileSize / bucketSize) + 1);
 		InputReader r = new InputReader(index, key);
 		r.scan(inputFilename);
+		index.initProbe();
+		double time1 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Index Build Time = "+time1+" sec");
+
+		startTime = System.nanoTime();
+		r.scan(inputFilename, writer);
+		writer.flush();
+		double time2 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Index Probe Time = "+time2+" sec");
+
+		startTime = System.nanoTime();
+		byte[] indexBytes = index.marshall();
+		writer.writeToPartition("index", indexBytes, 0, indexBytes.length);
+		writer.flush();
+
+		byte[] sampleBytes = ((RobustTreeHs)index).serializeSample();
+		writer.writeToPartition("sample", sampleBytes, 0, sampleBytes.length);
+		writer.flush();
+
+		double time3 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Index+Sample Write Time = "+time3+" sec");
+
+		System.out.println("Total time = "+(time1+time2+time3)+" sec");
+	}
+
+	public void buildWithBlockSampling(double samplingRate, MDIndex index, CartilageIndexKey key, String inputFilename, PartitionWriter writer){
+
+		long startTime = System.nanoTime();
+		File f = new File(inputFilename);
+		long fileSize = f.length();
+		index.initBuild((int) (fileSize / bucketSize) + 1);
+		InputReader r = new InputReader(index, key);
+		r.scanWithBlockSampling(inputFilename, samplingRate);
 		index.initProbe();
 		double time1 = (System.nanoTime()-startTime)/1E9;
 		System.out.println("Index Build Time = "+time1+" sec");
