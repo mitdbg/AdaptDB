@@ -18,6 +18,7 @@ public abstract class PartitionWriter implements Cloneable{
 	
 	protected Map<String,OutputStream> buffer;
 	protected Map<String,MutableInt> partitionRecordCount;
+	private long writingTime = 0;
 	
 	
 	public PartitionWriter(String partitionDir, int bufferPartitionSize, int maxBufferPartitions){
@@ -48,6 +49,7 @@ public abstract class PartitionWriter implements Cloneable{
 	}
 
 	public void writeToPartition(String partitionId, byte[] bytes, int b_offset, int b_length){
+		long start = System.nanoTime();
 		OutputStream b = buffer.get(partitionId);
 		if(b==null){
 			// if there is a hard limit on the number of buffers, then close some of them before opening new ones!
@@ -68,6 +70,7 @@ public abstract class PartitionWriter implements Cloneable{
 				partitionRecordCount.put(partitionId, new MutableInt());
 			else
 				count.increment();
+			writingTime += System.nanoTime()-start;
 			
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -83,6 +86,8 @@ public abstract class PartitionWriter implements Cloneable{
 	}
 	
 	protected void flush(int numPartitions){
+		System.out.println("partition writing time: "+writingTime/1E9);
+		long start = System.nanoTime();
 		int flushCount = 0;
 		Set<String> keys = new HashSet<String>(buffer.keySet());
 		for(String k: keys){
@@ -96,5 +101,6 @@ public abstract class PartitionWriter implements Cloneable{
 			if(flushCount > numPartitions)
 				break;
 		}
+		System.out.println("flushing time: "+(System.nanoTime()-start)/1E9);
 	}
 }
