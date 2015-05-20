@@ -106,4 +106,12 @@ public class TestIndexBuilder extends TestCase {
 						inputFilename,
 						getHDFSWriter(hdfsPartitionDir, (short)replication));
 	}
+
+	public void testBuildRobustTreeBlockSampling() {
+		builder.buildWithBlockSampling(0.01,
+				new RobustTreeHs(1),
+				key,
+				inputFilename,
+				getHDFSWriter(hdfsPartitionDir, (short)replication));
+	}
 }

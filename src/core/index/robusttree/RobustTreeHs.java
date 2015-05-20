@@ -115,6 +115,7 @@ public class RobustTreeHs implements MDIndex {
 	 * Created the tree based on the histograms
 	 */
 	public void initProbe() {
+		System.out.println(this.sample.size() + " keys inserted");
 		int depth = 31 - Integer.numberOfLeadingZeros(this.maxBuckets); // Computes log(this.maxBuckets)
 		double allocation = RobustTreeHs.nthroot(this.numAttributes, this.maxBuckets);
 
