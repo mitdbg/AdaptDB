@@ -5,3 +5,4 @@ out/
 *.jpeg
 *.DS_Store
 *.class
+*.pyc
