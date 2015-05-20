@@ -2,6 +2,8 @@ package core.access.spark;
 
 import java.util.Iterator;
 
+import core.utils.HDFSUtils;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -33,8 +35,10 @@ public class SparkUpfrontPartitioner {
 	
 	
 	public void createTextFile(String localDataDir, RNode newIndexTree){
-		
-		final DistributedPartitioningIterator partitioner = new DistributedPartitioningIterator(null, newIndexTree);
+
+		FileSystem hdfs = HDFSUtils.getFS(cfg.getHADOOP_HOME() + "/etc/hadoop/core-site.xml");
+		final DistributedPartitioningIterator partitioner = new DistributedPartitioningIterator(null, newIndexTree, hdfs);
+
 		
 		JavaRDD<String> distFile = ctx.textFile(localDataDir).mapPartitions(
 				

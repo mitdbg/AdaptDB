@@ -4,6 +4,7 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.hadoop.fs.FileSystem;
 
 import core.utils.BinaryUtils;
 import core.utils.IOUtils;
@@ -47,6 +48,13 @@ public class Partition implements Cloneable{
 		p.state = State.NEW;
         return p;
     }
+
+	public Partition getHDFSClone(FileSystem hdfs) {
+		Partition p = new HDFSPartition(hdfs, path+""+partitionId);
+		p.bytes = new byte[bytes.length];
+		p.state = State.NEW;
+		return p;
+	}
 
 
 	/**

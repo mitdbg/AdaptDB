@@ -9,12 +9,12 @@ import org.apache.curator.framework.recipes.locks.InterProcessLock;
 
 import com.google.common.collect.Maps;
 
-import core.access.HDFSPartition;
 import core.access.Partition;
 import core.access.iterator.PartitionIterator.IteratorRecord;
 import core.index.MDIndex.BucketCounts;
 import core.index.robusttree.RNode;
 import core.utils.CuratorUtils;
+import org.apache.hadoop.fs.FileSystem;
 
 public class DistributedPartitioningIterator {
 
@@ -24,15 +24,16 @@ public class DistributedPartitioningIterator {
 	private Iterator<String> iterator;
 	private RNode newIndexTree;
 	protected String zookeeperHosts;
+	private FileSystem hdfs;
 	
 	protected Partition partition;
 	protected IteratorRecord record;
 	
-	public DistributedPartitioningIterator(String zookeeperHosts, RNode newIndexTree){
+	public DistributedPartitioningIterator(String zookeeperHosts, RNode newIndexTree, FileSystem hdfs){
 		this.zookeeperHosts = zookeeperHosts;
 		this.newIndexTree = newIndexTree;
 		record = new IteratorRecord();
-		partition = new HDFSPartition();	//TODO:
+		this.hdfs = hdfs;
 	}
 	
 	public void setIterator(Iterator<String> iterator){
@@ -50,7 +51,8 @@ public class DistributedPartitioningIterator {
 				p = newPartitions.get(id);
 			}
 			else{
-				p = partition.clone();
+				p = partition.getHDFSClone(hdfs);
+				//p = partition.clone();
 				p.setPartitionId(id);
 				newPartitions.put(id, p);
 			}
