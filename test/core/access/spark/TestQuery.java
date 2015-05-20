@@ -28,23 +28,23 @@ public class TestQuery extends TestCase{
 
 
 	public void testCreateTextFile(){
-		new SparkQuery(new Predicate[]{p}, cfg).createTextFile(sampleFile);
+		new SparkQuery(cfg).createTextFile(sampleFile, p);
 	}
 
 	public void testCreateHadoopFile(){
-		new SparkQuery(new Predicate[]{p}, cfg).createHadoopFile(sampleFile);
+		new SparkQuery(cfg).createHadoopFile(sampleFile, p);
 	}
 
 	public void testCreateHadoopRDD(){
-		new SparkQuery(new Predicate[]{p}, cfg).createHadoopRDD(sampleFile);
+		new SparkQuery(cfg).createHadoopRDD(sampleFile, p);
 	}
 
 	public void testCreateNewAPIHadoopRDD(){
-		new SparkQuery(new Predicate[]{p}, cfg).createNewAPIHadoopRDD("/user/alekh/LICENSE.txt");
+		new SparkQuery(cfg).createNewAPIHadoopRDD("/user/alekh/LICENSE.txt", p);
 	}
 
 	public void testExecuteQuery(){
-		long c = new SparkQuery(cfg).createRDD("/user/anil/dodo", p).count();
+		long c = new SparkQuery(cfg).createRDD("/user/alekh/dodo", p).count();
 		System.out.println("Count = "+c);
 	}
 

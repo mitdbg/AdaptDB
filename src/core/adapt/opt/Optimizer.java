@@ -473,14 +473,19 @@ public class Optimizer {
 	 * @param changed
 	 * @return
 	 */
-	public float getNumTuplesAccessed(RNode changed, boolean real) {
+	public double getNumTuplesAccessed(RNode changed, boolean real) {
 		// First traverse to parent to see if query accesses node
 		// If yes, find the number of tuples accessed.
-		float numTuples = 0;
+		double numTuples = 0;
 
-		for (Query q: queryWindow) {
-			// TODO: Possible exp distribution
-			numTuples += getNumTuplesAccessed(changed, q, real);
+		double lambda = 0.2;
+		int counter = 0;
+		for (int i=queryWindow.size() - 1; i >= 0; i--) {
+			Query q = queryWindow.get(i);
+			double weight = Math.pow(Math.E, - lambda * counter);
+
+			numTuples += weight * getNumTuplesAccessed(changed, q, real);
+			counter++;
 		}
 
 		return numTuples;
@@ -687,7 +692,7 @@ public class Optimizer {
 				// that of predicate, we can do this
 				Object testVal = p.getHelpfulCutpoint();
 				if (checkValid(node, p.attribute, p.type, testVal)) {
-			        float numAccessedOld = getNumTuplesAccessed(node, true);
+			        double numAccessedOld = getNumTuplesAccessed(node, true);
 
 					RNode r = node.clone();
 					r.attribute = p.attribute;
@@ -696,15 +701,15 @@ public class Optimizer {
 					replaceInTree(node, r);
 
 			        populateBucketEstimates(r);
-			        float numAcccessedNew = getNumTuplesAccessed(r, false);
-			        float benefit = numAccessedOld - numAcccessedNew;
+			        double numAcccessedNew = getNumTuplesAccessed(r, false);
+			        double benefit = numAccessedOld - numAcccessedNew;
 
 			        if (benefit > 0) {
 			        	// TODO: Better cost model ?
 			        	float cost = this.computeCost(r); // Note that buckets haven't changed
 			        	Plan pl = new Plan();
 			        	pl.cost = cost;
-			        	pl.benefit = benefit;
+			        	pl.benefit = (float) benefit;
 			        	Action ac = new Action();
 			        	ac.pid = pid;
 			        	ac.option = 1;

@@ -100,7 +100,7 @@ public class TestIndexBuilder extends TestCase {
 					);
 	}
 
-	public void testBuildRobustTree() {
+	public void testBuildRobustTree(){
 		builder.build(new RobustTreeHs(0.01),
 						key,
 						inputFilename,

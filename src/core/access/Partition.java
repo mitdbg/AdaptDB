@@ -99,7 +99,7 @@ public class Partition implements Cloneable{
 	public void write(byte[] source, int offset, int length){
 		if (this.offset+length>bytes.length) {
 			bytes = BinaryUtils.resize(bytes, (int)(bytes.length*1.5));
-			System.out.println("Resized Byte Array");
+			//System.out.println("Resized Byte Array");
 		}
 
 		if (offset+length > source.length)

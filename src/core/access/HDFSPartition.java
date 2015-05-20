@@ -57,6 +57,6 @@ public class HDFSPartition extends Partition{
 	}
 	
 	public void drop(){
-		HDFSUtils.deleteFile(hdfs, path, false);
+		HDFSUtils.deleteFile(hdfs, path + "/" + partitionId, false);
 	}
 }

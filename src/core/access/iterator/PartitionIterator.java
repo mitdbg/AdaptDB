@@ -116,6 +116,9 @@ public class PartitionIterator implements Iterator<IteratorRecord>{
 		return record;
 	}
 	
+	public void finish() {
+	}
+	
 	public void write(DataOutput out) throws IOException{
 	}
 	

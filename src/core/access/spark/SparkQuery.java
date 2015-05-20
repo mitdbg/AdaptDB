@@ -41,19 +41,19 @@ public class SparkQuery {
 		queryConf = new SparkQueryConf(ctx.hadoopConfiguration());
 	}
 
-	public void createTextFile(String localPath){
+	public void createTextFile(String localPath, Predicate... ps){
 		JavaRDD<String> distFile = ctx.textFile(localPath);
 		long lines = distFile.count();
 		System.out.println("Number of lines = "+lines);
 	}
 
-	public void createHadoopFile(String hdfsPath){
+	public void createHadoopFile(String hdfsPath, Predicate... ps){
 		JavaPairRDD<LongWritable,Text> distFile = ctx.hadoopFile(hdfsPath, TextInputFormat.class, LongWritable.class, Text.class);
 		long lines = distFile.count();
 		System.out.println("Number of lines = "+lines);
 	}
 
-	public void createHadoopRDD(String hdfsPath){
+	public void createHadoopRDD(String hdfsPath, Predicate... ps){
 		JobConf conf = new JobConf(ctx.hadoopConfiguration());
 		FileInputFormat.setInputPaths(conf, hdfsPath);
 
@@ -62,7 +62,7 @@ public class SparkQuery {
 		System.out.println("Number of lines = "+lines);
 	}
 
-	public void createNewAPIHadoopRDD(String hdfsPath){
+	public void createNewAPIHadoopRDD(String hdfsPath, Predicate... ps){
 
 		queryConf.setDataset(hdfsPath);
 		queryConf.setPredicates(predicates);
