@@ -7,6 +7,7 @@ import core.index.Settings;
 import core.index.SimpleRangeTree;
 import core.index.kdtree.KDMedianTree;
 import core.index.key.CartilageIndexKey;
+import core.index.key.CartilageIndexKeyMT;
 import core.index.robusttree.RobustTreeHs;
 
 public class TestIndexBuilder extends TestCase {
@@ -51,6 +52,27 @@ public class TestIndexBuilder extends TestCase {
 		return new HDFSPartitionWriter(partitionDir, partitionBufferSize, numPartitions, replication, propertiesFile);
 	}
 
+	public void testReader(){
+		long startTime = System.nanoTime();
+		InputReader r = new InputReader(new SimpleRangeTree(numPartitions), key);
+		r.scan(inputFilename);
+		double time1 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Time = "+time1+" sec");
+	}
+	
+	public void testReaderMultiThreaded(){
+		long startTime = System.nanoTime();
+		int numThreads = 1;
+		CartilageIndexKey[] keys = new CartilageIndexKey[numThreads];
+		for(int i=0; i<keys.length; i++)
+			keys[i] = new CartilageIndexKeyMT('|');
+		
+		InputReaderMT r = new InputReaderMT(new SimpleRangeTree(numPartitions), keys);
+		r.scan(inputFilename, numThreads);
+		double time1 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Time = "+time1+" sec");
+	}
+	
 	public void testBuildSimpleRangeTreeLocal(){
 		builder.build(new SimpleRangeTree(numPartitions),
 						key,
