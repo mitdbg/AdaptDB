@@ -12,7 +12,6 @@ import core.access.spark.SparkUpfrontPartitioner;
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
 import core.index.robusttree.RobustTreeHs;
-import core.utils.ConfUtils;
 
 public class IndexBuilder {
 

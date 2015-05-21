@@ -15,8 +15,6 @@ import core.utils.CuratorUtils;
 
 public class DistributedRepartitionIterator extends RepartitionIterator {
 
-	//private static final long serialVersionUID = 1L;
-	
 	public DistributedRepartitionIterator() {
 	}
 
@@ -39,25 +37,16 @@ public class DistributedRepartitionIterator extends RepartitionIterator {
 			c.addToBucketCount(p.getPartitionId(), p.getRecordCount());
 			l.unlockPartition(p.getPartitionId());
 		}
-		partition.drop();
-
-		c.removeBucketCount(partition.getPartitionId());
+		for(Partition p: oldPartitions.values()){
+			p.drop();
+			c.removeBucketCount(p.getPartitionId());
+		}
+		oldPartitions = Maps.newHashMap();
+		newPartitions = Maps.newHashMap();
 		c.close();
 		l.close();
 	}
-
-//	public void write(DataOutput out) throws IOException{
-//		super.write(out);
-//		out.writeBytes(zookeeperHosts+"\n");
-//	}
-//
-//	public void readFields(DataInput in) throws IOException{
-//		super.readFields(in);
-//		this.zookeeperHosts = in.readLine();
-//	}
-
-
-
+	
 
 
 	public class PartitionLock {

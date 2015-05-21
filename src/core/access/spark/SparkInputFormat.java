@@ -12,9 +12,7 @@ import java.util.Map;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -32,8 +30,8 @@ import core.access.AccessMethod;
 import core.access.AccessMethod.PartitionSplit;
 import core.access.Query.FilterQuery;
 import core.access.iterator.DistributedRepartitionIterator;
-import core.access.iterator.PartitionIterator;
 import core.access.iterator.IteratorRecord;
+import core.access.iterator.PartitionIterator;
 import core.access.iterator.RepartitionIterator;
 import core.utils.ReflectionUtils;
 
@@ -53,6 +51,12 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		private PartitionIterator iterator;
 		public SparkFileSplit(){
 		}
+		
+		public SparkFileSplit(Path[] files, long[] lengths, PartitionIterator iterator) {
+			super(files, lengths);
+			this.iterator = iterator;
+		}
+		
 		public SparkFileSplit(Path[] files, long[] start, long[] lengths, String[] locations, PartitionIterator iterator) {
 			super(files, start, lengths, locations);
 			this.iterator = iterator;
@@ -181,25 +185,26 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		for(PartitionSplit split: splits){
 			int[] partitionIds = split.getPartitions();
 			Path[] splitFiles = new Path[partitionIds.length];
-			long[] start = new long[partitionIds.length];
+			//long[] start = new long[partitionIds.length];
 			long[] lengths = new long[partitionIds.length];
-			String[] locations = new String[partitionIds.length];
+			//String[] locations = new String[partitionIds.length];
 
 			for(int i=0;i<partitionIds.length;i++){
 				Path splitFilePath = partitionIdFileMap.get(partitionIds[i]).getPath();
 				splitFiles[i] = splitFilePath;
-				start[i] = 0;
+				//start[i] = 0;
 				lengths[i] = partitionIdFileMap.get(partitionIds[i]).getLen();
-				FileSystem fs = splitFilePath.getFileSystem(job.getConfiguration());
-				BlockLocation[] blkLocations = fs.getFileBlockLocations(partitionIdFileMap.get(partitionIds[i]), 0, lengths[i]);
-				int blkIndex = getBlockIndex(blkLocations, 0);				// Assumption: One file has only 1 block!
-				locations[i] = blkLocations[blkIndex].getHosts()[0];		// Assumption: replication factor  = 1
+				//FileSystem fs = splitFilePath.getFileSystem(job.getConfiguration());
+				//BlockLocation[] blkLocations = fs.getFileBlockLocations(partitionIdFileMap.get(partitionIds[i]), 0, lengths[i]);
+				//int blkIndex = getBlockIndex(blkLocations, 0);				// Assumption: One file has only 1 block!
+				//locations[i] = blkLocations[blkIndex].getHosts()[0];		// Assumption: replication factor  = 1
 			}
 
 			PartitionIterator itr = split.getIterator();
 			if(itr instanceof RepartitionIterator || itr instanceof DistributedRepartitionIterator)		// hack to set the zookeeper hosts
 				((RepartitionIterator)itr).setZookeeper(queryConf.getZookeeperHosts());
-			SparkFileSplit thissplit = new SparkFileSplit(splitFiles, start, lengths, locations, itr);
+			//SparkFileSplit thissplit = new SparkFileSplit(splitFiles, start, lengths, locations, itr);
+			SparkFileSplit thissplit = new SparkFileSplit(splitFiles, lengths, itr);
 			finalSplits.add(thissplit);
 		}
 
