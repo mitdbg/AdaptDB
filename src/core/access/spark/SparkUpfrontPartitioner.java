@@ -2,8 +2,6 @@ package core.access.spark;
 
 import java.util.Iterator;
 
-import core.utils.HDFSUtils;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -16,11 +14,14 @@ import core.utils.ConfUtils;
 public class SparkUpfrontPartitioner {
 
 	private ConfUtils cfg;
+	private String propertiesFile;
 	//private SparkQueryConf queryConf;
 	private JavaSparkContext ctx;
+	private String hdfsPath;
 	
-	public SparkUpfrontPartitioner(ConfUtils config){
-		this.cfg = config;
+	public SparkUpfrontPartitioner(String propertiesFile, String hdfsPath){
+		this.cfg = new ConfUtils(propertiesFile);
+		this.hdfsPath = hdfsPath;
 		SparkConf sconf = new SparkConf()
 								.setMaster(cfg.getSPARK_MASTER())
 								.setAppName(this.getClass().getName())
@@ -30,35 +31,17 @@ public class SparkUpfrontPartitioner {
 								.set("spark.executor.memory", "4g");
 
 		ctx = new JavaSparkContext(sconf);
+		this.propertiesFile = propertiesFile;
 		//queryConf = new SparkQueryConf(ctx.hadoopConfiguration());
 	}
 	
 	
 	public void createTextFile(String localDataDir, RNode newIndexTree){
+		final DistributedPartitioningIterator partitioner = new DistributedPartitioningIterator(cfg.getZOOKEEPER_HOSTS(), newIndexTree, propertiesFile, hdfsPath);
+		FlatMapFunction<Iterator<String>, String> mapFunc = new SparkPartitioningMapFunction(partitioner);
 
-		FileSystem hdfs = HDFSUtils.getFS(cfg.getHADOOP_HOME() + "/etc/hadoop/core-site.xml");
-		final DistributedPartitioningIterator partitioner = new DistributedPartitioningIterator(null, newIndexTree, hdfs);
-
-		
-		JavaRDD<String> distFile = ctx.textFile(localDataDir).mapPartitions(
-				
-				new FlatMapFunction<Iterator<String>, String>(){
-					
-					private static final long serialVersionUID = 1L;
-					
-					public Iterable<String> call(Iterator<String> arg0) throws Exception {
-						partitioner.setIterator(arg0);
-						while(partitioner.hasNext());
-						partitioner.finish();
-						return null;	//TODO: check
-					}
-					
-				}
-			);
+		JavaRDD<String> distFile = ctx.textFile(localDataDir).mapPartitions(mapFunc);
 		long lines = distFile.count();
-		
-		
-		
-		System.out.println("Number of lines = "+lines);
+		System.out.println("Number of lines = " + lines);
 	}
 }

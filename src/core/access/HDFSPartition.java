@@ -1,9 +1,14 @@
 package core.access;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
+import org.apache.hadoop.fs.Path;
+
+import java.io.IOException;
 
 public class HDFSPartition extends Partition{
 
@@ -15,7 +20,16 @@ public class HDFSPartition extends Partition{
 	}
 	
 	public HDFSPartition(String pathAndPartitionId, String propertiesFile, short replication) {
-		this(HDFSUtils.getFS(ConfUtils.create(propertiesFile, "defaultHDFSPath").getHadoopHome()+"/etc/hadoop/core-site.xml"), pathAndPartitionId);
+		super(pathAndPartitionId);
+		String coreSitePath = (new ConfUtils(propertiesFile)).getHADOOP_HOME()+"/etc/hadoop/core-site.xml";
+		Configuration e = new Configuration();
+		e.addResource(new Path(coreSitePath));
+		try {
+			this.hdfs = FileSystem.get(e);
+			this.replication = replication;
+		} catch (IOException ex) {
+			throw new RuntimeException("failed to get hdfs filesystem");
+		}
 	}
 	
 	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId) {
@@ -46,14 +60,14 @@ public class HDFSPartition extends Partition{
 	public boolean load(){
 		if(path==null || path.equals(""))
 			return false;		
-		bytes = HDFSUtils.readFile(hdfs, path + "/" + partitionId);		
+		bytes = HDFSUtils.readFile(hdfs, path + "/" + partitionId);
 		return true;	// load the physical block for this partition 
 	}
 	
 	public void store(boolean append){
 		//String storePath = FilenameUtils.getFullPath(path) + ArrayUtils.join("_", lineage);
-		String storePath = path + "/" + partitionId;
-		HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);		
+		String storePath = "/" + path + "/" + partitionId;
+		HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);
 	}
 	
 	public void drop(){

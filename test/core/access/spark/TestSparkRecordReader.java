@@ -16,7 +16,7 @@ import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
-import core.access.iterator.PartitionIterator.IteratorRecord;
+import core.access.iterator.IteratorRecord;
 import core.index.Settings;
 import core.utils.ConfUtils;
 import core.utils.SchemaUtils.TYPE;

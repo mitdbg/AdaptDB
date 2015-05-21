@@ -75,10 +75,10 @@ public class TestIndexBuilder extends TestCase {
 	
 	public void testBuildSimpleRangeTreeLocal(){
 		builder.build(new SimpleRangeTree(numPartitions),
-						key,
-						inputFilename,
-						getLocalWriter(localPartitionDir)
-					);
+				key,
+				inputFilename,
+				getLocalWriter(localPartitionDir)
+		);
 	}
 
     public void testBuildKDMedianTreeLocal(){
@@ -108,7 +108,7 @@ public class TestIndexBuilder extends TestCase {
 		builder.build(new SimpleRangeTree(numPartitions),
 						key,
 						inputFilename,
-						getHDFSWriter(hdfsPartitionDir, (short)replication)
+						getHDFSWriter(hdfsPartitionDir, (short) replication)
 					);
 	}
 
@@ -134,6 +134,16 @@ public class TestIndexBuilder extends TestCase {
 				new RobustTreeHs(1),
 				key,
 				inputFilename,
-				getHDFSWriter(hdfsPartitionDir, (short)replication));
+				getHDFSWriter(hdfsPartitionDir, (short) replication));
+	}
+
+	public void testSparkPartitioning() {
+		builder.buildWithSpark(0.01,
+				new RobustTreeHs(1),
+				key,
+				inputFilename,
+				getHDFSWriter(hdfsPartitionDir, (short) replication),
+				Settings.cartilageConf,
+				Settings.hdfsPartitionDir);
 	}
 }

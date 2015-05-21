@@ -25,7 +25,6 @@ public class CartilageIndexKeyMT extends CartilageIndexKey{
 
 	public CartilageIndexKeyMT clone() throws CloneNotSupportedException {
 		CartilageIndexKeyMT k = (CartilageIndexKeyMT) super.clone();
-		k.dummyDate = new SimpleDate(0,0,0);
 		k.typeUtils = new TypeUtilsMT();
         return k;
 	}

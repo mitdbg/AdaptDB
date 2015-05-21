@@ -9,7 +9,7 @@ import org.apache.hadoop.io.Text;
 
 import com.google.common.base.Joiner;
 
-import core.access.iterator.PartitionIterator.IteratorRecord;
+import core.access.iterator.IteratorRecord;
 
 
 public class Query implements Serializable{

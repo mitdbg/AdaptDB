@@ -33,7 +33,7 @@ import core.access.AccessMethod.PartitionSplit;
 import core.access.Query.FilterQuery;
 import core.access.iterator.DistributedRepartitionIterator;
 import core.access.iterator.PartitionIterator;
-import core.access.iterator.PartitionIterator.IteratorRecord;
+import core.access.iterator.IteratorRecord;
 import core.access.iterator.RepartitionIterator;
 import core.utils.ReflectionUtils;
 
