@@ -12,6 +12,7 @@ import org.apache.hadoop.fs.Path;
 
 import core.access.AccessMethod.PartitionSplit;
 import core.access.Predicate;
+import core.access.Predicate.PREDTYPE;
 import core.access.Query;
 import core.access.Query.FilterQuery;
 import core.access.iterator.PartitionIterator;
@@ -123,6 +124,23 @@ public class Optimizer {
 			System.err.println("Unimplemented query - Unable to build plan");
 			return null;
 		}
+	}
+
+	// Just for debug
+	public PartitionSplit[] testRepartitionIteratorPlan(final Query q) {
+    	Plan pl = new Plan();
+    	pl.cost = 1;
+    	pl.benefit = 1000;
+    	Action ac = new Action();
+    	ac.pid = 0;
+    	ac.option = 1;
+    	pl.actions = ac;
+
+    	Predicate p1 = new Predicate(0, TYPE.INT, 283359707, PREDTYPE.GT);
+    	FilterQuery dummy = new FilterQuery(new Predicate[]{p1});
+
+		PartitionSplit[] psplits = this.getPartitionSplits(pl, dummy);
+		return psplits;
 	}
 
 	public PartitionSplit[] buildPlan(final Query q) {

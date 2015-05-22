@@ -16,14 +16,14 @@ import core.utils.CuratorUtils;
 public class DistributedRepartitionIterator extends RepartitionIterator {
 
 	//private static final long serialVersionUID = 1L;
-	
+
 	public DistributedRepartitionIterator() {
 	}
 
 	public DistributedRepartitionIterator(String iteratorString){
 		super(iteratorString);
 	}
-	
+
 	public DistributedRepartitionIterator(FilterQuery query, RNode newIndexTree){
 		super(query, newIndexTree);
 	}
@@ -56,10 +56,6 @@ public class DistributedRepartitionIterator extends RepartitionIterator {
 //		this.zookeeperHosts = in.readLine();
 //	}
 
-
-
-
-
 	public class PartitionLock {
 
 		private CuratorFramework client;
@@ -86,6 +82,8 @@ public class DistributedRepartitionIterator extends RepartitionIterator {
 			CuratorUtils.releaseLock(
 					partitionLocks.get(partitionId)
 				);
+
+			partitionLocks.remove(partitionId);
 		}
 
 		public void close(){

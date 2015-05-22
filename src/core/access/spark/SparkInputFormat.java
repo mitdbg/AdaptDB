@@ -174,10 +174,10 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			} catch (NumberFormatException e){
 			}
 
-		PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), true);
+		PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), false);
 		System.out.println("Number of partition splits = "+splits.length);
 		splits = resizeSplits(splits, queryConf.getMaxSplitSize());
-
+		System.out.println("Number of partition splits after re-sizing= "+splits.length);
 		for(PartitionSplit split: splits){
 			int[] partitionIds = split.getPartitions();
 			Path[] splitFiles = new Path[partitionIds.length];
@@ -186,6 +186,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			String[] locations = new String[partitionIds.length];
 
 			for(int i=0;i<partitionIds.length;i++){
+				System.out.println(partitionIds[i]);
 				Path splitFilePath = partitionIdFileMap.get(partitionIds[i]).getPath();
 				splitFiles[i] = splitFilePath;
 				start[i] = 0;
@@ -235,7 +236,6 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 					PartitionIterator itr = split.getIterator();
 					if(itr instanceof RepartitionIterator)
 						itr = ((RepartitionIterator)itr).createDistributedIterator();
-						//itr = new DistributedRepartitionIterator((RepartitionIterator)itr, queryConf.getZookeeperHosts());
 
 					resizedSplits.add(new PartitionSplit(subPartitions, itr));
 				}

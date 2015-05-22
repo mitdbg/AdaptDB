@@ -34,7 +34,7 @@ public class SparkQuery {
 								.setSparkHome(cfg.getSPARK_HOME())
 								.setJars(new String[]{cfg.getSPARK_JAR()})
 								.set("spark.hadoop.cloneConf", "false")
-								.set("spark.executor.memory", "4g");
+								.set("spark.executor.memory", "64g");
 
 		ctx = new JavaSparkContext(sconf);
 		//ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName(), cfg.getSPARK_HOME(), cfg.getSPARK_JAR());
@@ -69,7 +69,7 @@ public class SparkQuery {
 		queryConf.setWorkers(cfg.getNUM_RACKS() * cfg.getNODES_PER_RACK() * cfg.getMAP_TASKS());
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
-		queryConf.setMaxSplitSize(1024 / 64);	// number of 64 MB partitions that can fit for each worker (we assume 1GB memory for each worker)
+		queryConf.setMaxSplitSize(4096 / 128);	// number of 64 MB partitions that can fit for each worker (we assume 1GB memory for each worker)
 
 		JavaPairRDD<LongWritable,Text> distFile = ctx.newAPIHadoopFile(
 				cfg.getHADOOP_NAMENODE() +  hdfsPath,
@@ -91,7 +91,7 @@ public class SparkQuery {
 		queryConf.setWorkers(cfg.getNUM_RACKS() * cfg.getNODES_PER_RACK() * cfg.getMAP_TASKS());
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
-		queryConf.setMaxSplitSize(1024 / 64);	// number of 64 MB partitions that can fit for each worker (we assume 1GB memory for each worker)
+		queryConf.setMaxSplitSize(4096 / 128);	// number of 64 MB partitions that can fit for each worker (we assume 1GB memory for each worker)
 		// ctx.hadoopConfiguration().setClass(FileInputFormat.PATHFILTER_CLASS, SparkPathFilter.class, PathFilter.class);
 
 //		System.setProperty("spark.executor.memory","4g");

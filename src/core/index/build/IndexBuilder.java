@@ -71,6 +71,7 @@ public class IndexBuilder {
 
 		startTime = System.nanoTime();
 		r.scan(inputFilename, writer);
+		System.out.println("2nd Scan Time = "+((System.nanoTime()-startTime)/1E9)+" sec");
 		writer.flush();
 		double time3 = (System.nanoTime()-startTime)/1E9;
 		System.out.println("Index Probe Time = "+time3+" sec");

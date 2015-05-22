@@ -70,8 +70,6 @@ public class AccessMethod {
 		}
 	}
 
-
-
 	/**
 	 * This class encapsulates a set of partitions which should be
 	 * accessed in a similar fashion. Each split gets assigned to a
