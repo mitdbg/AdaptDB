@@ -1,6 +1,7 @@
 package core.access;
 
 import java.io.File;
+import java.io.Serializable;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -9,7 +10,9 @@ import core.utils.BinaryUtils;
 import core.utils.IOUtils;
 
 
-public class Partition implements Cloneable{
+public class Partition implements Cloneable, Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	public static enum State {ORIG,NEW,MODIFIED};
 	State state;
@@ -47,6 +50,13 @@ public class Partition implements Cloneable{
 		p.state = State.NEW;
         return p;
     }
+
+	public static Partition getHDFSClone(String propertiesFile, String path) {
+		Partition p = new HDFSPartition(path, propertiesFile, (short)1);
+		p.bytes = new byte[1024*1024];
+		p.state = State.NEW;
+		return p;
+	}
 
 
 	/**
@@ -97,7 +107,7 @@ public class Partition implements Cloneable{
 	}
 
 	public void write(byte[] source, int offset, int length){
-		if (this.offset+length>bytes.length) {
+		if (this.offset+length>=bytes.length) {
 			bytes = BinaryUtils.resize(bytes, (int)(bytes.length*1.5));
 			//System.out.println("Resized Byte Array");
 		}

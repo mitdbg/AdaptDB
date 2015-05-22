@@ -8,6 +8,7 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
 
+import core.access.spark.SparkUpfrontPartitioner;
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
 import core.index.robusttree.RobustTreeHs;
@@ -82,6 +83,43 @@ public class IndexBuilder {
 		writer.flush();
 
 		byte[] sampleBytes = ((RobustTreeHs)index).serializeSample();
+		writer.writeToPartition("sample", sampleBytes, 0, sampleBytes.length);
+		writer.flush();
+
+		double time4 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Index+Sample Write Time = "+time4+" sec");
+
+		System.out.println("Total time = "+(time1+time2+time3+time4)+" sec");
+	}
+
+	public void buildWithSpark(double samplingRate, RobustTreeHs index, CartilageIndexKey key, String inputFilename, PartitionWriter writer, String propertiesFile, String hdfsPath){
+
+		long startTime = System.nanoTime();
+		File f = new File(inputFilename);
+		long fileSize = f.length();
+		index.initBuild((int) (fileSize / bucketSize) + 1);
+		InputReader r = new InputReader(index, key);
+		r.scanWithBlockSampling(inputFilename, samplingRate);
+		double time1 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Scanning and sampling time = "+time1+" sec");
+
+		startTime = System.nanoTime();
+		index.initProbe();
+		double time2 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Index Build Time = " + time2 + " sec");
+
+		startTime = System.nanoTime();
+		SparkUpfrontPartitioner partitioner = new SparkUpfrontPartitioner(propertiesFile, hdfsPath);
+		partitioner.createTextFile(inputFilename, index.getRoot());
+		double time3 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Index Probe Time = "+time3+" sec");
+
+		startTime = System.nanoTime();
+		byte[] indexBytes = index.marshall();
+		writer.writeToPartition("index", indexBytes, 0, indexBytes.length);
+		writer.flush();
+
+		byte[] sampleBytes = index.serializeSample();
 		writer.writeToPartition("sample", sampleBytes, 0, sampleBytes.length);
 		writer.flush();
 

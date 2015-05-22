@@ -1,7 +1,8 @@
 package core.access.benchmark;
 
+import java.util.Random;
+
 import junit.framework.TestCase;
-import scala.util.Random;
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.spark.SparkQuery;

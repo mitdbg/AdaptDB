@@ -3,7 +3,6 @@ package core.access.iterator;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Iterator;
 
 import org.apache.commons.lang.ArrayUtils;
@@ -13,11 +12,9 @@ import com.google.common.io.ByteStreams;
 
 import core.access.Partition;
 import core.access.Predicate;
-import core.access.iterator.PartitionIterator.IteratorRecord;
-import core.index.key.CartilageIndexKey;
 import core.utils.ReflectionUtils;
 
-public class PartitionIterator implements Iterator<IteratorRecord>{
+public class PartitionIterator implements Iterator<IteratorRecord> {
 
 	public static enum ITERATOR {SCAN,FILTER,REPART};
 	
@@ -25,7 +22,7 @@ public class PartitionIterator implements Iterator<IteratorRecord>{
 	private byte[] recordBytes;
 
 	private static char newLine = '\n';
-	private static char delimiter = '|';
+	static char delimiter = '|';
 
 	private byte[] bytes;
 	private int bytesLength, offset, previous;
@@ -33,41 +30,6 @@ public class PartitionIterator implements Iterator<IteratorRecord>{
 	protected Partition partition;
 	
 	protected Predicate[] predicates;
-
-
-	/**
-	 * An wrapper class over CartilageIndexKey (to reuse much of the functionality)
-	 *
-	 * @author alekh
-	 *
-	 */
-	public static class IteratorRecord extends CartilageIndexKey implements Serializable {
-
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1L;
-
-		public IteratorRecord() {
-			super(PartitionIterator.delimiter);
-		}
-
-		public IteratorRecord(int[] keyAttrIdx){
-			super(PartitionIterator.delimiter, keyAttrIdx);
-		}
-
-		public byte[] getBytes(){
-			return this.bytes;
-		}
-
-		public int getOffset(){
-			return this.offset;
-		}
-
-		public int getLength(){
-			return this.length;
-		}
-	}
 
 	public PartitionIterator(){
 	}

@@ -11,7 +11,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
 import core.access.Predicate;
-import core.access.iterator.PartitionIterator.IteratorRecord;
+import core.access.iterator.IteratorRecord;
 import core.utils.ConfUtils;
 
 public class SparkQuery {

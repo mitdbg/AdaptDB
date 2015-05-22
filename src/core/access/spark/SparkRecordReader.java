@@ -13,7 +13,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import core.access.HDFSPartition;
 import core.access.Partition;
 import core.access.iterator.PartitionIterator;
-import core.access.iterator.PartitionIterator.IteratorRecord;
+import core.access.iterator.IteratorRecord;
 import core.access.spark.SparkInputFormat.SparkFileSplit;
 
 public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord> {

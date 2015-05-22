@@ -31,6 +31,10 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
 	protected char delimiter;
 	protected int[] keyAttrIdx;
 
+	public CartilageIndexKey() {
+		this.delimiter = '|';
+	}
+
 	public CartilageIndexKey(char delimiter){
 		this.delimiter = delimiter;
 	}
