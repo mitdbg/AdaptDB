@@ -51,12 +51,12 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		private PartitionIterator iterator;
 		public SparkFileSplit(){
 		}
-		
+
 		public SparkFileSplit(Path[] files, long[] lengths, PartitionIterator iterator) {
 			super(files, lengths);
 			this.iterator = iterator;
 		}
-		
+
 		public SparkFileSplit(Path[] files, long[] start, long[] lengths, String[] locations, PartitionIterator iterator) {
 			super(files, start, lengths, locations);
 			this.iterator = iterator;
@@ -182,6 +182,10 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		System.out.println("Number of partition splits = "+splits.length);
 		splits = resizeSplits(splits, queryConf.getMaxSplitSize());
 		System.out.println("Number of partition splits after re-sizing= "+splits.length);
+		for (PartitionSplit split: splits) {
+			System.out.println("SPLIT: " + split.getIterator().getClass().getName() + " buckets: " + Arrays.toString(split.getPartitions()));
+		}
+
 		for(PartitionSplit split: splits){
 			int[] partitionIds = split.getPartitions();
 			Path[] splitFiles = new Path[partitionIds.length];

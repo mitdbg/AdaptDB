@@ -5,6 +5,7 @@ import java.util.Map;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessLock;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
 
 import core.access.Partition;
@@ -37,6 +38,7 @@ public class DistributedRepartitionIterator extends RepartitionIterator {
 			c.addToBucketCount(p.getPartitionId(), p.getRecordCount());
 			l.unlockPartition(p.getPartitionId());
 		}
+		System.out.println("DEBUG: oldPartitions: " +  Joiner.on(",").join(oldPartitions.keySet()));
 		for(Partition p: oldPartitions.values()){
 			p.drop();
 			c.removeBucketCount(p.getPartitionId());
@@ -53,13 +55,13 @@ public class DistributedRepartitionIterator extends RepartitionIterator {
 		private String lockPathBase = "/partition-lock-";
 		private Map<Integer,InterProcessLock> partitionLocks;
 
-
 		public PartitionLock(String zookeeperHosts){
 			client = CuratorUtils.createAndStartClient(zookeeperHosts);
 			partitionLocks = Maps.newHashMap();
 		}
 
 		public void lockPartition(int partitionId){
+			System.out.println("DEBUG: Locking partition " + partitionId);
 			partitionLocks.put(
 					partitionId,
 					CuratorUtils.acquireLock(client, lockPathBase + partitionId)
@@ -75,12 +77,17 @@ public class DistributedRepartitionIterator extends RepartitionIterator {
 				);
 
 			partitionLocks.remove(partitionId);
+
+			System.out.println("DEBUG: Unlocking partition " + partitionId);
 		}
 
 		public void close(){
 			// close any stay locks
-			for(int partitionId: partitionLocks.keySet())
-				unlockPartition(partitionId);
+			for(int partitionId: partitionLocks.keySet()) {
+				System.out.println("DEBUG: Stray lock " + partitionId);
+				//	unlockPartition(partitionId);
+			}
+
 			client.close();
 		}
 

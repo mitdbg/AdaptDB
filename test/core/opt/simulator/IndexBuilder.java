@@ -18,7 +18,7 @@ import core.utils.HDFSUtils;
  */
 public class IndexBuilder extends TestCase {
 	public void testBuildIndices() {
-		String hdfsPath = "hdfs://localhost:9000/user/anil/dodo";
+		String hdfsPath = "hdfs://localhost:9000/user/anil/test";
 		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
 
 		int[] rounds = new int[]{1,2,5,10,20,50,100};
@@ -42,5 +42,23 @@ public class IndexBuilder extends TestCase {
 			byte[] indexBytes = index.marshall();
 			HDFSUtils.writeFile(fs, hdfsPath + "/index_" + sf, (short)1, indexBytes, 0, indexBytes.length, false);
 		}
+	}
+
+	public void testSmallIndex() {
+		String hdfsPath = "hdfs://localhost:9000/user/anil/test";
+		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
+
+		int maxBuckets = 1024;
+		RobustTreeHs index = new RobustTreeHs(0.01);
+		Bucket.counters = new BucketCounts(cfg.getZOOKEEPER_HOSTS());
+
+		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
+		String pathToSample = hdfsPath + "/sample";
+		byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
+        index.loadSampleAndBuild(maxBuckets, sampleBytes);
+
+		index.initProbe();
+		byte[] indexBytes = index.marshall();
+		HDFSUtils.writeFile(fs, hdfsPath + "/index_", (short)1, indexBytes, 0, indexBytes.length, false);
 	}
 }

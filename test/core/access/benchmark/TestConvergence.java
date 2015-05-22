@@ -28,7 +28,7 @@ public class TestConvergence extends TestCase{
 			System.out.println("MDINDEX: Running Query " + i);
 			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(year-1,12,31), PREDTYPE.GT);
 			Predicate p2 = new Predicate(10, TYPE.DATE, new SimpleDate(year,12,31), PREDTYPE.LEQ);
-			long c = sq.createRDD("/user/anil/dodo", p1, p2).count();
+			long c = sq.createRDD("/user/anil/smalltest", p1, p2).count();
 			System.out.println("Count = "+c);
 			numQueries--;
 		}
@@ -45,9 +45,16 @@ public class TestConvergence extends TestCase{
 			float disc = (float) ddisc;
 			Predicate p1 = new Predicate(6, TYPE.FLOAT, disc - 0.01, PREDTYPE.GT);
 			Predicate p2 = new Predicate(6, TYPE.FLOAT, disc + 0.01, PREDTYPE.LEQ);
-			long c = sq.createRDD("/user/anil/dodo", p1, p2).count();
+			long c = sq.createRDD("/user/anil/smalltest", p1, p2).count();
 			System.out.println("Count = "+c);
 			numQueries--;
 		}
+	}
+
+	public static void main(String[] args) {
+		System.out.println("Started BAZOOKA");
+		TestConvergence tc = new TestConvergence();
+		tc.setUp();
+		tc.testConvergenceShipDate();
 	}
 }

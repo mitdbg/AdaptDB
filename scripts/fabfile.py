@@ -5,7 +5,7 @@ from conf import *
 env.use_ssh_config = True
 env.user = 'mdindex'
 env.hosts = ['istc2', 'istc5', 'istc6', 'istc7', 'istc8', 'istc9', 'istc10', 'istc11', 'istc12', 'istc13']
-
+# env.hosts = ['istc1', 'istc4']
 ######################
 ## Hadoop Setup
 ######################
@@ -103,14 +103,17 @@ def tpch_run_dbgen():
 @serial
 def tpch_script_gen():
 	global counter
-	with cd('/home/mdindex/tpch-dbgen'):
-		script = "#!/bin/sh\n"
-		for i in xrange(1, 11):
-			partition = counter*10 + i
-			cmd = './dbgen -T L -s 10000 -C 100 -S %d &\n' % partition
-			script += cmd
+	try:
+		with cd('/home/mdindex/tpch-dbgen'):
+			script = "#!/bin/sh\n"
+			for i in xrange(1, 11):
+				partition = counter*10 + i
+				cmd = './dbgen -T L -s 10000 -C 100 -S %d &\n' % partition
+				script += cmd
 
-		run('echo "%s" > data_gen.sh' % script)
+			run('echo "%s" > data_gen.sh' % script)
+	except:
+		pass
 
 	counter += 1
 
@@ -120,3 +123,31 @@ def enable_ssh():
 	with cd('/home/mdindex/.ssh/'):
 		ssh_key = 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDgr8w9ukEIXuAciuGbPGAr2nHqTNjupWKZQdx2pMTdQ8l3p1SuzJq0ZzNI7alCc+smJUHUOJf8+Iy4X67l7fkmQIswDGq/5g6POai/urOy18drKoEII7pG1NLekJQLzTqKe74IdQmBwO6LWlFCZmQQg0Jaixm/Dhbh/XYY3laVZvO6hMeP2lhE24WEhG6iPsS0H2MM95nit5Xz/NkMqYg6bqDAwC0aaQhT7EhMIt6nLL4Th+owqCdMLOQ2PL2yCzrfPiA5JyFMbKk04mlLNT6NkwQvkL0UqQx5WtEEx4LRY6XIhEVdk8tn5FkvVdqsfhOpuYU9FPIXnU99FpPWrd15 mdindex@istc2'
 		run('echo "%s" >> authorized_keys' % ssh_key)
+
+
+#####################################
+## Sample Generator
+#####################################
+@parallel
+def download_sampler():
+	with cd('/home/mdindex/hadoop-2.6.0/etc/hadoop/'):
+		run('mv hadoop-env.sh hadoop-env.sh.backup')
+		run('wget http://anilshanbhag.in/hadoop-env.sh')
+
+	# with cd('/data/mdindex/tpch-dbgen/'):
+		# run('mv sampler.jar.3 sampler.jar')
+		# run('wget http://anilshanbhag.in/sampler2.jar')
+
+@serial
+def bulk_sample_gen():
+	global counter
+	with cd('~/hadoop-2.6.0/bin/'):
+		script = "#!/bin/sh\n"
+		for i in xrange(1, 11):
+			partition = counter*10 + i
+			cmd = './hadoop jar /data/mdindex/tpch-dbgen/sampler2.jar core.index.Sampler /data/mdindex/tpch-dbgen/lineitem/lineitem.tbl.%d &\n' % partition
+			script += cmd
+
+		run('echo "%s" > sample_gen.sh' % script)
+		run('chmod +x sample_gen.sh')
+	counter += 1

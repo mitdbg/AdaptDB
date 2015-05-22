@@ -18,8 +18,8 @@ public class SingleAttributeQueries extends TestCase{
 
 	}
 
-	public void testSinglePredicateQueries(){
-		int numQueries = 5;
+	public void testShipDateQueries(){
+		int numQueries = 50;
 		SparkQuery sq = new SparkQuery(cfg);
 		for (int i=1; i <= numQueries; i++) {
 			int year = 1993 + (i + 1) % 5;
@@ -131,4 +131,11 @@ public class SingleAttributeQueries extends TestCase{
 	}
 
 	// no queries on comment
+
+	public static void main(String[] args) {
+		System.out.println("Started BAZINGA");
+		SingleAttributeQueries saq = new SingleAttributeQueries();
+		saq.setUp();
+		saq.testShipDateQueries();
+	}
 }
