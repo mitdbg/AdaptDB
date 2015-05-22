@@ -1,17 +1,18 @@
 package core.access;
 
+import java.io.IOException;
+
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
-import org.apache.hadoop.fs.Path;
-
-import java.io.IOException;
 
 public class HDFSPartition extends Partition{
 
+	private static final long serialVersionUID = 1L;
+	
 	private FileSystem hdfs;
 	private short replication;
 	
@@ -66,7 +67,9 @@ public class HDFSPartition extends Partition{
 	
 	public void store(boolean append){
 		//String storePath = FilenameUtils.getFullPath(path) + ArrayUtils.join("_", lineage);
-		String storePath = "/" + path + "/" + partitionId;
+		String storePath = path + "/" + partitionId;		
+		if(!path.startsWith("hdfs"))
+			storePath = "/" + storePath;
 		HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);
 	}
 	
