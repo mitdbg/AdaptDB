@@ -50,7 +50,7 @@ public class TypeUtils {
 		try {
 			sdf.parse(s);
 			return true;
-		} catch (ParseException e) {
+		} catch (Exception e) {
 			return false;
 		}
 	}
