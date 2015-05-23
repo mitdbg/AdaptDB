@@ -96,6 +96,7 @@ public class RobustTreeHs implements MDIndex {
 
 		if (dimensionTypes == null) {
         	this.dimensionTypes = k.detectTypes(true);
+			this.dimensionTypes[0] = TYPE.LONG;
             this.numAttributes = dimensionTypes.length;
         }
 

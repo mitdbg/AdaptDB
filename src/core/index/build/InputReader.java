@@ -6,14 +6,18 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import core.data.CartilageDatum.CartilageFile;
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
 import core.utils.BinaryUtils;
+import core.utils.HDFSUtils;
 import core.utils.IOUtils;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 
 public class InputReader {
 
@@ -116,6 +120,28 @@ public class InputReader {
 		System.out.println("SCAN: Buffer clear time = " + clearTime/1E9);
 	}
 
+	public void scanHDFSDirectory(FileSystem fs, String dirname) {
+		try {
+			RemoteIterator<LocatedFileStatus> files = fs.listFiles(new Path(dirname), false);
+			while (files.hasNext()) {
+				String path = files.next().getPath().toString();
+				System.out.println(path);
+				this.scanHDFS(fs, path);
+				firstPass = true;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void scanHDFS(FileSystem fs, String filename) {
+		byteArray = HDFSUtils.readFile(fs, filename);
+		nRead = byteArray.length;
+		previous = byteArrayIdx = 0;
+		processByteBuffer(null);
+
+	}
+
 	/**
 	 * Picks a buffer with samplingRate probability
 	 * TODO:
@@ -203,7 +229,7 @@ public class InputReader {
 	}
 
 	public static void main(String[] args) {
-		Path file = Paths.get("/Users/anil/Dev/repos/tpch-dbgen/lineitem.tbl");
+		java.nio.file.Path file = Paths.get("/Users/anil/Dev/repos/tpch-dbgen/lineitem.tbl");
 		long t = System.nanoTime();
 		if(Files.exists(file) && Files.isReadable(file)) {
 		    try {

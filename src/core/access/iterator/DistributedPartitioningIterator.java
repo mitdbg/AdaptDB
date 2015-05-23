@@ -15,6 +15,7 @@ import core.access.Partition;
 import core.index.MDIndex.BucketCounts;
 import core.index.robusttree.RNode;
 import core.utils.CuratorUtils;
+import org.apache.hadoop.io.Text;
 
 public class DistributedPartitioningIterator implements Serializable {
 
@@ -100,15 +101,20 @@ public class DistributedPartitioningIterator implements Serializable {
 
 	private void writeObject(java.io.ObjectOutputStream out) throws IOException {
 		out.defaultWriteObject();
-		out.writeBytes(newIndexTree.marshall());
+		String tree = newIndexTree.marshall();
+		//out.writeInt(tree.getBytes().length);
+		Text.writeString(out, tree);
+		//out.writeBytes(tree);
 	}
 
 	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
 		in.defaultReadObject();
-		byte[] bytes = new byte[1024*1024*10]; // is this big enough?
-		in.read(bytes);
+		String tree = Text.readString(in);
+		//byte[] bytes = new byte[1024*1024*10]; // is this big enough?
+		//in.read(bytes);
+		//throw new RuntimeException(tree);
 		newIndexTree = new RNode();
-		newIndexTree.unmarshall(bytes);
+		newIndexTree.unmarshall(tree.getBytes());
 	}
 
 
