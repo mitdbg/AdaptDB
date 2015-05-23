@@ -372,7 +372,7 @@ public class Optimizer {
 					replaceInTree(n, r);
 
 					// Give new bucket ids to all nodes below this
-					updateBucketIds(r);
+					updateBucketIds(bs);
 
 		        	PartitionIterator pi = new RepartitionIterator(fq, r);
 		        	PartitionSplit psplit = new PartitionSplit(bucketIds, pi);
@@ -593,18 +593,9 @@ public class Optimizer {
 		return plans.Best;
 	}
 
-	public void updateBucketIds(RNode r) {
-		LinkedList<RNode> stack = new LinkedList<RNode>();
-		stack.add(r);
-
-		while (stack.size() > 0) {
-			RNode n = stack.removeLast();
-			if (n.bucket != null) {
-				n.bucket.updateId();
-			} else {
-				stack.add(n.rightChild);
-				stack.add(n.leftChild);
-			}
+	public void updateBucketIds(List<RNode> r) {
+		for (RNode n: r) {
+			n.bucket.updateId();
 		}
 	}
 

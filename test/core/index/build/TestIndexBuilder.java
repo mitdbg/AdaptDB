@@ -59,20 +59,20 @@ public class TestIndexBuilder extends TestCase {
 		double time1 = (System.nanoTime()-startTime)/1E9;
 		System.out.println("Time = "+time1+" sec");
 	}
-	
+
 	public void testReaderMultiThreaded(){
 		long startTime = System.nanoTime();
 		int numThreads = 1;
 		CartilageIndexKey[] keys = new CartilageIndexKey[numThreads];
 		for(int i=0; i<keys.length; i++)
 			keys[i] = new CartilageIndexKeyMT('|');
-		
+
 		InputReaderMT r = new InputReaderMT(new SimpleRangeTree(numPartitions), keys);
 		r.scan(inputFilename, numThreads);
 		double time1 = (System.nanoTime()-startTime)/1E9;
 		System.out.println("Time = "+time1+" sec");
 	}
-	
+
 	public void testBuildSimpleRangeTreeLocal(){
 		builder.build(new SimpleRangeTree(numPartitions),
 				key,
@@ -145,5 +145,12 @@ public class TestIndexBuilder extends TestCase {
 				getHDFSWriter(hdfsPartitionDir, (short) replication),
 				Settings.cartilageConf,
 				Settings.hdfsPartitionDir);
+	}
+
+	public static void main(String[] args){
+		System.out.println("IMBA!");
+		TestIndexBuilder t = new TestIndexBuilder();
+		t.setUp();
+		t.testBuildRobustTree();
 	}
 }

@@ -208,7 +208,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			PartitionIterator itr = split.getIterator();
 			if(itr instanceof RepartitionIterator || itr instanceof DistributedRepartitionIterator)		// hack to set the zookeeper hosts
 				((RepartitionIterator)itr).setZookeeper(queryConf.getZookeeperHosts());
-			//SparkFileSplit thissplit = new SparkFileSplit(splitFiles, start, lengths, locations, itr);
+
 			SparkFileSplit thissplit = new SparkFileSplit(splitFiles, lengths, itr);
 			finalSplits.add(thissplit);
 		}
@@ -261,5 +261,4 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 	public RecordReader<LongWritable, IteratorRecord> createRecordReader(InputSplit arg0, TaskAttemptContext arg1) throws IOException, InterruptedException {
 		return new SparkRecordReader();
 	}
-
 }
