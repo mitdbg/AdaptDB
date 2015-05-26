@@ -14,8 +14,8 @@ public class HDFSPartition extends Partition{
 
 	private static final long serialVersionUID = 1L;
 	
-	private FileSystem hdfs;
-	private short replication;
+	protected FileSystem hdfs;
+	protected short replication;
 	
 	public HDFSPartition(String path, String propertiesFile) {
 		this(path,propertiesFile, (short)3);

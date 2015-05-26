@@ -1,16 +1,15 @@
 package core.index;
 
-import core.index.build.HDFSPartitionWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+
+import org.apache.hadoop.fs.FileSystem;
+
 import core.index.build.InputReader;
 import core.index.key.CartilageIndexKey;
 import core.index.robusttree.RobustTreeHs;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
-import org.apache.hadoop.fs.FileSystem;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
 
 /**
  * Created by qui on 5/21/15.

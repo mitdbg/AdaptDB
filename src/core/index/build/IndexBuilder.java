@@ -8,8 +8,8 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
 
-import core.access.spark.SparkUpfrontPartitioner;
 import core.index.MDIndex;
+import core.index.build.spark.SparkUpfrontPartitioner;
 import core.index.key.CartilageIndexKey;
 import core.index.robusttree.RobustTreeHs;
 
