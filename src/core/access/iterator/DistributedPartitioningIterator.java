@@ -36,8 +36,8 @@ public class DistributedPartitioningIterator implements Serializable {
 		private static final long serialVersionUID = 1L;
 		private Random r;
 		
-		public LocalPartition(String pathAndPartitionId, String propertiesFile) {
-			super(pathAndPartitionId, propertiesFile);
+		public LocalPartition(String pathAndPartitionId, String propertiesFile, short replication) {
+			super(pathAndPartitionId, propertiesFile, replication);
 			bytes = new byte[1024*1024];
 			r = new Random(System.currentTimeMillis());
 		}
@@ -93,7 +93,7 @@ public class DistributedPartitioningIterator implements Serializable {
 				p = newPartitions.get(id);
 			}
 			else{
-				p = new LocalPartition(propertiesFile, hdfsPath+"/0");
+				p = new LocalPartition(propertiesFile, hdfsPath+"/0", (short)1);
 				//p = partition.clone();
 				p.setPartitionId(id);
 				newPartitions.put(id, p);
