@@ -24,11 +24,11 @@ import core.utils.ConfUtils;
 
 public class SparkUpfrontPartitioner {
 
-	private ConfUtils cfg;
-	private String propertiesFile;
+	ConfUtils cfg;
+	String propertiesFile;
 	//private SparkQueryConf queryConf;
-	private JavaSparkContext ctx;
-	private String hdfsPath;
+	JavaSparkContext ctx;
+	String hdfsPath;
 	
 	public SparkUpfrontPartitioner(String propertiesFile, String hdfsPath){
 		this.cfg = new ConfUtils(propertiesFile);
@@ -39,7 +39,8 @@ public class SparkUpfrontPartitioner {
 								.setSparkHome(cfg.getSPARK_HOME())
 								.setJars(new String[]{cfg.getSPARK_JAR()})
 								.set("spark.hadoop.cloneConf", "false")
-								.set("spark.executor.memory", "120g");
+								.set("spark.executor.memory", "120g")
+								.set("spark.local.dir", "/data/mdindex/tmp");
 		ctx = new JavaSparkContext(sconf);
 		this.propertiesFile = propertiesFile;
 		//queryConf = new SparkQueryConf(ctx.hadoopConfiguration());
@@ -79,8 +80,8 @@ public class SparkUpfrontPartitioner {
 		//System.out.println("sampling rate: "+samplingRate);
 
 		String propertiesFile = "/home/mdindex/cartilage.properties";
-		String dataDir = "file:///data/mdindex/tpch-dbgen/lineitem/";
-		String hdfsDir = "/user/anil/singletest";
+		String dataDir = "file:///data/mdindex/tpch-dbgen/lineitem1000/";
+		String hdfsDir = "/user/anil/one";
 
 		/*
 		String propertiesFile = "/Users/qui/Documents/mdindex/conf/cartilage.properties";
