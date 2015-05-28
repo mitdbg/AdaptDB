@@ -12,16 +12,12 @@ import core.data.CartilageDatum.CartilageFile;
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
 import core.utils.BinaryUtils;
-import core.utils.HDFSUtils;
 import core.utils.IOUtils;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RemoteIterator;
 
 public class InputReader {
 
 	int bufferSize = 5 * 1024 * 1024;
+	int blockSampleSize = 5 * 1024;
 	char newLine = '\n';
 
 	byte[] byteArray, brokenLine;
@@ -45,7 +41,7 @@ public class InputReader {
 		bucketIdTime = 0;
 	}
 
-	private void initScan(){
+	private void initScan(int bufferSize){
 		byteArray = new byte[bufferSize];
 		brokenLine = null;
 		bb = ByteBuffer.wrap(byteArray);
@@ -65,7 +61,7 @@ public class InputReader {
 	}
 
 	public void scan(String filename, PartitionWriter writer){
-		initScan();
+		initScan(bufferSize);
 		long sStartTime = System.nanoTime(), temp1;
 		long readTime=0, processTime=0;
 		FileChannel ch = IOUtils.openFileChannel(new CartilageFile(filename));
@@ -120,44 +116,19 @@ public class InputReader {
 		System.out.println("SCAN: Buffer clear time = " + clearTime/1E9);
 	}
 
-	public void scanHDFSDirectory(FileSystem fs, String dirname) {
-		try {
-			RemoteIterator<LocatedFileStatus> files = fs.listFiles(new Path(dirname), false);
-			while (files.hasNext()) {
-				String path = files.next().getPath().toString();
-				System.out.println(path);
-				this.scanHDFS(fs, path);
-				firstPass = true;
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void scanHDFS(FileSystem fs, String filename) {
-		byteArray = HDFSUtils.readFile(fs, filename);
-		nRead = byteArray.length;
-		previous = byteArrayIdx = 0;
-		processByteBuffer(null);
-
-	}
-
 	/**
-	 * Picks a buffer with samplingRate probability
-	 * TODO:
-	 * This uses the global buffer size which is pretty large; for small inputs it fks up
-	 * Make this use a smaller buffer size ?
+	 * Picks a block with samplingRate probability
 	 * @param filename
 	 * @param samplingRate
 	 */
 	public void scanWithBlockSampling(String filename, double samplingRate) {
-		initScan();
+		initScan(blockSampleSize);
 
 		FileChannel ch = IOUtils.openFileChannel(new CartilageFile(filename));
 		try {
 			long position = 0;
 			while (Math.random() > samplingRate) {
-				position += bufferSize;
+				position += blockSampleSize;
 			}
 			ch.position(position);
 			while ((nRead = ch.read(bb)) != -1) {
@@ -174,7 +145,7 @@ public class InputReader {
 				bb.clear();
 
 				while (Math.random() > samplingRate) {
-					position += bufferSize;
+					position += blockSampleSize;
 				}
 				ch.position(position);
 			};

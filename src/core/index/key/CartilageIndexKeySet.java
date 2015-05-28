@@ -1,9 +1,6 @@
 package core.index.key;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import org.apache.commons.lang.ArrayUtils;
 
@@ -344,6 +341,7 @@ public class CartilageIndexKeySet {
 	    			this.types = new TYPE[tokens.length];
 	    			for(int i=0;i <tokens.length; i++)
 	    				types[i] = TYPE.valueOf(tokens[i]);
+					types[0] = TYPE.LONG;
 	    		}
 	    		else{
 		    		record.setBytes(lineBytes);

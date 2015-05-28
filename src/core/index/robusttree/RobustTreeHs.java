@@ -1,6 +1,7 @@
 package core.index.robusttree;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -98,6 +99,7 @@ public class RobustTreeHs implements MDIndex {
         	this.dimensionTypes = k.detectTypes(true);
 			this.dimensionTypes[0] = TYPE.LONG;
             this.numAttributes = dimensionTypes.length;
+			this.sample.setTypes(this.dimensionTypes);
         }
 
         if (Math.random() < samplingRate) {
@@ -119,6 +121,7 @@ public class RobustTreeHs implements MDIndex {
 		System.out.println(this.sample.size() + " keys inserted");
 		int depth = 31 - Integer.numberOfLeadingZeros(this.maxBuckets); // Computes log(this.maxBuckets)
 		double allocation = RobustTreeHs.nthroot(this.numAttributes, this.maxBuckets);
+		System.out.println("Max allocation: "+allocation);
 
 		double[] allocations = new double[this.numAttributes];
 		for (int i=0; i<this.numAttributes; i++) {
@@ -128,6 +131,7 @@ public class RobustTreeHs implements MDIndex {
 		int[] counter = new int[this.numAttributes];
 
 		this.createTree(root, depth, 2, counter, allocations, this.sample);
+		System.out.println(Arrays.toString(allocations));
 	}
 
 	public void createTree(RNode node, int depth, double allocation, int[] counter, double[] allocations, CartilageIndexKeySet sample) {
@@ -324,6 +328,12 @@ public class RobustTreeHs implements MDIndex {
         this.sample = new CartilageIndexKeySet();
 		this.sample.unmarshall(bytes);
 		this.initializeBucketSamples(this.root, this.sample);
+	}
+
+	public void loadSample(CartilageIndexKeySet sample) {
+		this.sample = sample;
+		this.dimensionTypes = this.sample.getTypes();
+		this.numAttributes = this.dimensionTypes.length;
 	}
 
 	public void initializeBucketSamples(RNode n, CartilageIndexKeySet sample) {
