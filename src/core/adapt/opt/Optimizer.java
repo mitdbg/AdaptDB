@@ -1,11 +1,7 @@
 package core.adapt.opt;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -96,8 +92,8 @@ public class Optimizer {
 		this.rt = new RobustTreeHs(0.01);
 		this.rt.unmarshall(indexBytes);
 
-		byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
-		this.rt.loadSample(sampleBytes);
+		//byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
+		//this.rt.loadSample(sampleBytes);
 	}
 
 	public int[] getBidFromRNodes(List<RNode> nodes) {

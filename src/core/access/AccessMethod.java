@@ -63,12 +63,12 @@ public class AccessMethod {
 	 * @return
 	 */
 	public PartitionSplit[] getPartitionSplits(Query q, int n, boolean justAccess){
-//		if (justAccess) {
-//			return opt.buildAccessPlan(q);
-//		} else {
-//			return opt.buildPlan(q);
-//		}
-		return opt.testRepartitionIteratorPlan(q);
+		if (justAccess) {
+			return opt.buildAccessPlan(q);
+		} else {
+			return opt.buildPlan(q);
+		}
+//		return opt.testRepartitionIteratorPlan(q);
 	}
 
 	/**

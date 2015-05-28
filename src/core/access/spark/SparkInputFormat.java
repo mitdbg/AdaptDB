@@ -34,7 +34,7 @@ import core.access.iterator.PartitionIterator;
 import core.access.iterator.RepartitionIterator;
 import core.utils.ReflectionUtils;
 
-public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorRecord> implements Serializable{
+public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorRecord> implements Serializable {
 
 	public static String SPLIT_ITERATOR = "SPLIT_ITERATOR";
 	private static final long serialVersionUID = 1L;
@@ -96,12 +96,12 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 
 		ArrayListMultimap<Integer,FileStatus> partitionIdFileMap = ArrayListMultimap.create();
 		for(FileStatus file: files)
-			try{
+			try {
 				partitionIdFileMap.put(Integer.parseInt(FilenameUtils.getName(file.getPath().toString())), file);
-			} catch (NumberFormatException e){
+			} catch (NumberFormatException e) {
 			}
 
-		PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), false);
+		PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), true);
 		System.out.println("Number of partition splits = "+splits.length);
 		splits = resizeSplits(splits, queryConf.getMaxSplitSize());
 		System.out.println("Number of partition splits after re-sizing= "+splits.length);
