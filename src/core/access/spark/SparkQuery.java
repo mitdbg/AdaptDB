@@ -38,6 +38,7 @@ public class SparkQuery {
 
 		ctx = new JavaSparkContext(sconf);
 		//ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName(), cfg.getSPARK_HOME(), cfg.getSPARK_JAR());
+		ctx.hadoopConfiguration().setBoolean(FileInputFormat.INPUT_DIR_RECURSIVE, true);
 		queryConf = new SparkQueryConf(ctx.hadoopConfiguration());
 	}
 
