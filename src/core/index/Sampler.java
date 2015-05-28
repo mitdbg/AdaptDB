@@ -19,15 +19,15 @@ public class Sampler {
     public static void main(String[] args) {
         String inputFilename = args[args.length-1];
         System.out.println(inputFilename); // make sure fabric can do this
-        String partitionDir = "/user/qui/dodo";
-        //String partitionDir = "/user/anil/singletest";
-        String propertiesFile = "/Users/qui/Documents/mdindex/conf/cartilage.properties";
-        //String propertiesFile = "/home/mdindex/cartilage.properties";
+        //String partitionDir = "/user/qui/dodo";
+        String partitionDir = "/user/anil/exp";
+        //String propertiesFile = "/Users/qui/Documents/mdindex/conf/cartilage.properties";
+        String propertiesFile = "/home/mdindex/cartilage.properties";
 
         String fileNum = inputFilename.substring(inputFilename.lastIndexOf("."));
 
         int bucketSize = 64; // 64 mb
-        int scaleFactor = 10000;
+        int scaleFactor = 1000;
         //int scaleFactor = 1;
         int numBuckets = (scaleFactor * 759) / bucketSize + 1;
         double samplingRate = ((double)numBuckets) / (60000 * scaleFactor);
@@ -37,8 +37,11 @@ public class Sampler {
         index.initBuild(numBuckets);
         CartilageIndexKey key = new CartilageIndexKey('|');
         InputReader r = new InputReader(index, key);
+        long startTime = System.nanoTime();
         r.scanWithBlockSampling(inputFilename, samplingRate);
+        System.out.println("SAMPLE: sampling time = " + ((System.nanoTime() - startTime) / 1E9));
 
+        startTime = System.nanoTime();
         byte[] sampleBytes = index.serializeSample();
         ConfUtils conf = new ConfUtils(propertiesFile);
         FileSystem fs = HDFSUtils.getFS(conf.getHADOOP_HOME()+"/etc/hadoop/core-site.xml");
@@ -47,6 +50,7 @@ public class Sampler {
             out.write(sampleBytes);
             out.flush();
             out.close();
+            System.out.println("SAMPLE: sample writing time = " + ((System.nanoTime() - startTime) / 1E9));
         } catch (IOException e) {
             e.printStackTrace();
         }
