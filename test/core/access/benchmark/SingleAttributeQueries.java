@@ -19,7 +19,7 @@ public class SingleAttributeQueries extends TestCase{
 	}
 
 	public void testShipDateQueries(){
-		int numQueries = 50;
+		int numQueries = 1;
 		SparkQuery sq = new SparkQuery(cfg);
 		for (int i=1; i <= numQueries; i++) {
 			int year = 1993 + (i + 1) % 5;

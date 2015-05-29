@@ -341,7 +341,7 @@ public class CartilageIndexKeySet {
 	    			this.types = new TYPE[tokens.length];
 	    			for(int i=0;i <tokens.length; i++)
 	    				types[i] = TYPE.valueOf(tokens[i]);
-					types[0] = TYPE.LONG;
+					//types[0] = TYPE.LONG;
 	    		}
 	    		else{
 		    		record.setBytes(lineBytes);

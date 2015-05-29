@@ -172,13 +172,13 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
 			if(skipNonKey && keyAttrIdx!=null && !Ints.contains(keyAttrIdx, i))
 				continue;
 
-			if(TypeUtils.isInt(t))
+			if (TypeUtils.isInt(t))
 				types.add(TYPE.INT);
-			else if(TypeUtils.isLong(t))
+			else if (TypeUtils.isLong(t))
 				types.add(TYPE.LONG);
-			else if(TypeUtils.isFloat(t))
+			else if (TypeUtils.isFloat(t))
 				types.add(TYPE.FLOAT);
-			else if(TypeUtils.isDate(t, DateUtils.sdf))
+			else if (TypeUtils.isDate(t, new SimpleDateFormat("yyyy-MM-dd")))
 				types.add(TYPE.DATE);
 			else
 				types.add(TYPE.STRING);
