@@ -3,6 +3,7 @@ package core.access;
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
@@ -13,8 +14,8 @@ public class HDFSPartition extends Partition{
 
 	private static final long serialVersionUID = 1L;
 	
-	private FileSystem hdfs;
-	private short replication;
+	protected FileSystem hdfs;
+	protected short replication;
 	
 	public HDFSPartition(String path, String propertiesFile) {
 		this(path,propertiesFile, (short)3);
@@ -70,7 +71,22 @@ public class HDFSPartition extends Partition{
 		String storePath = path + "/" + partitionId;		
 		if(!path.startsWith("hdfs"))
 			storePath = "/" + storePath;
-		HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);
+		//HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);
+		Path e = new Path(storePath);
+		FSDataOutputStream os;
+		try {
+			if(append && hdfs.exists(e)) {
+				os = hdfs.append(e);
+			} else {
+				os = hdfs.create(new Path(storePath), replication);
+			}
+			os.write(bytes, 0, offset);
+			os.flush();
+			os.close();
+		} catch (IOException ex) {
+			throw new RuntimeException(ex.getMessage());
+		}
+		//HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);
 	}
 	
 	public void drop(){

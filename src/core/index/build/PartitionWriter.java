@@ -86,7 +86,7 @@ public abstract class PartitionWriter implements Cloneable{
 	}
 	
 	protected void flush(int numPartitions){
-		System.out.println("partition writing time: "+writingTime/1E9);
+		System.out.println("SCAN: partition writing time = "+writingTime/1E9);
 		long start = System.nanoTime();
 		int flushCount = 0;
 		Set<String> keys = new HashSet<String>(buffer.keySet());
@@ -101,6 +101,6 @@ public abstract class PartitionWriter implements Cloneable{
 			if(flushCount > numPartitions)
 				break;
 		}
-		System.out.println("flushing time: "+(System.nanoTime()-start)/1E9);
+		System.out.println("SCAN: flushing time = "+(System.nanoTime()-start)/1E9);
 	}
 }

@@ -2,6 +2,8 @@ package core.index.build;
 
 import java.io.File;
 
+import core.utils.ConfUtils;
+import core.utils.HDFSUtils;
 import junit.framework.TestCase;
 import core.index.Settings;
 import core.index.SimpleRangeTree;
@@ -9,6 +11,7 @@ import core.index.kdtree.KDMedianTree;
 import core.index.key.CartilageIndexKey;
 import core.index.key.CartilageIndexKeyMT;
 import core.index.robusttree.RobustTreeHs;
+import org.apache.hadoop.fs.FileSystem;
 
 public class TestIndexBuilder extends TestCase {
 
@@ -59,20 +62,20 @@ public class TestIndexBuilder extends TestCase {
 		double time1 = (System.nanoTime()-startTime)/1E9;
 		System.out.println("Time = "+time1+" sec");
 	}
-	
+
 	public void testReaderMultiThreaded(){
 		long startTime = System.nanoTime();
 		int numThreads = 1;
 		CartilageIndexKey[] keys = new CartilageIndexKey[numThreads];
 		for(int i=0; i<keys.length; i++)
 			keys[i] = new CartilageIndexKeyMT('|');
-		
+
 		InputReaderMT r = new InputReaderMT(new SimpleRangeTree(numPartitions), keys);
 		r.scan(inputFilename, numThreads);
 		double time1 = (System.nanoTime()-startTime)/1E9;
 		System.out.println("Time = "+time1+" sec");
 	}
-	
+
 	public void testBuildSimpleRangeTreeLocal(){
 		builder.build(new SimpleRangeTree(numPartitions),
 				key,
@@ -93,6 +96,17 @@ public class TestIndexBuilder extends TestCase {
                 getLocalWriter(localPartitionDir)
         );
     }
+
+	public void testBuildKDMedianTreeBlockSamplingOnly(int scaleFactor) {
+		int bucketSize = 64; // 64 mb
+		int numBuckets = (scaleFactor * 759) / bucketSize + 1;
+		System.out.println("Num buckets: "+numBuckets);
+		builder.buildWithBlockSamplingDir(0.0002,
+				numBuckets,
+				new KDMedianTree(1),
+				key,
+				Settings.tpchPath + scaleFactor + "/");
+	}
 
 	public void testBuildSimpleRangeTreeLocalReplicated(){
 		builder.build(new SimpleRangeTree(numPartitions),
@@ -130,11 +144,21 @@ public class TestIndexBuilder extends TestCase {
 	}
 
 	public void testBuildRobustTreeBlockSampling() {
-		builder.buildWithBlockSampling(0.01,
+		builder.buildWithBlockSampling(0.0002,
 				new RobustTreeHs(1),
 				key,
 				inputFilename,
 				getHDFSWriter(hdfsPartitionDir, (short) replication));
+	}
+
+	public void testBuildRobustTreeBlockSamplingOnly(int scaleFactor) {
+		int bucketSize = 64; // 64 mb
+		int numBuckets = (scaleFactor * 759) / bucketSize + 1;
+		builder.buildWithBlockSamplingDir(0.0002,
+				numBuckets,
+				new RobustTreeHs(1),
+				key,
+				Settings.tpchPath+scaleFactor+"/");
 	}
 
 	public void testSparkPartitioning() {
@@ -145,5 +169,27 @@ public class TestIndexBuilder extends TestCase {
 				getHDFSWriter(hdfsPartitionDir, (short) replication),
 				Settings.cartilageConf,
 				Settings.hdfsPartitionDir);
+	}
+
+	public void testBuildRobustTreeDistributed(String partitionsId){
+		ConfUtils conf = new ConfUtils(propertiesFile);
+		FileSystem fs = HDFSUtils.getFS(conf.getHADOOP_HOME() + "/etc/hadoop/core-site.xml");
+		byte[] indexBytes = HDFSUtils.readFile(fs, hdfsPartitionDir + "/index");
+		RobustTreeHs index = new RobustTreeHs(1);
+		index.unmarshall(indexBytes);
+		builder.buildDistributedFromIndex(index,
+				key,
+				Settings.tpchPath,
+				getHDFSWriter(hdfsPartitionDir+"/partitions"+partitionsId, (short) replication));
+	}
+
+	public static void main(String[] args){
+		System.out.println("IMBA!");
+		TestIndexBuilder t = new TestIndexBuilder();
+		t.setUp();
+		//t.testBuildRobustTreeDistributed(args[args.length-1]);
+		int scaleFactor = Integer.parseInt(args[args.length - 1]);
+		//t.testBuildKDMedianTreeBlockSamplingOnly(scaleFactor);
+		t.testBuildRobustTreeBlockSamplingOnly(scaleFactor);
 	}
 }

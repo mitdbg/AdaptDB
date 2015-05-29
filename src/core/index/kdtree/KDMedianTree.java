@@ -53,14 +53,21 @@ public class KDMedianTree extends KDDTree implements MDIndex {
         int numSplits = (int) (Math.log(maxBuckets) / Math.log(2)) + 1;
         System.out.println("Depth is " + numSplits);
         int currentDim = -1;
+        double[] allocations = new double[dimensionTypes.length];
         for (int i = 0; i < numSplits; i++) {
-            splitTree(buckets, nextAttrIdx.get(currentDim));
-            currentDim = nextAttrIdx.get(currentDim);
+            int dimToSplit = nextAttrIdx.get(currentDim);
+            int numNodesAdded = splitTree(buckets, dimToSplit);
+            if (i < numSplits - 1) { // last level doesn't count towards allocation
+                allocations[dimToSplit] += numNodesAdded / Math.pow(2, i - 1);
+            }
+            currentDim = dimToSplit;
         }
+        System.out.println("Allocations: "+Arrays.toString(allocations));
     }
 
-    private void splitTree(List<CartilageIndexKeySet> buckets, int dim) {
+    private int splitTree(List<CartilageIndexKeySet> buckets, int dim) {
         int n = buckets.size();
+        int numNodesAdded = 0;
         for (int i = 0; i < n; i++) {
             CartilageIndexKeySet keys = buckets.remove(0);
             if (keys.size() > 1) {
@@ -69,7 +76,9 @@ public class KDMedianTree extends KDDTree implements MDIndex {
                 buckets.add(halves.second);
                 CartilageIndexKey key = halves.second.iterator().next();
                 super.insert(key);
+                numNodesAdded++;
             }
         }
+        return numNodesAdded;
     }
 }

@@ -71,7 +71,7 @@ public class SingleAttributeQueries extends TestCase{
 		SparkQuery sq = new SparkQuery(cfg);
 		for (int i=0; i < numQueries; i++) {
 			Predicate p1 = new Predicate(4, TYPE.INT, i*10, PREDTYPE.GT);
-			Predicate p2 = new Predicate(4, TYPE.INT, (i+1)*10, PREDTYPE.LEQ);
+			//Predicate p2 = new Predicate(4, TYPE.INT, (i+1)*10, PREDTYPE.LEQ);
 			long result = sq.createRDD(Settings.hdfsPartitionDir, p1).count();
 			System.out.println("quantity "+(i*10)+"-"+(i*10+10)+": "+result);
 		}

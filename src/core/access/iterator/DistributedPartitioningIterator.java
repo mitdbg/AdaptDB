@@ -5,16 +5,15 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessLock;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.Text;
 
-import com.google.common.collect.Maps;
-
+import core.access.HDFSPartition;
 import core.access.Partition;
-import core.index.MDIndex.BucketCounts;
 import core.index.robusttree.RNode;
-import core.utils.CuratorUtils;
 
 public class DistributedPartitioningIterator implements Serializable {
 
@@ -31,6 +30,41 @@ public class DistributedPartitioningIterator implements Serializable {
 	
 	protected Partition partition;
 	protected IteratorRecord record;
+	
+	public static class LocalPartition extends HDFSPartition{
+
+		private static final long serialVersionUID = 1L;
+		private Random r;
+		
+		public LocalPartition(String pathAndPartitionId, String propertiesFile, short replication) {
+			super(pathAndPartitionId, propertiesFile, replication);
+			bytes = new byte[1024*1024];
+			r = new Random(System.currentTimeMillis());
+		}
+		
+		public void store(boolean append){
+			String storePath = path + "/" + partitionId +"/" + r.nextInt();		
+			if(!path.startsWith("hdfs"))
+				storePath = "/" + storePath;
+			Path e = new Path(storePath);
+			FSDataOutputStream os;
+			try {
+				if(append && hdfs.exists(e)) {
+					os = hdfs.append(e);
+				} else {
+					os = hdfs.create(new Path(storePath), replication);
+				}
+				os.write(bytes, 0, offset);
+				os.flush();
+				os.close();
+			} catch (IOException ex) {
+				throw new RuntimeException(ex.getMessage());
+			}
+			//HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);
+		}
+	}
+	
+	
 	
 	public DistributedPartitioningIterator(String zookeeperHosts, RNode newIndexTree, String propertiesFile, String path){
 		this.zookeeperHosts = zookeeperHosts;
@@ -59,7 +93,7 @@ public class DistributedPartitioningIterator implements Serializable {
 				p = newPartitions.get(id);
 			}
 			else{
-				p = partition.getHDFSClone(propertiesFile, hdfsPath+"/0");
+				p = new LocalPartition(propertiesFile, hdfsPath+"/0", (short)1);
 				//p = partition.clone();
 				p.setPartitionId(id);
 				newPartitions.put(id, p);
@@ -78,80 +112,20 @@ public class DistributedPartitioningIterator implements Serializable {
 	}
 	
 	public void finish(){
-		PartitionLock l = new PartitionLock(zookeeperHosts);
-		BucketCounts c = new BucketCounts(l.getClient());
-
-		for(Partition p: newPartitions.values()){
-			int id = p.getPartitionId();
-			l.lockPartition(id);
+		for(Partition p: newPartitions.values())
 			p.store(true);
-			c.addToBucketCount(p.getPartitionId(), p.getRecordCount());
-			l.unlockPartition(id);
-		}
-		for(Partition p: oldPartitions.values()){
-			p.drop();
-			c.removeBucketCount(p.getPartitionId());
-		}		
-		oldPartitions = Maps.newHashMap();
-		newPartitions = Maps.newHashMap();
-		c.close();
-		l.close();
 	}
 
 	private void writeObject(java.io.ObjectOutputStream out) throws IOException {
 		out.defaultWriteObject();
-		out.writeBytes(newIndexTree.marshall());
+		String tree = newIndexTree.marshall();
+		Text.writeString(out, tree);
 	}
 
 	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
 		in.defaultReadObject();
-		byte[] bytes = new byte[1024*1024*10]; // is this big enough?
-		in.read(bytes);
+		String tree = Text.readString(in);
 		newIndexTree = new RNode();
-		newIndexTree.unmarshall(bytes);
+		newIndexTree.unmarshall(tree.getBytes());
 	}
-
-
-
-	public class PartitionLock {
-
-		private CuratorFramework client;
-		private String lockPathBase = "/partition-lock-";
-		private Map<Integer,InterProcessLock> partitionLocks;
-
-
-		public PartitionLock(String zookeeperHosts){
-			client = CuratorUtils.createAndStartClient(zookeeperHosts);
-			partitionLocks = Maps.newHashMap();
-		}
-
-		public void lockPartition(int partitionId){
-			partitionLocks.put(
-					partitionId,
-					CuratorUtils.acquireLock(client, lockPathBase + partitionId)
-				);
-		}
-
-		public void unlockPartition(int partitionId){
-			if(!partitionLocks.containsKey(partitionId))
-				throw new RuntimeException("Trying to unlock a partition which does not locked: "+ partitionId);
-
-			CuratorUtils.releaseLock(
-					partitionLocks.get(partitionId)
-				);
-			partitionLocks.remove(partitionId);
-		}
-
-		public void close(){
-			// close any stay locks
-			for(int partitionId: partitionLocks.keySet())
-	 			unlockPartition(partitionId);
-			client.close();
-		}
-
-		public CuratorFramework getClient(){
-			return this.client;
-		}
-	}
-
 }

@@ -1,6 +1,5 @@
 package core.utils;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
 
@@ -50,7 +49,7 @@ public class TypeUtils {
 		try {
 			sdf.parse(s);
 			return true;
-		} catch (ParseException e) {
+		} catch (Exception e) {
 			return false;
 		}
 	}
