@@ -46,7 +46,7 @@ public class Optimizer {
 	static final float NETWORK_MULTIPLIER = 1;
 
 	static final long NODE_MEM_SIZE = 1024 * 1024 * 1024 * 2;
-	static final int TUPLE_SIZE = 64;
+	static final int TUPLE_SIZE = 128;
 	static final int NODE_TUPLE_LIMIT = 33554432; // NODE_MEM_SIZE / TUPLE_SIZE
 
 	List<Query> queryWindow = new ArrayList<Query>();
@@ -693,13 +693,16 @@ public class Optimizer {
 				rightPlan.fullAccess = false;
 			}
 
+			// When trying to replace by predicate; 
+			// Replace by testVal, not the actual predicate value
+			Object testVal = p.getHelpfulCutpoint();
+			
 			// replace attribute by one in the predicate
 			if (leftPlan.fullAccess && rightPlan.fullAccess) {
 				ret.fullAccess = true;
 
 				// If we traverse to root and see that there is no node with cutoff point less than
 				// that of predicate, we can do this
-				Object testVal = p.getHelpfulCutpoint();
 				if (checkValid(node, p.attribute, p.type, testVal)) {
 			        double numAccessedOld = getNumTuplesAccessed(node, true);
 
@@ -749,9 +752,10 @@ public class Optimizer {
 			}
 
 			if (node.attribute == p.attribute) {
-				int c = TypeUtils.compareTo(node.value, p.value, node.type);
+				int c = TypeUtils.compareTo(node.value, testVal, node.type);
 				if (c != 0) {
 					assert (c < 0 && leftPlan.PTop == null) || (c > 0 && rightPlan.PTop == null);
+					// Rotate left
 					if (c < 0 && rightPlan.PTop != null) {
 						Plan pl = new Plan();
 						pl.cost = rightPlan.PTop.cost;
@@ -764,6 +768,8 @@ public class Optimizer {
 			        	updatePlan(pTop, pl);
 			        	updatePlan(best, pl);
 					}
+					
+					//Rotate right
 					if (c > 0 && leftPlan.PTop != null) {
 						Plan pl = new Plan();
 						pl.cost = leftPlan.PTop.cost;

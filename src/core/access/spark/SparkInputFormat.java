@@ -115,7 +115,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			List<Long> lengths = Lists.newArrayList();
 
 			for(int i=0;i<partitionIds.length;i++){
-				System.out.println(partitionIds[i]);
+//				System.out.println(partitionIds[i]);
 				for(FileStatus fs: partitionIdFileMap.get(partitionIds[i])){
 					splitFiles.add(fs.getPath());
 					lengths.add(fs.getLen());
