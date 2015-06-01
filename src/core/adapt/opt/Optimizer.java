@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
@@ -18,6 +19,7 @@ import core.access.Query.FilterQuery;
 import core.access.iterator.PartitionIterator;
 import core.access.iterator.PostFilterIterator;
 import core.access.iterator.RepartitionIterator;
+import core.access.spark.Config;
 import core.index.MDIndex.Bucket;
 import core.index.MDIndex.BucketCounts;
 import core.index.key.CartilageIndexKeySet;
@@ -866,15 +868,31 @@ public class Optimizer {
 
 	public void persistQueryToDisk(FilterQuery fq) {
 		String pathToQueries = this.dataset + "/queries";
-		HDFSUtils.safeCreateFile(hadoopHome, pathToQueries, (short)1);
+		HDFSUtils.safeCreateFile(hadoopHome, pathToQueries, Config.replication);
 		HDFSUtils.appendLine(hadoopHome, pathToQueries, fq.toString());
 	}
 
 	public void persistIndexToDisk() {
 		String pathToIndex = this.dataset + "/index";
-		HDFSUtils.safeCreateFile(hadoopHome, pathToIndex, (short)1);
+		FileSystem fs = HDFSUtils.getFSByHadoopHome(hadoopHome);
+		try {			
+			if(fs.exists(new Path(pathToIndex))) {
+				// If index file exists, move it to a new filename
+				long currentMillis = System.currentTimeMillis();
+				String oldIndexPath = pathToIndex + "." + currentMillis;
+				boolean successRename = fs.rename(new Path(pathToIndex), new Path(oldIndexPath));
+				if (!successRename) {
+					System.out.println("Index rename to " + oldIndexPath + " failed");
+				}
+			}	
+			HDFSUtils.safeCreateFile(hadoopHome, pathToIndex, Config.replication);
+		} catch (IOException e) {
+			System.out.println("ERR: Writing Index failed: " + e.getMessage());
+			e.printStackTrace();
+		}
+		
 		byte[] indexBytes = this.rt.marshall();
-		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome), pathToIndex, (short) 1, this.rt.marshall(), 0, indexBytes.length, false);
+		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome), pathToIndex, (short) 3, this.rt.marshall(), 0, indexBytes.length, false);
 	}
 
 	/** Used only in simulator **/

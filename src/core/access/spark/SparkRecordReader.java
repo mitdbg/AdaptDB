@@ -57,11 +57,17 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 			final FileSystem fs = filePath.getFileSystem(conf);
 			Partition partition = new HDFSPartition(fs, filePath.toString());
 			System.out.println("loading path: "+filePath.toString());
-			partition.load();
-			iterator.setPartition(partition);
-			
-			currentFile++;
-			return true;
+			try {
+				partition.load();				
+				iterator.setPartition(partition);
+				currentFile++;
+				return true;
+			} catch (java.lang.OutOfMemoryError e) {
+				System.out.println("ERR: Failed to load " + filePath.toString());
+				System.out.println(e.getMessage());
+				e.printStackTrace();
+				return false;
+			}
 		}
 	}
 

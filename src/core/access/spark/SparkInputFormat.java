@@ -60,15 +60,18 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			super(files, start, lengths, locations);
 			this.iterator = iterator;
 		}
+		
 		public PartitionIterator getIterator(){
 			return this.iterator;
 		}
+		
 		@Override
 		public void write(DataOutput out) throws IOException{
 			super.write(out);
 			Text.writeString(out, iterator.getClass().getName());
 			iterator.write(out);
 		}
+		
 		@Override
 		public void readFields(DataInput in) throws IOException{
 			super.readFields(in);
