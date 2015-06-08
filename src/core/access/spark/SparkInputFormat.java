@@ -106,12 +106,16 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			} catch (NumberFormatException e) {
 			}
 
-		PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), true);
-//		PartitionSplit[] splits = new PartitionSplit[]{ new PartitionSplit(
-//															Ints.toArray(partitionIdFileMap.keySet()),
-//															new PostFilterIterator(new FilterQuery(queryConf.getPredicates()))
-//															)
-//														};
+		PartitionSplit[] splits;
+		if(queryConf.getFullScan()){
+				splits = new PartitionSplit[]{ new PartitionSplit(
+													Ints.toArray(partitionIdFileMap.keySet()),
+													new PostFilterIterator(new FilterQuery(queryConf.getPredicates()))
+													)
+											};
+		}
+		else
+			splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), queryConf.getJustAccess());
 		System.out.println("Number of partition splits = "+splits.length);
 		splits = resizeSplits(splits, queryConf.getMaxSplitSize());
 		System.out.println("Number of partition splits after re-sizing= "+splits.length);

@@ -9,6 +9,8 @@ import core.access.Predicate;
 public class SparkQueryConf {
 
 	public final static String DATASET = "DATASET";
+	public final static String FULL_SCAN = "FULL_SCAN";
+	public final static String JUST_ACCESS = "JUST_ACCESS";
 	public final static String PREDICATES = "PREDICATES";
 	public final static String WORKERS = "WORKERS";
 	public final static String MAX_SPLIT_SIZE = "MAX_SPLIT_SIZE";
@@ -31,6 +33,22 @@ public class SparkQueryConf {
 		return conf.get(DATASET);
 	}
 
+	public void setFullScan(boolean flag){
+		conf.setBoolean(FULL_SCAN, flag);
+	}
+	
+	public boolean getFullScan(){
+		return conf.getBoolean(FULL_SCAN, false);	// don't full scan by default
+	}
+	
+	public void setJustAccess(boolean flag){
+		conf.setBoolean(JUST_ACCESS, flag);
+	}
+	
+	public boolean getJustAccess(){
+		return conf.getBoolean(JUST_ACCESS, true);	// don't adapt by default, i.e. just access
+	}
+	
 	public void setPredicates(Predicate[] predicates){
 		conf.set(PREDICATES, Joiner.on(",").join(predicates));
 	}

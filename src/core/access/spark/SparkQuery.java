@@ -98,4 +98,14 @@ public class SparkQuery {
 				ctx.hadoopConfiguration()
 			);
 	}
+	
+	public JavaPairRDD<LongWritable,IteratorRecord> createScanRDD(String hdfsPath, Predicate... ps){
+		queryConf.setFullScan(true);
+		return createRDD(hdfsPath, ps);
+	}
+	
+	public JavaPairRDD<LongWritable,IteratorRecord> createAdaptRDD(String hdfsPath, Predicate... ps){
+		queryConf.setJustAccess(false);
+		return createRDD(hdfsPath, ps);
+	}
 }
