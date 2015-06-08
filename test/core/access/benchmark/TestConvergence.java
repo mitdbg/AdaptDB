@@ -21,21 +21,22 @@ public class TestConvergence extends TestCase{
 	}
 
 	public void testConvergenceShipDate(){
-		int numQueries = 50;
+		int numQueries = 15;
 		SparkQuery sq = new SparkQuery(cfg);
 		for (int i=1; i <= numQueries; i++) {
 			int year = 1993 + (i + 1) % 5;
-			System.out.println("MDINDEX: Running Query " + i);
+			long start = System.currentTimeMillis();
 			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(year-1,12,31), PREDTYPE.GT);
 			Predicate p2 = new Predicate(10, TYPE.DATE, new SimpleDate(year,12,31), PREDTYPE.LEQ);
-			long c = sq.createRDD("/user/anil/smalltest", p1, p2).count();
-			System.out.println("Count = "+c);
+			long c = sq.createRDD(Settings.hdfsPartitionDir, p1, p2).count();
+			long end = System.currentTimeMillis();
+			System.out.println("RES: SHIPDATE " + (end - start) + " " + year + " " + c);
 			numQueries--;
 		}
 	}
 
 	public void testConvergenceDiscount() {
-		int numQueries = 50;
+		int numQueries = 15;
 		SparkQuery sq = new SparkQuery(cfg);
 		for (int i=1; i <= numQueries; i++) {
 			System.out.println("MDINDEX: Running Query " + i);
@@ -43,10 +44,12 @@ public class TestConvergence extends TestCase{
 			Random r = new Random();
 			double ddisc = r.nextFloat() * 0.07 + 0.02;
 			float disc = (float) ddisc;
+			long start = System.currentTimeMillis();
 			Predicate p1 = new Predicate(6, TYPE.FLOAT, disc - 0.01, PREDTYPE.GT);
 			Predicate p2 = new Predicate(6, TYPE.FLOAT, disc + 0.01, PREDTYPE.LEQ);
-			long c = sq.createRDD("/user/anil/smalltest", p1, p2).count();
-			System.out.println("Count = "+c);
+			long c = sq.createRDD(Settings.hdfsPartitionDir, p1, p2).count();
+			long end = System.currentTimeMillis();
+			System.out.println("RES: SHIPDATE " + (end - start) + " " + disc + " " + c);
 			numQueries--;
 		}
 	}

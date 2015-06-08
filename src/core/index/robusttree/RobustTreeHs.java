@@ -2,7 +2,9 @@ package core.index.robusttree;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
 
 import core.access.Predicate;
@@ -112,147 +114,133 @@ public class RobustTreeHs implements MDIndex {
 			this.insert(keys[i]);
 		}
 	}
-
+	
+	public class Task {
+		RNode node;
+		float allocation;
+		int depth;
+		CartilageIndexKeySet sample;
+	}
 
 	/**
 	 * Created the tree based on the histograms
 	 */
 	public void initProbe() {
 		System.out.println(this.sample.size() + " keys inserted");
-		int depth = 31 - Integer.numberOfLeadingZeros(this.maxBuckets); // Computes log(this.maxBuckets)
-		double allocation = RobustTreeHs.nthroot(this.numAttributes, this.maxBuckets);
-		System.out.println("Max allocation: "+allocation);
+
+		// Computes log(this.maxBuckets)
+		int maxDepth = 31 - Integer.numberOfLeadingZeros(this.maxBuckets); 
+		double allocationPerAttribute = RobustTreeHs.nthroot(this.numAttributes, this.maxBuckets);
+		System.out.println("Max allocation: " + allocationPerAttribute);
 
 		double[] allocations = new double[this.numAttributes];
 		for (int i=0; i<this.numAttributes; i++) {
-			allocations[i] = allocation;
+			allocations[i] = allocationPerAttribute;
 		}
 
-		int[] counter = new int[this.numAttributes];
+		/**
+		 * Do a level-order traversal
+		 */
+		LinkedList<Task> nodeQueue = new LinkedList<Task>();
+		// Intialize root with attribute 0
+		Task initialTask = new Task();
+		initialTask.node = root;
+		initialTask.sample = this.sample;
+		initialTask.depth = 0;
+		nodeQueue.add(initialTask);
+		
+		while (nodeQueue.size() > 0) {
+			Task t = nodeQueue.pollFirst();
+			if (t.depth < maxDepth) {
+			    int dim = -1;
+			    int round = 0;
+			    Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = null;
 
-		this.createTree(root, depth, 2, counter, allocations, this.sample);
-		System.out.println(Arrays.toString(allocations));
-	}
+			    while (dim == -1 && round < allocations.length) {
+		            int testDim = getLeastAllocated(allocations);
+		            allocations[testDim] -= 2.0 / Math.pow(2, t.depth);
+		            
+		            // TODO: For low cardinality values, it might be better to
+					// choose some set of values on each side.
+					// TPCH attribute 9 for example has only two distinct values
+		            // TODO: This might repeatedly use the same attribute
+					halves = t.sample.sortAndSplit(testDim);
+					if (halves.first.size() > 0 && halves.second.size() > 0) {
+					    dim = testDim;
+					} else {
+					    System.err.println("WARN: Skipping attribute " + testDim);
+					}
 
-	public void createTree(RNode node, int depth, double allocation, int[] counter, double[] allocations, CartilageIndexKeySet sample) {
-		if (depth > 0) {
-		    int dim = -1;
-		    int round = 0;
-		    Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = null;
+					round++;
+			    }
 
-		    while (dim == -1 && round < allocations.length) {
-	            int testDim = getLeastAllocated(allocations, counter);
-	            allocations[testDim] -= allocation;
-	            counter[testDim] += 1;
+			    if (dim == -1) {
+		            System.err.println("ERR: No attribute to partition on");
+		            Bucket b = new Bucket();
+		            b.setSample(sample);
+		            t.node.bucket = b;
+			    } else {
+		            t.node.attribute = dim;
+		            t.node.type = this.dimensionTypes[dim];
+		            t.node.value = halves.first.getLast(dim); // Need to traverse up for range
 
-	            // TODO: For low cardinality values, it might be better to
-				// choose some set of values on each side.
-				// TPCH attribute 9 for example has only two distinct values
-				halves = sample.sortAndSplit(testDim);
-				if (halves.first.size() > 0 && halves.second.size() > 0) {
-				    dim = testDim;
-				} else {
-				    System.err.println("WARN: Skipping attribute " + testDim);
-				}
-
-				round++;
-		    }
-
-		    if (dim == -1) {
-	            System.err.println("ERR: No attribute to partition on");
-	            Bucket b = new Bucket();
-	            b.setSample(sample);
-	            node.bucket = b;
-		    } else {
-	            node.attribute = dim;
-	            node.type = this.dimensionTypes[dim];
-	            node.value = halves.first.getLast(dim); // Need to traverse up for range
-
-                node.leftChild = new RNode();
-                this.createTree(node.leftChild, depth - 1, allocation / 2, counter, allocations, halves.first);
-                node.leftChild.parent = node;
-
-                node.rightChild = new RNode();
-                this.createTree(node.rightChild, depth - 1, allocation / 2, counter, allocations, halves.second);
-                node.rightChild.parent = node;
-            }
-		} else {
-		     Bucket b = new Bucket();
-		     b.setSample(sample);
-		     node.bucket = b;
+	                t.node.leftChild = new RNode();
+	                t.node.leftChild.parent = t.node;
+	                Task tl = new Task();
+	                tl.node = t.node.leftChild;
+	                tl.depth = t.depth + 1;
+	                tl.sample = halves.first;
+	                nodeQueue.add(tl);
+	                
+	                t.node.rightChild = new RNode();
+	                t.node.rightChild.parent = t.node;
+	                Task tr = new Task();
+	                tr.node = t.node.rightChild;
+	                tr.depth = t.depth + 1;
+	                tr.sample = halves.second;
+	                nodeQueue.add(tr);
+			    }
+			} else {
+			     Bucket b = new Bucket();
+			     b.setSample(sample);
+			     t.node.bucket = b;
+			}
 		}
+		
+		System.out.println("Final Allocations: " + Arrays.toString(allocations));
 	}
 
-	static List<Integer> leastCounts = new ArrayList<Integer>();
-
+	// TODO: Add capacity
+	static List<Integer> leastAllocated  = new ArrayList<Integer>(20);
+	static Random randGenerator = new Random();
+	
 	/**
 	 * Return the dimension which has the maximum
 	 * allocation unfulfilled
 	 * @return
 	 */
-	public static int getLeastAllocated(double[] allocations, int[] counter) {
-		assert allocations.length == counter.length;
+	public static int getLeastAllocated(double[] allocations) {
+		int numAttributes = allocations.length;
 
-		int count = counter[0];
-		leastCounts.clear();
-		leastCounts.add(0);
+		leastAllocated.clear();
+		leastAllocated.add(0);
 
-		for (int i=1; i<counter.length; i++) {
-			if (counter[i] < count) {
-				count = counter[i];
-				leastCounts.clear();
-				leastCounts.add(i);
-			} else if (counter[i] == count) {
-				leastCounts.add(i);
+		double alloc = allocations[0];
+		for (int i=1; i < numAttributes; i++) {
+			if (allocations[i] > alloc) {
+				alloc = allocations[i];
+				leastAllocated.clear();
+				leastAllocated.add(i);
+			} else if (allocations[i] == alloc) {
+				leastAllocated.add(i);
 			}
 		}
 
-		if (leastCounts.size() == 1) {
-			return leastCounts.get(0);
+		if (leastAllocated.size() == 1) {
+			return leastAllocated.get(0);
 		} else {
-			int index = leastCounts.get(0);
-			double alloc = allocations[index];
-			for (int i=1; i < leastCounts.size(); i++) {
-				int iIndex = leastCounts.get(i);
-				double iAlloc = allocations[iIndex];
-				if (iAlloc < alloc) {
-					alloc = iAlloc;
-					index = iIndex;
-				}
-			}
-			return index;
-		}
-	}
-
-	public Bound findRangeMidpoint(RNode node, RNode source, int dim) {
-		// Happens only for the first node;
-		if (node == null) {
-			return new Bound(0, 1);
-		} else if (node.parent != null) {
-			Bound bound = this.findRangeMidpoint(node.parent, node, dim);
-
-			if (node.attribute == dim) {
-				if (node.leftChild == source) {
-					bound.upper = node.quantile;
-					return bound;
-				} else {
-					bound.lower = node.quantile;
-					return bound;
-				}
-			} else {
-				return bound;
-			}
-		} else {
-			// root
-			if (node.attribute == dim) {
-				if (node.leftChild == source) {
-					return new Bound(0, node.quantile);
-				} else {
-					return new Bound(node.quantile, 1);
-				}
-			} else {
-				return new Bound(0, 1);
-			}
+			int r = randGenerator.nextInt(leastAllocated.size());
+			return leastAllocated.get(r);
 		}
 	}
 

@@ -97,7 +97,7 @@ public class RepartitionIterator extends PartitionIterator{
 			}
 			for(Partition p: oldPartitions.values()){
 				System.out.println("dropping old partition id "+p.getPartitionId());
-				p.drop();
+//				p.drop();
 				c.removeBucketCount(p.getPartitionId());
 			}			
 			c.close();

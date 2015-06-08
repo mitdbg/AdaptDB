@@ -40,7 +40,7 @@ public class DistributedRepartitionIterator extends RepartitionIterator {
 		}
 		System.out.println("DEBUG: oldPartitions: " +  Joiner.on(",").join(oldPartitions.keySet()));
 		for(Partition p: oldPartitions.values()){
-			p.drop();
+//			p.drop();
 			c.removeBucketCount(p.getPartitionId());
 		}
 		oldPartitions = Maps.newHashMap();

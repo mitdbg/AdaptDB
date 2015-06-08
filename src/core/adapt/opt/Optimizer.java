@@ -3,6 +3,7 @@ package core.adapt.opt;
 import java.io.IOException;
 import java.util.*;
 
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
@@ -14,6 +15,7 @@ import core.access.Query.FilterQuery;
 import core.access.iterator.PartitionIterator;
 import core.access.iterator.PostFilterIterator;
 import core.access.iterator.RepartitionIterator;
+import core.access.spark.Config;
 import core.index.MDIndex.Bucket;
 import core.index.MDIndex.BucketCounts;
 import core.index.key.CartilageIndexKeySet;
@@ -42,7 +44,7 @@ public class Optimizer {
 	static final float NETWORK_MULTIPLIER = 1;
 
 	static final long NODE_MEM_SIZE = 1024 * 1024 * 1024 * 2;
-	static final int TUPLE_SIZE = 64;
+	static final int TUPLE_SIZE = 128;
 	static final int NODE_TUPLE_LIMIT = 33554432; // NODE_MEM_SIZE / TUPLE_SIZE
 
 	List<Query> queryWindow = new ArrayList<Query>();
@@ -689,13 +691,16 @@ public class Optimizer {
 				rightPlan.fullAccess = false;
 			}
 
+			// When trying to replace by predicate; 
+			// Replace by testVal, not the actual predicate value
+			Object testVal = p.getHelpfulCutpoint();
+			
 			// replace attribute by one in the predicate
 			if (leftPlan.fullAccess && rightPlan.fullAccess) {
 				ret.fullAccess = true;
 
 				// If we traverse to root and see that there is no node with cutoff point less than
 				// that of predicate, we can do this
-				Object testVal = p.getHelpfulCutpoint();
 				if (checkValid(node, p.attribute, p.type, testVal)) {
 			        double numAccessedOld = getNumTuplesAccessed(node, true);
 
@@ -745,9 +750,10 @@ public class Optimizer {
 			}
 
 			if (node.attribute == p.attribute) {
-				int c = TypeUtils.compareTo(node.value, p.value, node.type);
+				int c = TypeUtils.compareTo(node.value, testVal, node.type);
 				if (c != 0) {
 					assert (c < 0 && leftPlan.PTop == null) || (c > 0 && rightPlan.PTop == null);
+					// Rotate left
 					if (c < 0 && rightPlan.PTop != null) {
 						Plan pl = new Plan();
 						pl.cost = rightPlan.PTop.cost;
@@ -760,6 +766,8 @@ public class Optimizer {
 			        	updatePlan(pTop, pl);
 			        	updatePlan(best, pl);
 					}
+					
+					//Rotate right
 					if (c > 0 && leftPlan.PTop != null) {
 						Plan pl = new Plan();
 						pl.cost = leftPlan.PTop.cost;
@@ -856,15 +864,31 @@ public class Optimizer {
 
 	public void persistQueryToDisk(FilterQuery fq) {
 		String pathToQueries = this.dataset + "/queries";
-		HDFSUtils.safeCreateFile(hadoopHome, pathToQueries, (short)1);
+		HDFSUtils.safeCreateFile(hadoopHome, pathToQueries, Config.replication);
 		HDFSUtils.appendLine(hadoopHome, pathToQueries, fq.toString());
 	}
 
 	public void persistIndexToDisk() {
 		String pathToIndex = this.dataset + "/index";
-		HDFSUtils.safeCreateFile(hadoopHome, pathToIndex, (short)1);
+		FileSystem fs = HDFSUtils.getFSByHadoopHome(hadoopHome);
+		try {			
+			if(fs.exists(new Path(pathToIndex))) {
+				// If index file exists, move it to a new filename
+				long currentMillis = System.currentTimeMillis();
+				String oldIndexPath = pathToIndex + "." + currentMillis;
+				boolean successRename = fs.rename(new Path(pathToIndex), new Path(oldIndexPath));
+				if (!successRename) {
+					System.out.println("Index rename to " + oldIndexPath + " failed");
+				}
+			}	
+			HDFSUtils.safeCreateFile(hadoopHome, pathToIndex, Config.replication);
+		} catch (IOException e) {
+			System.out.println("ERR: Writing Index failed: " + e.getMessage());
+			e.printStackTrace();
+		}
+		
 		byte[] indexBytes = this.rt.marshall();
-		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome), pathToIndex, (short) 1, this.rt.marshall(), 0, indexBytes.length, false);
+		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome), pathToIndex, (short) 3, this.rt.marshall(), 0, indexBytes.length, false);
 	}
 
 	/** Used only in simulator **/
