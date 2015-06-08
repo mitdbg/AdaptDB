@@ -24,6 +24,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Ints;
 
 import core.access.AccessMethod;
 import core.access.AccessMethod.PartitionSplit;
@@ -31,6 +32,7 @@ import core.access.Query.FilterQuery;
 import core.access.iterator.DistributedRepartitionIterator;
 import core.access.iterator.IteratorRecord;
 import core.access.iterator.PartitionIterator;
+import core.access.iterator.PostFilterIterator;
 import core.access.iterator.RepartitionIterator;
 import core.utils.ReflectionUtils;
 
@@ -105,6 +107,12 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			}
 
 		PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), false);
+//		PartitionSplit[] splits = new PartitionSplit[]{ new PartitionSplit(
+//															Ints.toArray(partitionIdFileMap.keySet()),
+//															new PostFilterIterator(new FilterQuery(queryConf.getPredicates()))
+//															)
+//														};
+		
 		System.out.println("Number of partition splits = "+splits.length);
 		splits = resizeSplits(splits, queryConf.getMaxSplitSize());
 		System.out.println("Number of partition splits after re-sizing= "+splits.length);
