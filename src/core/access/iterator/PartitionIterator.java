@@ -45,7 +45,7 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 		record = new IteratorRecord();
 		bytes = partition.getNextBytes();
 		//bytesLength = partition.getSize();
-		bytesLength = bytes.length;
+		bytesLength = bytes == null ? 0 : bytes.length;
 		offset = 0;
 		previous = 0;
 		brokenRecordBytes = null;
@@ -56,8 +56,10 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 	    	if(bytes[offset]==newLine){
 	    		//record.setBytes(bytes, previous, offset-previous);
 	    		recordBytes = ArrayUtils.subarray(bytes, previous, offset);
-	    		if(brokenRecordBytes!=null)
-	    			recordBytes = BinaryUtils.concatenate(brokenRecordBytes, recordBytes);	    		
+				if(brokenRecordBytes!=null) {
+					recordBytes = BinaryUtils.concatenate(brokenRecordBytes, recordBytes);
+					brokenRecordBytes = null;
+				}
 	    		record.setBytes(recordBytes);
 	    		previous = ++offset;
 	    		if(isRelevant(record)){
@@ -73,7 +75,7 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 			brokenRecordBytes = BinaryUtils.getBytes(bytes, previous, bytesLength-previous);
 		else
 			brokenRecordBytes = null;
-		
+
 		bytes = partition.getNextBytes();
 		if(bytes!=null){
 			bytesLength = bytes.length;
