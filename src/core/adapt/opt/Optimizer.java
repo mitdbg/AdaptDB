@@ -94,8 +94,8 @@ public class Optimizer {
 		this.rt = new RobustTreeHs(0.01);
 		this.rt.unmarshall(indexBytes);
 
-		//byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
-		//this.rt.loadSample(sampleBytes);
+		byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
+		this.rt.loadSample(sampleBytes);
 	}
 
 	public int[] getBidFromRNodes(List<RNode> nodes) {
