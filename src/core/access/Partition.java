@@ -13,6 +13,8 @@ import core.utils.IOUtils;
 public class Partition implements Cloneable, Serializable {
 
 	private static final long serialVersionUID = 1L;
+	
+	public static int V_MAX_INT = 1024*1024*100;
 
 	public static enum State {ORIG,NEW,MODIFIED};
 	State state;
@@ -101,15 +103,21 @@ public class Partition implements Cloneable, Serializable {
 	public boolean load(){
 		if(path==null || path.equals(""))
 			return false;
-		bytes = IOUtils.readByteArray(path);
+		if(!path.startsWith("/"))
+			path = "/"+path;
+		bytes = IOUtils.readByteArray(path+"/"+partitionId);
 		offset = bytes.length;
 		return true;	// load the physical block for this partition
 	}
 
 	public void write(byte[] source, int offset, int length){
 		if (this.offset+length>=bytes.length) {
-			bytes = BinaryUtils.resize(bytes, (int)(bytes.length*1.5));
-			//System.out.println("Resized Byte Array");
+			if(bytes.length >= V_MAX_INT){
+				store(true);
+				this.offset = 0;
+			}
+			else
+				bytes = BinaryUtils.resize(bytes, (int)(bytes.length*1.5));
 		}
 
 		if (offset+length > source.length)
@@ -138,9 +146,9 @@ public class Partition implements Cloneable, Serializable {
 		return bytes;
 	}
 
-	public int getSize(){
-		return offset;
-	}
+//	public int getSize(){
+//		return offset;
+//	}
 
 	@Override
 	public boolean equals(Object p){
