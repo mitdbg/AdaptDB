@@ -3,9 +3,12 @@ package core.access;
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+
+import com.google.common.io.ByteStreams;
 
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
@@ -16,6 +19,11 @@ public class HDFSPartition extends Partition{
 	
 	protected FileSystem hdfs;
 	protected short replication;
+	
+	protected FSDataInputStream in;
+	protected long totalSize=0, readSize=0, returnSize=0;
+	public static int MAX_READ_SIZE = 1024*1024*100;
+	
 	
 	public HDFSPartition(String path, String propertiesFile) {
 		this(path,propertiesFile, (short)3);
@@ -59,11 +67,47 @@ public class HDFSPartition extends Partition{
 //		return p;
 //	}
 	
+	public boolean loadNext(){
+		try {
+			if(totalSize==0){
+				Path p = new Path(path + "/" + partitionId);
+				totalSize = hdfs.getFileStatus(p).getLen();
+				in = hdfs.open(p);
+			}
+			
+			if(readSize < totalSize){
+				bytes = new byte[(int)Math.min(MAX_READ_SIZE, totalSize-readSize)];
+				ByteStreams.readFully(in, bytes);
+				readSize += bytes.length;
+				return true;
+			}
+			else{
+				in.close();
+				readSize = 0;
+				totalSize = 0;
+				return false;
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new RuntimeException("Failed to read file: "+path + "/" + partitionId);
+		}
+	}
+	
 	public boolean load(){
 		if(path==null || path.equals(""))
-			return false;		
+			return false;
 		bytes = HDFSUtils.readFile(hdfs, path + "/" + partitionId);
 		return true;	// load the physical block for this partition 
+	}
+	
+	public byte[] getNextBytes(){
+		if(readSize <= returnSize){
+			boolean f = loadNext();
+			if(!f)
+				return null;
+		}		
+		returnSize += bytes.length;
+		return bytes;		
 	}
 	
 	public void store(boolean append){

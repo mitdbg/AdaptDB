@@ -25,6 +25,8 @@ public class Partition implements Cloneable, Serializable {
 	protected int recordCount;
 
 	protected int partitionId;
+	
+	protected boolean nextBytesReturned = false;
 
 	//public int[] lineage;
 
@@ -144,6 +146,12 @@ public class Partition implements Cloneable, Serializable {
 		if(bytes==null)
 			load();
 		return bytes;
+	}
+	
+	public byte[] getNextBytes(){
+		byte[] r = nextBytesReturned ? null : getBytes();
+		nextBytesReturned = true;
+		return r;
 	}
 
 //	public int getSize(){

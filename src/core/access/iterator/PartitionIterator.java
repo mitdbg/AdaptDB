@@ -12,6 +12,7 @@ import com.google.common.io.ByteStreams;
 
 import core.access.Partition;
 import core.access.Predicate;
+import core.utils.BinaryUtils;
 import core.utils.ReflectionUtils;
 
 public class PartitionIterator implements Iterator<IteratorRecord> {
@@ -20,6 +21,7 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 	
 	private IteratorRecord record;
 	private byte[] recordBytes;
+	private byte[] brokenRecordBytes;
 
 	private static char newLine = '\n';
 	static char delimiter = '|';
@@ -41,11 +43,12 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 	public void setPartition(Partition partition){
 		this.partition = partition;
 		record = new IteratorRecord();
-		bytes = partition.getBytes();
+		bytes = partition.getNextBytes();
 		//bytesLength = partition.getSize();
 		bytesLength = bytes.length;
 		offset = 0;
 		previous = 0;
+		brokenRecordBytes = null;
 	}
 
 	public boolean hasNext() {
@@ -53,6 +56,8 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 	    	if(bytes[offset]==newLine){
 	    		//record.setBytes(bytes, previous, offset-previous);
 	    		recordBytes = ArrayUtils.subarray(bytes, previous, offset);
+	    		if(brokenRecordBytes!=null)
+	    			recordBytes = BinaryUtils.concatenate(brokenRecordBytes, recordBytes);	    		
 	    		record.setBytes(recordBytes);
 	    		previous = ++offset;
 	    		if(isRelevant(record)){
@@ -63,7 +68,21 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 	    			continue;
 	    	}
 		}
-		return false;
+		
+		if(previous < bytesLength)
+			brokenRecordBytes = BinaryUtils.getBytes(bytes, previous, bytesLength-previous);
+		else
+			brokenRecordBytes = null;
+		
+		bytes = partition.getNextBytes();
+		if(bytes!=null){
+			bytesLength = bytes.length;
+			offset = 0;
+			previous = 0;
+			return hasNext();
+		}
+		else
+			return false;
 	}
 
 	protected boolean isRelevant(IteratorRecord record){
