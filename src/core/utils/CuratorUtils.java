@@ -173,13 +173,33 @@ public class CuratorUtils {
 		}
 	}
 	
+	public static void printAll(CuratorFramework client, String path, String prefix){
+		client.start();
+		List<String> children;
+		try {
+			children = client.getChildren().forPath(path);
+			for(String child: children){
+				if(child.startsWith(prefix)){
+					SharedCount c = new SharedCount(client, path + child, 0);
+					c.start();
+					System.out.println(path + child+"\t"+c.getCount());
+					c.close();
+				}
+			}
+			client.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+			
+		}
+	}
+	
 	public static void main(String[] args) {
 		String zookeeperHost = "localhost";
 		String deletePath = "/";
 		String prefix = "partition";
 		
 				
-		CuratorUtils.deleteAll(
+		CuratorUtils.printAll(
 				CuratorUtils.createClient(zookeeperHost), 
 				deletePath,
 				prefix
