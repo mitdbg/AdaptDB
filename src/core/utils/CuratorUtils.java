@@ -1,5 +1,6 @@
 package core.utils;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.curator.RetryPolicy;
@@ -151,5 +152,37 @@ public class CuratorUtils {
 			e.printStackTrace();
 			throw new RuntimeException("Failed to add the counter: "+counterPath+"\n"+e.getMessage());
 		}
+	}
+	
+	public static void deleteAll(CuratorFramework client, String path, String prefix){
+		try {
+			client.start();
+			List<String> children = client.getChildren().forPath(path);
+			System.out.println(children);	
+			for(String child: children){
+				if(child.startsWith(prefix)){
+					System.out.println("deleting: "+path + child);
+					client.delete().forPath(path + child);
+				}
+			}
+			client.close();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException("Failed to delete path: "+path);
+		}
+	}
+	
+	public static void main(String[] args) {
+		String zookeeperHost = "localhost";
+		String deletePath = "/";
+		String prefix = "partition";
+		
+				
+		CuratorUtils.deleteAll(
+				CuratorUtils.createClient(zookeeperHost), 
+				deletePath,
+				prefix
+			);		
 	}
 }
