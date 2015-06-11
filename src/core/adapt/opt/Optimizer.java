@@ -182,6 +182,11 @@ public class Optimizer {
 				System.out.println("INFO: Index being updated");
 				this.updateIndex(best, fq.getPredicates());
 				this.persistIndexToDisk();
+				for (int i = 0; i < psplits.length; i++) {
+					if (psplits[i].getIterator().getClass() == RepartitionIterator.class) {
+						psplits[i] = new PartitionSplit(psplits[i].getPartitions(), new RepartitionIterator(fq, this.rt.getRoot()));
+					}
+				}
 			} else {
 				System.out.println("INFO: No index update");
 			}

@@ -16,6 +16,7 @@ import core.index.build.IndexBuilder;
 import core.index.key.CartilageIndexKey;
 import core.index.robusttree.RobustTreeHs;
 import core.utils.CuratorUtils;
+import core.utils.HDFSUtils;
 import junit.framework.TestCase;
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
@@ -32,13 +33,19 @@ public class TestConvergence extends TestCase{
 
 	@Override
 	public void setUp() {
+
+		// delete query history
+		// Cleanup queries file - to remove past query workload
+		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
+				Settings.hdfsPartitionDir + "/queries", false);
+
 		// reset all the bucket counts
 		CuratorFramework client = CuratorUtils.createAndStartClient(cfg.getZOOKEEPER_HOSTS());
 		CuratorUtils.deleteAll(client, "/", "partition-");
 
 		Charset charset = Charset.forName("US-ASCII");
-//		Path file = FileSystems.getDefault().getPath("/data/mdindex/tpch-dbgen/buckets");
-		Path file = FileSystems.getDefault().getPath("/Users/qui/Documents/buckets.txt");
+		Path file = FileSystems.getDefault().getPath("/data/mdindex/tpch-dbgen/buckets");
+//		Path file = FileSystems.getDefault().getPath("/Users/qui/Documents/buckets.txt");
 		try {
 			BufferedReader reader = Files.newBufferedReader(file, charset);
 			String line = null;
@@ -58,7 +65,7 @@ public class TestConvergence extends TestCase{
 		int numQueries = 100;
 		SparkQuery sq = new SparkQuery(cfg);
 		for (int i=0; i < numQueries; i++) {
-			int year = 1992 + i % 7;
+			int year = 1993 + i % 6;
 			long start = System.currentTimeMillis();
 			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(year-1,12,31), PREDTYPE.GT);
 			Predicate p2 = new Predicate(10, TYPE.DATE, new SimpleDate(year,12,31), PREDTYPE.LEQ);

@@ -118,7 +118,9 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), queryConf.getJustAccess());
 		System.out.println("Number of partition splits = "+splits.length);
 		splits = resizeSplits(splits, queryConf.getMaxSplitSize());
-		System.out.println("Number of partition splits after re-sizing= "+splits.length);
+		System.out.println("Number of partition splits after splitting= "+splits.length);
+		splits = combineSplits(splits, queryConf.getMinSplitSize(), queryConf.getMaxSplitSize());
+		System.out.println("Number of partition splits after combining= "+splits.length);
 		for (PartitionSplit split: splits) {
 			System.out.println("SPLIT: " + split.getIterator().getClass().getName() + " buckets: " + Arrays.toString(split.getPartitions()));
 		}
@@ -190,6 +192,45 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			else{
 				resizedSplits.add(split);
 			}
+		}
+
+		return resizedSplits.toArray(new PartitionSplit[resizedSplits.size()]);
+	}
+
+	public PartitionSplit[] combineSplits(PartitionSplit[] initialSplits, int minSplitSize, int maxSplitSize) {
+		List<PartitionSplit> resizedSplits = Lists.newArrayList();
+		List<PartitionSplit> smallSplit = Lists.newArrayList();
+		int smallSplitSize = 0;
+
+		for(PartitionSplit split: initialSplits) {
+			int[] partitions = split.getPartitions();
+			if (smallSplitSize + partitions.length > maxSplitSize) {
+				int[] mergedIds = new int[0];
+				for (PartitionSplit s : smallSplit) {
+					mergedIds = Ints.concat(mergedIds, s.getPartitions());
+				}
+				PartitionSplit newSplit = new PartitionSplit(mergedIds, smallSplit.get(0).getIterator());
+				resizedSplits.add(newSplit);
+				smallSplit = Lists.newArrayList();
+				smallSplitSize = 0;
+			}
+
+			if (split.getIterator().getClass() == RepartitionIterator.class && partitions.length <= minSplitSize) {
+				smallSplit.add(split);
+				smallSplitSize += partitions.length;
+			} else {
+				resizedSplits.add(split);
+			}
+
+		}
+
+		if (smallSplit.size() > 0) {
+			int[] mergedIds = new int[0];
+			for (PartitionSplit s : smallSplit) {
+				mergedIds = Ints.concat(mergedIds, s.getPartitions());
+			}
+			PartitionSplit newSplit = new PartitionSplit(mergedIds, smallSplit.get(0).getIterator());
+			resizedSplits.add(newSplit);
 		}
 
 		return resizedSplits.toArray(new PartitionSplit[resizedSplits.size()]);

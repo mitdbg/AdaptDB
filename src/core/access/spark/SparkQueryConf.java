@@ -14,6 +14,7 @@ public class SparkQueryConf {
 	public final static String PREDICATES = "PREDICATES";
 	public final static String WORKERS = "WORKERS";
 	public final static String MAX_SPLIT_SIZE = "MAX_SPLIT_SIZE";
+	public final static String MIN_SPLIT_SIZE = "MIN_SPLIT_SIZE";
 	public final static String ZOOKEEPER_HOSTS = "ZOOKEEPER_HOSTS";
 	public final static String HADOOP_HOME = "HADOOP_HOME";	// this can be obtained from cartilage properties file
 
@@ -75,6 +76,14 @@ public class SparkQueryConf {
 
 	public int getMaxSplitSize(){
 		return Integer.parseInt(conf.get(MAX_SPLIT_SIZE));
+	}
+
+	public void setMinSplitSize(int minSplitSize){
+		conf.set(MIN_SPLIT_SIZE, ""+minSplitSize);
+	}
+
+	public int getMinSplitSize(){
+		return Integer.parseInt(conf.get(MIN_SPLIT_SIZE));
 	}
 
 	public void setZookeeperHosts(String hosts){
