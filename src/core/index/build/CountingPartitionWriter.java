@@ -1,7 +1,14 @@
 package core.index.build;
 
+import core.index.MDIndex;
+import core.utils.ConfUtils;
+import core.utils.CuratorUtils;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessLock;
+
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -10,9 +17,11 @@ import java.util.Map;
 public class CountingPartitionWriter extends PartitionWriter {
 
     Map<String, Integer> bucketCounts = new HashMap<String, Integer>();
+    ConfUtils conf;
 
-    public CountingPartitionWriter(String partitionDir){
+    public CountingPartitionWriter(String partitionDir, String propertiesFile){
         super(partitionDir);
+        conf = new ConfUtils(propertiesFile);
     }
 
     @Override
@@ -37,5 +46,25 @@ public class CountingPartitionWriter extends PartitionWriter {
     @Override
     public void createPartitionDir() {
 
+    }
+
+    @Override
+    public void flush() {
+        MDIndex.BucketCounts c = new MDIndex.BucketCounts(conf.getZOOKEEPER_HOSTS());
+        CuratorFramework client = c.getClient();
+        String lockPathBase = "/partition-lock-";
+        Iterator<Map.Entry<String, Integer>> entries = bucketCounts.entrySet().iterator();
+        while (entries.hasNext()) {
+            Map.Entry<String, Integer> e = entries.next();
+            try {
+                InterProcessLock lock = CuratorUtils.acquireLock(client, lockPathBase + e.getKey());
+                c.addToBucketCount(Integer.parseInt(e.getKey()), e.getValue());
+                entries.remove();
+                CuratorUtils.releaseLock(lock);
+            } catch (NumberFormatException ex) {
+
+            }
+        }
+        c.close();
     }
 }

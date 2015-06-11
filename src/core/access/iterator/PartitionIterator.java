@@ -76,7 +76,7 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 		else
 			brokenRecordBytes = null;
 
-		bytes = partition.getNextBytes();
+		bytes = partition == null ? null : partition.getNextBytes();
 		if(bytes!=null){
 			bytesLength = bytes.length;
 			offset = 0;

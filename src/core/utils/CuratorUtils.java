@@ -156,16 +156,16 @@ public class CuratorUtils {
 	
 	public static void deleteAll(CuratorFramework client, String path, String prefix){
 		try {
-			client.start();
+			//client.start();
 			List<String> children = client.getChildren().forPath(path);
-			System.out.println(children);	
+			//System.out.println(children);
 			for(String child: children){
 				if(child.startsWith(prefix)){
-					System.out.println("deleting: "+path + child);
+					//System.out.println("deleting: "+path + child);
 					client.delete().forPath(path + child);
 				}
 			}
-			client.close();
+			//client.close();
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -196,7 +196,7 @@ public class CuratorUtils {
 	public static void main(String[] args) {
 		String zookeeperHost = "localhost";
 		String deletePath = "/";
-		String prefix = "partition";
+		String prefix = "partition-count";
 		
 				
 		CuratorUtils.printAll(

@@ -55,10 +55,10 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		else{
 			Path filePath = sparkSplit.getPath(currentFile);
 			final FileSystem fs = filePath.getFileSystem(conf);
-			Partition partition = new HDFSPartition(fs, filePath.toString());
+			HDFSPartition partition = new HDFSPartition(fs, filePath.toString());
 			System.out.println("loading path: "+filePath.toString());
 			try {
-				partition.load();				
+				partition.loadNext();
 				iterator.setPartition(partition);
 				currentFile++;
 				return true;

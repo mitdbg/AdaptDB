@@ -1,9 +1,21 @@
 package core.access.benchmark;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Random;
 
+import core.index.Builder;
+import core.index.build.IndexBuilder;
+import core.index.key.CartilageIndexKey;
+import core.index.robusttree.RobustTreeHs;
+import core.utils.CuratorUtils;
 import junit.framework.TestCase;
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
@@ -12,6 +24,7 @@ import core.index.Settings;
 import core.utils.ConfUtils;
 import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
 import core.utils.SchemaUtils.TYPE;
+import org.apache.curator.framework.CuratorFramework;
 
 public class TestConvergence extends TestCase{
 	public final static String propertyFile = Settings.cartilageConf;
@@ -19,12 +32,30 @@ public class TestConvergence extends TestCase{
 
 	@Override
 	public void setUp() {
+		// reset all the bucket counts
+		CuratorFramework client = CuratorUtils.createAndStartClient(cfg.getZOOKEEPER_HOSTS());
+		CuratorUtils.deleteAll(client, "/", "partition-");
 
+		Charset charset = Charset.forName("US-ASCII");
+//		Path file = FileSystems.getDefault().getPath("/data/mdindex/tpch-dbgen/buckets");
+		Path file = FileSystems.getDefault().getPath("/Users/qui/Documents/buckets.txt");
+		try {
+			BufferedReader reader = Files.newBufferedReader(file, charset);
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				String[] tokens = line.split("\t");
+				CuratorUtils.setCounter(client, tokens[0], Integer.parseInt(tokens[1]));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		CuratorUtils.stopClient(client);
 	}
 
 	// access shipdate in cyclic pattern, selectivity constant
 	public void testConvergenceShipDateCyclic(){
-		int numQueries = 28;
+		int numQueries = 100;
 		SparkQuery sq = new SparkQuery(cfg);
 		for (int i=0; i < numQueries; i++) {
 			int year = 1992 + i % 7;

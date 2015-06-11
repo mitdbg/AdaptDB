@@ -43,7 +43,7 @@ public class CompareIndices {
         localPartitionDir = Settings.localPartitionDir;
 
         attributes = 16;
-        writer = new CountingPartitionWriter(localPartitionDir);
+        writer = new CountingPartitionWriter(localPartitionDir, Settings.cartilageConf);
 
         File f = new File(inputFilename);
         fileSize = f.length();
