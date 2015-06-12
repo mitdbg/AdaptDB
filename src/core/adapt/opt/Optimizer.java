@@ -98,6 +98,10 @@ public class Optimizer {
 		this.rt.loadSample(sampleBytes);
 	}
 
+	public RobustTreeHs getIndex() {
+		return rt;
+	}
+
 	public int[] getBidFromRNodes(List<RNode> nodes) {
 		int[] bids = new int[nodes.size()];
 		Iterator<RNode> it = nodes.iterator();

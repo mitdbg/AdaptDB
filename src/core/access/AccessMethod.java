@@ -4,6 +4,8 @@ package core.access;
 import core.access.iterator.PartitionIterator;
 import core.access.spark.SparkQueryConf;
 import core.adapt.opt.Optimizer;
+import core.index.robusttree.RobustTreeHs;
+
 /**
  * This access method class considers filter access method over the distributed dataset.
  * The filter could be extracted as:
@@ -36,6 +38,10 @@ public class AccessMethod {
 		opt = new Optimizer(conf.getDataset(), conf.getHadoopHome());
 		opt.loadIndex(conf.getZookeeperHosts());
 		opt.loadQueries();
+	}
+
+	public RobustTreeHs getIndex() {
+		return opt.getIndex();
 	}
 
 	/**

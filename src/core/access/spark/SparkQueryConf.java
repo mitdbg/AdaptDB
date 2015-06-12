@@ -10,6 +10,7 @@ public class SparkQueryConf {
 
 	public final static String DATASET = "DATASET";
 	public final static String FULL_SCAN = "FULL_SCAN";
+	public final static String REPARTITION_SCAN = "REPARTITION_SCAN";
 	public final static String JUST_ACCESS = "JUST_ACCESS";
 	public final static String PREDICATES = "PREDICATES";
 	public final static String WORKERS = "WORKERS";
@@ -41,7 +42,15 @@ public class SparkQueryConf {
 	public boolean getFullScan(){
 		return conf.getBoolean(FULL_SCAN, false);	// don't full scan by default
 	}
-	
+
+	public void setRepartitionScan(boolean flag){
+		conf.setBoolean(REPARTITION_SCAN, flag);
+	}
+
+	public boolean getRepartitionScan(){
+		return conf.getBoolean(REPARTITION_SCAN, false);
+	}
+
 	public void setJustAccess(boolean flag){
 		conf.setBoolean(JUST_ACCESS, flag);
 	}
