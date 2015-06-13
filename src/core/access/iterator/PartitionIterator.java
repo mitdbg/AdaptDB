@@ -60,7 +60,12 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 					recordBytes = BinaryUtils.concatenate(brokenRecordBytes, recordBytes);
 					brokenRecordBytes = null;
 				}
-	    		record.setBytes(recordBytes);
+				try {
+					record.setBytes(recordBytes);
+				} catch (ArrayIndexOutOfBoundsException e) {
+					System.out.println("Index out of bounds while setting bytes: "+(new String(recordBytes)));
+					throw e;
+				}
 	    		previous = ++offset;
 	    		if(isRelevant(record)){
 	    			//System.out.println("relevant record found ..");

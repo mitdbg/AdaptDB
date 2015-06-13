@@ -2,6 +2,10 @@ package core.access;
 
 import java.io.IOException;
 
+import core.index.MDIndex;
+import core.utils.CuratorUtils;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessLock;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -22,16 +26,18 @@ public class HDFSPartition extends Partition{
 	
 	protected FSDataInputStream in;
 	protected long totalSize=0, readSize=0, returnSize=0;
-	public static int MAX_READ_SIZE = 1024*1024*100;
-	
-	
+	public static int MAX_READ_SIZE = 1024*1024*50;
+	CuratorFramework client;
+
+
 	public HDFSPartition(String path, String propertiesFile) {
 		this(path,propertiesFile, (short)3);
 	}
 	
 	public HDFSPartition(String pathAndPartitionId, String propertiesFile, short replication) {
 		super(pathAndPartitionId);
-		String coreSitePath = (new ConfUtils(propertiesFile)).getHADOOP_HOME()+"/etc/hadoop/core-site.xml";
+		ConfUtils conf = new ConfUtils(propertiesFile);
+		String coreSitePath = conf.getHADOOP_HOME()+"/etc/hadoop/core-site.xml";
 		Configuration e = new Configuration();
 		e.addResource(new Path(coreSitePath));
 		try {
@@ -40,24 +46,32 @@ public class HDFSPartition extends Partition{
 		} catch (IOException ex) {
 			throw new RuntimeException("failed to get hdfs filesystem");
 		}
+		client = CuratorUtils.createAndStartClient(conf.getZOOKEEPER_HOSTS());
 	}
-	
-	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId) {
-		this(hdfs, pathAndPartitionId, (short)3);
-	}
-	
-	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, short replication) {
+
+	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, short replication, CuratorFramework client) {
 		super(pathAndPartitionId);
 		this.hdfs = hdfs;
 		this.replication = replication;
+		this.client = client;
 	}
+
+	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, CuratorFramework client) {
+		this(hdfs, pathAndPartitionId, (short)3, client);
+	}
+
 	
 	public Partition clone() {
-		Partition p = new HDFSPartition(hdfs, path+""+partitionId);
-		p.bytes = new byte[bytes.length];
+		Partition p = new HDFSPartition(hdfs, path+""+partitionId, client);
+		//p.bytes = new byte[bytes.length]; // heap space!
+		p.bytes = new byte[1024];
 		p.state = State.NEW;
         return p;
     }
+
+	public FileSystem getFS() {
+		return hdfs;
+	}
 
 //	public Partition createChild(int childId){
 //		Partition p = new HDFSPartition(path+"_"+childId, propertiesFile, replication);
@@ -111,14 +125,18 @@ public class HDFSPartition extends Partition{
 	}
 	
 	public void store(boolean append){
-		//String storePath = FilenameUtils.getFullPath(path) + ArrayUtils.join("_", lineage);
-		String storePath = path + "/" + partitionId;		
-		if(!path.startsWith("hdfs"))
-			storePath = "/" + storePath;
-		//HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);
-		Path e = new Path(storePath);
-		FSDataOutputStream os;
+		InterProcessLock l = CuratorUtils.acquireLock(client, "/partition-lock-" + partitionId);
+		System.out.println("LOCK: acquired lock "+partitionId);
+		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
+
 		try {
+			//String storePath = FilenameUtils.getFullPath(path) + ArrayUtils.join("_", lineage);
+			String storePath = path + "/" + partitionId;
+			if(!path.startsWith("hdfs"))
+				storePath = "/" + storePath;
+			//HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);
+			Path e = new Path(storePath);
+			FSDataOutputStream os;
 			if(append && hdfs.exists(e)) {
 				os = hdfs.append(e);
 			} else {
@@ -127,13 +145,20 @@ public class HDFSPartition extends Partition{
 			os.write(bytes, 0, offset);
 			os.flush();
 			os.close();
+			c.addToBucketCount(this.getPartitionId(), this.getRecordCount());
+			recordCount = 0;
 		} catch (IOException ex) {
 			throw new RuntimeException(ex.getMessage());
+		} finally {
+			CuratorUtils.releaseLock(l);
+			System.out.println("LOCK: released lock " + partitionId);
 		}
 		//HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);
 	}
 	
 	public void drop(){
-		HDFSUtils.deleteFile(hdfs, path + "/" + partitionId, false);
+		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
+		//HDFSUtils.deleteFile(hdfs, path + "/" + partitionId, false);
+		c.removeBucketCount(this.getPartitionId());
 	}
 }

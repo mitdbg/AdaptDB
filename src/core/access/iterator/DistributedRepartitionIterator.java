@@ -29,24 +29,22 @@ public class DistributedRepartitionIterator extends RepartitionIterator {
 
 	@Override
 	public void finish(){
-		PartitionLock l = new PartitionLock(zookeeperHosts);
-		BucketCounts c = new BucketCounts(l.getClient());
+
+		//PartitionLock l = new PartitionLock(zookeeperHosts);
 
 		for(Partition p: newPartitions.values()){
-			l.lockPartition(p.getPartitionId());
 			p.store(true);
-			c.addToBucketCount(p.getPartitionId(), p.getRecordCount());
-			l.unlockPartition(p.getPartitionId());
 		}
 		System.out.println("DEBUG: oldPartitions: " +  Joiner.on(",").join(oldPartitions.keySet()));
 		for(Partition p: oldPartitions.values()){
-//			p.drop();
-			c.removeBucketCount(p.getPartitionId());
+			p.drop();
 		}
+
 		oldPartitions = Maps.newHashMap();
 		newPartitions = Maps.newHashMap();
-		c.close();
-		l.close();
+//		c.close();
+		//l.close();
+		System.gc();
 	}
 
 	public class PartitionLock {

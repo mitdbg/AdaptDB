@@ -117,7 +117,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		else if (queryConf.getRepartitionScan()) {
 			splits = new PartitionSplit[]{new PartitionSplit(
 					Ints.toArray(partitionIdFileMap.keySet()),
-					new RepartitionIterator(new FilterQuery(queryConf.getPredicates()), am.getIndex().getRoot())
+					new DistributedRepartitionIterator(new FilterQuery(queryConf.getPredicates()), am.getIndex().getRoot())
 			)};
 		}
 		else
@@ -125,8 +125,8 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		System.out.println("Number of partition splits = "+splits.length);
 		splits = resizeSplits(splits, queryConf.getMaxSplitSize());
 		System.out.println("Number of partition splits after splitting= "+splits.length);
-		splits = combineSplits(splits, queryConf.getMinSplitSize(), queryConf.getMaxSplitSize());
-		System.out.println("Number of partition splits after combining= "+splits.length);
+		//splits = combineSplits(splits, queryConf.getMinSplitSize(), queryConf.getMaxSplitSize());
+		//System.out.println("Number of partition splits after combining= "+splits.length);
 		for (PartitionSplit split: splits) {
 			System.out.println("SPLIT: " + split.getIterator().getClass().getName() + " buckets: " + Arrays.toString(split.getPartitions()));
 		}
@@ -161,6 +161,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 
 		job.getConfiguration().setLong(NUM_INPUT_FILES, files.size());
 		LOG.debug("Total # of splits: " + finalSplits.size());
+		System.out.println("done with getting splits");
 
 		return finalSplits;
 	}
@@ -196,11 +197,10 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 				}
 			}
 			else{
-				/*
 				PartitionIterator itr = split.getIterator();
 				if(itr instanceof RepartitionIterator)
 					itr = ((RepartitionIterator)itr).createDistributedIterator();
-				resizedSplits.add(new PartitionSplit(split.getPartitions(), itr));*/
+				resizedSplits.add(new PartitionSplit(split.getPartitions(), itr));
 				resizedSplits.add(split);
 			}
 		}

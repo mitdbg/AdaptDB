@@ -84,8 +84,8 @@ public class SparkQuery {
 		queryConf.setWorkers(cfg.getNUM_RACKS() * cfg.getNODES_PER_RACK() * cfg.getMAP_TASKS());
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
-		queryConf.setMaxSplitSize(4096 / 512);	// number of 64 MB partitions that can fit for each worker (we assume 1GB memory for each worker)
-		queryConf.setMinSplitSize(4096 / 1024);
+		queryConf.setMaxSplitSize(4096 / 128);	// number of 64 MB partitions that can fit for each worker (we assume 1GB memory for each worker)
+		queryConf.setMinSplitSize(4096 / 256);
 		// ctx.hadoopConfiguration().setClass(FileInputFormat.PATHFILTER_CLASS, SparkPathFilter.class, PathFilter.class);
 
 //		System.setProperty("spark.executor.memory","4g");

@@ -6,6 +6,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import core.access.HDFSPartition;
+import core.index.robusttree.RobustTreeHs;
+import core.utils.HDFSUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.io.Text;
 
 import com.google.common.collect.Maps;
@@ -64,6 +68,16 @@ public class RepartitionIterator extends PartitionIterator{
 	@Override
 	public void setPartition(Partition partition){
 		super.setPartition(partition);
+		if (newIndexTree == null) {
+			String path = FilenameUtils.getPathNoEndSeparator(partition.getPath());
+			if (FilenameUtils.getBaseName(path).startsWith("partitions")) { // hack
+				path = FilenameUtils.getPath(path);
+			}
+			byte[] indexBytes = HDFSUtils.readFile(((HDFSPartition)partition).getFS(), path+"/index");
+			RobustTreeHs tree = new RobustTreeHs(1);
+			tree.unmarshall(indexBytes);
+			newIndexTree = tree.getRoot();
+		}
 		oldPartitions.put(partition.getPartitionId(), partition);
 	}
 
@@ -91,6 +105,7 @@ public class RepartitionIterator extends PartitionIterator{
 			BucketCounts c = new BucketCounts(zookeeperHosts);
 			System.out.println("number of new partitions written = "+newPartitions.size());
 			for(Partition p: newPartitions.values()){
+
 				System.out.println("storing partition id "+p.getPartitionId());
 				p.store(true);
 				c.setToBucketCount(p.getPartitionId(), p.getRecordCount());
@@ -107,29 +122,34 @@ public class RepartitionIterator extends PartitionIterator{
 		} else {
 			System.out.println("INFO: Zookeeper Hosts NULL");
 		}
+		System.out.println("done finalize");
 	}
 
 	@Override
 	public void write(DataOutput out) throws IOException{
 		query.write(out);
-		byte[] indexBytes = newIndexTree.marshall().getBytes();
-		out.writeInt(indexBytes.length);
-		out.write(indexBytes);
+		//String tree = newIndexTree.marshall();
+		//System.out.println(tree);
+		//System.out.println(tree.getBytes().length);
+		//byte[] indexBytes = newIndexTree.marshall().getBytes();
+		//out.writeInt(3);
+		//out.write(indexBytes);
+		//Text.writeString(indexPath);
 		Text.writeString(out, zookeeperHosts);
-		//out.writeBytes(zookeeperHosts+"\n");
 	}
 
 	@Override
 	public void readFields(DataInput in) throws IOException{
 		query = new FilterQuery();
 		query.readFields(in);
-		newIndexTree = new RNode();
-		byte[] indexBytes = new byte[in.readInt()];
-		in.readFully(indexBytes);
-		newIndexTree.unmarshall(indexBytes);
-		//zookeeperHosts = in.readLine();
-		System.out.println("Initialized Tree");
+		//newIndexTree = new RNode();
+		//byte[] indexBytes = HDFSUtils.readFile()
+		//byte[] indexBytes = new byte[in.readInt()];
+		//in.readFully(indexBytes);
+		//newIndexTree.unmarshall(indexBytes);
 		zookeeperHosts = Text.readString(in);
+		System.out.println("Initialized Tree"+zookeeperHosts);
+
 	}
 
 	public static RepartitionIterator read(DataInput in) throws IOException {

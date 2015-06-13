@@ -2,6 +2,8 @@ package core.access.spark;
 
 import java.io.IOException;
 
+import core.utils.CuratorUtils;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -27,6 +29,9 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 
 	private LongWritable key;
 	private long recordId;
+	private boolean hasNext;
+
+	CuratorFramework client;
 
 	@Override
 	public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
@@ -34,11 +39,12 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		System.out.println("Initializing SparkRecordReader");
 		
 		conf = context.getConfiguration();
+		client = CuratorUtils.createAndStartClient(conf.get(SparkQueryConf.ZOOKEEPER_HOSTS));
 		sparkSplit = (SparkFileSplit)split;
 		
 		iterator = sparkSplit.getIterator();
 		currentFile = 0;
-		initializeNext();
+		hasNext = initializeNext();
 		
 		key = new LongWritable();
 		recordId = 0;		
@@ -55,7 +61,7 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		else{
 			Path filePath = sparkSplit.getPath(currentFile);
 			final FileSystem fs = filePath.getFileSystem(conf);
-			HDFSPartition partition = new HDFSPartition(fs, filePath.toString());
+			HDFSPartition partition = new HDFSPartition(fs, filePath.toString(), client);
 			System.out.println("loading path: "+filePath.toString());
 			try {
 				partition.loadNext();
@@ -72,12 +78,20 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 	}
 
 	public boolean nextKeyValue() throws IOException, InterruptedException {
+		while (hasNext) {
+			if(iterator.hasNext()){
+				recordId++;
+				return true;
+			}
+			hasNext = initializeNext();
+		}
+		/*
 		do{
 			if(iterator.hasNext()){
 				recordId++;
 				return true;
 			}	
-		} while(initializeNext());
+		} while(initializeNext());*/
 		
 		//System.out.println("Record read = "+recordId);
 		return false;		
@@ -102,5 +116,6 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 	@Override
 	public void close() throws IOException {
 		iterator.finish();		// this method could even be called earlier in case the entire split does not fit in main-memory
+		client.close();
 	}
 }

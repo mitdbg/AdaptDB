@@ -3,18 +3,21 @@ package core.access;
 import java.io.File;
 import java.io.Serializable;
 
+import core.utils.CuratorUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
 import core.utils.BinaryUtils;
 import core.utils.IOUtils;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessLock;
 
 
 public class Partition implements Cloneable, Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
-	public static int V_MAX_INT = 1024*1024*100;
+	public static int V_MAX_INT = 1024*1024*50;
 
 	public static enum State {ORIG,NEW,MODIFIED};
 	State state;
@@ -99,7 +102,7 @@ public class Partition implements Cloneable, Serializable {
 		return this.partitionId;
 	}
 
-
+	public String getPath() { return path; }
 
 
 	public boolean load(){
@@ -125,7 +128,13 @@ public class Partition implements Cloneable, Serializable {
 		if (offset+length > source.length)
 			System.out.println("something is wrong!");
 
-		System.arraycopy(source, offset, bytes, this.offset, length);
+		try {
+			System.arraycopy(source, offset, bytes, this.offset, length);
+		} catch (ArrayIndexOutOfBoundsException e) {
+			e.printStackTrace();
+			System.out.println(new String(bytes) + " " + source.length + " " + offset + " " + this.offset + " " + length + " " + bytes.length);
+			throw e;
+		}
 		this.offset += length;
 		bytes[this.offset] = '\n';
 		this.offset++;
