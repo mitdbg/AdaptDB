@@ -199,6 +199,7 @@ public class TestChangingWorkload extends TestCase{
 	}
 
 	public static void main(String[] args) {
+		// need to reset the index and removePartitions.sh
 		TestChangingWorkload tcw = new TestChangingWorkload();
 		tcw.setUp();
 		tcw.testSwitchingSets();

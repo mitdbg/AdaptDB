@@ -157,6 +157,8 @@ public class TestConvergence extends TestCase{
 	}
 
 	public static void main(String[] args) {
+		// Before running, run the removePartitions script and move the oldest index from the last run back to /index
+		// There is also a copy of the index at /user/anil/sample/index
 		System.out.println("Started BAZOOKA");
 		TestConvergence tc = new TestConvergence();
 		tc.setUp();
