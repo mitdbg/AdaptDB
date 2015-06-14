@@ -16,9 +16,9 @@
 	    <fileset dir="${lib.dir}">
 	      <include name="**/*.jar"/>
 	    </fileset>
-		<fileset dir="${lib.dir}/../jars.bak/">
+		<!--<fileset dir="${lib.dir}/../jars.bak/">
 		  <include name="**/*.jar"/>
-		</fileset>
+		</fileset>-->
 	</path>
 	
 	<target name="create" description="create the directories" >
