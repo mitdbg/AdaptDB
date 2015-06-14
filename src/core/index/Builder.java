@@ -1,20 +1,18 @@
 package core.index;
 
-import core.index.build.InputReader;
-import core.index.kdtree.KDMedianTree;
-import core.index.key.CartilageIndexKey;
-import core.index.key.CartilageIndexKeySet;
-import core.index.robusttree.RobustTreeHs;
-import core.utils.ConfUtils;
-import core.utils.HDFSUtils;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Arrays;
+
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Arrays;
+import core.index.key.CartilageIndexKeySet;
+import core.index.robusttree.RobustTreeHs;
+import core.utils.ConfUtils;
+import core.utils.HDFSUtils;
 
 /**
  * Created by qui on 5/22/15.
@@ -35,8 +33,8 @@ public class Builder {
         RobustTreeHs index = new RobustTreeHs(samplingRate);
         //KDMedianTree index = new KDMedianTree(samplingRate);
         index.initBuild(numBuckets);
-        CartilageIndexKey key = new CartilageIndexKey('|');
-        InputReader r = new InputReader(index, key);
+        //CartilageIndexKey key = new CartilageIndexKey('|');
+        //InputReader r = new InputReader(index, key);
 
         ConfUtils conf = new ConfUtils(propertiesFile);
         FileSystem fs = HDFSUtils.getFS(conf.getHADOOP_HOME() + "/etc/hadoop/core-site.xml");

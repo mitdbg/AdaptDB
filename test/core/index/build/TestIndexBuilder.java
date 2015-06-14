@@ -44,7 +44,7 @@ public class TestIndexBuilder extends TestCase {
 		builder = new IndexBuilder();
 
 		attributes = 16;
-		replication = 1;
+		replication = 3;
 	}
 
 	private PartitionWriter getLocalWriter(String partitionDir){
@@ -188,8 +188,8 @@ public class TestIndexBuilder extends TestCase {
 		TestIndexBuilder t = new TestIndexBuilder();
 		t.setUp();
 		//t.testBuildRobustTreeDistributed(args[args.length-1]);
-		int scaleFactor = Integer.parseInt(args[args.length - 1]);
+		//int scaleFactor = Integer.parseInt(args[args.length - 1]);
 		//t.testBuildKDMedianTreeBlockSamplingOnly(scaleFactor);
-		t.testBuildRobustTreeBlockSamplingOnly(scaleFactor);
+		t.testBuildRobustTreeBlockSampling();
 	}
 }

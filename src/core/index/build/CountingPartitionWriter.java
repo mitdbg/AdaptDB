@@ -1,15 +1,16 @@
 package core.index.build;
 
-import core.index.MDIndex;
-import core.utils.ConfUtils;
-import core.utils.CuratorUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessLock;
-
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
+
+import core.index.MDIndex;
+import core.utils.ConfUtils;
+import core.utils.CuratorUtils;
 
 /**
  * Created by qui on 3/30/15.
@@ -57,7 +58,7 @@ public class CountingPartitionWriter extends PartitionWriter {
         while (entries.hasNext()) {
             Map.Entry<String, Integer> e = entries.next();
             try {
-                InterProcessLock lock = CuratorUtils.acquireLock(client, lockPathBase + e.getKey());
+            	InterProcessSemaphoreMutex lock = CuratorUtils.acquireLock(client, lockPathBase + e.getKey());
                 c.addToBucketCount(Integer.parseInt(e.getKey()), e.getValue());
                 entries.remove();
                 CuratorUtils.releaseLock(lock);

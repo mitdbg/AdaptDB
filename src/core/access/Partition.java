@@ -3,14 +3,11 @@ package core.access;
 import java.io.File;
 import java.io.Serializable;
 
-import core.utils.CuratorUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
 import core.utils.BinaryUtils;
 import core.utils.IOUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessLock;
 
 
 public class Partition implements Cloneable, Serializable {

@@ -2,10 +2,8 @@ package core.access;
 
 import java.io.IOException;
 
-import core.index.MDIndex;
-import core.utils.CuratorUtils;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessLock;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -14,7 +12,9 @@ import org.apache.hadoop.fs.Path;
 
 import com.google.common.io.ByteStreams;
 
+import core.index.MDIndex;
 import core.utils.ConfUtils;
+import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
 
 public class HDFSPartition extends Partition{
@@ -62,6 +62,7 @@ public class HDFSPartition extends Partition{
 
 	
 	public Partition clone() {
+		path = path.replaceAll("partitions[0-9]*/$", "repartition/");	
 		Partition p = new HDFSPartition(hdfs, path+""+partitionId, client);
 		//p.bytes = new byte[bytes.length]; // heap space!
 		p.bytes = new byte[1024];
@@ -125,7 +126,7 @@ public class HDFSPartition extends Partition{
 	}
 	
 	public void store(boolean append){
-		InterProcessLock l = CuratorUtils.acquireLock(client, "/partition-lock-" + partitionId);
+		InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client, "/partition-lock-" + path.hashCode()+"-"+partitionId);
 		System.out.println("LOCK: acquired lock "+partitionId);
 		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
 
@@ -160,5 +161,5 @@ public class HDFSPartition extends Partition{
 		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
 		//HDFSUtils.deleteFile(hdfs, path + "/" + partitionId, false);
 		c.removeBucketCount(this.getPartitionId());
-	}
+	}	
 }

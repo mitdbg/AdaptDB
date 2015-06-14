@@ -2,7 +2,6 @@ package core.access.spark;
 
 import java.io.IOException;
 
-import core.utils.CuratorUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -13,10 +12,10 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 import core.access.HDFSPartition;
-import core.access.Partition;
-import core.access.iterator.PartitionIterator;
 import core.access.iterator.IteratorRecord;
+import core.access.iterator.PartitionIterator;
 import core.access.spark.SparkInputFormat.SparkFileSplit;
+import core.utils.CuratorUtils;
 
 public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord> {
 

@@ -44,8 +44,11 @@
     <target name="jar" depends="compile">
     	<jar jarfile="${dist}/mdindex.jar" filesetmanifest="mergewithoutmain">    		
     		<fileset dir="${build.src}"/>
+    		<fileset dir="${build.test}"/>
     		<zipfileset excludes="META-INF/*.SF" src="${lib.dir}/guava-14.0.jar"/>
     		<zipfileset excludes="META-INF/*.SF" src="${lib.dir}/cartilage-core.jar"/>
+    		<zipfileset excludes="META-INF/*.SF" src="${lib.dir}/junit-4.8.2.jar"/>
+    		<!--<zipfileset excludes="META-INF/*.SF" src="${lib.dir}/hadoop-hdfs-2.6.0.jar"/>-->    		
     	</jar>
     	<jar jarfile="${dist}/runnable.jar" filesetmanifest="mergewithoutmain">
     	      <manifest>

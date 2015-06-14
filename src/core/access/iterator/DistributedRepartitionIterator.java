@@ -3,14 +3,13 @@ package core.access.iterator;
 import java.util.Map;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessLock;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
 
 import core.access.Partition;
 import core.access.Query.FilterQuery;
-import core.index.MDIndex.BucketCounts;
 import core.index.robusttree.RNode;
 import core.utils.CuratorUtils;
 
@@ -51,7 +50,7 @@ public class DistributedRepartitionIterator extends RepartitionIterator {
 
 		private CuratorFramework client;
 		private String lockPathBase = "/partition-lock-";
-		private Map<Integer,InterProcessLock> partitionLocks;
+		private Map<Integer,InterProcessSemaphoreMutex> partitionLocks;
 
 		public PartitionLock(String zookeeperHosts){
 			client = CuratorUtils.createAndStartClient(zookeeperHosts);

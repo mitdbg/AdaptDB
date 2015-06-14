@@ -1,8 +1,6 @@
 package core.access.benchmark;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -11,21 +9,19 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Random;
 
-import core.index.Builder;
-import core.index.build.IndexBuilder;
-import core.index.key.CartilageIndexKey;
-import core.index.robusttree.RobustTreeHs;
-import core.utils.CuratorUtils;
-import core.utils.HDFSUtils;
 import junit.framework.TestCase;
+
+import org.apache.curator.framework.CuratorFramework;
+
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.spark.SparkQuery;
 import core.index.Settings;
 import core.utils.ConfUtils;
+import core.utils.CuratorUtils;
+import core.utils.HDFSUtils;
 import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
 import core.utils.SchemaUtils.TYPE;
-import org.apache.curator.framework.CuratorFramework;
 
 public class TestConvergence extends TestCase{
 	public final static String propertyFile = Settings.cartilageConf;

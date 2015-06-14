@@ -6,8 +6,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.recipes.locks.InterProcessLock;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.curator.framework.recipes.shared.SharedCount;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 
@@ -45,8 +44,9 @@ public class CuratorUtils {
 	 * Lock utils
 	 */
 	
-	public static InterProcessLock acquireLock(CuratorFramework client, String lockPath){
-		InterProcessLock lock = new InterProcessMutex(client, lockPath);			
+	public static InterProcessSemaphoreMutex acquireLock(CuratorFramework client, String lockPath){
+		InterProcessSemaphoreMutex lock = new InterProcessSemaphoreMutex(client, lockPath);
+		
 		try {
 			if (lock.acquire(waitTimeSeconds, TimeUnit.SECONDS))
 				return lock;
@@ -58,7 +58,7 @@ public class CuratorUtils {
 		}
 	}
 
-	public static void releaseLock(InterProcessLock lock){
+	public static void releaseLock(InterProcessSemaphoreMutex lock){
 		try {
 			lock.release();
 		} catch (Exception e) {
