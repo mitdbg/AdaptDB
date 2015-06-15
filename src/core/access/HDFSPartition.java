@@ -62,8 +62,8 @@ public class HDFSPartition extends Partition{
 
 	
 	public Partition clone() {
-		path = path.replaceAll("partitions[0-9]*/$", "repartition/");	
-		Partition p = new HDFSPartition(hdfs, path+""+partitionId, client);
+		String clonePath = path.replaceAll("partitions[0-9]*/$", "repartition/");	
+		Partition p = new HDFSPartition(hdfs, clonePath + partitionId, client);
 		//p.bytes = new byte[bytes.length]; // heap space!
 		p.bytes = new byte[1024];
 		p.state = State.NEW;
@@ -127,7 +127,7 @@ public class HDFSPartition extends Partition{
 	
 	public void store(boolean append){
 		InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client, "/partition-lock-" + path.hashCode()+"-"+partitionId);
-		System.out.println("LOCK: acquired lock "+partitionId);
+		System.out.println("LOCK: acquired lock,  "+"path="+path+" , partition id="+partitionId);
 		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
 
 		try {
