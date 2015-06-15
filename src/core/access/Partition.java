@@ -55,12 +55,12 @@ public class Partition implements Cloneable, Serializable {
         return p;
     }
 
-	public static Partition getHDFSClone(String propertiesFile, String path) {
-		Partition p = new HDFSPartition(path, propertiesFile, (short)1);
-		p.bytes = new byte[1024*1024];
-		p.state = State.NEW;
-		return p;
-	}
+//	public static Partition getHDFSClone(String propertiesFile, String path) {
+//		Partition p = new HDFSPartition(path, propertiesFile, (short)1);
+//		p.bytes = new byte[1024*1024];
+//		p.state = State.NEW;
+//		return p;
+//	}
 
 
 	/**

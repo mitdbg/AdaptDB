@@ -2,7 +2,6 @@ package core.access.spark;
 
 import java.io.IOException;
 
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -15,7 +14,6 @@ import core.access.HDFSPartition;
 import core.access.iterator.IteratorRecord;
 import core.access.iterator.PartitionIterator;
 import core.access.spark.SparkInputFormat.SparkFileSplit;
-import core.utils.CuratorUtils;
 
 public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord> {
 
@@ -30,7 +28,7 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 	private long recordId;
 	private boolean hasNext;
 
-	CuratorFramework client;
+//	CuratorFramework client;
 
 	@Override
 	public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
@@ -38,7 +36,7 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		System.out.println("Initializing SparkRecordReader");
 		
 		conf = context.getConfiguration();
-		client = CuratorUtils.createAndStartClient(conf.get(SparkQueryConf.ZOOKEEPER_HOSTS));
+//		client = CuratorUtils.createAndStartClient(conf.get(SparkQueryConf.ZOOKEEPER_HOSTS));
 		sparkSplit = (SparkFileSplit)split;
 		
 		iterator = sparkSplit.getIterator();
@@ -60,7 +58,7 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		else{
 			Path filePath = sparkSplit.getPath(currentFile);
 			final FileSystem fs = filePath.getFileSystem(conf);
-			HDFSPartition partition = new HDFSPartition(fs, filePath.toString(), client);
+			HDFSPartition partition = new HDFSPartition(fs, filePath.toString(), conf.get(SparkQueryConf.ZOOKEEPER_HOSTS));
 			System.out.println("loading path: "+filePath.toString());
 			try {
 				partition.loadNext();
@@ -115,6 +113,6 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 	@Override
 	public void close() throws IOException {
 		iterator.finish();		// this method could even be called earlier in case the entire split does not fit in main-memory
-		client.close();
+//		client.close();
 	}
 }
