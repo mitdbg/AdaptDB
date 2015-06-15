@@ -28,7 +28,7 @@ public class HDFSPartition extends Partition{
 	protected long totalSize=0, readSize=0, returnSize=0;
 	public static int MAX_READ_SIZE = 1024*1024*50;
 	CuratorFramework client;
-	String zookeeperHosts;
+	//String zookeeperHosts;
 
 
 	public HDFSPartition(String path, String propertiesFile) {
@@ -126,7 +126,7 @@ public class HDFSPartition extends Partition{
 	}
 	
 	public void store(boolean append){
-		CuratorFramework client = CuratorUtils.createAndStartClient(zookeeperHosts);
+		//CuratorFramework client = CuratorUtils.createAndStartClient(zookeeperHosts);
 		InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client, "/partition-lock-" + path.hashCode()+"-"+partitionId);
 		System.out.println("LOCK: acquired lock,  "+"path="+path+" , partition id="+partitionId);
 		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
@@ -154,16 +154,16 @@ public class HDFSPartition extends Partition{
 		} finally {
 			CuratorUtils.releaseLock(l);
 			System.out.println("LOCK: released lock " + partitionId);
-			client.close();
+			//client.close();
 		}
 		//HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);
 	}
 	
 	public void drop(){
-		CuratorFramework client = CuratorUtils.createAndStartClient(zookeeperHosts);
+		//CuratorFramework client = CuratorUtils.createAndStartClient(zookeeperHosts);
 		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
 		//HDFSUtils.deleteFile(hdfs, path + "/" + partitionId, false);
 		c.removeBucketCount(this.getPartitionId());
-		client.close();
+		//client.close();
 	}	
 }
