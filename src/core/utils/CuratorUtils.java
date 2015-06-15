@@ -15,10 +15,12 @@ public class CuratorUtils {
 	/**
 	 * Settings
 	 */
-	private static int baseSleepTimeMills = 1000;	
-	private static int maxRetries = 3;
+	private static int baseSleepTimeMills = 10000;	
+	private static int maxRetries = 4;
 	private static int waitTimeSeconds = 1000;
 	
+	private static int sessionTimeout = 20000;
+	private static int connectionTimeout = 20000;
 	
 	/*
 	 * Curator client utils
@@ -26,7 +28,7 @@ public class CuratorUtils {
 	
 	public static CuratorFramework createClient(String zkHosts){
 		RetryPolicy retryPolicy = new ExponentialBackoffRetry(baseSleepTimeMills, maxRetries);
-		return CuratorFrameworkFactory.newClient(zkHosts, retryPolicy);
+		return CuratorFrameworkFactory.newClient(zkHosts, sessionTimeout, connectionTimeout, retryPolicy);
 	}
 	
 	public static CuratorFramework createAndStartClient(String zkHosts){
