@@ -40,7 +40,7 @@ public class PartitionLock {
 		if(locked)
 			lockedPartitions.add(partitionId);
 		else
-			throw new RuntimeException("Failed to obtain a lock!");
+			throw new RuntimeException("Failed to obtain a lock for partition: "+partitionId);
 	}
 	
 	public void release(int partitionId){
@@ -57,7 +57,7 @@ public class PartitionLock {
 				lockedPartitions.remove((Integer)partitionId);
 		}
 		else
-			throw new RuntimeException("Failed to release a lock!");
+			throw new RuntimeException("Failed to release a lock for partition: "+partitionId);
 	}
 	
 	public void cleanup(){
