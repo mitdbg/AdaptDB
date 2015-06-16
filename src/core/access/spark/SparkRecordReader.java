@@ -16,6 +16,7 @@ import core.access.iterator.IteratorRecord;
 import core.access.iterator.PartitionIterator;
 import core.access.spark.SparkInputFormat.SparkFileSplit;
 import core.utils.CuratorUtils;
+import core.utils.PartitionLock;
 
 public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord> {
 
@@ -60,7 +61,7 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		else{
 			Path filePath = sparkSplit.getPath(currentFile);
 			final FileSystem fs = filePath.getFileSystem(conf);
-			HDFSPartition partition = new HDFSPartition(fs, filePath.toString(), client);
+			HDFSPartition partition = new HDFSPartition(fs, filePath.toString(), client, new PartitionLock(fs, "/user/anil/locks"));
 			System.out.println("loading path: "+filePath.toString());
 			try {
 				partition.loadNext();

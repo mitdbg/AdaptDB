@@ -3,7 +3,6 @@ package core.access;
 import java.io.IOException;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -14,8 +13,8 @@ import com.google.common.io.ByteStreams;
 
 import core.index.MDIndex;
 import core.utils.ConfUtils;
-import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
+import core.utils.PartitionLock;
 
 public class HDFSPartition extends Partition{
 
@@ -28,7 +27,7 @@ public class HDFSPartition extends Partition{
 	protected long totalSize=0, readSize=0, returnSize=0;
 	public static int MAX_READ_SIZE = 1024*1024*50;
 	CuratorFramework client;
-	//String zookeeperHosts;
+	PartitionLock lock;
 
 
 	public HDFSPartition(String path, String propertiesFile) {
@@ -47,23 +46,34 @@ public class HDFSPartition extends Partition{
 		} catch (IOException ex) {
 			throw new RuntimeException("failed to get hdfs filesystem");
 		}
-		client = CuratorUtils.createAndStartClient(conf.getZOOKEEPER_HOSTS());
+		//client = CuratorUtils.createAndStartClient(conf.getZOOKEEPER_HOSTS());
 	}
 
-	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, short replication, CuratorFramework client) {
+//	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, short replication, CuratorFramework client) {
+//		super(pathAndPartitionId);
+//		this.hdfs = hdfs;
+//		this.replication = replication;
+//		this.client = client;
+//	}
+//
+//	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, CuratorFramework client) {
+//		this(hdfs, pathAndPartitionId, (short)3, client);
+//	}
+	
+	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, short replication, CuratorFramework client, PartitionLock lock) {
 		super(pathAndPartitionId);
 		this.hdfs = hdfs;
 		this.replication = replication;
-		this.client = client;
+		this.lock = lock;
 	}
 
-	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, CuratorFramework client) {
-		this(hdfs, pathAndPartitionId, (short)3, client);
+	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, CuratorFramework client, PartitionLock lock) {
+		this(hdfs, pathAndPartitionId, (short)3, client, lock);
 	}
 	
 	public Partition clone() {
 		String clonePath = path.replaceAll("partitions[0-9]*/$", "repartition/");	
-		Partition p = new HDFSPartition(hdfs, clonePath + partitionId, client);
+		Partition p = new HDFSPartition(hdfs, clonePath + partitionId, client, lock);
 		//p.bytes = new byte[bytes.length]; // heap space!
 		p.bytes = new byte[1024];
 		p.state = State.NEW;
@@ -126,8 +136,8 @@ public class HDFSPartition extends Partition{
 	}
 	
 	public void store(boolean append){
-		//CuratorFramework client = CuratorUtils.createAndStartClient(zookeeperHosts);
-		InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client, "/partition-lock-" + path.hashCode()+"-"+partitionId);
+		//InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client, "/partition-lock-" + path.hashCode()+"-"+partitionId);		
+		lock.acquire(partitionId);
 		System.out.println("LOCK: acquired lock,  "+"path="+path+" , partition id="+partitionId);
 		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
 
@@ -152,10 +162,9 @@ public class HDFSPartition extends Partition{
 		} catch (IOException ex) {
 			throw new RuntimeException(ex.getMessage());
 		} finally {
-			CuratorUtils.releaseLock(l);
-			System.out.println("LOCK: released lock " + partitionId);
-			//client.close();
-		}
+			//CuratorUtils.releaseLock(l);
+			lock.release(partitionId);
+			System.out.println("LOCK: released lock " + partitionId);		}
 		//HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);
 	}
 	
