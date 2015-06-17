@@ -25,6 +25,7 @@ public class BucketCounts {
 		this.countsFile = countsFile;
 		this.fs = fs;
 		newLines = Lists.newArrayList();
+		load();
 	}
 
 	private void load(){
@@ -51,9 +52,10 @@ public class BucketCounts {
 	}
 	
 	public int getBucketCount(int bucketId){
-		if(bucketCountMap==null)
-			load();
-		return bucketCountMap.get(bucketId);
+		if(bucketCountMap.containsKey(bucketId))
+			return bucketCountMap.get(bucketId);
+		else 
+			return 0;
 	}
 	
 	public void addToBucketCount(int bucketId, int count){
