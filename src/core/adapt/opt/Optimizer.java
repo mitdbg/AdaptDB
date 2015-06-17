@@ -20,10 +20,10 @@ import core.access.iterator.PostFilterIterator;
 import core.access.iterator.RepartitionIterator;
 import core.access.spark.Config;
 import core.index.MDIndex.Bucket;
-import core.index.MDIndex.BucketCounts;
 import core.index.key.CartilageIndexKeySet;
 import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTreeHs;
+import core.utils.BucketCounts;
 import core.utils.HDFSUtils;
 import core.utils.Pair;
 import core.utils.SchemaUtils.TYPE;
@@ -87,10 +87,11 @@ public class Optimizer {
 		this.hadoopHome = hadoopHome;
 	}
 
-	public void loadIndex(String zookeeperHosts) {
-		Bucket.counters = new BucketCounts(zookeeperHosts);
-
+	public void loadIndex(String countersFile) {
 		FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
+		
+		Bucket.counters = new BucketCounts(fs, countersFile);
+		
 		String pathToIndex = this.dataset + "/index";
 		String pathToSample = this.dataset + "/sample";
 		byte[] indexBytes = HDFSUtils.readFile(fs, pathToIndex);

@@ -6,19 +6,18 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import core.access.HDFSPartition;
-import core.index.robusttree.RobustTreeHs;
-import core.utils.HDFSUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.io.Text;
 
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 
+import core.access.HDFSPartition;
 import core.access.Partition;
 import core.access.Query.FilterQuery;
-import core.index.MDIndex.BucketCounts;
 import core.index.robusttree.RNode;
+import core.index.robusttree.RobustTreeHs;
+import core.utils.HDFSUtils;
 
 public class RepartitionIterator extends PartitionIterator{
 
@@ -102,20 +101,20 @@ public class RepartitionIterator extends PartitionIterator{
 	@Override
 	public void finish(){
 		if (zookeeperHosts != null) {
-			BucketCounts c = new BucketCounts(zookeeperHosts);
+			//BucketCounts c = new BucketCounts(zookeeperHosts);
 			System.out.println("number of new partitions written = "+newPartitions.size());
 			for(Partition p: newPartitions.values()){
 
 				System.out.println("storing partition id "+p.getPartitionId());
 				p.store(true);
-				c.setToBucketCount(p.getPartitionId(), p.getRecordCount());
+				//c.setToBucketCount(p.getPartitionId(), p.getRecordCount());
 			}
 			for(Partition p: oldPartitions.values()){
 				System.out.println("dropping old partition id "+p.getPartitionId());
-//				p.drop();
-				c.removeBucketCount(p.getPartitionId());
+				p.drop();
+				//c.removeBucketCount(p.getPartitionId());
 			}			
-			c.close();
+			//c.close();
 			oldPartitions = Maps.newHashMap();
 			newPartitions = Maps.newHashMap();
 			System.out.println("done finalize()");

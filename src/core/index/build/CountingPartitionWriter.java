@@ -5,12 +5,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
-
-import core.index.MDIndex;
+import core.utils.BucketCounts;
 import core.utils.ConfUtils;
-import core.utils.CuratorUtils;
+import core.utils.HDFSUtils;
 
 /**
  * Created by qui on 3/30/15.
@@ -51,17 +48,17 @@ public class CountingPartitionWriter extends PartitionWriter {
 
     @Override
     public void flush() {
-        MDIndex.BucketCounts c = new MDIndex.BucketCounts(conf.getZOOKEEPER_HOSTS());
-        CuratorFramework client = c.getClient();
-        String lockPathBase = "/partition-lock-";
+    	BucketCounts c = new BucketCounts(HDFSUtils.getFSByHadoopHome(conf.getHADOOP_HOME()), conf.get("COUNTERS_FILE"));
+        //CuratorFramework client = c.getClient();
+        //String lockPathBase = "/partition-lock-";
         Iterator<Map.Entry<String, Integer>> entries = bucketCounts.entrySet().iterator();
         while (entries.hasNext()) {
             Map.Entry<String, Integer> e = entries.next();
             try {
-            	InterProcessSemaphoreMutex lock = CuratorUtils.acquireLock(client, lockPathBase + e.getKey());
+            	//InterProcessSemaphoreMutex lock = CuratorUtils.acquireLock(client, lockPathBase + e.getKey());
                 c.addToBucketCount(Integer.parseInt(e.getKey()), e.getValue());
                 entries.remove();
-                CuratorUtils.releaseLock(lock);
+                //CuratorUtils.releaseLock(lock);
             } catch (NumberFormatException ex) {
 
             }

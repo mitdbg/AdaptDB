@@ -18,7 +18,9 @@ public class SparkQueryConf {
 	public final static String MIN_SPLIT_SIZE = "MIN_SPLIT_SIZE";
 	public final static String ZOOKEEPER_HOSTS = "ZOOKEEPER_HOSTS";
 	public final static String HADOOP_HOME = "HADOOP_HOME";	// this can be obtained from cartilage properties file
-
+	public final static String COUNTERS_FILE = "COUNTERS_FILE";
+	
+	
 	public final static String CARTILAGE_PROPERTIES = "CARTILAGE_PROPERTIES";
 
 	private Configuration conf;
@@ -109,6 +111,14 @@ public class SparkQueryConf {
 
 	public String getHadoopHome() {
 		return conf.get(HADOOP_HOME);
+	}
+		
+	public void setCountersFile(String countersFile) {
+		conf.set(COUNTERS_FILE, countersFile);
+	}
+
+	public String getCountersFile() {
+		return conf.get(COUNTERS_FILE);
 	}
 
 	public void setCartilageProperties(String cartilageProperties){

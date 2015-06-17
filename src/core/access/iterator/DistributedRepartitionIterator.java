@@ -1,17 +1,11 @@
 package core.access.iterator;
 
-import java.util.Map;
-
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
-
 import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
 
 import core.access.Partition;
 import core.access.Query.FilterQuery;
 import core.index.robusttree.RNode;
-import core.utils.CuratorUtils;
 
 public class DistributedRepartitionIterator extends RepartitionIterator {
 
@@ -46,51 +40,51 @@ public class DistributedRepartitionIterator extends RepartitionIterator {
 		System.gc();
 	}
 
-	public class PartitionLock {
-
-		private CuratorFramework client;
-		private String lockPathBase = "/partition-lock-";
-		private Map<Integer,InterProcessSemaphoreMutex> partitionLocks;
-
-		public PartitionLock(String zookeeperHosts){
-			client = CuratorUtils.createAndStartClient(zookeeperHosts);
-			partitionLocks = Maps.newHashMap();
-		}
-
-		public void lockPartition(int partitionId){
-			System.out.println("DEBUG: Locking partition " + partitionId);
-			partitionLocks.put(
-					partitionId,
-					CuratorUtils.acquireLock(client, lockPathBase + partitionId)
-				);
-		}
-
-		public void unlockPartition(int partitionId){
-			if(!partitionLocks.containsKey(partitionId))
-				throw new RuntimeException("Trying to unlock a partition which does not locked: "+ partitionId);
-
-			CuratorUtils.releaseLock(
-					partitionLocks.get(partitionId)
-				);
-
-			partitionLocks.remove(partitionId);
-
-			System.out.println("DEBUG: Unlocking partition " + partitionId);
-		}
-
-		public void close(){
-			// close any stay locks
-			for(int partitionId: partitionLocks.keySet()) {
-				System.out.println("DEBUG: Stray lock " + partitionId);
-				//	unlockPartition(partitionId);
-			}
-
-			client.close();
-		}
-
-		public CuratorFramework getClient(){
-			return this.client;
-		}
-	}
+//	public class PartitionLock {
+//
+//		private CuratorFramework client;
+//		private String lockPathBase = "/partition-lock-";
+//		private Map<Integer,InterProcessSemaphoreMutex> partitionLocks;
+//
+//		public PartitionLock(String zookeeperHosts){
+//			client = CuratorUtils.createAndStartClient(zookeeperHosts);
+//			partitionLocks = Maps.newHashMap();
+//		}
+//
+//		public void lockPartition(int partitionId){
+//			System.out.println("DEBUG: Locking partition " + partitionId);
+//			partitionLocks.put(
+//					partitionId,
+//					CuratorUtils.acquireLock(client, lockPathBase + partitionId)
+//				);
+//		}
+//
+//		public void unlockPartition(int partitionId){
+//			if(!partitionLocks.containsKey(partitionId))
+//				throw new RuntimeException("Trying to unlock a partition which does not locked: "+ partitionId);
+//
+//			CuratorUtils.releaseLock(
+//					partitionLocks.get(partitionId)
+//				);
+//
+//			partitionLocks.remove(partitionId);
+//
+//			System.out.println("DEBUG: Unlocking partition " + partitionId);
+//		}
+//
+//		public void close(){
+//			// close any stay locks
+//			for(int partitionId: partitionLocks.keySet()) {
+//				System.out.println("DEBUG: Stray lock " + partitionId);
+//				//	unlockPartition(partitionId);
+//			}
+//
+//			client.close();
+//		}
+//
+//		public CuratorFramework getClient(){
+//			return this.client;
+//		}
+//	}
 
 }

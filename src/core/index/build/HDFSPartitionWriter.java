@@ -6,19 +6,18 @@ import java.io.OutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import core.conf.CartilageConf;
-import core.index.MDIndex.BucketCounts;
+import core.utils.BucketCounts;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 
 public class HDFSPartitionWriter extends PartitionWriter{
 
 	private String propertiesFile;
-	private CartilageConf conf;
+	private ConfUtils conf;
 
 	private short replication = 3;
 	private FileSystem hdfs;
-
+	
 	//private String zookeeperHosts;
 
 	public HDFSPartitionWriter(String partitionDir, int bufferPartitionSize, int maxBufferPartitions, short replication, String propertiesFile){
@@ -46,8 +45,8 @@ public class HDFSPartitionWriter extends PartitionWriter{
 
 	private void createHDFS(String propertiesFile){
 		this.propertiesFile = propertiesFile;
-		this.conf = ConfUtils.create(propertiesFile, "defaultHDFSPath");
-		this.hdfs = HDFSUtils.getFS(conf.getHadoopHome()+"/etc/hadoop/core-site.xml");
+		this.conf = new ConfUtils(propertiesFile);
+		this.hdfs = HDFSUtils.getFS(conf.getHADOOP_HOME()+"/etc/hadoop/core-site.xml");
 	}
 
 	@Override
@@ -74,7 +73,7 @@ public class HDFSPartitionWriter extends PartitionWriter{
 
 	@Override
 	public void flush(){
-		BucketCounts c = new BucketCounts(conf.getZookeeperHosts());
+		BucketCounts c = new BucketCounts(hdfs, conf.get("COUNTERS_FILE"));
 		for(String k: buffer.keySet())
 			try {
 				c.setToBucketCount(Integer.parseInt(k), partitionRecordCount.get(k).intValue());

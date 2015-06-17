@@ -5,9 +5,9 @@ import junit.framework.TestCase;
 import org.apache.hadoop.fs.FileSystem;
 
 import core.index.MDIndex.Bucket;
-import core.index.MDIndex.BucketCounts;
 import core.index.Settings;
 import core.index.robusttree.RobustTreeHs;
+import core.utils.BucketCounts;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 
@@ -30,10 +30,11 @@ public class IndexBuilder extends TestCase {
 			long bucketSize = 64*1024*1024;
 			int maxBuckets = (int) (fileSize / bucketSize) + 1;
 
-			RobustTreeHs index = new RobustTreeHs(0.01);
-			Bucket.counters = new BucketCounts(cfg.getZOOKEEPER_HOSTS());
-
 			FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
+			RobustTreeHs index = new RobustTreeHs(0.01);
+			Bucket.counters = new BucketCounts(fs, cfg.get("COUNTERS_FILE"));
+
+			
 			String pathToSample = hdfsPath + "/sample";
 			byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
 	        index.loadSampleAndBuild(maxBuckets, sampleBytes);
@@ -49,10 +50,10 @@ public class IndexBuilder extends TestCase {
 		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
 
 		int maxBuckets = 1024;
-		RobustTreeHs index = new RobustTreeHs(0.01);
-		Bucket.counters = new BucketCounts(cfg.getZOOKEEPER_HOSTS());
-
 		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
+		RobustTreeHs index = new RobustTreeHs(0.01);
+		Bucket.counters = new BucketCounts(fs, cfg.get("COUNTERS_FILE"));
+		
 		String pathToSample = hdfsPath + "/sample";
 		byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
         index.loadSampleAndBuild(maxBuckets, sampleBytes);

@@ -1,20 +1,19 @@
 package core.access;
 
 import java.io.IOException;
+import java.io.OutputStream;
 
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import com.google.common.io.ByteStreams;
 
-import core.index.MDIndex;
+import core.utils.BucketCounts;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
-import core.utils.PartitionLock;
+import core.utils.IOUtils;
 
 public class HDFSPartition extends Partition{
 
@@ -26,8 +25,12 @@ public class HDFSPartition extends Partition{
 	protected FSDataInputStream in;
 	protected long totalSize=0, readSize=0, returnSize=0;
 	public static int MAX_READ_SIZE = 1024*1024*50;
-	CuratorFramework client;
-	PartitionLock lock;
+	public final int retryIntervalMs = 1000;
+	public final int maxRetryCount = 20;
+	
+//	CuratorFramework client;
+//	PartitionLock lock;
+	BucketCounts counter;
 
 
 	public HDFSPartition(String path, String propertiesFile) {
@@ -60,20 +63,20 @@ public class HDFSPartition extends Partition{
 //		this(hdfs, pathAndPartitionId, (short)3, client);
 //	}
 	
-	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, short replication, CuratorFramework client, PartitionLock lock) {
+	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, short replication, BucketCounts counter) {
 		super(pathAndPartitionId);
 		this.hdfs = hdfs;
 		this.replication = replication;
-		this.lock = lock;
+		this.counter = counter;
 	}
 
-	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, CuratorFramework client, PartitionLock lock) {
-		this(hdfs, pathAndPartitionId, (short)3, client, lock);
+	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, BucketCounts counter) {
+		this(hdfs, pathAndPartitionId, (short)3, counter);
 	}
 	
 	public Partition clone() {
 		String clonePath = path.replaceAll("partitions[0-9]*/$", "repartition/");	
-		Partition p = new HDFSPartition(hdfs, clonePath + partitionId, client, lock);
+		Partition p = new HDFSPartition(hdfs, clonePath + partitionId, counter);
 		//p.bytes = new byte[bytes.length]; // heap space!
 		p.bytes = new byte[1024];
 		p.state = State.NEW;
@@ -136,43 +139,63 @@ public class HDFSPartition extends Partition{
 	}
 	
 	public void store(boolean append){
-		//InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client, "/partition-lock-" + path.hashCode()+"-"+partitionId);		
-		lock.acquire(partitionId);
-		System.out.println("LOCK: acquired lock,  "+"path="+path+" , partition id="+partitionId);
-		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
-
-		try {
-			//String storePath = FilenameUtils.getFullPath(path) + ArrayUtils.join("_", lineage);
-			String storePath = path + "/" + partitionId;
-			if(!path.startsWith("hdfs"))
-				storePath = "/" + storePath;
-			//HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);
-			Path e = new Path(storePath);
-			FSDataOutputStream os;
-			if(append && hdfs.exists(e)) {
-				os = hdfs.append(e);
-			} else {
-				os = hdfs.create(new Path(storePath), replication);
-			}
-			os.write(bytes, 0, offset);
-			os.flush();
-			os.close();
-			c.addToBucketCount(this.getPartitionId(), this.getRecordCount());
-			recordCount = 0;
-		} catch (IOException ex) {
-			throw new RuntimeException(ex.getMessage());
-		} finally {
-			//CuratorUtils.releaseLock(l);
-			lock.release(partitionId);
-			System.out.println("LOCK: released lock " + partitionId);		}
-		//HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);
+		String storePath = path + "/" + partitionId;
+		if(!path.startsWith("hdfs"))
+			storePath = "/" + storePath;
+		OutputStream os = HDFSUtils.getOutputStreamWithRetry(hdfs, storePath, retryIntervalMs, maxRetryCount);
+		IOUtils.writeOutputStream(os, bytes);
+		IOUtils.closeOutputStream(os);
+		
+		counter.addToBucketCount(this.getPartitionId(), this.getRecordCount());
+		recordCount = 0;
 	}
+	
+//	public void store(boolean append){
+//		//InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client, "/partition-lock-" + path.hashCode()+"-"+partitionId);		
+//		//lock.acquire(partitionId);
+//		//System.out.println("LOCK: acquired lock,  "+"path="+path+" , partition id="+partitionId);
+//		//BucketCounts c = new BucketCounts(client);
+//
+//		try {
+//			//String storePath = FilenameUtils.getFullPath(path) + ArrayUtils.join("_", lineage);
+//			String storePath = path + "/" + partitionId;
+//			if(!path.startsWith("hdfs"))
+//				storePath = "/" + storePath;
+//			//HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);
+//			OutputStream os = HDFSUtils.getOutputStreamWithRetry(hdfs, storePath, retryIntervalMs, maxRetryCount);
+//			IOUtils.writeOutputStream(os, bytes);
+//			IOUtils.closeOutputStream(os);
+//			
+//			
+////			Path e = new Path(storePath);
+////			FSDataOutputStream os;
+////			if(append && hdfs.exists(e)) {
+////				os = hdfs.append(e);
+////			} else {
+////				os = hdfs.create(new Path(storePath), replication);
+////			}
+////			os.write(bytes, 0, offset);
+////			os.flush();
+////			os.close();
+//			
+//			counter.addToBucketCount(this.getPartitionId(), this.getRecordCount());
+//			recordCount = 0;
+//		} catch (IOException ex) {
+//			throw new RuntimeException(ex.getMessage());
+//		} 
+//		//finally {
+//			//CuratorUtils.releaseLock(l);
+//			//lock.release(partitionId);
+//			//System.out.println("LOCK: released lock " + partitionId);		
+//		//}
+//		//HDFSUtils.writeFile(hdfs, storePath, replication, bytes, 0, offset, append);
+//	}
 	
 	public void drop(){
 		//CuratorFramework client = CuratorUtils.createAndStartClient(zookeeperHosts);
-		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
+		//BucketCounts c = new BucketCounts(client);
 		//HDFSUtils.deleteFile(hdfs, path + "/" + partitionId, false);
-		c.removeBucketCount(this.getPartitionId());
+		counter.removeBucketCount(this.getPartitionId());
 		//client.close();
 	}	
 }
