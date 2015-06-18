@@ -45,17 +45,17 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		
 		iterator = sparkSplit.getIterator();
 		currentFile = 0;
-		hasNext = initializeNext();
-		
-		key = new LongWritable();
-		recordId = 0;
 		
 		FileSystem fs = sparkSplit.getPath(currentFile).getFileSystem(conf);
 		counter = new BucketCounts(fs, conf.get(SparkQueryConf.COUNTERS_FILE));
-		locker = new PartitionLock(fs, conf.get(SparkQueryConf.LOCK_DIR));
+		locker = new PartitionLock(fs, conf.get(SparkQueryConf.LOCK_DIR));		
 		
+		hasNext = initializeNext();		
+		key = new LongWritable();
+		recordId = 0;
+		
+		System.out.println("Locker instance: "+locker);
 		System.out.println("Counter instance: "+counter);
-
 	}
 
 	protected boolean initializeNext() throws IOException{
