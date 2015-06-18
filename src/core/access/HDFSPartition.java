@@ -14,6 +14,7 @@ import core.utils.BucketCounts;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.IOUtils;
+import core.utils.PartitionLock;
 
 public class HDFSPartition extends Partition{
 
@@ -31,6 +32,7 @@ public class HDFSPartition extends Partition{
 //	CuratorFramework client;
 //	PartitionLock lock;
 	BucketCounts counter;
+	PartitionLock locker;
 
 
 	public HDFSPartition(String path, String propertiesFile) {
@@ -63,20 +65,20 @@ public class HDFSPartition extends Partition{
 //		this(hdfs, pathAndPartitionId, (short)3, client);
 //	}
 	
-	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, short replication, BucketCounts counter) {
+	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, short replication, PartitionLock locker, BucketCounts counter) {
 		super(pathAndPartitionId);
 		this.hdfs = hdfs;
 		this.replication = replication;
 		this.counter = counter;
 	}
 
-	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, BucketCounts counter) {
-		this(hdfs, pathAndPartitionId, (short)3, counter);
+	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, PartitionLock locker, BucketCounts counter) {
+		this(hdfs, pathAndPartitionId, (short)3, locker, counter);
 	}
 	
 	public Partition clone() {
 		String clonePath = path.replaceAll("partitions[0-9]*/$", "repartition/");	
-		Partition p = new HDFSPartition(hdfs, clonePath + partitionId, counter);
+		Partition p = new HDFSPartition(hdfs, clonePath + partitionId, locker, counter);
 		//p.bytes = new byte[bytes.length]; // heap space!
 		p.bytes = new byte[1024];
 		p.state = State.NEW;
@@ -139,15 +141,24 @@ public class HDFSPartition extends Partition{
 	}
 	
 	public void store(boolean append){
+		
+		locker.acquire(partitionId);
+		
 		String storePath = path + "/" + partitionId;
 		if(!path.startsWith("hdfs"))
 			storePath = "/" + storePath;
-		OutputStream os = HDFSUtils.getOutputStreamWithRetry(hdfs, storePath, retryIntervalMs, maxRetryCount);
+		
+		OutputStream os = HDFSUtils.getOutputStreamWithRetry(hdfs, storePath, replication, retryIntervalMs, maxRetryCount);
 		IOUtils.writeOutputStream(os, bytes);
 		IOUtils.closeOutputStream(os);
 		
-		counter.addToBucketCount(this.getPartitionId(), this.getRecordCount());
+		if(counter==null)
+			System.out.println("ERROR:  the counter is null!!");
+		else
+			counter.addToBucketCount(partitionId, recordCount);
 		recordCount = 0;
+		
+		locker.release(partitionId);
 	}
 	
 //	public void store(boolean append){
@@ -197,5 +208,27 @@ public class HDFSPartition extends Partition{
 		//HDFSUtils.deleteFile(hdfs, path + "/" + partitionId, false);
 		counter.removeBucketCount(this.getPartitionId());
 		//client.close();
-	}	
+	}
+	
+	public static class SynchronizedWrite{
+		public final int retryIntervalMs = 1000;
+		public final int maxRetryCount = 20;
+		private FileSystem fs;
+		public SynchronizedWrite(FileSystem fs){
+			this.fs = fs;
+		}
+		public synchronized boolean write(String filename, byte[] bytes, short replication){
+			OutputStream os = HDFSUtils.getOutputStreamWithRetry(fs, filename, retryIntervalMs, maxRetryCount);
+			try {
+				os.write(bytes);
+				os.close();
+				return true;
+			} catch (IOException e) {
+				e.printStackTrace();
+				return false;
+			}
+		}
+	}
+	
+	
 }

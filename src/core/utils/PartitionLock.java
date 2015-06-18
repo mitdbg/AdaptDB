@@ -28,7 +28,7 @@ public class PartitionLock {
 		this.lockDir = lockDir;
 	}
 	
-	public void acquire(int partitionId){
+	public synchronized void acquire(int partitionId){	// should we make it synchronized?
 		// try create a lock file on HDFS
 		boolean locked = HDFSUtils.tryCreateFile(hdfs, lockDir+"/"+partitionId);
 		int attempt=1;
@@ -43,7 +43,7 @@ public class PartitionLock {
 			throw new RuntimeException("Failed to obtain a lock for partition: "+partitionId);
 	}
 	
-	public void release(int partitionId){
+	public synchronized void release(int partitionId){
 		// remove the lock file on HDFS
 		boolean deleted = HDFSUtils.tryDelete(hdfs, lockDir+"/"+partitionId, false);
 		int attempt=1;

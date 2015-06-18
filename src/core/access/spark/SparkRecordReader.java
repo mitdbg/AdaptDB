@@ -15,6 +15,7 @@ import core.access.iterator.IteratorRecord;
 import core.access.iterator.PartitionIterator;
 import core.access.spark.SparkInputFormat.SparkFileSplit;
 import core.utils.BucketCounts;
+import core.utils.PartitionLock;
 
 public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord> {
 
@@ -46,9 +47,10 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		hasNext = initializeNext();
 		
 		key = new LongWritable();
-		recordId = 0;		
+		recordId = 0;
 		
 		counter = new BucketCounts(sparkSplit.getPath(currentFile).getFileSystem(conf), conf.get(SparkQueryConf.COUNTERS_FILE));
+		System.out.println("Counter instance: "+counter);
 
 	}
 
@@ -62,7 +64,7 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		else{
 			Path filePath = sparkSplit.getPath(currentFile);
 			final FileSystem fs = filePath.getFileSystem(conf);
-			HDFSPartition partition = new HDFSPartition(fs, filePath.toString(), counter);
+			HDFSPartition partition = new HDFSPartition(fs, filePath.toString(), new PartitionLock(fs, "/user/anil/locks"), counter);
 			System.out.println("loading path: "+filePath.toString());
 			try {
 				partition.loadNext();

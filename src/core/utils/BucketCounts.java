@@ -14,7 +14,9 @@ public class BucketCounts {
 	private String countsFile;
 	private FileSystem fs;
 	
-	Map<Integer,Integer> bucketCountMap;	
+	Map<Integer,Integer> bucketCountMap;
+	boolean isLoaded;
+	
 	List<String> newLines;
 	
 	public final int retryIntervalMs = 1000;
@@ -25,16 +27,18 @@ public class BucketCounts {
 		this.countsFile = countsFile;
 		this.fs = fs;
 		newLines = Lists.newArrayList();
-		load();
+		isLoaded = false;
 	}
 
 	private void load(){
 		bucketCountMap = Maps.newHashMap();
 		List<String> lines = HDFSUtils.readHDFSLines(fs, countsFile);
+		lines.addAll(newLines);		// add any new lines to it
 		for(String line: lines){
 			String[] tokens = line.split(",");
 			update(Integer.parseInt(tokens[0]), Integer.parseInt(tokens[1]));
 		}
+		isLoaded = true;
 	}
 	
 	private void update(Integer bucket, Integer countChange){
@@ -52,6 +56,9 @@ public class BucketCounts {
 	}
 	
 	public int getBucketCount(int bucketId){
+		if(!isLoaded)
+			load();
+		
 		if(bucketCountMap.containsKey(bucketId))
 			return bucketCountMap.get(bucketId);
 		else 
