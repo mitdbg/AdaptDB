@@ -19,6 +19,7 @@ public class SparkQueryConf {
 	public final static String ZOOKEEPER_HOSTS = "ZOOKEEPER_HOSTS";
 	public final static String HADOOP_HOME = "HADOOP_HOME";	// this can be obtained from cartilage properties file
 	public final static String COUNTERS_FILE = "COUNTERS_FILE";
+	public final static String LOCK_DIR = "LOCK_DIR";
 	
 	
 	public final static String CARTILAGE_PROPERTIES = "CARTILAGE_PROPERTIES";
@@ -119,6 +120,14 @@ public class SparkQueryConf {
 
 	public String getCountersFile() {
 		return conf.get(COUNTERS_FILE);
+	}
+	
+	public void setLockDir(String lockDir) {
+		conf.set(LOCK_DIR, lockDir);
+	}
+
+	public String getLockDir() {
+		return conf.get(LOCK_DIR);
 	}
 
 	public void setCartilageProperties(String cartilageProperties){

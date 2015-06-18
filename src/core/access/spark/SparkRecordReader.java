@@ -32,6 +32,7 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 
 	//CuratorFramework client;
 	BucketCounts counter;
+	PartitionLock locker;
 
 	@Override
 	public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
@@ -49,7 +50,10 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		key = new LongWritable();
 		recordId = 0;
 		
-		counter = new BucketCounts(sparkSplit.getPath(currentFile).getFileSystem(conf), conf.get(SparkQueryConf.COUNTERS_FILE));
+		FileSystem fs = sparkSplit.getPath(currentFile).getFileSystem(conf);
+		counter = new BucketCounts(fs, conf.get(SparkQueryConf.COUNTERS_FILE));
+		locker = new PartitionLock(fs, conf.get(SparkQueryConf.LOCK_DIR));
+		
 		System.out.println("Counter instance: "+counter);
 
 	}
@@ -64,7 +68,7 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		else{
 			Path filePath = sparkSplit.getPath(currentFile);
 			final FileSystem fs = filePath.getFileSystem(conf);
-			HDFSPartition partition = new HDFSPartition(fs, filePath.toString(), new PartitionLock(fs, "/user/anil/locks"), counter);
+			HDFSPartition partition = new HDFSPartition(fs, filePath.toString(), locker, counter);
 			System.out.println("loading path: "+filePath.toString());
 			try {
 				partition.loadNext();
@@ -120,5 +124,6 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 	public void close() throws IOException {
 		iterator.finish();		// this method could even be called earlier in case the entire split does not fit in main-memory
 		counter.close();
+		locker.cleanup();
 	}
 }

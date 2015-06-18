@@ -69,7 +69,7 @@ public class RepartitionIterator extends PartitionIterator{
 		super.setPartition(partition);
 		if (newIndexTree == null) {
 			String path = FilenameUtils.getPathNoEndSeparator(partition.getPath());
-			if (FilenameUtils.getBaseName(path).startsWith("partitions")) { // hack
+			if (FilenameUtils.getBaseName(path).contains("partitions")) { // hack
 				path = FilenameUtils.getPath(path);
 			}
 			byte[] indexBytes = HDFSUtils.readFile(((HDFSPartition)partition).getFS(), path+"/index");

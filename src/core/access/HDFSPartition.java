@@ -70,6 +70,7 @@ public class HDFSPartition extends Partition{
 		this.hdfs = hdfs;
 		this.replication = replication;
 		this.counter = counter;
+		this.locker = locker;
 	}
 
 	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, PartitionLock locker, BucketCounts counter) {
