@@ -5,9 +5,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import core.utils.BucketCounts;
+import core.index.MDIndex;
 import core.utils.ConfUtils;
-import core.utils.HDFSUtils;
 
 /**
  * Created by qui on 3/30/15.
@@ -48,7 +47,7 @@ public class CountingPartitionWriter extends PartitionWriter {
 
     @Override
     public void flush() {
-    	BucketCounts c = new BucketCounts(HDFSUtils.getFSByHadoopHome(conf.getHADOOP_HOME()), conf.get("COUNTERS_FILE"));
+    	MDIndex.BucketCounts c = new MDIndex.BucketCounts(conf.getZOOKEEPER_HOSTS());
         //CuratorFramework client = c.getClient();
         //String lockPathBase = "/partition-lock-";
         Iterator<Map.Entry<String, Integer>> entries = bucketCounts.entrySet().iterator();

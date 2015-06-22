@@ -6,7 +6,7 @@ import java.io.OutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import core.utils.BucketCounts;
+import core.index.MDIndex;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 
@@ -73,7 +73,7 @@ public class HDFSPartitionWriter extends PartitionWriter{
 
 	@Override
 	public void flush(){
-		BucketCounts c = new BucketCounts(hdfs, conf.get("COUNTERS_FILE"));
+		MDIndex.BucketCounts c = new MDIndex.BucketCounts(conf.getZOOKEEPER_HOSTS());
 		for(String k: buffer.keySet())
 			try {
 				c.setToBucketCount(Integer.parseInt(k), partitionRecordCount.get(k).intValue());

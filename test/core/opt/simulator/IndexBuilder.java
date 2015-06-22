@@ -4,10 +4,10 @@ import junit.framework.TestCase;
 
 import org.apache.hadoop.fs.FileSystem;
 
+import core.index.MDIndex;
 import core.index.MDIndex.Bucket;
 import core.index.Settings;
 import core.index.robusttree.RobustTreeHs;
-import core.utils.BucketCounts;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 
@@ -32,7 +32,7 @@ public class IndexBuilder extends TestCase {
 
 			FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 			RobustTreeHs index = new RobustTreeHs(0.01);
-			Bucket.counters = new BucketCounts(fs, cfg.get("COUNTERS_FILE"));
+			MDIndex.Bucket.counters = new MDIndex.BucketCounts(cfg.getZOOKEEPER_HOSTS());
 
 			
 			String pathToSample = hdfsPath + "/sample";
@@ -52,7 +52,7 @@ public class IndexBuilder extends TestCase {
 		int maxBuckets = 1024;
 		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 		RobustTreeHs index = new RobustTreeHs(0.01);
-		Bucket.counters = new BucketCounts(fs, cfg.get("COUNTERS_FILE"));
+		Bucket.counters = new MDIndex.BucketCounts(cfg.getZOOKEEPER_HOSTS());
 		
 		String pathToSample = hdfsPath + "/sample";
 		byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);

@@ -1,7 +1,9 @@
 package core.index;
+import org.apache.curator.framework.CuratorFramework;
+
 import core.index.key.CartilageIndexKeySet;
 import core.index.key.MDIndexKey;
-import core.utils.BucketCounts;
+import core.utils.CuratorUtils;
 
 
 /**
@@ -67,43 +69,43 @@ public interface MDIndex {
 		}
 	}
 
-//	public static class BucketCounts{
-//
-//		private CuratorFramework client;
-//		private String counterPathBase = "/partition-count-";
-//
-//		public BucketCounts(String zookeeperHosts){
-//			client = CuratorUtils.createAndStartClient(zookeeperHosts);
-//		}
-//
-//		public BucketCounts(CuratorFramework client){
-//			this.client = client;
-//		}
-//
-//		public void addToBucketCount(int bucketId, int count){
-//			CuratorUtils.addCounter(client, counterPathBase + bucketId, count);
-//		}
-//
-//		public int getBucketCount(int bucketId){
-//			return CuratorUtils.getCounter(client, counterPathBase + bucketId);
-//		}
-//		
-//		public void setToBucketCount(int bucketId, int count){
-//			CuratorUtils.setCounter(client, counterPathBase + bucketId, count);
-//		}
-//
-//		public void removeBucketCount(int bucketId){
-//			CuratorUtils.setCounter(client, counterPathBase + bucketId, 0);
-//		}
-//
-//		public void close(){
-//			client.close();
-//		}
-//
-//		public CuratorFramework getClient(){
-//			return this.client;
-//		}
-//	}
+	public static class BucketCounts{
+
+		private CuratorFramework client;
+		private String counterPathBase = "/partition-count-";
+
+		public BucketCounts(String zookeeperHosts){
+			client = CuratorUtils.createAndStartClient(zookeeperHosts);
+		}
+
+		public BucketCounts(CuratorFramework client){
+			this.client = client;
+		}
+
+		public void addToBucketCount(int bucketId, int count){
+			CuratorUtils.addCounter(client, counterPathBase + bucketId, count);
+		}
+
+		public int getBucketCount(int bucketId){
+			return CuratorUtils.getCounter(client, counterPathBase + bucketId);
+		}
+		
+		public void setToBucketCount(int bucketId, int count){
+			CuratorUtils.setCounter(client, counterPathBase + bucketId, count);
+		}
+
+		public void removeBucketCount(int bucketId){
+			CuratorUtils.setCounter(client, counterPathBase + bucketId, 0);
+		}
+
+		public void close(){
+			client.close();
+		}
+
+		public CuratorFramework getClient(){
+			return this.client;
+		}
+	}
 
 
 

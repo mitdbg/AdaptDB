@@ -2,6 +2,7 @@ package core.access.spark;
 
 import java.io.IOException;
 
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -14,8 +15,7 @@ import core.access.HDFSPartition;
 import core.access.iterator.IteratorRecord;
 import core.access.iterator.PartitionIterator;
 import core.access.spark.SparkInputFormat.SparkFileSplit;
-import core.utils.BucketCounts;
-import core.utils.PartitionLock;
+import core.utils.CuratorUtils;
 
 public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord> {
 
@@ -30,9 +30,9 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 	private long recordId;
 	private boolean hasNext;
 
-	//CuratorFramework client;
-	BucketCounts counter;
-	PartitionLock locker;
+	CuratorFramework client;
+	//BucketCounts counter;
+	//PartitionLock locker;
 
 	@Override
 	public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
@@ -40,22 +40,19 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		System.out.println("Initializing SparkRecordReader");
 		
 		conf = context.getConfiguration();
-		//client = CuratorUtils.createAndStartClient(conf.get(SparkQueryConf.ZOOKEEPER_HOSTS));		
+		client = CuratorUtils.createAndStartClient(conf.get(SparkQueryConf.ZOOKEEPER_HOSTS));		
 		sparkSplit = (SparkFileSplit)split;
 		
 		iterator = sparkSplit.getIterator();
 		currentFile = 0;
 		
-		FileSystem fs = sparkSplit.getPath(currentFile).getFileSystem(conf);
-		counter = new BucketCounts(fs, conf.get(SparkQueryConf.COUNTERS_FILE));
-		locker = new PartitionLock(fs, conf.get(SparkQueryConf.LOCK_DIR));		
+		//FileSystem fs = sparkSplit.getPath(currentFile).getFileSystem(conf);
+		//counter = new BucketCounts(fs, conf.get(SparkQueryConf.COUNTERS_FILE));
+		//locker = new PartitionLock(fs, conf.get(SparkQueryConf.LOCK_DIR));		
 		
 		hasNext = initializeNext();		
 		key = new LongWritable();
-		recordId = 0;
-		
-		System.out.println("Locker instance: "+locker);
-		System.out.println("Counter instance: "+counter);
+		recordId = 0;		
 	}
 
 	protected boolean initializeNext() throws IOException{
@@ -68,7 +65,7 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 		else{
 			Path filePath = sparkSplit.getPath(currentFile);
 			final FileSystem fs = filePath.getFileSystem(conf);
-			HDFSPartition partition = new HDFSPartition(fs, filePath.toString(), locker, counter);
+			HDFSPartition partition = new HDFSPartition(fs, filePath.toString(), client);
 			System.out.println("loading path: "+filePath.toString());
 			try {
 				partition.loadNext();
@@ -123,7 +120,7 @@ public class SparkRecordReader extends RecordReader<LongWritable, IteratorRecord
 	@Override
 	public void close() throws IOException {
 		iterator.finish();		// this method could even be called earlier in case the entire split does not fit in main-memory
-		counter.close();
-		locker.cleanup();
+		//counter.close();
+		//locker.cleanup();
 	}
 }

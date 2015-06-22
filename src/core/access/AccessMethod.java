@@ -36,7 +36,7 @@ public class AccessMethod {
 	 */
 	public void init(SparkQueryConf conf){
 		opt = new Optimizer(conf.getDataset(), conf.getHadoopHome());
-		opt.loadIndex(conf.getCountersFile());
+		opt.loadIndex(conf.getZookeeperHosts());
 		opt.loadQueries();
 	}
 

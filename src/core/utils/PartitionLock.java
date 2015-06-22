@@ -1,8 +1,10 @@
 package core.utils;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
 import com.google.common.collect.Lists;
 
@@ -17,6 +19,7 @@ public class PartitionLock {
 
 	private List<Integer> lockedPartitions;
 	private FileSystem hdfs;
+	//private String hadoopHome;
 	private String lockDir;
 	
 	private final long retryIntervalMs = 1000;
@@ -28,14 +31,43 @@ public class PartitionLock {
 		this.lockDir = lockDir;
 	}
 	
-	public synchronized void acquire(int partitionId){	// should we make it synchronized?
+//	public PartitionLock(String hadoopHome, String lockDir){
+//		this.lockedPartitions = Lists.newArrayList();
+//		this.hadoopHome = hadoopHome;
+//		this.lockDir = lockDir;
+//	}
+	
+	private boolean createLockFile(String path){		
+		try {
+			//FileSystem hdfs = HDFSUtils.getFSByHadoopHome(hadoopHome);
+			return hdfs.createNewFile(new Path(path));
+		} catch (IOException e1) {
+			System.out.println("failed to create lock file: "+e1.getMessage());
+			return false;
+		}
+	}
+	
+	private boolean deleteLockFile(String path){
+		try {
+			//FileSystem hdfs = HDFSUtils.getFSByHadoopHome(hadoopHome);
+			return hdfs.delete(new Path(path), false);			
+		} catch (IOException e) {
+			return false;
+		}
+	}
+	
+	public void acquire(int partitionId){	// should we make it synchronized?
 		// try create a lock file on HDFS
-		boolean locked = HDFSUtils.tryCreateFile(hdfs, lockDir+"/"+partitionId);
+		System.out.println("going to acquire");
+		boolean locked = createLockFile(lockDir+"/"+partitionId);
 		int attempt=1;
+		System.out.println("acuire attempt "+attempt);
 		while(!locked && attempt < maxAttempts){
 			ThreadUtils.sleep(retryIntervalMs);
-			locked = HDFSUtils.tryCreateFile(hdfs, lockDir+"/"+partitionId);
+			locked = createLockFile(lockDir+"/"+partitionId);
+			//locked = HDFSUtils.tryCreateFile(hdfs, lockDir+"/"+partitionId);			
 			attempt++;
+			System.out.println("acuire attempt "+attempt);
 		}
 		if(locked)
 			lockedPartitions.add(partitionId);
@@ -43,13 +75,13 @@ public class PartitionLock {
 			throw new RuntimeException("Failed to obtain a lock for partition: "+partitionId);
 	}
 	
-	public synchronized void release(int partitionId){
+	public void release(int partitionId){
 		// remove the lock file on HDFS
-		boolean deleted = HDFSUtils.tryDelete(hdfs, lockDir+"/"+partitionId, false);
+		boolean deleted = deleteLockFile(lockDir+"/"+partitionId);
 		int attempt=1;
 		while(!deleted && attempt < maxAttempts){
 			ThreadUtils.sleep(retryIntervalMs);
-			deleted = HDFSUtils.tryDelete(hdfs, lockDir+"/"+partitionId, false);
+			deleted = deleteLockFile(lockDir+"/"+partitionId);
 			attempt++;
 		}
 		if(deleted){

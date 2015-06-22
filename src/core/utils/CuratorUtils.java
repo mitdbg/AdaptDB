@@ -19,16 +19,28 @@ public class CuratorUtils {
 	private static int maxRetries = 4;
 	private static int waitTimeSeconds = 1000;
 	
-	private static int sessionTimeout = 20000;
+	private static int sessionTimeout = 200000;
 	private static int connectionTimeout = 20000;
 	
 	/*
 	 * Curator client utils
 	 */
 	
+	
+//	public static class MyStateListener implements ConnectionStateListener{
+//		public void stateChanged(CuratorFramework arg0, ConnectionState arg1) {
+//		}
+//	}
+	
 	public static CuratorFramework createClient(String zkHosts){
 		RetryPolicy retryPolicy = new ExponentialBackoffRetry(baseSleepTimeMills, maxRetries);
-		return CuratorFrameworkFactory.newClient(zkHosts, sessionTimeout, connectionTimeout, retryPolicy);
+		CuratorFramework client = CuratorFrameworkFactory.newClient(zkHosts, sessionTimeout, connectionTimeout, retryPolicy);
+//		try {
+//			client.getZookeeperClient().blockUntilConnectedOrTimedOut();
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//		}
+		return client;
 	}
 	
 	public static CuratorFramework createAndStartClient(String zkHosts){
@@ -47,15 +59,30 @@ public class CuratorUtils {
 	 */
 	
 	public static InterProcessSemaphoreMutex acquireLock(CuratorFramework client, String lockPath){
+		
+		// make sure that the zookeeper client is connected
+		int connTries=0, maxConnTries = 100;
+		while(!(client.getZookeeperClient().isConnected()) && connTries < maxConnTries){
+			ThreadUtils.sleep(500);
+			connTries++;
+		}
+		if(!(client.getZookeeperClient().isConnected()))
+			throw new RuntimeException("The zookeeper cient is not connected!");
+		
+		
 		InterProcessSemaphoreMutex lock = new InterProcessSemaphoreMutex(client, lockPath);
 		
 		try {
 			if (lock.acquire(waitTimeSeconds, TimeUnit.SECONDS))
 				return lock;
-			else
-				throw new RuntimeException("Time out: Failed to obtain lock: "+ lockPath);
+			else {
+				System.out.println("Time out: Failed to obtain lock: "+ lockPath);
+				//return null;
+				throw new RuntimeException("Failed to obtain lock: "+lockPath);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			//return null;
 			throw new RuntimeException("Failed to obtain lock: "+lockPath+"\n "+e.getMessage());
 		}
 	}
