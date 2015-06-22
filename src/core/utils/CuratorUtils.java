@@ -191,7 +191,7 @@ public class CuratorUtils {
 			for(String child: children){
 				if(child.startsWith(prefix)){
 					//System.out.println("deleting: "+path + child);
-					client.delete().forPath(path + child);
+					client.delete().deletingChildrenIfNeeded().forPath(path + child);
 				}
 			}
 			//client.close();
