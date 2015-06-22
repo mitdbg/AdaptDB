@@ -1,25 +1,15 @@
 package core.access.benchmark;
 
-import java.io.BufferedReader;
-import java.nio.charset.Charset;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Random;
 
 import junit.framework.TestCase;
-
-import org.apache.curator.framework.CuratorFramework;
-
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.spark.SparkQuery;
 import core.index.Settings;
 import core.utils.ConfUtils;
-import core.utils.CuratorUtils;
-import core.utils.HDFSUtils;
 import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
 import core.utils.SchemaUtils.TYPE;
 
@@ -30,6 +20,8 @@ public class TestConvergence extends TestCase{
 	@Override
 	public void setUp() {
 
+		/*	no cleanup needed to resume the runs
+		
 		// delete query history
 		// Cleanup queries file - to remove past query workload
 		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
@@ -41,7 +33,6 @@ public class TestConvergence extends TestCase{
 
 		Charset charset = Charset.forName("US-ASCII");
 		Path file = FileSystems.getDefault().getPath("/data/mdindex/tpch-dbgen/buckets");
-//		Path file = FileSystems.getDefault().getPath("/Users/qui/Documents/buckets.txt");
 		try {
 			BufferedReader reader = Files.newBufferedReader(file, charset);
 			String line = null;
@@ -54,6 +45,8 @@ public class TestConvergence extends TestCase{
 		}
 
 		CuratorUtils.stopClient(client);
+		
+		*/
 	}
 
 	// access shipdate in cyclic pattern, selectivity constant
