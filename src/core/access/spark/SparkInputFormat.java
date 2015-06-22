@@ -24,6 +24,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
 
 import core.access.AccessMethod;
@@ -123,7 +124,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		else
 			splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), queryConf.getJustAccess());
 		System.out.println("Number of partition splits = "+splits.length);
-		splits = resizeSplits(splits, queryConf.getMaxSplitSize());
+		splits = resizeSplits(splits, partitionIdFileMap, queryConf.getMaxSplitSize());
 		System.out.println("Number of partition splits after splitting= "+splits.length);
 		//splits = combineSplits(splits, queryConf.getMinSplitSize(), queryConf.getMaxSplitSize());
 		//System.out.println("Number of partition splits after combining= "+splits.length);
@@ -165,6 +166,16 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 
 		return finalSplits;
 	}
+	
+	private long getPartitionSplitSize(PartitionSplit split, Multimap<Integer,FileStatus> partitionIdFileMap){
+		int[] partitionIds = split.getPartitions();
+		long size = 0;
+		for(int i=0;i<partitionIds.length;i++){
+			for(FileStatus fs: partitionIdFileMap.get(partitionIds[i]))
+				size += fs.getLen();		
+		}
+		return (size / 1024 / 1024) ;	// return size in MB
+	}
 
 
 
@@ -177,13 +188,14 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 	 * @param initialSplits
 	 * @return
 	 */
-	public PartitionSplit[] resizeSplits(PartitionSplit[] initialSplits, int maxSplitSize){
+	public PartitionSplit[] resizeSplits(PartitionSplit[] initialSplits, Multimap<Integer,FileStatus> partitionIdFileMap, int maxSplitSize){
 
 		List<PartitionSplit> resizedSplits = Lists.newArrayList();
 
 		for(PartitionSplit split: initialSplits){
 			int[] partitions = split.getPartitions();
-			if(partitions.length > maxSplitSize){
+			//if(partitions.length > maxSplitSize){
+			if(getPartitionSplitSize(split,partitionIdFileMap) > maxSplitSize){	
 				// need to split the partition into smaller ones
 				for(int i=0;i<partitions.length;i+=maxSplitSize){
 					int to = i + maxSplitSize > partitions.length ? partitions.length : i + maxSplitSize;
