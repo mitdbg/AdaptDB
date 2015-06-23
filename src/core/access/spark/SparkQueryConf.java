@@ -82,20 +82,20 @@ public class SparkQueryConf {
 		return Integer.parseInt(conf.get(WORKERS));
 	}
 
-	public void setMaxSplitSize(int maxSplitSize){
+	public void setMaxSplitSize(long maxSplitSize){
 		conf.set(MAX_SPLIT_SIZE, ""+maxSplitSize);
 	}
 
-	public int getMaxSplitSize(){
-		return Integer.parseInt(conf.get(MAX_SPLIT_SIZE));
+	public long getMaxSplitSize(){
+		return Long.parseLong(conf.get(MAX_SPLIT_SIZE));
 	}
 
-	public void setMinSplitSize(int minSplitSize){
+	public void setMinSplitSize(long minSplitSize){
 		conf.set(MIN_SPLIT_SIZE, ""+minSplitSize);
 	}
 
-	public int getMinSplitSize(){
-		return Integer.parseInt(conf.get(MIN_SPLIT_SIZE));
+	public long getMinSplitSize(){
+		return Long.parseLong(conf.get(MIN_SPLIT_SIZE));
 	}
 
 	public void setZookeeperHosts(String hosts){

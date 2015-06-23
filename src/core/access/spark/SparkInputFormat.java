@@ -103,11 +103,16 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		// am.init(queryConf.getDataset(), queryConf.getHadoopHome());
 
 		ArrayListMultimap<Integer,FileStatus> partitionIdFileMap = ArrayListMultimap.create();
-		for(FileStatus file: files)
+		Map<Integer,Long> partitionIdSizeMap = Maps.newHashMap();
+		for(FileStatus file: files){
 			try {
-				partitionIdFileMap.put(Integer.parseInt(FilenameUtils.getName(file.getPath().toString())), file);
+				int id = Integer.parseInt(FilenameUtils.getName(file.getPath().toString()));
+				partitionIdFileMap.put(id, file);
+				long currentSize = partitionIdSizeMap.containsKey(id) ? partitionIdSizeMap.get(id) : 0;
+				partitionIdSizeMap.put(id, currentSize + file.getLen());
 			} catch (NumberFormatException e) {
 			}
+		}
 
 		PartitionSplit[] splits;
 		if(queryConf.getFullScan()){
@@ -126,7 +131,8 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		else
 			splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates()), queryConf.getWorkers(), queryConf.getJustAccess());
 		System.out.println("Number of partition splits = "+splits.length);
-		splits = resizeSplits(splits, partitionIdFileMap, queryConf.getMaxSplitSize());
+		//splits = resizeSplits(splits, partitionIdFileMap, queryConf.getMaxSplitSize());
+		splits = resizeSplits(splits, partitionIdSizeMap, queryConf.getMaxSplitSize(), queryConf.getMinSplitSize());
 		System.out.println("Number of partition splits after splitting= "+splits.length);
 		//splits = combineSplits(splits, queryConf.getMinSplitSize(), queryConf.getMaxSplitSize());
 		//System.out.println("Number of partition splits after combining= "+splits.length);
@@ -169,27 +175,27 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		return finalSplits;
 	}
 	
-	private Map<Integer,Long> getPartitionIdMap(PartitionSplit[] splits, Multimap<Integer,FileStatus> partitionIdFileMap){
-		Map<Integer,Long> partitionIdSizeMap = Maps.newHashMap();
-		
-		for(PartitionSplit split: splits){
-			int[] partitionIds = split.getPartitions();
-			
-			for(int pid: partitionIds){
-				long size = 0;
-				for(FileStatus fs: partitionIdFileMap.get(pid))
-					size += fs.getLen();
-				size = size / 1024 / 1024;
-				System.out.println("partition="+pid+", size="+size);
-				if(partitionIdSizeMap.containsKey(pid))
-					partitionIdSizeMap.put(pid, partitionIdSizeMap.get(pid) + size);
-				else
-					partitionIdSizeMap.put(pid, size);
-			}
-			
-		}		
-		return partitionIdSizeMap;
-	}
+//	private Map<Integer,Long> getPartitionIdMap(PartitionSplit[] splits, Multimap<Integer,FileStatus> partitionIdFileMap){
+//		Map<Integer,Long> partitionIdSizeMap = Maps.newHashMap();
+//		
+//		for(PartitionSplit split: splits){
+//			int[] partitionIds = split.getPartitions();
+//			
+//			for(int pid: partitionIds){
+//				long size = 0;
+//				for(FileStatus fs: partitionIdFileMap.get(pid))
+//					size += fs.getLen();
+//				size = size / 1024 / 1024;
+//				//System.out.println("partition="+pid+", size="+size);
+//				if(partitionIdSizeMap.containsKey(pid))
+//					partitionIdSizeMap.put(pid, partitionIdSizeMap.get(pid) + size);
+//				else
+//					partitionIdSizeMap.put(pid, size);
+//			}
+//			
+//		}		
+//		return partitionIdSizeMap;
+//	}
 	
 	private long getPartitionSplitSize(PartitionSplit split, Map<Integer,Long> partitionIdSizeMap){
 		long size = 0;
@@ -209,9 +215,100 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 	 * @param initialSplits
 	 * @return
 	 */
-	public PartitionSplit[] resizeSplits(PartitionSplit[] initialSplits, Multimap<Integer,FileStatus> partitionIdFileMap, int maxSplitSize){
+	public PartitionSplit[] resizeSplits(PartitionSplit[] initialSplits, Map<Integer,Long> partitionSizes, long maxSplitSize, long minSplitSize){
+		
+		List<PartitionSplit> resizedSplits = Lists.newArrayList();
+		ArrayListMultimap<String,PartitionSplit> smallSplits = ArrayListMultimap.create();
+		
+		for(PartitionSplit split: initialSplits){
+			long splitSize = getPartitionSplitSize(split, partitionSizes);
+			if(splitSize > maxSplitSize){
+				// create smaller splits
+				resizedSplits.addAll(createSmaller(split, partitionSizes, maxSplitSize));
+			}
+			else if(splitSize < minSplitSize){
+				// create larger splits
+				smallSplits.put(split.getIterator().getClass().getName(), split);
+			}
+			else{
+				// just accept as it is
+				PartitionIterator itr = split.getIterator();
+				if(itr instanceof RepartitionIterator)
+					itr = ((RepartitionIterator)itr).createDistributedIterator();
+				resizedSplits.add(new PartitionSplit(split.getPartitions(), itr));
+			}
+		}
+		
+		for(String key: smallSplits.keySet())
+			resizedSplits.addAll(createLarger(smallSplits.get(key), partitionSizes, maxSplitSize));
+		
+		return resizedSplits.toArray(new PartitionSplit[resizedSplits.size()]);
+	}
+	
+	private List<PartitionSplit> createLarger(List<PartitionSplit> splits, Map<Integer,Long> partitionSizes, long maxSplitSize){
+		List<PartitionSplit> largerSplits = Lists.newArrayList();
+		
+		Multimap<Integer, Integer> largerSplitPartitionIds = ArrayListMultimap.create();
+		long currentSize = 0; int largerSplitId = 0;
+		
+		for(PartitionSplit split: splits){
+			for(Integer p: split.getPartitions()){
+				long pSize = partitionSizes.get(p);
+				if(currentSize + pSize > maxSplitSize){
+					largerSplitId++;
+					currentSize = 0;
+				}
+				currentSize += pSize;
+				largerSplitPartitionIds.put(largerSplitId, p);
+			}
+		}
+		
+		for(Integer k: largerSplitPartitionIds.keySet()){
+			PartitionIterator itr = splits.get(0).getIterator();
+			if(itr instanceof RepartitionIterator)
+				itr = ((RepartitionIterator)itr).createDistributedIterator();
+			largerSplits.add(new PartitionSplit(Ints.toArray(largerSplitPartitionIds.get(k)), itr));
+		}
+		
+		return largerSplits;
+	}
+	
+	private List<PartitionSplit> createSmaller(PartitionSplit split, Map<Integer,Long> partitionSizes, long maxSplitSize){
+		List<PartitionSplit> smallerSplits = Lists.newArrayList();
+		
+		int[] partitions = split.getPartitions();
+		long currentSize = 0;
+		Multimap<Integer, Integer> splitPartitionIds = ArrayListMultimap.create();
+		int splitId = 0;
+		
+		for(int i=0; i<partitions.length; i++){
+			long pSize = partitionSizes.get(partitions[i]);
+			if(currentSize + pSize > maxSplitSize){
+				splitId++;
+				currentSize = 0;
+			}
+			currentSize += pSize;
+			splitPartitionIds.put(splitId, partitions[i]);
+		}
+		
+		for(Integer k: splitPartitionIds.keySet()){
+			PartitionIterator itr = split.getIterator();
+			if(itr instanceof RepartitionIterator)
+				itr = ((RepartitionIterator)itr).createDistributedIterator();
+			smallerSplits.add(new PartitionSplit(Ints.toArray(splitPartitionIds.get(k)), itr));
+		}
+		
+		return smallerSplits;
+	}
+	
+//	private List<PartitionSplit>
+	
+	
+	
+	
+	public PartitionSplit[] resizeSplits(PartitionSplit[] initialSplits, Map<Integer,Long> partitionSizes, int maxSplitSize){
 
-		Map<Integer,Long> partitionSizes = getPartitionIdMap(initialSplits, partitionIdFileMap);
+		//Map<Integer,Long> partitionSizes = getPartitionIdMap(initialSplits, partitionIdFileMap);
 		List<PartitionSplit> resizedSplits = Lists.newArrayList();
 
 		for(PartitionSplit split: initialSplits){
@@ -222,7 +319,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 				int from = 0; long currentSize = 0;
 				for(int i=0;i<partitions.length;i++){
 					long pSize = partitionSizes.get(partitions[i]);
-					if(currentSize + pSize > maxSplitSize){
+					if(currentSize > 0 && currentSize + pSize > maxSplitSize){
 						int[] subPartitions = Arrays.copyOfRange(partitions, from, i);
 
 						PartitionIterator itr = split.getIterator();

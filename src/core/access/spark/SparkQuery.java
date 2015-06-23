@@ -87,8 +87,8 @@ public class SparkQuery {
 		queryConf.setWorkers(cfg.getNUM_RACKS() * cfg.getNODES_PER_RACK() * cfg.getMAP_TASKS());
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
-		queryConf.setMaxSplitSize(8192);	// 8gb is the max size for each split (with 8 threads in parallel)
-		queryConf.setMinSplitSize(4096);
+		queryConf.setMaxSplitSize(8589934592l);	// 8gb is the max size for each split (with 8 threads in parallel)
+		queryConf.setMinSplitSize(4294967296l);	// 4gb
 		queryConf.setCountersFile(cfg.get("COUNTERS_FILE"));
 		queryConf.setCountersFile(cfg.get("LOCK_DIR"));
 		
