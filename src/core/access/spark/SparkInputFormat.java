@@ -198,9 +198,17 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 //	}
 	
 	private long getPartitionSplitSize(PartitionSplit split, Map<Integer,Long> partitionIdSizeMap){
+		if(partitionIdSizeMap==null){
+			System.err.println("partition size map is null");
+			System.exit(0);
+		}
 		long size = 0;
-		for(int pid: split.getPartitions())
-			size += partitionIdSizeMap.get(pid);
+		for(int pid: split.getPartitions()){
+			if(partitionIdSizeMap.containsKey(pid))
+				size += partitionIdSizeMap.get(pid);
+			else
+				System.err.println("partitoion size not found: "+pid);
+		}
 		return size;
 	}
 
@@ -253,7 +261,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		
 		for(PartitionSplit split: splits){
 			for(Integer p: split.getPartitions()){
-				long pSize = partitionSizes.get(p);
+				long pSize = partitionSizes.containsKey(p) ? partitionSizes.get(p) : 0;
 				if(currentSize + pSize > maxSplitSize){
 					largerSplitId++;
 					currentSize = 0;
@@ -282,7 +290,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 		int splitId = 0;
 		
 		for(int i=0; i<partitions.length; i++){
-			long pSize = partitionSizes.get(partitions[i]);
+			long pSize = partitionSizes.containsKey(partitions[i]) ? partitionSizes.get(partitions[i]) : 0;
 			if(currentSize + pSize > maxSplitSize){
 				splitId++;
 				currentSize = 0;

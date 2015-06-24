@@ -41,8 +41,8 @@ public class TestChangingWorkload extends TestCase{
 		CuratorUtils.deleteAll(client, "/", "partition-");
 
 		Charset charset = Charset.forName("US-ASCII");
-//		Path file = FileSystems.getDefault().getPath("/data/mdindex/tpch-dbgen/buckets");
-		Path file = FileSystems.getDefault().getPath("/Users/qui/Documents/buckets.txt");
+		Path file = FileSystems.getDefault().getPath("/data/mdindex/tpch-dbgen/buckets");
+//		Path file = FileSystems.getDefault().getPath("/Users/qui/Documents/buckets.txt");
 		try {
 			BufferedReader reader = Files.newBufferedReader(file, charset);
 			String line = null;
@@ -160,7 +160,7 @@ public class TestChangingWorkload extends TestCase{
 	 */
 	public void testChangingQueries(){
 		int[] attrs = new int[]{6,10,12};
-		int numQueries = 25;
+		int numQueries = 30;
 		SparkQuery sq = new SparkQuery(cfg);
 		for (int i=0; i<attrs.length-1; i++) {
 			int attr1 = attrs[i];
@@ -174,7 +174,7 @@ public class TestChangingWorkload extends TestCase{
 					runQuery(sq, attr2);
 				}
 
-				prob1 -= 1.0/25.0;
+				prob1 -= 1.0/numQueries;
 			}
 		}
 	}
@@ -184,7 +184,7 @@ public class TestChangingWorkload extends TestCase{
 		int[] attrsA = new int[]{4,5,6};
 		int[] attrsB = new int[]{10,12,14};
 		int numQueriesPerSet = 20;
-		int numCycles = 2;
+		int numCycles = 3;
 		SparkQuery sq = new SparkQuery(cfg);
 		for (int i = 0; i < numCycles; i++) {
 			for (int j = 0; j < numQueriesPerSet; j++) {
@@ -202,6 +202,7 @@ public class TestChangingWorkload extends TestCase{
 		// need to reset the index and removePartitions.sh
 		TestChangingWorkload tcw = new TestChangingWorkload();
 		tcw.setUp();
-		tcw.testSwitchingSets();
+		tcw.testChangingQueries();
+		//tcw.testSwitchingSets();		
 	}
 }

@@ -1,15 +1,25 @@
 package core.access.benchmark;
 
+import java.io.BufferedReader;
+import java.nio.charset.Charset;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Random;
 
 import junit.framework.TestCase;
+
+import org.apache.curator.framework.CuratorFramework;
+
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.spark.SparkQuery;
 import core.index.Settings;
 import core.utils.ConfUtils;
+import core.utils.CuratorUtils;
+import core.utils.HDFSUtils;
 import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
 import core.utils.SchemaUtils.TYPE;
 
@@ -20,7 +30,7 @@ public class TestConvergence extends TestCase{
 	@Override
 	public void setUp() {
 
-		/*	no cleanup needed to resume the runs
+		//	no cleanup needed to resume the runs
 		
 		// delete query history
 		// Cleanup queries file - to remove past query workload
@@ -46,7 +56,7 @@ public class TestConvergence extends TestCase{
 
 		CuratorUtils.stopClient(client);
 		
-		*/
+		
 	}
 
 	// access shipdate in cyclic pattern, selectivity constant
@@ -71,7 +81,7 @@ public class TestConvergence extends TestCase{
 		// -> between 1992-01-01 and 1998-08-02
 		// SHIPDATE [1...121] days after ORDERDATE -> between 1992-01-02 and 1998-12-01, 2525 days
 
-		int numQueries = 28;
+		int numQueries = 30;
 		double selectivity = 0.05;
 		SparkQuery sq = new SparkQuery(cfg);
 
@@ -98,7 +108,7 @@ public class TestConvergence extends TestCase{
 	// access shipdate starting with high selectivity and decreasing exponentially
 	// randomly choose start of interval, which remains the same throughout
 	public void testConvergenceShipDateDrillDown(){
-		int numQueries = 28;
+		int numQueries = 30;
 		double selectivity = 0.1;
 		SparkQuery sq = new SparkQuery(cfg);
 
@@ -151,6 +161,8 @@ public class TestConvergence extends TestCase{
 		System.out.println("Started BAZOOKA");
 		TestConvergence tc = new TestConvergence();
 		tc.setUp();
-		tc.testConvergenceShipDateCyclic();
+		//tc.testConvergenceShipDateCyclic();
+		//tc.testConvergenceShipDateAdHoc();
+		tc.testConvergenceShipDateDrillDown();
 	}
 }
