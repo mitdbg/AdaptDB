@@ -5,6 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 
+import core.index.key.CartilageIndexKey;
 import org.apache.hadoop.io.Text;
 
 import com.google.common.base.Joiner;
@@ -16,18 +17,21 @@ public class Query implements Serializable{
 	private static final long serialVersionUID = 1L;
 	
 	protected Predicate[] predicates;
+	protected CartilageIndexKey key;
 
 	public Predicate[] getPredicates() {
 		return this.predicates;
 	}
 
 	public void write(DataOutput out) throws IOException{
-		Text.writeString(out, Joiner.on(",").join(predicates));
+		Text.writeString(out, Joiner.on(";").join(predicates));
+		Text.writeString(out, key.toString());
 		//out.writeBytes(Joiner.on(",").join(predicates)+"\n");
 	}
 
 	public void readFields(DataInput in) throws IOException{
-		String[] tokens = Text.readString(in).split(",");
+		String[] tokens = Text.readString(in).split(";");
+		key = new CartilageIndexKey(Text.readString(in));
 		//String[] tokens = in.readLine().split(",");
 		predicates = new Predicate[tokens.length];
 		for(int i=0; i<predicates.length; i++)
@@ -41,24 +45,37 @@ public class Query implements Serializable{
 		
 		public FilterQuery() {
 			this.predicates = null;
+			key = new CartilageIndexKey();
 		}
 
 		public FilterQuery(String predString) {
 			String[] parts = predString.split(";");
 			this.predicates = new Predicate[parts.length];
-			for (int i=0; i<parts.length; i++) {
+			for (int i=0; i<parts.length-1; i++) {
 				this.predicates[i] = new Predicate(parts[i]);
 			}
+			key = new CartilageIndexKey(parts[parts.length-1]);
+		}
+
+		public FilterQuery(Predicate[] predicates, CartilageIndexKey key) {
+			this.predicates = predicates;
+			this.key = key;
 		}
 
 		public FilterQuery(Predicate[] predicates) {
-			this.predicates = predicates;
+			this(predicates, new CartilageIndexKey());
 		}
 
 		public boolean qualifies(IteratorRecord record){
 			boolean qualify = true;
 			for (Predicate p: predicates) {
-				int attrIdx = p.attribute;
+				int[] keyAttrs = key.getKeys();
+				int attrIdx;
+				if (keyAttrs == null) {
+					attrIdx = p.attribute;
+				} else {
+					attrIdx = keyAttrs[p.attribute];
+				}
 				switch (p.type) {
 				case BOOLEAN:	qualify &= p.isRelevant(record.getBooleanAttribute(attrIdx)); break;
 				case INT:		qualify &= p.isRelevant(record.getIntAttribute(attrIdx)); break;
@@ -75,7 +92,7 @@ public class Query implements Serializable{
 
 		@Override
 		public String toString() {
-			return Joiner.on(";").join(predicates);	// simpler impl			
+			return Joiner.on(";").join(predicates) + ";" + key.toString();	// simpler impl
 //			String ret = "";
 //			for (int i=0; i<this.predicates.length; i++) {
 //				ret += this.predicates[i].toString() + ";";

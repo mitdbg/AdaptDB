@@ -45,6 +45,15 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
         Arrays.sort(this.keyAttrIdx);
 	}
 
+	public CartilageIndexKey(String keyString) {
+		String[] tokens = keyString.trim().split(",");
+		this.delimiter = tokens[0].charAt(0);
+		keyAttrIdx = new int[tokens.length-1];
+		for (int i = 0; i < keyAttrIdx.length; i++) {
+			keyAttrIdx[i] = Integer.parseInt(tokens[i+1]);
+		}
+	}
+
 	@Override
 	public CartilageIndexKey clone() throws CloneNotSupportedException {
 		CartilageIndexKey k = (CartilageIndexKey) super.clone();
@@ -59,6 +68,18 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
     public int[] getKeys() {
         return keyAttrIdx;
     }
+
+	public int getVirtualAttrIndex(int attr) {
+		if (keyAttrIdx == null) {
+			return attr;
+		}
+		for (int i = 0; i < keyAttrIdx.length; i++) {
+			if (keyAttrIdx[i] == attr) {
+				return i;
+			}
+		}
+		return -1;
+	}
 
 	public void setBytes(byte[] bytes, int[] offsets) {
 		this.bytes = bytes;
@@ -405,6 +426,14 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
 	public void setTuple(Object tuple) {
 		// TODO Auto-generated method stub
 
+	}
+
+	public String toString() {
+		String result = String.valueOf(delimiter);
+		for (int i = 0; i < keyAttrIdx.length; i++) {
+			result += "," + keyAttrIdx[i];
+		}
+		return result;
 	}
 
 }

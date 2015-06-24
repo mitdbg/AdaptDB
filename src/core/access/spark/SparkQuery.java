@@ -82,15 +82,20 @@ public class SparkQuery {
 //	}
 
 	public JavaPairRDD<LongWritable,IteratorRecord> createRDD(String hdfsPath, Predicate... ps){
+		return this.createRDD(hdfsPath, -1, ps);
+	}
+
+	public JavaPairRDD<LongWritable,IteratorRecord> createRDD(String hdfsPath, int numReplicas, Predicate... ps){
 		queryConf.setDataset(hdfsPath);
+		queryConf.setNumReplicas(numReplicas);
 		queryConf.setPredicates(ps);
 		queryConf.setWorkers(cfg.getNUM_RACKS() * cfg.getNODES_PER_RACK() * cfg.getMAP_TASKS());
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
 		queryConf.setMaxSplitSize(8589934592l);	// 8gb is the max size for each split (with 8 threads in parallel)
 		queryConf.setMinSplitSize(4294967296l);	// 4gb
-		queryConf.setCountersFile(cfg.get("COUNTERS_FILE"));
-		queryConf.setCountersFile(cfg.get("LOCK_DIR"));
+		//queryConf.setCountersFile(cfg.get("COUNTERS_FILE"));
+		//queryConf.setCountersFile(cfg.get("LOCK_DIR"));
 		
 		// ctx.hadoopConfiguration().setClass(FileInputFormat.PATHFILTER_CLASS, SparkPathFilter.class, PathFilter.class);
 

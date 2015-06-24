@@ -20,6 +20,7 @@ public class SparkQueryConf {
 	public final static String HADOOP_HOME = "HADOOP_HOME";	// this can be obtained from cartilage properties file
 	public final static String COUNTERS_FILE = "COUNTERS_FILE";
 	public final static String LOCK_DIR = "LOCK_DIR";
+	public final static String NUM_REPLICAS = "NUM_REPLICAS";
 	
 	
 	public final static String CARTILAGE_PROPERTIES = "CARTILAGE_PROPERTIES";
@@ -137,6 +138,10 @@ public class SparkQueryConf {
 	public String getCartilageProperties(){
 		return conf.get(CARTILAGE_PROPERTIES);
 	}
+
+	public void setNumReplicas(int numReplicas) { conf.set(NUM_REPLICAS, String.valueOf(numReplicas));}
+
+	public int getNumReplicas() { return Integer.parseInt(conf.get(NUM_REPLICAS));}
 
 	public Configuration getConf(){
 		return conf;

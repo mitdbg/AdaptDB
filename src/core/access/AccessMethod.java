@@ -4,7 +4,10 @@ package core.access;
 import core.access.iterator.PartitionIterator;
 import core.access.spark.SparkQueryConf;
 import core.adapt.opt.Optimizer;
+import core.index.key.CartilageIndexKey;
 import core.index.robusttree.RobustTreeHs;
+import core.utils.HDFSUtils;
+import org.apache.hadoop.fs.FileSystem;
 
 /**
  * This access method class considers filter access method over the distributed dataset.
@@ -24,6 +27,7 @@ import core.index.robusttree.RobustTreeHs;
 
 public class AccessMethod {
 	Optimizer opt;
+	CartilageIndexKey key = new CartilageIndexKey('|');
 
 	/**
 	 * Initialize hyper-partitioning data access.
@@ -35,7 +39,33 @@ public class AccessMethod {
 	 * @param dataset
 	 */
 	public void init(SparkQueryConf conf){
-		opt = new Optimizer(conf.getDataset(), conf.getHadoopHome());
+		int numReplicas = conf.getNumReplicas();
+		if (numReplicas == -1) {
+			opt = new Optimizer(conf.getDataset(), conf.getHadoopHome());
+		} else {
+			FileSystem fs = HDFSUtils.getFS(conf.getHadoopHome() + "/etc/hadoop/core-site.xml");
+			int replicaId = 0;
+			Predicate[] realPredicates = conf.getPredicates();
+			int predAttribute = realPredicates[0].attribute;
+			for (int i = 0; i < numReplicas; i++) {
+				String keyInfo = new String(HDFSUtils.readFile(fs, conf.getDataset() + "/" + i + "/info"));
+				key = new CartilageIndexKey(keyInfo);
+				if (key.getVirtualAttrIndex(predAttribute) != -1) {
+					replicaId = i;
+					break;
+				}
+			}
+
+			opt = new Optimizer(conf.getDataset() + "/" + replicaId, conf.getHadoopHome());
+			Predicate[] virtualPredicates = new Predicate[realPredicates.length];
+			for (int j = 0; j < virtualPredicates.length; j++) {
+				Predicate old = realPredicates[j];
+				System.out.println("old: "+old.toString());
+				virtualPredicates[j] = new Predicate(key.getVirtualAttrIndex(old.attribute), old.type, old.value, old.predtype);
+				System.out.println("new: "+virtualPredicates[j].toString());
+			}
+			conf.setPredicates(virtualPredicates);
+		}
 		opt.loadIndex(conf.getZookeeperHosts());
 		opt.loadQueries();
 	}
@@ -43,6 +73,8 @@ public class AccessMethod {
 	public RobustTreeHs getIndex() {
 		return opt.getIndex();
 	}
+
+	public CartilageIndexKey getKey() { return key; }
 
 	/**
 	 * This method returns whether or not a given partition qualifies for the predicate.

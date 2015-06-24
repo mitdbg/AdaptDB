@@ -3,6 +3,7 @@ package core.index.build;
 import java.io.File;
 
 import core.utils.ConfUtils;
+import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
 import junit.framework.TestCase;
 import core.index.Settings;
@@ -11,6 +12,7 @@ import core.index.kdtree.KDMedianTree;
 import core.index.key.CartilageIndexKey;
 import core.index.key.CartilageIndexKeyMT;
 import core.index.robusttree.RobustTreeHs;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.fs.FileSystem;
 
 public class TestIndexBuilder extends TestCase {
@@ -109,13 +111,19 @@ public class TestIndexBuilder extends TestCase {
 	}
 
 	public void testBuildSimpleRangeTreeLocalReplicated(){
-		builder.build(new SimpleRangeTree(numPartitions),
-						key,
-						inputFilename,
-						getLocalWriter(localPartitionDir),
-						attributes,
-						replication
-					);
+		File f = new File(inputFilename);
+		long fileSize = f.length();
+		int bucketSize = 64 * 1024 * 1024;
+		int numBuckets = (int) (fileSize / bucketSize) + 1;
+		builder.build(1,
+				numBuckets,
+				new SimpleRangeTree(numPartitions),
+				key,
+				Settings.tpchPath,
+				getLocalWriter(localPartitionDir),
+				attributes,
+				replication
+		);
 	}
 
 	public void testBuildSimpleRangeTreeHDFS(){
@@ -127,13 +135,19 @@ public class TestIndexBuilder extends TestCase {
 	}
 
 	public void testBuildSimpleRangeTreeHDFSReplicated(){
-		builder.build(new SimpleRangeTree(numPartitions),
-						key,
-						inputFilename,
-						getHDFSWriter(hdfsPartitionDir, (short)replication),
-						attributes,
-						replication
-					);
+		File f = new File(inputFilename);
+		long fileSize = f.length();
+		int bucketSize = 64 * 1024 * 1024;
+		int numBuckets = (int) (fileSize / bucketSize) + 1;
+		builder.build(1,
+				numBuckets,
+				new SimpleRangeTree(numPartitions),
+				key,
+				Settings.tpchPath,
+				getHDFSWriter(hdfsPartitionDir, (short)replication),
+				attributes,
+				replication
+			);
 	}
 
 	public void testBuildRobustTree(){
@@ -144,6 +158,10 @@ public class TestIndexBuilder extends TestCase {
 	}
 
 	public void testBuildRobustTreeBlockSampling() {
+		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
+		CuratorFramework client = CuratorUtils.createAndStartClient(cfg.getZOOKEEPER_HOSTS());
+		CuratorUtils.deleteAll(client, "/", "partition-");
+		client.close();
 		builder.buildWithBlockSampling(0.0002,
 				new RobustTreeHs(1),
 				key,
@@ -158,7 +176,7 @@ public class TestIndexBuilder extends TestCase {
 				numBuckets,
 				new RobustTreeHs(1),
 				key,
-				Settings.tpchPath+scaleFactor+"/");
+				Settings.tpchPath + scaleFactor + "/");
 	}
 
 	public void testSparkPartitioning() {
@@ -180,7 +198,25 @@ public class TestIndexBuilder extends TestCase {
 		builder.buildDistributedFromIndex(index,
 				key,
 				Settings.tpchPath,
-				getHDFSWriter(hdfsPartitionDir+"/partitions"+partitionsId, (short) replication));
+				getHDFSWriter(hdfsPartitionDir + "/partitions" + partitionsId, (short) replication));
+	}
+
+	public void testBuildRobustTreeReplicated(int scaleFactor, int numReplicas){
+		int bucketSize = 64; // 64 mb
+		int numBuckets = (scaleFactor * 759) / bucketSize + 1;
+		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
+		CuratorFramework client = CuratorUtils.createAndStartClient(cfg.getZOOKEEPER_HOSTS());
+		CuratorUtils.deleteAll(client, "/", "partition-");
+		client.close();
+		builder.build(0.0002,
+				numBuckets,
+				new RobustTreeHs(1),
+				key,
+				Settings.tpchPath,
+				getHDFSWriter(hdfsPartitionDir, (short) replication),
+				attributes,
+				numReplicas
+		);
 	}
 
 	public static void main(String[] args){
@@ -188,8 +224,9 @@ public class TestIndexBuilder extends TestCase {
 		TestIndexBuilder t = new TestIndexBuilder();
 		t.setUp();
 		//t.testBuildRobustTreeDistributed(args[args.length-1]);
-		//int scaleFactor = Integer.parseInt(args[args.length - 1]);
+		int scaleFactor = Integer.parseInt(args[args.length - 1]);
 		//t.testBuildKDMedianTreeBlockSamplingOnly(scaleFactor);
-		t.testBuildRobustTreeBlockSampling();
+		//t.testBuildRobustTreeBlockSampling();
+		t.testBuildRobustTreeReplicated(scaleFactor, 3);
 	}
 }

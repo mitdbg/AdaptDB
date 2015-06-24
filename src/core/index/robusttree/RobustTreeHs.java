@@ -40,7 +40,7 @@ public class RobustTreeHs implements MDIndex {
 
 	@Override
 	public MDIndex clone() throws CloneNotSupportedException {
-		return null;
+		return new RobustTreeHs(samplingRate);
 	}
 
 	public void initBuild(int buckets) {
@@ -99,7 +99,8 @@ public class RobustTreeHs implements MDIndex {
 
 		if (dimensionTypes == null) {
         	this.dimensionTypes = k.detectTypes(true);
-			this.dimensionTypes[0] = TYPE.LONG;
+			if (this.dimensionTypes[0] == TYPE.INT)
+				this.dimensionTypes[0] = TYPE.LONG;
             this.numAttributes = dimensionTypes.length;
 			this.sample.setTypes(this.dimensionTypes);
         }
