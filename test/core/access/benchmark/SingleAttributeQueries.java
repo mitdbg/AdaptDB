@@ -6,8 +6,7 @@ import core.access.Predicate.PREDTYPE;
 import core.access.spark.SparkQuery;
 import core.index.Settings;
 import core.utils.ConfUtils;
-import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.*;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;

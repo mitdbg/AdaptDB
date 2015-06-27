@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import core.data.CartilageDatum.CartilageFile;
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
 import core.utils.BinaryUtils;
@@ -61,7 +60,7 @@ public class ReplicatedInputReader {
 		initScan(bufferSize);
 		long sStartTime = System.nanoTime(), temp1;
 		long readTime=0, processTime=0;
-		FileChannel ch = IOUtils.openFileChannel(new CartilageFile(filename));
+		FileChannel ch = IOUtils.openFileChannel(filename);
 		int counter = 0;
 		try {
 			while (true) {
@@ -116,7 +115,7 @@ public class ReplicatedInputReader {
 	public void scanWithBlockSampling(String filename, double samplingRate) {
 		initScan(blockSampleSize);
 
-		FileChannel ch = IOUtils.openFileChannel(new CartilageFile(filename));
+		FileChannel ch = IOUtils.openFileChannel(filename);
 		try {
 			long position = 0;
 			while (Math.random() > samplingRate) {

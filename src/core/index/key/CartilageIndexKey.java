@@ -10,14 +10,13 @@ import java.util.List;
 import com.google.common.primitives.Ints;
 
 import core.utils.DateUtils;
-import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.*;
+import core.utils.TypeUtils.TYPE;
 import core.utils.TypeUtils;
 
 public class CartilageIndexKey implements MDIndexKey, Cloneable{
 
 	private SimpleDate dummyDate = new SimpleDate(0,0,0);
-
 
 	public static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 	//private CartilageBinaryRecord record;

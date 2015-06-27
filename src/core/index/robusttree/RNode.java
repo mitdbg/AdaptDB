@@ -7,9 +7,8 @@ import java.util.Scanner;
 import core.access.Predicate;
 import core.index.MDIndex.Bucket;
 import core.index.key.MDIndexKey;
-import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
-import core.utils.SchemaUtils.TYPE;
 import core.utils.TypeUtils;
+import core.utils.TypeUtils.*;
 
 /**
  * Internal node in robust tree datastructure

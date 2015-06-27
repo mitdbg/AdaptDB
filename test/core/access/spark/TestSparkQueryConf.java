@@ -6,7 +6,7 @@ import org.apache.hadoop.conf.Configuration;
 
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.*;
 
 public class TestSparkQueryConf extends TestCase{
 
@@ -29,11 +29,6 @@ public class TestSparkQueryConf extends TestCase{
 	public void testDataset(){
 		sparkConf.setDataset(dummyDataset);
 		assertEquals(dummyDataset, sparkConf.getDataset());
-	}
-
-	public void testWorkers(){
-		sparkConf.setWorkers(dummyWorkers);
-		assertEquals(dummyWorkers, sparkConf.getWorkers());
 	}
 
 	public void testPredicates(){

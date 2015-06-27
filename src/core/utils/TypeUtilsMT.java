@@ -4,8 +4,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
 
-import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.*;
 
 public class TypeUtilsMT {
 

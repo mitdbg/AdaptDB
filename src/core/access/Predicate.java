@@ -1,7 +1,7 @@
 
 package core.access;
 
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.TYPE;
 import core.utils.TypeUtils;
 
 public class Predicate {

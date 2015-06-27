@@ -37,7 +37,7 @@ public class SparkUpfrontPartitioner {
 								.setMaster(cfg.getSPARK_MASTER())
 								.setAppName(this.getClass().getName())
 								.setSparkHome(cfg.getSPARK_HOME())
-								.setJars(new String[]{cfg.getSPARK_JAR()})
+								.setJars(new String[]{cfg.getSPARK_APPLICATION_JAR()})
 								.set("spark.hadoop.cloneConf", "false")
 								.set("spark.executor.memory", "120g")
 								.set("spark.local.dir", "/data/mdindex/tmp");

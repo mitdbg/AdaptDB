@@ -4,11 +4,84 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
 
-import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
-import core.utils.SchemaUtils.TYPE;
-
 public class TypeUtils {
+	public static enum TYPE {BOOLEAN,INT,LONG,FLOAT,STRING,DATE,VARCHAR};
 
+	public static class SimpleDate implements Comparable<SimpleDate>{
+		private int year, month, day;
+		public static int[] daysPerMonth = new int[]{31,28,31,30,31,30,31,31,30,31,30,31};
+		public SimpleDate(int year, int month, int day){
+			this.year = year;
+			this.month = month;
+			this.day = day;
+		}
+
+		public int getYear() {
+			return year;
+		}
+
+		public void setYear(int year) {
+			this.year = year;
+		}
+
+		public int getMonth() {
+			return month;
+		}
+
+		public void setMonth(int month) {
+			this.month = month;
+		}
+
+		public int getDay() {
+			return day;
+		}
+
+		public void setDay(int day) {
+			this.day = day;
+		}
+
+		public SimpleDate oneDayLess() {
+			int nYear = year, nMonth = month, nDay = day;
+			if (day > 1) nDay--;
+			else {
+				if (month > 1) {
+					nMonth--;
+					nDay = daysPerMonth[nMonth-1];
+				} else {
+					nMonth = 12;
+					nYear--;
+					nDay = daysPerMonth[nMonth-1];
+				}
+			}
+
+			return new SimpleDate(nYear, nMonth, nDay);
+		}
+
+		@Override
+		public int compareTo(SimpleDate d){
+			if(d.getYear() < year || (d.getYear()==year && d.getMonth() < month) || (d.getYear()==year && d.getMonth()==month && d.getDay()<day))
+				return 1;
+			else if(d.getYear()==year && d.getMonth()==month && d.getDay()==day)
+				return 0;
+			else
+				return -1;
+		}
+
+		@Override
+		public boolean equals(Object obj){
+			SimpleDate d = (SimpleDate)obj;
+			return (d.getYear()==year && d.getMonth()==month && d.getDay()==day);
+		}
+
+		@Override
+		public String toString(){
+			String ret = "" + year + "-";
+			ret += (month < 10 ? "0" + month: month) + "-";
+			ret += (day < 10 ? "0" + day: day);
+			return ret;
+		}
+	}	
+	
 	public static boolean isInt(String s){
 		try{
 			Integer.parseInt(s);

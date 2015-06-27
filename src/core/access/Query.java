@@ -38,8 +38,6 @@ public class Query implements Serializable{
 			predicates[i] = new Predicate(tokens[i]);
 	}
 	
-
-
 	public static class FilterQuery extends Query implements Serializable{
 		private static final long serialVersionUID = 1L;
 		
@@ -54,7 +52,7 @@ public class Query implements Serializable{
 			for (int i=0; i<parts.length-1; i++) {
 				this.predicates[i] = new Predicate(parts[i]);
 			}
-			key = new CartilageIndexKey(parts[parts.length-1]);
+//			key = new CartilageIndexKey(parts[parts.length-1]);
 		}
 
 		public FilterQuery(Predicate[] predicates, CartilageIndexKey key) {
@@ -92,7 +90,8 @@ public class Query implements Serializable{
 
 		@Override
 		public String toString() {
-			return Joiner.on(";").join(predicates) + ";" + key.toString();	// simpler impl
+			return Joiner.on(";").join(predicates); // + 
+//					";" + key.toString();	// simpler impl
 //			String ret = "";
 //			for (int i=0; i<this.predicates.length; i++) {
 //				ret += this.predicates[i].toString() + ";";

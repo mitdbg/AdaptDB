@@ -26,7 +26,7 @@ import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTreeHs;
 import core.utils.HDFSUtils;
 import core.utils.Pair;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.*;
 import core.utils.TypeUtils;
 
 /**

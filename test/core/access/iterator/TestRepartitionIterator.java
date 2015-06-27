@@ -13,7 +13,7 @@ import core.access.Predicate.PREDTYPE;
 import core.access.Query.FilterQuery;
 import core.index.Settings;
 import core.index.robusttree.RNode;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.*;
 
 public class TestRepartitionIterator extends TestCase{
 

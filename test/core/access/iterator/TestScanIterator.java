@@ -12,7 +12,7 @@ import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.Query.FilterQuery;
 import core.index.Settings;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.*;
 
 public class TestScanIterator extends TestCase{
 

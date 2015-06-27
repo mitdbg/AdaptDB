@@ -4,7 +4,7 @@ import core.access.Predicate;
 import core.access.spark.SparkQuery;
 import core.index.Settings;
 import core.utils.ConfUtils;
-import core.utils.SchemaUtils;
+import core.utils.TypeUtils.*;
 import junit.framework.TestCase;
 
 /**
@@ -22,7 +22,7 @@ public class TestRepartitioning extends TestCase {
 
     public void testBasic(){
         SparkQuery sq = new SparkQuery(cfg);
-        Predicate p1 = new Predicate(8, SchemaUtils.TYPE.STRING, "R", Predicate.PREDTYPE.EQ);
+        Predicate p1 = new Predicate(8, TYPE.STRING, "R", Predicate.PREDTYPE.EQ);
         sq.createRepartitionRDD(Settings.hdfsPartitionDir, p1).count();
     }
 

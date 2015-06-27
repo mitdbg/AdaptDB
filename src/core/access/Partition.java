@@ -9,7 +9,6 @@ import org.apache.commons.io.FilenameUtils;
 import core.utils.BinaryUtils;
 import core.utils.IOUtils;
 
-
 public class Partition implements Cloneable, Serializable {
 
 	private static final long serialVersionUID = 1L;

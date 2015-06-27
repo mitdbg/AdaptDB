@@ -19,7 +19,7 @@ import core.access.Predicate.PREDTYPE;
 import core.access.iterator.IteratorRecord;
 import core.index.Settings;
 import core.utils.ConfUtils;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.*;
 
 public class TestSparkRecordReader extends TestCase{
 
@@ -40,7 +40,6 @@ public class TestSparkRecordReader extends TestCase{
 		SparkQueryConf queryConf = new SparkQueryConf(conf);
 		queryConf.setDataset(hdfsPath);
 		queryConf.setPredicates(predicates);
-		queryConf.setWorkers(cfg.getNUM_RACKS() * cfg.getNODES_PER_RACK() * cfg.getMAP_TASKS());
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
 		queryConf.setMaxSplitSize(1024 / 64);

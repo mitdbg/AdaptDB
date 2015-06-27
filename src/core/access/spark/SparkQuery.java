@@ -24,7 +24,7 @@ public class SparkQuery {
 								.setMaster(cfg.getSPARK_MASTER())
 								.setAppName(this.getClass().getName())
 								.setSparkHome(cfg.getSPARK_HOME())
-								.setJars(new String[]{cfg.getSPARK_JAR()})
+								.setJars(new String[]{cfg.getSPARK_APPLICATION_JAR()})
 								.set("spark.hadoop.cloneConf", "false")
 								.set("spark.executor.memory", "100g")
 								.set("spark.driver.memory", "10g")
@@ -89,7 +89,6 @@ public class SparkQuery {
 		queryConf.setDataset(hdfsPath);
 		queryConf.setNumReplicas(numReplicas);
 		queryConf.setPredicates(ps);
-		queryConf.setWorkers(cfg.getNUM_RACKS() * cfg.getNODES_PER_RACK() * cfg.getMAP_TASKS());
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
 		queryConf.setMaxSplitSize(8589934592l);	// 8gb is the max size for each split (with 8 threads in parallel)

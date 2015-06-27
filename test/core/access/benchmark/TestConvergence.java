@@ -20,8 +20,7 @@ import core.index.Settings;
 import core.utils.ConfUtils;
 import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
-import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.*;
 
 public class TestConvergence extends TestCase{
 	public final static String propertyFile = Settings.cartilageConf;

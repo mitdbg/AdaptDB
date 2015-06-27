@@ -1,5 +1,5 @@
 package core.access.spark;
 
 public class Config {
-	public static short replication = 3;
+	public static short replication = 1;
 }

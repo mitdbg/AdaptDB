@@ -1,6 +1,6 @@
 package core.index.key;
 
-import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
+import core.utils.TypeUtils.SimpleDate;
 
 /**
  * Could be created as template?

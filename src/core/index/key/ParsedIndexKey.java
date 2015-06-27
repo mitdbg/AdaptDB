@@ -2,7 +2,7 @@ package core.index.key;
 
 import com.google.common.base.Joiner;
 
-import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
+import core.utils.TypeUtils.SimpleDate;
 
 public class ParsedIndexKey extends CartilageIndexKey{
 

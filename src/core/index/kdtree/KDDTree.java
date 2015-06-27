@@ -9,7 +9,7 @@ import core.access.Predicate;
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
 import core.index.key.MDIndexKey;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.TYPE;
 
 public class KDDTree implements MDIndex {
 

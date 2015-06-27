@@ -13,7 +13,7 @@ import core.index.key.CartilageIndexKey;
 import core.index.key.CartilageIndexKeySet;
 import core.index.key.MDIndexKey;
 import core.utils.Pair;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.TYPE;
 
 public class RobustTreeHs implements MDIndex {
 	public int maxBuckets;

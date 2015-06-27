@@ -4,8 +4,7 @@ import java.util.List;
 
 import core.index.MDIndex;
 import core.index.key.MDIndexKey;
-import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.*;
 
 /**
  * Created by qui on 1/31/15.

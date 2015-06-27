@@ -16,7 +16,7 @@ import core.access.Predicate.PREDTYPE;
 import core.access.iterator.PartitionIterator;
 import core.index.Settings;
 import core.utils.ConfUtils;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.*;
 
 public class TestSparkInputFormat extends TestCase{
 
@@ -121,7 +121,6 @@ public class TestSparkInputFormat extends TestCase{
 		SparkQueryConf queryConf = new SparkQueryConf(conf);
 		queryConf.setDataset(hdfsPath);
 		queryConf.setPredicates(predicates);
-		queryConf.setWorkers(cfg.getNUM_RACKS() * cfg.getNODES_PER_RACK() * cfg.getMAP_TASKS());
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
 		queryConf.setMaxSplitSize(1024 / 64);

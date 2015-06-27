@@ -4,7 +4,7 @@ import junit.framework.TestCase;
 import core.index.MDIndex.Bucket;
 import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTreeHs;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.*;
 
 public class TestIndexSerialization extends TestCase {
 	@Override

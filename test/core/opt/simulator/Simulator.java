@@ -13,8 +13,7 @@ import core.adapt.opt.Optimizer;
 import core.index.Settings;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
-import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.*;
 
 public class Simulator extends TestCase{
 	String hdfsPath;
@@ -26,14 +25,13 @@ public class Simulator extends TestCase{
 	@Override
 	public void setUp(){
 		sf = 1000;
-		//hdfsPath = "hdfs://localhost:9000/user/anil/dodo";
-		hdfsPath = "hdfs://localhost:9000/user/qui/sim";
-
 		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
-
+		String hdfsHomeDir = Settings.hdfsPartitionDir;
+		hdfsPath = cfg.getHADOOP_NAMENODE() + Settings.hdfsPartitionDir;
+		
 		// Cleanup queries file - to remove past query workload
 		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
-							"/user/qui/sim/queries", false);
+							hdfsHomeDir + "queries", false);
 
 		CuratorFramework client = CuratorUtils.createAndStartClient(cfg.getZOOKEEPER_HOSTS());
 		CuratorUtils.deleteAll(client, "/", "partition-");
@@ -87,10 +85,6 @@ public class Simulator extends TestCase{
 			System.out.println("INFO: Updated Bucket Counts");
 			opt.buildPlan(new FilterQuery(new Predicate[]{p1, p2}));
 			System.out.println("INFO: Completed Query " + i);
-
-			if (i == 48) {
-				System.out.println("Hola");
-			}
 		}
 	}
 }

@@ -6,7 +6,7 @@ import java.util.List;
 
 import com.google.common.primitives.Ints;
 
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.TYPE;
 import core.utils.TypeUtilsMT;
 
 public class CartilageIndexKeyMT extends CartilageIndexKey{

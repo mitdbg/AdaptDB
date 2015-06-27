@@ -129,7 +129,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			)};
 		}
 		else
-			splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates(), am.getKey()), queryConf.getWorkers(), queryConf.getJustAccess());
+			splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates(), am.getKey()), queryConf.getJustAccess());
 		System.out.println("Number of partition splits = "+splits.length);
 		//splits = resizeSplits(splits, partitionIdFileMap, queryConf.getMaxSplitSize());
 		splits = resizeSplits(splits, partitionIdSizeMap, queryConf.getMaxSplitSize(), queryConf.getMinSplitSize());

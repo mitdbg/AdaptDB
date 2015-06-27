@@ -15,7 +15,7 @@ import core.access.Predicate.PREDTYPE;
 import core.access.Query.FilterQuery;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.*;
 
 public class TestHDFSScanIterator extends TestScanIterator{
 
@@ -32,8 +32,8 @@ public class TestHDFSScanIterator extends TestScanIterator{
 		query = new FilterQuery(new Predicate[]{p1,p2});
 
 		partitionPaths = Lists.newArrayList();
-
-		FileSystem hdfs = HDFSUtils.getFS(ConfUtils.create(propertiesFile, "defaultHDFSPath").getHadoopHome()+"/etc/hadoop/core-site.xml");
+		ConfUtils cfg = new ConfUtils(propertiesFile);
+		FileSystem hdfs = HDFSUtils.getFS(cfg.getHADOOP_HOME()+"/etc/hadoop/core-site.xml");
 		try {
 			for(FileStatus fileStatus: hdfs.listStatus(new Path(partitionDir))){
 				if(fileStatus.isFile() && !fileStatus.getPath().getName().startsWith("."))

@@ -6,7 +6,6 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import core.data.CartilageDatum.CartilageFile;
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
 import core.utils.IOUtils;
@@ -53,7 +52,7 @@ public class InputReaderMT {
 		for(int i=0; i<buffProcessors.length; i++)
 			buffProcessors[i] = new BufferProcessor(keys[i], writer);
 		
-		FileChannel ch = IOUtils.openFileChannel(new CartilageFile(filename));
+		FileChannel ch = IOUtils.openFileChannel(filename);
 		try {
 			while((nRead = ch.read(bb)) != -1){
 				if(nRead==0)

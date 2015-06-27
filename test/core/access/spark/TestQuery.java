@@ -8,7 +8,7 @@ import core.access.iterator.PartitionIterator;
 import core.access.iterator.PostFilterIterator;
 import core.index.Settings;
 import core.utils.ConfUtils;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.*;
 
 public class TestQuery extends TestCase{
 	public final static String propertyFile = Settings.cartilageConf;
