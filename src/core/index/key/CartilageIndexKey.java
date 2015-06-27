@@ -430,9 +430,12 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable{
 
 	public String toString() {
 		String result = String.valueOf(delimiter);
-		for (int i = 0; i < keyAttrIdx.length; i++) {
-			result += "," + keyAttrIdx[i];
+		if (keyAttrIdx != null) {
+			for (int i = 0; i < keyAttrIdx.length; i++) {
+				result += "," + keyAttrIdx[i];
+			}			
 		}
+
 		return result;
 	}
 }

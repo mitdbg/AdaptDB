@@ -467,7 +467,7 @@ public class Optimizer {
 		while (stack.size() > 0) {
 			RNode n = stack.removeLast();
 			if (n.bucket == null) {
-				if (n.attribute == node.attribute) {
+				if (n.attribute == attrId) {
 					int comp = TypeUtils.compareTo(n.value, val, t);
 					if (comp * isLeft >= 0) return false;
 				}
@@ -971,7 +971,7 @@ public class Optimizer {
 		}
 		
 		byte[] indexBytes = this.rt.marshall();
-		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome), pathToIndex, (short) 3, this.rt.marshall(), 0, indexBytes.length, false);
+		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome), pathToIndex, Config.replication, this.rt.marshall(), 0, indexBytes.length, false);
 	}
 
 	/** Used only in simulator **/
