@@ -547,7 +547,7 @@ public class Optimizer {
 		return numTuples;
 	}
 
-	public float getNumTuplesAccessed(RNode changed, Query q, boolean real) {
+	public static float getNumTuplesAccessed(RNode changed, Query q, boolean real) {
 		// First traverse to parent to see if query accesses node
 		// If yes, find the number of tuples accessed.
 		Predicate[] ps = ((FilterQuery)q).getPredicates();
