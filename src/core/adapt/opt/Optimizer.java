@@ -433,7 +433,7 @@ public class Optimizer {
 	 * @param val
 	 * @return
 	 */
-	public boolean checkValidToRoot(RNode node, int attrId, TYPE t, Object val) {
+	public static boolean checkValidToRoot(RNode node, int attrId, TYPE t, Object val) {
 		while (node.parent != null) {
 			if (node.parent.attribute == attrId) {
 				int ret = TypeUtils.compareTo(node.parent.value, val, t);

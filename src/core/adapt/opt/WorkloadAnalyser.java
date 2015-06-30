@@ -37,16 +37,21 @@ public class WorkloadAnalyser {
 	List<Candidate> candidates = new LinkedList<Candidate>();
 	RobustTreeHs rt;
 	
+	float totalNumTuples;
+	float totalNumSamples;
+	
 	/**
 	 * 
 	 * @param hdfsHomeDir
 	 * @param depth depth of index tree
 	 */
-	public WorkloadAnalyser(ConfUtils conf, int depth) {
+	public WorkloadAnalyser(ConfUtils conf, int depth, int SF) {
 		String hadoopHome = conf.getHADOOP_HOME();
 		String hdfsHomeDir = conf.getHDFS_HOMEDIR();
 		String pathToQueries = hdfsHomeDir + "/queries";
 		String pathToSample = hdfsHomeDir + "/sample";
+		
+		totalNumTuples = ((float)6000000) * SF;
 		
 		FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
 		try {
@@ -81,37 +86,60 @@ public class WorkloadAnalyser {
 		}
 		
 		rt = new RobustTreeHs(0.01);
+		rt.initBuild(16);
 		byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
 		rt.sample.unmarshall(sampleBytes);
 		
-		buildOptTree(rt.getRoot(), rt.sample);
+		totalNumSamples = rt.sample.size();
+
+		buildOptTree(rt.getRoot(), rt.sample, depth);
 	}
 	
-	public void buildOptTree(RNode n, CartilageIndexKeySet sample) {
-		// Make node point to imaginary attribute
-		n.attribute = 100;
+	public float numEstimatedTuples(float numSamples) {
+		return numSamples * totalNumTuples / totalNumSamples;
+	}
+	
+	public void buildOptTree(RNode n, CartilageIndexKeySet sample, int depth) {
+		n.bucket = new Bucket();
+		n.bucket.setSample(sample);
+		n.bucket.estimatedTuples = numEstimatedTuples(sample.size());
 
-		n.leftChild = new RNode();
-		n.leftChild.bucket = new Bucket();
+		if (depth == 0) {
+			return;
+		}	
 
-		n.rightChild = new RNode();
-		n.rightChild.bucket = new Bucket();
-        double numAccessedOld = getNumTuplesAccessed(n);
+		double numAccessedOld = getNumTuplesAccessed(n);
 		
         double benefit = 0;
         Candidate cChosen = null;
         
-		for (Candidate c: candidates) {
+        n.bucket = null; // Needed for making sure this is not treated as bucket
+        n.leftChild = new RNode();
+        n.leftChild.parent = n;
+        n.rightChild = new RNode();
+        n.rightChild.parent = n;
+		n.leftChild.bucket = new Bucket();
+		n.rightChild.bucket = new Bucket();
+
+		for (Candidate c: candidates) {			
+			if (!Optimizer.checkValidToRoot(n, c.attribute, c.type, c.value)) {
+				continue;
+			}
+			
 			n.attribute = c.attribute;
 			n.type = c.type;
 			n.value = c.value;
 			
+			sample.sort(n.attribute);
 			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample.splitAt(n.attribute, n.value);
-			n.leftChild.bucket.setSample(halves.first);
-			
-			n.rightChild.bucket.setSample(halves.second);
+			n.leftChild.bucket.estimatedTuples = numEstimatedTuples(halves.first.size());
+			n.rightChild.bucket.estimatedTuples = numEstimatedTuples(halves.second.size());
 
-			// TODO: Populate bucket estimates
+			float c1 = n.leftChild.bucket.estimatedTuples;
+			float c2 = n.rightChild.bucket.estimatedTuples;
+			int a1 = halves.first.size();
+			int a2 = halves.second.size();
+			
 	        double numAccessedNew = getNumTuplesAccessed(n);
 	        double extraBenefit = numAccessedOld - numAccessedNew;
 	        
@@ -132,18 +160,22 @@ public class WorkloadAnalyser {
 			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample.splitAt(n.attribute, n.value);
 			n.leftChild.bucket = null;
 			n.rightChild.bucket = null;
-			buildOptTree(n.leftChild, halves.first);
-			buildOptTree(n.rightChild, halves.second);
+			buildOptTree(n.leftChild, halves.first, depth - 1);
+			buildOptTree(n.rightChild, halves.second, depth -1);
 		}
 	}
 	
-	public double getNumTuplesAccessed(RNode changed) {
-		double numTuples = 0;
+	public float getNumTuplesAccessed(RNode changed) {
+		float numTuples = 0;
 		for (int i=queryWindow.size() - 1; i >= 0; i--) {
 			Query q = queryWindow.get(i);
 			numTuples += Optimizer.getNumTuplesAccessed(changed, q, false);
 		}
 
 		return numTuples;
+	}
+	
+	public RobustTreeHs getOptTree() {
+		return rt;
 	}
 }
