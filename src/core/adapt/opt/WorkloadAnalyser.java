@@ -20,6 +20,7 @@ import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.Pair;
 import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils;
 
 /**
  * Finds the best index tree for a given workload
@@ -31,6 +32,19 @@ public class WorkloadAnalyser {
 		public int attribute;
 	    public TYPE type;
 	    public Object value;
+	    
+	    public boolean equals(Object obj) {
+	    	if (obj instanceof Candidate) {
+	    		Candidate objC = (Candidate) obj;
+	    		if (objC.attribute == attribute) {
+	    			if (TypeUtils.compareTo(value, objC.value, type) == 0) {
+	    				return true;
+	    			}
+	    		}
+	    	}
+	    	
+	    	return false;
+	    }
 	}
 	
 	List<Query> queryWindow = new ArrayList<Query>();
@@ -80,7 +94,10 @@ public class WorkloadAnalyser {
 					c.attribute = ps[j].attribute;
 					c.type = ps[j].type;
 					c.value = ps[j].getHelpfulCutpoint();
-					candidates.add(c);
+
+					if (!candidates.contains(c)) {
+						candidates.add(c);						
+					}
 				}
 			}
 		}
@@ -106,18 +123,18 @@ public class WorkloadAnalyser {
 
 		if (depth == 0) {
 			return;
-		}	
+		}
 
 		double numAccessedOld = getNumTuplesAccessed(n);
 		
         double benefit = 0;
         Candidate cChosen = null;
         
-        n.bucket = null; // Needed for making sure this is not treated as bucket
-        n.leftChild = new RNode();
-        n.leftChild.parent = n;
-        n.rightChild = new RNode();
-        n.rightChild.parent = n;
+		n.bucket = null; // Needed for making sure this is not treated as bucket
+		n.leftChild = new RNode();
+		n.leftChild.parent = n;
+		n.rightChild = new RNode();
+		n.rightChild.parent = n;
 		n.leftChild.bucket = new Bucket();
 		n.rightChild.bucket = new Bucket();
 
@@ -134,11 +151,6 @@ public class WorkloadAnalyser {
 			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample.splitAt(n.attribute, n.value);
 			n.leftChild.bucket.estimatedTuples = numEstimatedTuples(halves.first.size());
 			n.rightChild.bucket.estimatedTuples = numEstimatedTuples(halves.second.size());
-
-			float c1 = n.leftChild.bucket.estimatedTuples;
-			float c2 = n.rightChild.bucket.estimatedTuples;
-			int a1 = halves.first.size();
-			int a2 = halves.second.size();
 			
 	        double numAccessedNew = getNumTuplesAccessed(n);
 	        double extraBenefit = numAccessedOld - numAccessedNew;
@@ -152,6 +164,7 @@ public class WorkloadAnalyser {
 		if (cChosen == null) {
 			n.bucket = new Bucket();
 			n.bucket.setSample(sample);
+			n.bucket.estimatedTuples = numEstimatedTuples(sample.size());
 		} else {
 			n.attribute = cChosen.attribute;
 			n.type = cChosen.type;
@@ -173,6 +186,20 @@ public class WorkloadAnalyser {
 		}
 
 		return numTuples;
+	}
+	
+	public List<Float> getPerQueryCost(RNode root) {
+		List<Float> costs = new ArrayList<Float>();
+		for (int i=0; i < queryWindow.size(); i++) {
+			Query q = queryWindow.get(i);
+			costs.add(Optimizer.getNumTuplesAccessed(root, q, false));
+		}
+
+		return costs;
+	}
+
+	public int getNumCandidates() {
+		return candidates.size();
 	}
 	
 	public RobustTreeHs getOptTree() {
