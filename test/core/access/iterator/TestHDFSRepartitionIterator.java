@@ -20,15 +20,12 @@ import core.utils.TypeUtils.*;
 
 public class TestHDFSRepartitionIterator extends TestRepartitionIterator {
 
-	String propertiesFile;
-
 	@Override
 	public void setUp(){
-		propertiesFile = Settings.cartilageConf;
-		ConfUtils cfg = new ConfUtils(propertiesFile);
+		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
 		partitionDir = cfg.getHDFS_WORKING_DIR();
+		
 		int attributeIdx = 0;
-		//Range r = RangeUtils.closed(3000000, 6000000);		
 		Predicate p1 = new Predicate(attributeIdx, TYPE.INT, 3000000, PREDTYPE.GEQ);
 		Predicate p2 = new Predicate(attributeIdx, TYPE.INT, 6000000, PREDTYPE.LEQ);
 		
@@ -49,7 +46,7 @@ public class TestHDFSRepartitionIterator extends TestRepartitionIterator {
 
 	@Override
 	protected Partition getPartitionInstance(String path){
-		return new HDFSPartition(path, propertiesFile, (short)1);
+		return new HDFSPartition(path, Settings.cartilageConf, (short)1);
 	}
 
 	@Override

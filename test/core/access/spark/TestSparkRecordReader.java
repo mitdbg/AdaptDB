@@ -38,7 +38,7 @@ public class TestSparkRecordReader extends TestCase{
 		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
 		
 		SparkQueryConf queryConf = new SparkQueryConf(conf);
-		queryConf.setDataset(hdfsPath);
+		queryConf.setWorkingDir(hdfsPath);
 		queryConf.setPredicates(predicates);
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());

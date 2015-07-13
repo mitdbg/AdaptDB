@@ -8,20 +8,17 @@ import core.access.Predicate;
 
 public class SparkQueryConf {
 
-	public final static String DATASET = "DATASET";
+	public final static String WORKING_DIR = "WORKING_DIR";
 	public final static String FULL_SCAN = "FULL_SCAN";
 	public final static String REPARTITION_SCAN = "REPARTITION_SCAN";
 	public final static String JUST_ACCESS = "JUST_ACCESS";
 	public final static String PREDICATES = "PREDICATES";
-	public final static String WORKERS = "WORKERS";
 	public final static String MAX_SPLIT_SIZE = "MAX_SPLIT_SIZE";
 	public final static String MIN_SPLIT_SIZE = "MIN_SPLIT_SIZE";
 	public final static String ZOOKEEPER_HOSTS = "ZOOKEEPER_HOSTS";
-	public final static String HADOOP_HOME = "HADOOP_HOME";	// this can be obtained from cartilage properties file
-	public final static String COUNTERS_FILE = "COUNTERS_FILE";
-	public final static String LOCK_DIR = "LOCK_DIR";
-	public final static String NUM_REPLICAS = "NUM_REPLICAS";
-	
+	public final static String HADOOP_HOME = "HADOOP_HOME";	
+	public final static String REPLICA_ID = "REPLICA_ID";
+	public final static String HDFS_REPLICATION_FACTOR = "HDFS_REPLICATION_FACTOR";
 	
 	public final static String CARTILAGE_PROPERTIES = "CARTILAGE_PROPERTIES";
 
@@ -31,12 +28,12 @@ public class SparkQueryConf {
 		this.conf = conf;
 	}
 
-	public void setDataset(String dataset){
-		conf.set(DATASET, dataset);
+	public void setWorkingDir(String dataset){
+		conf.set(WORKING_DIR, dataset);
 	}
 
-	public String getDataset(){
-		return conf.get(DATASET);
+	public String getWorkingDir(){
+		return conf.get(WORKING_DIR);
 	}
 
 	public void setFullScan(boolean flag){
@@ -106,34 +103,18 @@ public class SparkQueryConf {
 	public String getHadoopHome() {
 		return conf.get(HADOOP_HOME);
 	}
-		
-	public void setCountersFile(String countersFile) {
-		conf.set(COUNTERS_FILE, countersFile);
-	}
 
-	public String getCountersFile() {
-		return conf.get(COUNTERS_FILE);
+	public void setHDFSReplicationFactor(short f) {
+		conf.set(HDFS_REPLICATION_FACTOR, Short.toString(f));
 	}
 	
-	public void setLockDir(String lockDir) {
-		conf.set(LOCK_DIR, lockDir);
+	public short getHDFSReplicationFactor() {
+		return Short.parseShort(conf.get(HDFS_REPLICATION_FACTOR));
 	}
 
-	public String getLockDir() {
-		return conf.get(LOCK_DIR);
-	}
+	public void setReplicaId(int numReplicas) { conf.set(REPLICA_ID, String.valueOf(numReplicas));}
 
-	public void setCartilageProperties(String cartilageProperties){
-		conf.set(CARTILAGE_PROPERTIES, cartilageProperties);
-	}
-
-	public String getCartilageProperties(){
-		return conf.get(CARTILAGE_PROPERTIES);
-	}
-
-	public void setNumReplicas(int numReplicas) { conf.set(NUM_REPLICAS, String.valueOf(numReplicas));}
-
-	public int getNumReplicas() { return Integer.parseInt(conf.get(NUM_REPLICAS));}
+	public int getReplicaId() { return Integer.parseInt(conf.get(REPLICA_ID));}
 
 	public Configuration getConf(){
 		return conf;

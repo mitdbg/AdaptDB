@@ -18,12 +18,13 @@ import core.access.Query.FilterQuery;
 import core.access.iterator.PartitionIterator;
 import core.access.iterator.PostFilterIterator;
 import core.access.iterator.RepartitionIterator;
-import core.access.spark.Config;
+import core.access.spark.SparkQueryConf;
 import core.index.MDIndex;
 import core.index.MDIndex.Bucket;
 import core.index.key.CartilageIndexKeySet;
 import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTreeHs;
+import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.Pair;
 import core.utils.TypeUtils.*;
@@ -35,12 +36,6 @@ import core.utils.TypeUtils;
  */
 
 public class Optimizer {
-	RobustTreeHs rt;
-	int rtDepth;
-
-	String dataset;
-	String hadoopHome;
-
 	static final int BLOCK_SIZE = 64 * 1024;
 	static final float DISK_MULTIPLIER = 1;
 	static final float NETWORK_MULTIPLIER = 1;
@@ -49,6 +44,15 @@ public class Optimizer {
 	static final int TUPLE_SIZE = 128;
 	static final int NODE_TUPLE_LIMIT = 33554432; // NODE_MEM_SIZE / TUPLE_SIZE
 
+	RobustTreeHs rt;
+	int rtDepth;
+
+	// Properties extracted from ConfUtils
+	String workingDir;
+	String hadoopHome;
+	short fileReplicationFactor;
+	String zookeeperHosts;
+	
 	List<Query> queryWindow = new ArrayList<Query>();
 
 	public static class Plan {
@@ -70,8 +74,13 @@ public class Optimizer {
 	}
 
 	public static class Plans {
+		// Indicates if the entire subtree is accessed.
 		boolean fullAccess;
-		Plan PTop; // TODO: Think if this is needed at all
+		
+		// TODO(anil): Think if this is needed at all.
+		Plan PTop; 
+
+		// Best plan encountered for this subtree.
 		Plan Best;
 
 		public Plans() {
@@ -81,18 +90,26 @@ public class Optimizer {
 		}
 	}
 
-	public Optimizer(String dataset, String hadoopHome) {
-		this.dataset = dataset;
-		this.hadoopHome = hadoopHome;
+	public Optimizer(SparkQueryConf cfg) {
+		this.workingDir = cfg.getWorkingDir() + "/" + cfg.getReplicaId();
+		this.hadoopHome = cfg.getHadoopHome();
+		this.fileReplicationFactor = cfg.getHDFSReplicationFactor();
+		this.zookeeperHosts = cfg.getZookeeperHosts();
+	}
+	
+	public Optimizer(ConfUtils cfg) {
+		this.workingDir = cfg.getHDFS_WORKING_DIR();
+		this.hadoopHome = cfg.getHADOOP_HOME();
+		this.fileReplicationFactor = cfg.getHDFS_REPLICATION_FACTOR();
+		this.zookeeperHosts = cfg.getZOOKEEPER_HOSTS();
 	}
 
-	public void loadIndex(String zookeeperHosts) {
+	public void loadIndex() {
 		FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
-		
 		Bucket.counters = new MDIndex.BucketCounts(zookeeperHosts);
+		String pathToIndex = this.workingDir + "/index";
+		String pathToSample = this.workingDir + "/sample";
 		
-		String pathToIndex = this.dataset + "/index";
-		String pathToSample = this.dataset + "/sample";
 		byte[] indexBytes = HDFSUtils.readFile(fs, pathToIndex);
 		this.rt = new RobustTreeHs(0.01);
 		this.rt.unmarshall(indexBytes);
@@ -930,7 +947,7 @@ public class Optimizer {
 
 	public void loadQueries() {
 		FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
-		String pathToQueries = this.dataset + "/queries";
+		String pathToQueries = this.workingDir + "/queries";
 		try {
 			if (fs.exists(new Path(pathToQueries))) {
 				byte[] queryBytes = HDFSUtils.readFile(fs, pathToQueries);
@@ -949,13 +966,13 @@ public class Optimizer {
 	}
 
 	public void persistQueryToDisk(FilterQuery fq) {
-		String pathToQueries = this.dataset + "/queries";
-		HDFSUtils.safeCreateFile(hadoopHome, pathToQueries, Config.replication);
+		String pathToQueries = this.workingDir + "/queries";
+		HDFSUtils.safeCreateFile(hadoopHome, pathToQueries, this.fileReplicationFactor);
 		HDFSUtils.appendLine(hadoopHome, pathToQueries, fq.toString());
 	}
 
 	public void persistIndexToDisk() {
-		String pathToIndex = this.dataset + "/index";
+		String pathToIndex = this.workingDir + "/index";
 		FileSystem fs = HDFSUtils.getFSByHadoopHome(hadoopHome);
 		try {			
 			if(fs.exists(new Path(pathToIndex))) {
@@ -967,14 +984,14 @@ public class Optimizer {
 					System.out.println("Index rename to " + oldIndexPath + " failed");
 				}
 			}	
-			HDFSUtils.safeCreateFile(hadoopHome, pathToIndex, Config.replication);
+			HDFSUtils.safeCreateFile(hadoopHome, pathToIndex, this.fileReplicationFactor);
 		} catch (IOException e) {
 			System.out.println("ERR: Writing Index failed: " + e.getMessage());
 			e.printStackTrace();
 		}
 		
 		byte[] indexBytes = this.rt.marshall();
-		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome), pathToIndex, Config.replication, this.rt.marshall(), 0, indexBytes.length, false);
+		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome), pathToIndex, this.fileReplicationFactor, this.rt.marshall(), 0, indexBytes.length, false);
 	}
 
 	/** Used only in simulator **/

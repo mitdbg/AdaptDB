@@ -16,10 +16,7 @@ public class SparkQuery {
 	private ConfUtils cfg;
 
 	public SparkQuery(ConfUtils config) {
-		this.cfg = config;
-		//ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName());
-
-
+		this.cfg = config;		
 		SparkConf sconf = new SparkConf()
 								.setMaster(cfg.getSPARK_MASTER())
 								.setAppName(this.getClass().getName())
@@ -32,75 +29,28 @@ public class SparkQuery {
 				
 
 		ctx = new JavaSparkContext(sconf);
-		//ctx = new JavaSparkContext(cfg.getSPARK_MASTER(), this.getClass().getName(), cfg.getSPARK_HOME(), cfg.getSPARK_JAR());
 		ctx.hadoopConfiguration().setBoolean(FileInputFormat.INPUT_DIR_RECURSIVE, true);
-		ctx.hadoopConfiguration().set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+		ctx.hadoopConfiguration().set("fs.hdfs.impl", 
+				org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
 		queryConf = new SparkQueryConf(ctx.hadoopConfiguration());
 	}
 
-//	public void createTextFile(String localPath, Predicate... ps){
-//		JavaRDD<String> distFile = ctx.textFile(localPath);
-//		long lines = distFile.count();
-//		System.out.println("Number of lines = "+lines);
-//	}
-//
-//	public void createHadoopFile(String hdfsPath, Predicate... ps){
-//		JavaPairRDD<LongWritable,Text> distFile = ctx.hadoopFile(hdfsPath, TextInputFormat.class, LongWritable.class, Text.class);
-//		long lines = distFile.count();
-//		System.out.println("Number of lines = "+lines);
-//	}
-//
-//	public void createHadoopRDD(String hdfsPath, Predicate... ps){
-//		JobConf conf = new JobConf(ctx.hadoopConfiguration());
-//		FileInputFormat.setInputPaths(conf, hdfsPath);
-//
-//		JavaPairRDD<LongWritable,Text> distFile = ctx.hadoopRDD(conf, TextInputFormat.class, LongWritable.class, Text.class);
-//		long lines = distFile.count();
-//		System.out.println("Number of lines = "+lines);
-//	}
-//	
-//	public void createNewAPIHadoopRDD(String hdfsPath, Predicate... ps){
-//
-//		queryConf.setDataset(hdfsPath);
-//		queryConf.setPredicates(predicates);
-//		queryConf.setWorkers(cfg.getNUM_RACKS() * cfg.getNODES_PER_RACK() * cfg.getMAP_TASKS());
-//		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
-//		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
-//		queryConf.setMaxSplitSize(4096 / 128);	// number of 64 MB partitions that can fit for each worker (we assume 1GB memory for each worker)
-//
-//		JavaPairRDD<LongWritable,Text> distFile = ctx.newAPIHadoopFile(
-//				cfg.getHADOOP_NAMENODE() +  hdfsPath,
-//				org.apache.hadoop.mapreduce.lib.input.TextInputFormat.class,
-//				LongWritable.class,
-//				Text.class,
-//				ctx.hadoopConfiguration()
-//			);
-//
-//		//JavaPairRDD<LongWritable,Text> distFile = ctx.hadoopRDD(conf, TextInputFormat.class, LongWritable.class, Text.class);
-//		long lines = distFile.count();
-//		System.out.println("Number of lines = "+lines);
-//	}
-
 	public JavaPairRDD<LongWritable,IteratorRecord> createRDD(String hdfsPath, Predicate... ps){
-		return this.createRDD(hdfsPath, -1, ps);
+		// TODO(anil): When no replica is specified; figure out which replica 
+		// to run it off.
+		return this.createRDD(hdfsPath, 0, ps);
 	}
 
-	public JavaPairRDD<LongWritable,IteratorRecord> createRDD(String hdfsPath, int numReplicas, Predicate... ps){
-		queryConf.setDataset(hdfsPath);
-		queryConf.setNumReplicas(numReplicas);
+	public JavaPairRDD<LongWritable,IteratorRecord> createRDD(String hdfsPath, int replicaId, Predicate... ps){
+		queryConf.setWorkingDir(hdfsPath);
+		queryConf.setReplicaId(replicaId);
 		queryConf.setPredicates(ps);
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
 		queryConf.setMaxSplitSize(8589934592l);	// 8gb is the max size for each split (with 8 threads in parallel)
 		queryConf.setMinSplitSize(4294967296l);	// 4gb
-		//queryConf.setCountersFile(cfg.get("COUNTERS_FILE"));
-		//queryConf.setCountersFile(cfg.get("LOCK_DIR"));
+		queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
 		
-		// ctx.hadoopConfiguration().setClass(FileInputFormat.PATHFILTER_CLASS, SparkPathFilter.class, PathFilter.class);
-
-//		System.setProperty("spark.executor.memory","4g");
-//		System.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
-
 		return ctx.newAPIHadoopFile(
 				cfg.getHADOOP_NAMENODE() +  hdfsPath,
 				SparkInputFormat.class,

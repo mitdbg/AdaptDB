@@ -1,21 +1,30 @@
 package core.utils;
 
+import java.util.List;
+
+import core.index.Settings;
+import junit.framework.Assert;
 import junit.framework.TestCase;
 
-public class TestHDFSUtils extends TestCase {
-
-	private String filepath;
+public class TestHDFSUtils extends TestCase {	
 	private String hadoopHome;
+	private String filepath;
+	private short replication;
 	
 	public void setUp(){
-		this.hadoopHome = "/Users/alekh/Softwares/sources/Hadoop/hadoop-2.0.6-alpha";
-		this.filepath = "/testAppendFile";
+		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
+		hadoopHome = cfg.getHADOOP_HOME();
+		filepath = cfg.getHDFS_WORKING_DIR() + "/testUtils.txt";
+		replication = cfg.getHDFS_REPLICATION_FACTOR();
 	}
 	
 	public void testAppendLine(){
-		HDFSUtils.createFile(hadoopHome, filepath, (short)1);
+		HDFSUtils.createFile(hadoopHome, filepath, replication);
 		HDFSUtils.appendLine(hadoopHome, filepath, "line1");
 		HDFSUtils.appendLine(hadoopHome, filepath, "line2");
-		HDFSUtils.appendLine(hadoopHome, filepath, "line3");
+		List<String> lines = HDFSUtils.readHDFSLines(hadoopHome, filepath);
+		Assert.assertTrue(lines.size() == 2);
+		Assert.assertTrue(lines.get(0).equals("line1"));
+		Assert.assertTrue(lines.get(1).equals("line2"));
 	}
 }

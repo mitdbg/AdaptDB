@@ -1,6 +1,8 @@
 package core.access;
 
 
+import core.access.Predicate;
+import core.access.Query;
 import core.access.iterator.PartitionIterator;
 import core.access.spark.SparkQueryConf;
 import core.adapt.opt.Optimizer;
@@ -39,34 +41,24 @@ public class AccessMethod {
 	 * @param dataset
 	 */
 	public void init(SparkQueryConf conf){
-		int numReplicas = conf.getNumReplicas();
-		if (numReplicas == -1) {
-			opt = new Optimizer(conf.getDataset(), conf.getHadoopHome());
-		} else {
-			FileSystem fs = HDFSUtils.getFS(conf.getHadoopHome() + "/etc/hadoop/core-site.xml");
-			int replicaId = 0;
-			Predicate[] realPredicates = conf.getPredicates();
-			int predAttribute = realPredicates[0].attribute;
-			for (int i = 0; i < numReplicas; i++) {
-				String keyInfo = new String(HDFSUtils.readFile(fs, conf.getDataset() + "/" + i + "/info"));
-				key = new CartilageIndexKey(keyInfo);
-				if (key.getVirtualAttrIndex(predAttribute) != -1) {
-					replicaId = i;
-					break;
-				}
-			}
+		FileSystem fs = HDFSUtils.getFS(conf.getHadoopHome() + "/etc/hadoop/core-site.xml");
+		Predicate[] realPredicates = conf.getPredicates();
+		String keyInfo = new String(HDFSUtils.readFile(fs, 
+				conf.getWorkingDir() + "/" + conf.getReplicaId() + "/info"));
+		key = new CartilageIndexKey(keyInfo);
 
-			opt = new Optimizer(conf.getDataset() + "/" + replicaId, conf.getHadoopHome());
-			Predicate[] virtualPredicates = new Predicate[realPredicates.length];
-			for (int j = 0; j < virtualPredicates.length; j++) {
-				Predicate old = realPredicates[j];
-				System.out.println("old: "+old.toString());
-				virtualPredicates[j] = new Predicate(key.getVirtualAttrIndex(old.attribute), old.type, old.value, old.predtype);
-				System.out.println("new: "+virtualPredicates[j].toString());
-			}
-			conf.setPredicates(virtualPredicates);
+		opt = new Optimizer(conf);
+
+		//TODO(anil): Write a test for conversion of real
+		// to virtual predicate
+		Predicate[] virtualPredicates = new Predicate[realPredicates.length];
+		for (int j = 0; j < virtualPredicates.length; j++) {
+			Predicate old = realPredicates[j];
+			virtualPredicates[j] = new Predicate(key.getVirtualAttrIndex(old.attribute), old.type, old.value, old.predtype);
 		}
-		opt.loadIndex(conf.getZookeeperHosts());
+		conf.setPredicates(virtualPredicates);
+
+		opt.loadIndex();
 		opt.loadQueries();
 	}
 

@@ -151,7 +151,7 @@ public class TestIndexBuilder extends TestCase {
 	}
 
 	public static void main(String[] args){
-		System.out.println("IMBA!");
+		// TODO(anil): Create a single index builder.
 		TestIndexBuilder t = new TestIndexBuilder();
 		t.setUp();
 		t.testBuildRobustTree();

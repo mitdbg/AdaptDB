@@ -27,8 +27,6 @@ public class Partition implements Cloneable, Serializable {
 	
 	protected boolean nextBytesReturned = false;
 
-	//public int[] lineage;
-
 	/**
 	 * Create an existing  partition object.
 	 * @param pathAndPartitionId
@@ -53,40 +51,10 @@ public class Partition implements Cloneable, Serializable {
 		p.state = State.NEW;
         return p;
     }
-
-//	public static Partition getHDFSClone(String propertiesFile, String path) {
-//		Partition p = new HDFSPartition(path, propertiesFile, (short)1);
-//		p.bytes = new byte[1024*1024];
-//		p.state = State.NEW;
-//		return p;
-//	}
-
-
-	/**
-	 * Create a new partition
-	 *
-	 * @param childId
-	 * @return
-	 */
-//	public Partition createChild(int childId){
-//		Partition p = new Partition(path+"_"+childId);
-//		p.bytes = new byte[bytes.length];	// child cannot have more bytes than parent
-//		//p.bytes = new byte[8*1024*1024];	// child cannot have more than 8m bytes
-//		p.state = State.NEW;
-//		return p;
-//	}
-//
-//	public void setAsParent(Partition p){
-//		for(int i=0;i<p.lineage.length;i++)
-//			lineage[i] = p.lineage[i];
-//		this.offset = 0;
-//	}
-
+	
 	public void setPathAndPartitionId(String pathAndPartitionId){
 		this.path = FilenameUtils.getPath(pathAndPartitionId);
 		this.partitionId = Integer.parseInt(FilenameUtils.getBaseName(pathAndPartitionId));
-//		this.path = pathAndPartitionId;
-//		this.lineage = ArrayUtils.splitWithException("_", FilenameUtils.getBaseName(pathAndPartitionId));
 		this.offset = 0;
 	}
 
@@ -158,10 +126,6 @@ public class Partition implements Cloneable, Serializable {
 		nextBytesReturned = true;
 		return r;
 	}
-
-//	public int getSize(){
-//		return offset;
-//	}
 
 	@Override
 	public boolean equals(Object p){

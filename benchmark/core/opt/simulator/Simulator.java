@@ -24,7 +24,6 @@ import core.utils.HDFSUtils;
 import core.utils.TypeUtils.*;
 
 public class Simulator extends TestCase{
-	String hdfsPath;
 	Job job;
 	Optimizer opt;
 	int sf;
@@ -34,20 +33,20 @@ public class Simulator extends TestCase{
 	@Override
 	public void setUp(){
 		sf = 1000;
-		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
-		String hdfsHomeDir = cfg.getHDFS_WORKING_DIR();
-		hdfsPath = cfg.getHADOOP_NAMENODE() + cfg.getHDFS_WORKING_DIR();
-
+		cfg = new ConfUtils(Settings.cartilageConf);
+		this.cleanUp();
+		opt = new Optimizer(cfg);
+		opt.loadIndex();
+	}
+	
+	public void cleanUp() {
 		// Cleanup queries file - to remove past query workload
 		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
-							hdfsHomeDir + "queries", false);
+							cfg.getHDFS_WORKING_DIR() + "/queries", false);
 
 		CuratorFramework client = CuratorUtils.createAndStartClient(cfg.getZOOKEEPER_HOSTS());
 		CuratorUtils.deleteAll(client, "/", "partition-");
-		CuratorUtils.stopClient(client);
-
-		opt = new Optimizer(hdfsPath, cfg.getHADOOP_HOME());
-		opt.loadIndex(cfg.getZOOKEEPER_HOSTS());
+		CuratorUtils.stopClient(client);		
 	}
 
 	public void testRunQuery(){

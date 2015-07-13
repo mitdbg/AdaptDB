@@ -10,7 +10,6 @@ import org.apache.hadoop.fs.FileSystem;
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.Query.FilterQuery;
-import core.access.spark.Config;
 import core.adapt.opt.WorkloadAnalyser;
 import core.index.Settings;
 import core.index.robusttree.RNode;
@@ -31,7 +30,8 @@ public class RunWorkloadAnalyser {
 		String pathToQueries = cfg.getHDFS_WORKING_DIR() + "/queries";
 		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 		byte[] fileBytes = queries.getBytes();
-		HDFSUtils.writeFile(fs, pathToQueries, Config.replication, fileBytes, 0, fileBytes.length, false);		
+		HDFSUtils.writeFile(fs, pathToQueries, cfg.getHDFS_REPLICATION_FACTOR(), 
+				fileBytes, 0, fileBytes.length, false);		
 	}
 	
 	public void generateQueries() {
@@ -83,9 +83,11 @@ public class RunWorkloadAnalyser {
 			int startOffset = (int) (r.nextDouble() * range * (1 - selectivity)) + 1;
 			c.set(1992, Calendar.JANUARY, 02);
 			c.add(Calendar.DAY_OF_MONTH, startOffset);
-			SimpleDate startDate = new SimpleDate(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
+			SimpleDate startDate = new SimpleDate(c.get(Calendar.YEAR), 
+					c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
 			c.add(Calendar.DAY_OF_MONTH, (int) (range * selectivity));
-			SimpleDate endDate = new SimpleDate(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
+			SimpleDate endDate = new SimpleDate(c.get(Calendar.YEAR), 
+					c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
 
 			Predicate p1 = new Predicate(10, TYPE.DATE, startDate, PREDTYPE.GT);
 			Predicate p2 = new Predicate(10, TYPE.DATE, endDate, PREDTYPE.LEQ);

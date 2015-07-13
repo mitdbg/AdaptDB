@@ -27,8 +27,8 @@ public class TestSparkQueryConf extends TestCase{
 	}
 
 	public void testDataset(){
-		sparkConf.setDataset(dummyDataset);
-		assertEquals(dummyDataset, sparkConf.getDataset());
+		sparkConf.setWorkingDir(dummyDataset);
+		assertEquals(dummyDataset, sparkConf.getWorkingDir());
 	}
 
 	public void testPredicates(){
