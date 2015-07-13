@@ -19,8 +19,8 @@ import core.index.robusttree.RobustTreeHs;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.Pair;
-import core.utils.SchemaUtils.TYPE;
 import core.utils.TypeUtils;
+import core.utils.TypeUtils.TYPE;
 
 /**
  * Finds the best index tree for a given workload
@@ -61,7 +61,7 @@ public class WorkloadAnalyser {
 	 */
 	public WorkloadAnalyser(ConfUtils conf, int depth, int SF) {
 		String hadoopHome = conf.getHADOOP_HOME();
-		String hdfsHomeDir = conf.getHDFS_HOMEDIR();
+		String hdfsHomeDir = conf.getHDFS_WORKING_DIR();
 		String pathToQueries = hdfsHomeDir + "/queries";
 		String pathToSample = hdfsHomeDir + "/sample";
 		

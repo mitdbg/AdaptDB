@@ -26,7 +26,6 @@ public class TestRepartitionIterator extends TestCase{
 
 	@Override
 	public void setUp(){
-		partitionDir = Settings.localPartitionDir;
 		int attributeIdx = 0;
 		//Range r = RangeUtils.closed(3000000, 6000000);
 		Predicate p1 = new Predicate(attributeIdx, TYPE.INT, 3000000, PREDTYPE.GEQ);

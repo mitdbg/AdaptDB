@@ -7,6 +7,7 @@ import core.index.build.IndexBuilder;
 import core.index.build.PartitionWriter;
 import core.index.key.CartilageIndexKey;
 import core.index.robusttree.RobustTreeHs;
+import core.utils.ConfUtils;
 
 public class TestIndexBuilder extends TestCase {
 	String inputFilename;
@@ -28,10 +29,10 @@ public class TestIndexBuilder extends TestCase {
 		inputFilename = Settings.pathToDataset + "lineitem.tbl";
 		partitionBufferSize = 5*1024*1024;
 		numPartitions = 1024;
-
-		localPartitionDir = Settings.localPartitionDir;
-		hdfsPartitionDir = Settings.hdfsPartitionDir;
 		propertiesFile = Settings.cartilageConf;
+
+		ConfUtils cfg = new ConfUtils(propertiesFile);
+		hdfsPartitionDir = cfg.getHDFS_WORKING_DIR();
 
 		key = new CartilageIndexKey('|');
 		builder = new IndexBuilder();

@@ -33,7 +33,7 @@ public class TestChangingWorkload extends TestCase{
 		// delete query history
 		// Cleanup queries file - to remove past query workload
 		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
-				Settings.hdfsPartitionDir + "/queries", false);
+				cfg.getHDFS_WORKING_DIR() + "/queries", false);
 
 		// reset all the bucket counts
 		CuratorFramework client = CuratorUtils.createAndStartClient(cfg.getZOOKEEPER_HOSTS());
@@ -73,7 +73,7 @@ public class TestChangingWorkload extends TestCase{
 			p1 = new Predicate(4, TYPE.INT, startNum, PREDTYPE.GT);
 			p2 = new Predicate(4, TYPE.INT, endNum, PREDTYPE.LEQ);
 			start = System.currentTimeMillis();
-			result = sq.createAdaptRDD(Settings.hdfsPartitionDir, p1, p2).count();
+			result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			end = System.currentTimeMillis();
 			System.out.println("RES: QUANTITY " + (end - start) + " " + result);
 			break;
@@ -86,7 +86,7 @@ public class TestChangingWorkload extends TestCase{
 			p1 = new Predicate(5, TYPE.FLOAT, startPrice, PREDTYPE.GT);
 			p2 = new Predicate(5, TYPE.FLOAT, endPrice, PREDTYPE.LEQ);
 			start = System.currentTimeMillis();
-			result = sq.createAdaptRDD(Settings.hdfsPartitionDir, p1, p2).count();
+			result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			end = System.currentTimeMillis();
 			System.out.println("RES: EXTENDEDPRICE " + (end - start) + " " + result);
 			break;
@@ -98,7 +98,7 @@ public class TestChangingWorkload extends TestCase{
 			p1 = new Predicate(6, TYPE.FLOAT, startDisc, PREDTYPE.GT);
 			p2 = new Predicate(6, TYPE.FLOAT, endDisc, PREDTYPE.LEQ);
 			start = System.currentTimeMillis();
-			result = sq.createAdaptRDD(Settings.hdfsPartitionDir, p1, p2).count();
+			result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			end = System.currentTimeMillis();
 			System.out.println("RES: DISCOUNT " + (end - start) + " " + result);
 			break;
@@ -115,7 +115,7 @@ public class TestChangingWorkload extends TestCase{
 			start = System.currentTimeMillis();
 			p1 = new Predicate(10, TYPE.DATE, startDate, PREDTYPE.GT);
 			p2 = new Predicate(10, TYPE.DATE, endDate, PREDTYPE.LEQ);
-			result = sq.createAdaptRDD(Settings.hdfsPartitionDir, p1, p2).count();
+			result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			end = System.currentTimeMillis();
 			System.out.println("RES: SHIPDATE " + (end - start) + " " + result);
 			break;
@@ -132,7 +132,7 @@ public class TestChangingWorkload extends TestCase{
 			start = System.currentTimeMillis();
 			p1 = new Predicate(12, TYPE.DATE, startRDate, PREDTYPE.GT);
 			p2 = new Predicate(12, TYPE.DATE, endRDate, PREDTYPE.LEQ);
-			result = sq.createAdaptRDD(Settings.hdfsPartitionDir, p1, p2).count();
+			result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			end = System.currentTimeMillis();
 			System.out.println("RES: RECEIPTDATE " + (end - start) + " " + result);
 			break;
@@ -141,7 +141,7 @@ public class TestChangingWorkload extends TestCase{
 			System.out.println("INFO: Running SHIP MODE Query "+mode);
 			p1 = new Predicate(14, TYPE.STRING, mode, PREDTYPE.EQ);
 			start = System.currentTimeMillis();
-			result = sq.createAdaptRDD(Settings.hdfsPartitionDir, p1).count();
+			result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
 			end = System.currentTimeMillis();
 			System.out.println("RES: SHIP MODE " + (end - start) + " " + result);
 			break;

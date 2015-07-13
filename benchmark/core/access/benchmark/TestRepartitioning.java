@@ -23,7 +23,7 @@ public class TestRepartitioning extends TestCase {
     public void testBasic(){
         SparkQuery sq = new SparkQuery(cfg);
         Predicate p1 = new Predicate(8, TYPE.STRING, "R", Predicate.PREDTYPE.EQ);
-        sq.createRepartitionRDD(Settings.hdfsPartitionDir, p1).count();
+        sq.createRepartitionRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
     }
 
     public static void main(String[] args) {

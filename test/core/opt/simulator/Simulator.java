@@ -35,8 +35,8 @@ public class Simulator extends TestCase{
 	public void setUp(){
 		sf = 1000;
 		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
-		String hdfsHomeDir = Settings.hdfsPartitionDir;
-		hdfsPath = cfg.getHADOOP_NAMENODE() + Settings.hdfsPartitionDir;
+		String hdfsHomeDir = cfg.getHDFS_WORKING_DIR();
+		hdfsPath = cfg.getHADOOP_NAMENODE() + cfg.getHDFS_WORKING_DIR();
 
 		// Cleanup queries file - to remove past query workload
 		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
@@ -123,8 +123,6 @@ public class Simulator extends TestCase{
 				}
 			}
 			System.out.println("INFO: Completed Query " + i);
-<<<<<<< HEAD
-=======
 		}
 	}
 

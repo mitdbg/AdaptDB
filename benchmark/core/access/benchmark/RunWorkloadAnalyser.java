@@ -17,8 +17,8 @@ import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTreeHs;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
-import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.SimpleDate;
+import core.utils.TypeUtils.TYPE;
 
 public class RunWorkloadAnalyser {
 	ConfUtils cfg;
@@ -28,7 +28,7 @@ public class RunWorkloadAnalyser {
 	}
 
 	public void writeQueries(String queries) {
-		String pathToQueries = cfg.getHDFS_HOMEDIR() + "/queries";
+		String pathToQueries = cfg.getHDFS_WORKING_DIR() + "/queries";
 		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 		byte[] fileBytes = queries.getBytes();
 		HDFSUtils.writeFile(fs, pathToQueries, Config.replication, fileBytes, 0, fileBytes.length, false);		

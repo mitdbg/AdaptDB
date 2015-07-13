@@ -25,7 +25,8 @@ public class TestHDFSRepartitionIterator extends TestRepartitionIterator {
 	@Override
 	public void setUp(){
 		propertiesFile = Settings.cartilageConf;
-		partitionDir = Settings.hdfsPartitionDir;
+		ConfUtils cfg = new ConfUtils(propertiesFile);
+		partitionDir = cfg.getHDFS_WORKING_DIR();
 		int attributeIdx = 0;
 		//Range r = RangeUtils.closed(3000000, 6000000);		
 		Predicate p1 = new Predicate(attributeIdx, TYPE.INT, 3000000, PREDTYPE.GEQ);
@@ -34,7 +35,6 @@ public class TestHDFSRepartitionIterator extends TestRepartitionIterator {
 		query = new FilterQuery(new Predicate[]{p1, p2});
 
 		partitionPaths = Lists.newArrayList();
-		ConfUtils cfg = new ConfUtils(propertiesFile);
 		FileSystem hdfs = HDFSUtils.getFS(cfg.getHADOOP_HOME()+"/etc/hadoop/core-site.xml");
 		try {
 			for(FileStatus fileStatus: hdfs.listStatus(new Path(partitionDir))){

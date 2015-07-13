@@ -40,8 +40,6 @@ public class CompareIndices {
     public void setUp(){
         inputFilename = Settings.pathToDataset + "lineitem.tbl";
 
-        localPartitionDir = Settings.localPartitionDir;
-
         attributes = 16;
         writer = new CountingPartitionWriter(localPartitionDir, Settings.cartilageConf);
 

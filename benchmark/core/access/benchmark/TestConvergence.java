@@ -34,7 +34,7 @@ public class TestConvergence extends TestCase{
 		// delete query history
 		// Cleanup queries file - to remove past query workload
 		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
-				Settings.hdfsPartitionDir + "/queries", false);
+				cfg.getHDFS_WORKING_DIR() + "/queries", false);
 
 		// reset all the bucket counts
 		CuratorFramework client = CuratorUtils.createAndStartClient(cfg.getZOOKEEPER_HOSTS());
@@ -67,7 +67,7 @@ public class TestConvergence extends TestCase{
 			long start = System.currentTimeMillis();
 			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(year-1,12,31), PREDTYPE.GT);
 			Predicate p2 = new Predicate(10, TYPE.DATE, new SimpleDate(year,12,31), PREDTYPE.LEQ);
-			long c = sq.createAdaptRDD(Settings.hdfsPartitionDir, p1, p2).count();
+			long c = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: SHIPDATE " + (end - start) + " " + year + " " + c);
 		}
@@ -98,7 +98,7 @@ public class TestConvergence extends TestCase{
 			long start = System.currentTimeMillis();
 			Predicate p1 = new Predicate(10, TYPE.DATE, startDate, PREDTYPE.GT);
 			Predicate p2 = new Predicate(10, TYPE.DATE, endDate, PREDTYPE.LEQ);
-			long result = sq.createAdaptRDD(Settings.hdfsPartitionDir, p1, p2).count();
+			long result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: SHIPDATE " + (end - start) + " " + result);
 		}
@@ -128,7 +128,7 @@ public class TestConvergence extends TestCase{
 			long start = System.currentTimeMillis();
 			Predicate p1 = new Predicate(10, TYPE.DATE, startDate, PREDTYPE.GT);
 			Predicate p2 = new Predicate(10, TYPE.DATE, endDate, PREDTYPE.LEQ);
-			long result = sq.createAdaptRDD(Settings.hdfsPartitionDir, p1, p2).count();
+			long result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: SHIPDATE " + (end - start) + " " + result);
 			reduction /= 2;
@@ -148,7 +148,7 @@ public class TestConvergence extends TestCase{
 			long start = System.currentTimeMillis();
 			Predicate p1 = new Predicate(6, TYPE.FLOAT, disc - 0.01, PREDTYPE.GT);
 			Predicate p2 = new Predicate(6, TYPE.FLOAT, disc + 0.01, PREDTYPE.LEQ);
-			long c = sq.createAdaptRDD(Settings.hdfsPartitionDir, p1, p2).count();
+			long c = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: DISCOUNT " + (end - start) + " " + disc + " " + c);
 		}

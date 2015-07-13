@@ -29,17 +29,18 @@ public class TestIndexBuilder extends TestCase {
 	String propertiesFile;
 	int attributes;
 	int replication;
-
+	ConfUtils cfg;
+	
 	@Override
 	public void setUp(){
 		inputFilename = Settings.pathToDataset + "lineitem.tbl";
 		partitionBufferSize = 5*1024*1024;
 		numPartitions = 16;
 
-		localPartitionDir = Settings.localPartitionDir;
-		hdfsPartitionDir = Settings.hdfsPartitionDir;
 		propertiesFile = Settings.cartilageConf;
-
+		cfg = new ConfUtils(propertiesFile);
+		hdfsPartitionDir = cfg.getHDFS_WORKING_DIR();
+		
 		key = new CartilageIndexKey('|');
 		//key = new SinglePassIndexKey('|');
 		builder = new IndexBuilder();
@@ -116,7 +117,7 @@ public class TestIndexBuilder extends TestCase {
 				inputFilename,
 				getHDFSWriter(hdfsPartitionDir, (short) replication),
 				Settings.cartilageConf,
-				Settings.hdfsPartitionDir);
+				cfg.getHDFS_WORKING_DIR());
 	}
 
 	public void testBuildRobustTreeDistributed(String partitionsId){
