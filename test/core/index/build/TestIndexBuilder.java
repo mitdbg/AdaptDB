@@ -7,7 +7,6 @@ import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
 import junit.framework.TestCase;
 import core.index.Settings;
-import core.index.SimpleRangeTree;
 import core.index.kdtree.KDMedianTree;
 import core.index.key.CartilageIndexKey;
 import core.index.key.CartilageIndexKeyMT;
@@ -57,35 +56,6 @@ public class TestIndexBuilder extends TestCase {
 		return new HDFSPartitionWriter(partitionDir, partitionBufferSize, numPartitions, replication, propertiesFile);
 	}
 
-	public void testReader(){
-		long startTime = System.nanoTime();
-		InputReader r = new InputReader(new SimpleRangeTree(numPartitions), key);
-		r.scan(inputFilename);
-		double time1 = (System.nanoTime()-startTime)/1E9;
-		System.out.println("Time = "+time1+" sec");
-	}
-
-	public void testReaderMultiThreaded(){
-		long startTime = System.nanoTime();
-		int numThreads = 1;
-		CartilageIndexKey[] keys = new CartilageIndexKey[numThreads];
-		for(int i=0; i<keys.length; i++)
-			keys[i] = new CartilageIndexKeyMT('|');
-
-		InputReaderMT r = new InputReaderMT(new SimpleRangeTree(numPartitions), keys);
-		r.scan(inputFilename, numThreads);
-		double time1 = (System.nanoTime()-startTime)/1E9;
-		System.out.println("Time = "+time1+" sec");
-	}
-
-	public void testBuildSimpleRangeTreeLocal(){
-		builder.build(new SimpleRangeTree(numPartitions),
-				key,
-				inputFilename,
-				getLocalWriter(localPartitionDir)
-		);
-	}
-
     public void testBuildKDMedianTreeLocal(){
         File f = new File(inputFilename);
         Runtime runtime = Runtime.getRuntime();
@@ -108,46 +78,6 @@ public class TestIndexBuilder extends TestCase {
 				new KDMedianTree(1),
 				key,
 				Settings.tpchPath + scaleFactor + "/");
-	}
-
-	public void testBuildSimpleRangeTreeLocalReplicated(){
-		File f = new File(inputFilename);
-		long fileSize = f.length();
-		int bucketSize = 64 * 1024 * 1024;
-		int numBuckets = (int) (fileSize / bucketSize) + 1;
-		builder.build(1,
-				numBuckets,
-				new SimpleRangeTree(numPartitions),
-				key,
-				Settings.tpchPath,
-				getLocalWriter(localPartitionDir),
-				attributes,
-				replication
-		);
-	}
-
-	public void testBuildSimpleRangeTreeHDFS(){
-		builder.build(new SimpleRangeTree(numPartitions),
-						key,
-						inputFilename,
-						getHDFSWriter(hdfsPartitionDir, (short) replication)
-					);
-	}
-
-	public void testBuildSimpleRangeTreeHDFSReplicated(){
-		File f = new File(inputFilename);
-		long fileSize = f.length();
-		int bucketSize = 64 * 1024 * 1024;
-		int numBuckets = (int) (fileSize / bucketSize) + 1;
-		builder.build(1,
-				numBuckets,
-				new SimpleRangeTree(numPartitions),
-				key,
-				Settings.tpchPath,
-				getHDFSWriter(hdfsPartitionDir, (short)replication),
-				attributes,
-				replication
-			);
 	}
 
 	public void testBuildRobustTree(){
@@ -223,10 +153,11 @@ public class TestIndexBuilder extends TestCase {
 		System.out.println("IMBA!");
 		TestIndexBuilder t = new TestIndexBuilder();
 		t.setUp();
+		t.testBuildRobustTree();
 		//t.testBuildRobustTreeDistributed(args[args.length-1]);
-		int scaleFactor = Integer.parseInt(args[args.length - 1]);
+//		int scaleFactor = Integer.parseInt(args[args.length - 1]);
 		//t.testBuildKDMedianTreeBlockSamplingOnly(scaleFactor);
 		//t.testBuildRobustTreeBlockSampling();
-		t.testBuildRobustTreeReplicated(scaleFactor, 3);
+//		t.testBuildRobustTreeReplicated(scaleFactor, 3);
 	}
 }

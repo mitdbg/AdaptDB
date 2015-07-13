@@ -7,18 +7,19 @@ NODES_PER_RACK = 1
 NUM_RACKS = 1
 MAP_TASKS = 2
 #HADOOP_HOME = /home/quiane/hadoop/hadoop-0.22.0
-HADOOP_HOME = /Users/alekh/Softwares/sources/Hadoop/hadoop-2.0.6-alpha
+HADOOP_HOME = /Users/anil/Dev/tools/hadoop-2.6.0
 HADOOP_NAMENODE = hdfs://localhost:9000
+HDFS_HOMEDIR = /user/anil/sf1000
 	
 # dataset settings
 #TPCH_SF = 100
 TPCH_SF = 1
 #TPCH_DIR = /home/quiane/datasets/tpch/sf100/data
-TPCH_DIR = /Users/alekh/Work/Cartilage/support/datasets/scale_1
+TPCH_DIR = /Users/anil/Dev/repos/tpch-dbgen
 	
 # cartilage settings
 #TMP_DIR = /home/quiane/datasets/cartilage/tmp
-TMP_DIR = /Users/alekh/Work/Cartilage/tmp
+TMP_DIR = /Users/anil/Dev/tools/tmp
 NUM_LOG_PART = 10
 NUM_SERIALIZER_THREADS = 4
 

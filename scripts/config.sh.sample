@@ -1,0 +1,5 @@
+#! /bin/sh
+
+HADOOP_HOME="/Users/anil/Dev/tools/hadoop-2.6.0"
+SPARK_HOME="/Users/anil/Dev/tools/spark-1.3.1-bin-hadoop2.6"
+ZOOKEEPER_HOME="/Users/anil/Dev/tools/zookeeper-3.4.6"

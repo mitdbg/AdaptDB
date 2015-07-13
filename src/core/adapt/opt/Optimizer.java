@@ -175,14 +175,17 @@ public class Optimizer {
 			}
 
 			// Debug
-			int numTuplesAccessed = 0;
+			long totalCostOfQuery = 0;
 			for (int i=0; i<psplits.length; i++) {
 				int[] bids = psplits[i].getPartitions();
+				long numTuplesAccessed = 0;
 				for (int j=0; j<bids.length; j++) {
 					numTuplesAccessed += Bucket.counters.getBucketCount(bids[j]);
 				}
+				
+				totalCostOfQuery += numTuplesAccessed;
 			}
-			System.out.println("Query Cost: " + numTuplesAccessed);
+			System.out.println("Query Cost: " + totalCostOfQuery);
 
 			this.persistQueryToDisk(fq);
 			if (updated) {
@@ -975,7 +978,7 @@ public class Optimizer {
 	}
 
 	/** Used only in simulator **/
-	public void updateCountsBasedOnSample(int totalTuples) {
+	public void updateCountsBasedOnSample(long totalTuples) {
 		this.rt.initializeBucketSamplesAndCounts(this.rt.getRoot(), this.rt.sample, this.rt.sample.size(), totalTuples);
 	}
 }

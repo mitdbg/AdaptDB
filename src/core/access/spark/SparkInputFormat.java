@@ -48,7 +48,6 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 
 	private SparkQueryConf queryConf;
 
-
 	public static class SparkFileSplit extends CombineFileSplit implements Serializable {
 		private static final long serialVersionUID = 1L;
 
@@ -241,7 +240,7 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 			else{
 				// just accept as it is
 				PartitionIterator itr = split.getIterator();
-				if(itr instanceof RepartitionIterator)
+				if (itr instanceof RepartitionIterator)
 					itr = ((RepartitionIterator)itr).createDistributedIterator();
 				resizedSplits.add(new PartitionSplit(split.getPartitions(), itr));
 			}

@@ -77,9 +77,10 @@ public class RunWorkloadAnalyser {
 		int numQueries = 30;
 		double selectivity = 0.05;
 		int range = 2525;
+		Random r = new Random(1);
 		Calendar c = new GregorianCalendar();
 		for (int i=1; i <= numQueries; i++) {
-			int startOffset = (int) (Math.random() * range * (1 - selectivity)) + 1;
+			int startOffset = (int) (r.nextDouble() * range * (1 - selectivity)) + 1;
 			c.set(1992, Calendar.JANUARY, 02);
 			c.add(Calendar.DAY_OF_MONTH, startOffset);
 			SimpleDate startDate = new SimpleDate(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
@@ -103,8 +104,8 @@ public class RunWorkloadAnalyser {
 		double selectivity = 0.1;
 		int range = 2525;
 		Calendar c = new GregorianCalendar();
-
-		int startOffset = (int) (Math.random() * range * (1 - selectivity)) + 1;
+		Random r = new Random(1);
+		int startOffset = (int) (r.nextDouble() * range * (1 - selectivity)) + 1;
 		c.set(1992, Calendar.JANUARY, 02);
 		c.add(Calendar.DAY_OF_MONTH, startOffset);
 		SimpleDate startDate = new SimpleDate(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
