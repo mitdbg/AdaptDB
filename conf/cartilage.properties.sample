@@ -1,3 +1,4 @@
+<<<<<<< HEAD:conf/cartilage.properties
 # Hadoop Config
 HADOOP_HOME = /Users/anil/Dev/tools/hadoop-2.6.0
 HADOOP_NAMENODE = hdfs://localhost:9000

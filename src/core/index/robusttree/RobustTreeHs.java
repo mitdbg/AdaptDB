@@ -363,6 +363,11 @@ public class RobustTreeHs implements MDIndex {
 		return nthroot(n, A, .001);
 	}
 
+	public static void main (String[] args) {
+		System.out.println(nthroot(4, 8));
+		System.out.println(nthroot(2, 16));
+	}
+	
 	public static double nthroot(int n, double A, double p) {
 		if(A < 0) {
 			System.err.println("A < 0");// we handle only real positive numbers

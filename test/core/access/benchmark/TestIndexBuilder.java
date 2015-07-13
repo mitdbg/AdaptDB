@@ -25,7 +25,7 @@ public class TestIndexBuilder extends TestCase {
 
 	@Override
 	public void setUp(){
-		inputFilename = Settings.tpchPath + "lineitem.tbl";
+		inputFilename = Settings.pathToDataset + "lineitem.tbl";
 		partitionBufferSize = 5*1024*1024;
 		numPartitions = 1024;
 

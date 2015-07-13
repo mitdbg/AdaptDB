@@ -175,14 +175,17 @@ public class Optimizer {
 			}
 
 			// Debug
-			int numTuplesAccessed = 0;
+			long totalCostOfQuery = 0;
 			for (int i=0; i<psplits.length; i++) {
 				int[] bids = psplits[i].getPartitions();
+				long numTuplesAccessed = 0;
 				for (int j=0; j<bids.length; j++) {
 					numTuplesAccessed += Bucket.counters.getBucketCount(bids[j]);
 				}
+				
+				totalCostOfQuery += numTuplesAccessed;
 			}
-			System.out.println("Query Cost: " + numTuplesAccessed);
+			System.out.println("Query Cost: " + totalCostOfQuery);
 
 			this.persistQueryToDisk(fq);
 			if (updated) {
@@ -433,7 +436,7 @@ public class Optimizer {
 	 * @param val
 	 * @return
 	 */
-	public boolean checkValidToRoot(RNode node, int attrId, TYPE t, Object val) {
+	public static boolean checkValidToRoot(RNode node, int attrId, TYPE t, Object val) {
 		while (node.parent != null) {
 			if (node.parent.attribute == attrId) {
 				int ret = TypeUtils.compareTo(node.parent.value, val, t);
@@ -467,7 +470,7 @@ public class Optimizer {
 		while (stack.size() > 0) {
 			RNode n = stack.removeLast();
 			if (n.bucket == null) {
-				if (n.attribute == node.attribute) {
+				if (n.attribute == attrId) {
 					int comp = TypeUtils.compareTo(n.value, val, t);
 					if (comp * isLeft >= 0) return false;
 				}
@@ -547,7 +550,7 @@ public class Optimizer {
 		return numTuples;
 	}
 
-	public float getNumTuplesAccessed(RNode changed, Query q, boolean real) {
+	public static float getNumTuplesAccessed(RNode changed, Query q, boolean real) {
 		// First traverse to parent to see if query accesses node
 		// If yes, find the number of tuples accessed.
 		Predicate[] ps = ((FilterQuery)q).getPredicates();
@@ -971,11 +974,11 @@ public class Optimizer {
 		}
 		
 		byte[] indexBytes = this.rt.marshall();
-		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome), pathToIndex, (short) 3, this.rt.marshall(), 0, indexBytes.length, false);
+		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome), pathToIndex, Config.replication, this.rt.marshall(), 0, indexBytes.length, false);
 	}
 
 	/** Used only in simulator **/
-	public void updateCountsBasedOnSample(int totalTuples) {
+	public void updateCountsBasedOnSample(long totalTuples) {
 		this.rt.initializeBucketSamplesAndCounts(this.rt.getRoot(), this.rt.sample, this.rt.sample.size(), totalTuples);
 	}
 }

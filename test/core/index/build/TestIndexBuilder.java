@@ -32,7 +32,7 @@ public class TestIndexBuilder extends TestCase {
 
 	@Override
 	public void setUp(){
-		inputFilename = Settings.tpchPath + "lineitem.tbl";
+		inputFilename = Settings.pathToDataset + "lineitem.tbl";
 		partitionBufferSize = 5*1024*1024;
 		numPartitions = 16;
 
@@ -77,7 +77,7 @@ public class TestIndexBuilder extends TestCase {
 				numBuckets,
 				new KDMedianTree(1),
 				key,
-				Settings.tpchPath + scaleFactor + "/");
+				Settings.pathToDataset + scaleFactor + "/");
 	}
 
 	public void testBuildRobustTree(){
@@ -106,7 +106,7 @@ public class TestIndexBuilder extends TestCase {
 				numBuckets,
 				new RobustTreeHs(1),
 				key,
-				Settings.tpchPath + scaleFactor + "/");
+				Settings.pathToDataset + scaleFactor + "/");
 	}
 
 	public void testSparkPartitioning() {
@@ -127,7 +127,7 @@ public class TestIndexBuilder extends TestCase {
 		index.unmarshall(indexBytes);
 		builder.buildDistributedFromIndex(index,
 				key,
-				Settings.tpchPath,
+				Settings.pathToDataset,
 				getHDFSWriter(hdfsPartitionDir + "/partitions" + partitionsId, (short) replication));
 	}
 
@@ -142,7 +142,7 @@ public class TestIndexBuilder extends TestCase {
 				numBuckets,
 				new RobustTreeHs(1),
 				key,
-				Settings.tpchPath,
+				Settings.pathToDataset,
 				getHDFSWriter(hdfsPartitionDir, (short) replication),
 				attributes,
 				numReplicas

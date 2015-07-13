@@ -38,7 +38,7 @@ public class CompareIndices {
 
     @Before
     public void setUp(){
-        inputFilename = Settings.tpchPath + "lineitem.tbl";
+        inputFilename = Settings.pathToDataset + "lineitem.tbl";
 
         localPartitionDir = Settings.localPartitionDir;
 
