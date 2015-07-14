@@ -12,3 +12,5 @@ out/
 scripts/config.sh
 conf/cartilage.properties
 lib/
+.gradle/
+.settings/
