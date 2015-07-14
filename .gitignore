@@ -11,3 +11,4 @@ out/
 .classpath
 scripts/config.sh
 conf/cartilage.properties
+lib/
