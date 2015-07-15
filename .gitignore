@@ -7,3 +7,12 @@ out/
 *.class
 *.pyc
 *.o
+.project
+.classpath
+scripts/config.sh
+conf/cartilage.properties
+lib/
+.gradle/
+.settings/
+/build/
+*.out
