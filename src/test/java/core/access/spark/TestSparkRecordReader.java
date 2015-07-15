@@ -3,6 +3,7 @@ package core.access.spark;
 import java.io.IOException;
 
 import junit.framework.TestCase;
+import perf.benchmark.BenchmarkSettings;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -17,7 +18,6 @@ import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.iterator.IteratorRecord;
-import core.index.Settings;
 import core.utils.ConfUtils;
 import core.utils.TypeUtils.*;
 
@@ -35,7 +35,7 @@ public class TestSparkRecordReader extends TestCase{
 		
 		
 		conf = new Configuration();
-		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
+		ConfUtils cfg = new ConfUtils(BenchmarkSettings.cartilageConf);
 		
 		SparkQueryConf queryConf = new SparkQueryConf(conf);
 		queryConf.setWorkingDir(hdfsPath);

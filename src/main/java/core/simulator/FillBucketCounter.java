@@ -5,8 +5,8 @@ import java.io.FileReader;
 import java.io.PrintWriter;
 import java.util.Scanner;
 
-import core.index.Settings;
 import core.utils.ConfUtils;
+import perf.benchmark.BenchmarkSettings;
 import core.index.MDIndex.BucketCounts;
 
 public class FillBucketCounter {
@@ -14,7 +14,7 @@ public class FillBucketCounter {
 		System.out.println("Enter mode:");
 		Scanner in = new Scanner(System.in);
 		String input = in.nextLine().trim();
-	    ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
+	    ConfUtils cfg = new ConfUtils(BenchmarkSettings.cartilageConf);
 	    String zookeeperHosts = cfg.getZOOKEEPER_HOSTS();
 		if (input.equals("put")) {
 			try {

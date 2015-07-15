@@ -1,17 +1,17 @@
 package core.access.spark;
 
 import junit.framework.TestCase;
+import perf.benchmark.BenchmarkSettings;
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.Query.FilterQuery;
 import core.access.iterator.PartitionIterator;
 import core.access.iterator.PostFilterIterator;
-import core.index.Settings;
 import core.utils.ConfUtils;
 import core.utils.TypeUtils.*;
 
 public class TestQuery extends TestCase{
-	public final static String propertyFile = Settings.cartilageConf;
+	public final static String propertyFile = BenchmarkSettings.cartilageConf;
 	public final static ConfUtils cfg = new ConfUtils(propertyFile);
 
 	SparkQuery sq;

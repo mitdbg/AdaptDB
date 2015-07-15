@@ -2,9 +2,9 @@ package core.utils;
 
 import java.util.List;
 
-import core.index.Settings;
 import junit.framework.Assert;
 import junit.framework.TestCase;
+import perf.benchmark.BenchmarkSettings;
 
 public class TestHDFSUtils extends TestCase {	
 	private String hadoopHome;
@@ -12,7 +12,7 @@ public class TestHDFSUtils extends TestCase {
 	private short replication;
 	
 	public void setUp(){
-		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
+		ConfUtils cfg = new ConfUtils(BenchmarkSettings.cartilageConf);
 		hadoopHome = cfg.getHADOOP_HOME();
 		filepath = cfg.getHDFS_WORKING_DIR() + "/testUtils.txt";
 		replication = cfg.getHDFS_REPLICATION_FACTOR();

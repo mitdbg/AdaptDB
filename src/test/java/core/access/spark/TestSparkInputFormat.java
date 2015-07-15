@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import junit.framework.TestCase;
+import perf.benchmark.BenchmarkSettings;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -14,7 +15,6 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.iterator.PartitionIterator;
-import core.index.Settings;
 import core.utils.ConfUtils;
 import core.utils.TypeUtils.*;
 
@@ -116,7 +116,7 @@ public class TestSparkInputFormat extends TestCase{
 		String hdfsPath = "hdfs://localhost:9000/user/alekh/dodo";
 		
 		Configuration conf = new Configuration();
-		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
+		ConfUtils cfg = new ConfUtils(BenchmarkSettings.cartilageConf);
 		
 		SparkQueryConf queryConf = new SparkQueryConf(conf);
 		queryConf.setWorkingDir(hdfsPath);

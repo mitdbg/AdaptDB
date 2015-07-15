@@ -13,16 +13,16 @@ import core.access.Partition;
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.Query.FilterQuery;
-import core.index.Settings;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils.*;
+import perf.benchmark.BenchmarkSettings;
 
 public class TestHDFSRepartitionIterator extends TestRepartitionIterator {
 
 	@Override
 	public void setUp(){
-		ConfUtils cfg = new ConfUtils(Settings.cartilageConf);
+		ConfUtils cfg = new ConfUtils(BenchmarkSettings.cartilageConf);
 		partitionDir = cfg.getHDFS_WORKING_DIR();
 		
 		int attributeIdx = 0;
@@ -46,7 +46,7 @@ public class TestHDFSRepartitionIterator extends TestRepartitionIterator {
 
 	@Override
 	protected Partition getPartitionInstance(String path){
-		return new HDFSPartition(path, Settings.cartilageConf, (short)1);
+		return new HDFSPartition(path, BenchmarkSettings.cartilageConf, (short)1);
 	}
 
 	@Override

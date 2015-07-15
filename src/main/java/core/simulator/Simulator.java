@@ -1,8 +1,5 @@
 package core.simulator;
 
-import core.utils.CuratorUtils;
-import junit.framework.TestCase;
-
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Random;
@@ -16,24 +13,23 @@ import core.access.Predicate.PREDTYPE;
 import core.access.Query.FilterQuery;
 import core.access.iterator.RepartitionIterator;
 import core.adapt.opt.Optimizer;
-import core.index.MDIndex;
-import core.index.Settings;
-import core.index.MDIndex.Bucket;
 import core.utils.ConfUtils;
+import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
-import core.utils.TypeUtils.*;
+import core.utils.TypeUtils.SimpleDate;
+import core.utils.TypeUtils.TYPE;
+import perf.benchmark.BenchmarkSettings;
 
-public class Simulator extends TestCase{
+public class Simulator {
 	Job job;
 	Optimizer opt;
 	int sf;
 	final long TUPLES_PER_SF = 6000000;
 	ConfUtils cfg;
 
-	@Override
 	public void setUp(){
 		sf = 1000;
-		cfg = new ConfUtils(Settings.cartilageConf);
+		cfg = new ConfUtils(BenchmarkSettings.cartilageConf);
 		this.cleanUp();
 		opt = new Optimizer(cfg);
 		opt.loadIndex();

@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.List;
 
 import junit.framework.TestCase;
+import perf.benchmark.BenchmarkSettings;
 
 import com.google.common.collect.Lists;
 
@@ -11,7 +12,6 @@ import core.access.Partition;
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.Query.FilterQuery;
-import core.index.Settings;
 import core.index.robusttree.RNode;
 import core.utils.TypeUtils.*;
 

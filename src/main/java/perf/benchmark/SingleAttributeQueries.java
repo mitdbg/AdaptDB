@@ -1,18 +1,17 @@
 package perf.benchmark;
 
-import junit.framework.TestCase;
-import core.access.Predicate;
-import core.access.Predicate.PREDTYPE;
-import core.access.spark.SparkQuery;
-import core.index.Settings;
-import core.utils.ConfUtils;
-import core.utils.TypeUtils.*;
-
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-public class SingleAttributeQueries extends TestCase{
-	public final static String propertyFile = Settings.cartilageConf;
+import core.access.Predicate;
+import core.access.Predicate.PREDTYPE;
+import core.access.spark.SparkQuery;
+import core.utils.ConfUtils;
+import core.utils.TypeUtils.SimpleDate;
+import core.utils.TypeUtils.TYPE;
+
+public class SingleAttributeQueries {
+	public final static String propertyFile = BenchmarkSettings.cartilageConf;
 	public final static ConfUtils cfg = new ConfUtils(propertyFile);
 	public final static int scaleFactor = 1000;
 	public static int numQueries = 1;
@@ -20,7 +19,6 @@ public class SingleAttributeQueries extends TestCase{
 	double selectivity;
 	SparkQuery sq;
 	
-	@Override
 	public void setUp() {
 		sq = new SparkQuery(cfg);
 	}

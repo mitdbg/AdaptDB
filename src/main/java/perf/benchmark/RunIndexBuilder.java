@@ -1,20 +1,22 @@
-package core.index.build;
+package perf.benchmark;
 
 import java.io.File;
 
-import core.utils.ConfUtils;
-import core.utils.CuratorUtils;
-import core.utils.HDFSUtils;
-import junit.framework.TestCase;
-import perf.benchmark.BenchmarkSettings;
-import core.index.kdtree.KDMedianTree;
-import core.index.key.CartilageIndexKey;
-import core.index.key.CartilageIndexKeyMT;
-import core.index.robusttree.RobustTreeHs;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.fs.FileSystem;
 
-public class TestIndexBuilder {
+import core.index.build.BufferedPartitionWriter;
+import core.index.build.HDFSPartitionWriter;
+import core.index.build.IndexBuilder;
+import core.index.build.PartitionWriter;
+import core.index.kdtree.KDMedianTree;
+import core.index.key.CartilageIndexKey;
+import core.index.robusttree.RobustTreeHs;
+import core.utils.ConfUtils;
+import core.utils.CuratorUtils;
+import core.utils.HDFSUtils;
+
+public class RunIndexBuilder {
 	String inputFilename;
 	CartilageIndexKey key;
 	IndexBuilder builder;
@@ -150,13 +152,8 @@ public class TestIndexBuilder {
 
 	public static void main(String[] args){
 		// TODO(anil): Create a single index builder.
-		TestIndexBuilder t = new TestIndexBuilder();
+		RunIndexBuilder t = new RunIndexBuilder();
 		t.setUp();
 		t.testBuildRobustTree();
-		//t.testBuildRobustTreeDistributed(args[args.length-1]);
-//		int scaleFactor = Integer.parseInt(args[args.length - 1]);
-		//t.testBuildKDMedianTreeBlockSamplingOnly(scaleFactor);
-		//t.testBuildRobustTreeBlockSampling();
-//		t.testBuildRobustTreeReplicated(scaleFactor, 3);
 	}
 }

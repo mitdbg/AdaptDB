@@ -9,26 +9,25 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Random;
 
-import core.utils.CuratorUtils;
-import core.utils.HDFSUtils;
-import junit.framework.TestCase;
+import org.apache.curator.framework.CuratorFramework;
+
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.spark.SparkQuery;
-import core.index.Settings;
 import core.utils.ConfUtils;
-import core.utils.TypeUtils.*;
-import org.apache.curator.framework.CuratorFramework;
+import core.utils.CuratorUtils;
+import core.utils.HDFSUtils;
+import core.utils.TypeUtils.SimpleDate;
+import core.utils.TypeUtils.TYPE;
 
-public class TestChangingWorkload extends TestCase{
-	public final static String propertyFile = Settings.cartilageConf;
+public class TestChangingWorkload {
+	public final static String propertyFile = BenchmarkSettings.cartilageConf;
 	public final static ConfUtils cfg = new ConfUtils(propertyFile);
 	final static String[] shipModes = new String[]{"REG AIR", "AIR", "RAIL", "SHIP", "TRUCK", "MAIL", "FOB"};
 
 	int scaleFactor = 1000;
 	double selectivity = 0.05;
 
-	@Override
 	public void setUp() {
 		// delete query history
 		// Cleanup queries file - to remove past query workload

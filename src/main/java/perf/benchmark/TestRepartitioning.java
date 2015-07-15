@@ -2,20 +2,17 @@ package perf.benchmark;
 
 import core.access.Predicate;
 import core.access.spark.SparkQuery;
-import core.index.Settings;
 import core.utils.ConfUtils;
-import core.utils.TypeUtils.*;
-import junit.framework.TestCase;
+import core.utils.TypeUtils.TYPE;
 
 /**
  * Created by qui on 6/12/15.
  */
-public class TestRepartitioning extends TestCase {
+public class TestRepartitioning {
 
-    public final static String propertyFile = Settings.cartilageConf;
+    public final static String propertyFile = BenchmarkSettings.cartilageConf;
     public final static ConfUtils cfg = new ConfUtils(propertyFile);
 
-    @Override
     public void setUp() {
 
     }

@@ -14,3 +14,5 @@ conf/cartilage.properties
 lib/
 .gradle/
 .settings/
+/build/
+*.out

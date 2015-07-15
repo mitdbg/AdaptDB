@@ -11,7 +11,6 @@ import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.Query.FilterQuery;
 import core.adapt.opt.WorkloadAnalyser;
-import core.index.Settings;
 import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTreeHs;
 import core.utils.ConfUtils;
@@ -138,7 +137,7 @@ public class RunWorkloadAnalyser {
 	}
 	
 	public static void main(String[] args) {
-		String propertyFile = Settings.cartilageConf;
+		String propertyFile = BenchmarkSettings.cartilageConf;
 		ConfUtils cfg = new ConfUtils(propertyFile);
 		RunWorkloadAnalyser rwa = new RunWorkloadAnalyser(cfg);
 		rwa.generateShipDateDrillDown();
