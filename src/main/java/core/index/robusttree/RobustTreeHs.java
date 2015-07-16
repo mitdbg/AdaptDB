@@ -1,11 +1,6 @@
 package core.index.robusttree;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.*;
 
 import core.access.Predicate;
 import core.index.MDIndex;
@@ -401,5 +396,63 @@ public class RobustTreeHs implements MDIndex {
 			printNode(node.rightChild);
 			System.out.print(" }");
 		}
+	}
+
+	public Map<Integer, BucketInfo> getBucketRanges(int attribute) {
+		return getBucketRangeSubtree(this.getRoot(), attribute);
+	}
+
+	private static Map<Integer, BucketInfo> getBucketRangeSubtree(RNode root, int attribute) {
+		if (root.bucket != null) {
+			Map<Integer, BucketInfo> bucketRanges = new HashMap<Integer, BucketInfo>();
+			if (root.rangesByAttribute.get(attribute) != null) {
+				bucketRanges.put(root.bucket.getBucketId(), root.rangesByAttribute.get(attribute));
+			}
+			return bucketRanges;
+		} else {
+			Map<Integer, BucketInfo> bucketRanges = getBucketRangeSubtree(root.leftChild, attribute);
+			bucketRanges.putAll(getBucketRangeSubtree(root.rightChild, attribute));
+			return bucketRanges;
+		}
+	}
+
+	public double[] getAllocations() {
+		List<RNode> queue = new ArrayList<RNode>();
+		Map<Integer, Double> allocs = new HashMap<Integer, Double>();
+		queue.add(this.getRoot());
+
+		int nodeNum = 0;
+		RNode filler = new RNode();
+		filler.attribute = -1;
+		int lastNode = 0;
+		while (queue.size() > 0) {
+			nodeNum++;
+			RNode node = queue.remove(0);
+			if (node.bucket != null || node.attribute == -1) {
+				if (nodeNum > lastNode * 2) {
+					break;
+				}
+				queue.add(filler);
+				queue.add(filler);
+				continue;
+			}
+			lastNode = nodeNum;
+			if (!(allocs.containsKey(node.attribute))) {
+				allocs.put(node.attribute, 0.0);
+			}
+			allocs.put(node.attribute, allocs.get(node.attribute) + Math.pow(2, -1 * Math.floor(Math.log(nodeNum) / Math.log(2)) + 1));
+			queue.add(node.leftChild);
+			queue.add(node.rightChild);
+		}
+		double[] allocArray = new double[numAttributes];
+		for (int i = 0; i < numAttributes; i++) {
+			if (!(allocs.containsKey(i))) {
+				allocArray[i] = 0;
+			} else {
+				allocArray[i] = allocs.get(i);
+			}
+		}
+		System.out.println(nodeNum);
+		return allocArray;
 	}
 }

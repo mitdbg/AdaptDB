@@ -3,6 +3,7 @@ package core.index.build;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Scanner;
 
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
@@ -194,6 +195,22 @@ public class ReplicatedInputReader {
 	    				indexes[i].insert(keys[i]);
 	    	}
 	    }
+	}
+
+	public void scanSample(String sample) {
+		Scanner sc = new Scanner(sample);
+		sc.nextLine(); // first line of sample is types
+		while (sc.hasNextLine()) {
+			String record = sc.nextLine();
+			for(int i=0;i<indexes.length;i++) {
+				if (record.getBytes().length == 0) {
+					continue;
+				}
+				keys[i].setBytes(record.getBytes());
+				indexes[i].insert(keys[i]);
+			}
+		}
+		sc.close();
 	}
 	
 }

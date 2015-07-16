@@ -2,15 +2,15 @@ package core.index.key;
 
 import com.google.common.base.Joiner;
 
-import core.utils.TypeUtils.SimpleDate;
+import core.utils.TypeUtils.*;
 
 public class ParsedIndexKey extends CartilageIndexKey{
 
 	private Object[] values;
-	
-	
-	public ParsedIndexKey() {
-		super('|');	// some dummy delimiter (not used really)
+
+	public ParsedIndexKey(TYPE[] types) {
+		super('|'); // some dummy delimiter (not used really)
+		this.types = types;
 	}
 
 	public void setValues(Object[] values){
@@ -43,6 +43,10 @@ public class ParsedIndexKey extends CartilageIndexKey{
 	
 	public SimpleDate getDateAttribute(int index) {
 		return (SimpleDate)values[index];
+	}
+
+	public SimpleDate getDateAttribute(int index, SimpleDate date) {
+		return getDateAttribute(index);
 	}
 	
 	public boolean getBooleanAttribute(int index) {

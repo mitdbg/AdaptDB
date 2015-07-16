@@ -1,11 +1,9 @@
 package core.index.robusttree;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 import core.access.Predicate;
-import core.index.MDIndex.Bucket;
+import core.index.MDIndex.*;
 import core.index.key.MDIndexKey;
 import core.utils.TypeUtils;
 import core.utils.TypeUtils.*;
@@ -19,6 +17,7 @@ public class RNode {
     public int attribute;
     public TYPE type;
     public Object value;
+	Map<Integer, BucketInfo> rangesByAttribute = new HashMap<Integer, BucketInfo>();
 
     // Not used - left for legacy
     public float quantile;
@@ -242,17 +241,40 @@ public class RNode {
 			// For string tokens; we may have to read more than one token, so read till end of line
 			this.value = TypeUtils.deserializeValue(this.type, sc.nextLine().trim());
 
+			boolean exists = this.rangesByAttribute.containsKey(this.attribute);
+
 			this.leftChild = new RNode();
-			this.leftChild.parseNode(sc);
 			this.leftChild.parent = this;
+
 			this.rightChild = new RNode();
-			this.rightChild.parseNode(sc);
 			this.rightChild.parent = this;
+
+			for (Map.Entry<Integer, BucketInfo> entry : this.rangesByAttribute.entrySet()) {
+				this.leftChild.rangesByAttribute.put(entry.getKey(), entry.getValue().clone());
+				this.rightChild.rangesByAttribute.put(entry.getKey(), entry.getValue().clone());
+			}
+			this.rangesByAttribute = null;
+
+			if (exists) {
+				this.leftChild.rangesByAttribute.get(this.attribute).intersect(new BucketInfo(this.type, null, this.value));
+				this.rightChild.rangesByAttribute.get(this.attribute).intersect(new BucketInfo(this.type, this.value, null));
+			} else {
+				this.leftChild.rangesByAttribute.put(this.attribute, new BucketInfo(this.type, null, this.value));
+				this.rightChild.rangesByAttribute.put(this.attribute, new BucketInfo(this.type, this.value, null));
+			}
+
+			this.leftChild.parseNode(sc);
+			this.rightChild.parseNode(sc);
+
 		} else if (type.equals("b")) {
 			Bucket b = new Bucket(sc.nextInt());
 			this.bucket = b;
+			for (BucketInfo info : this.rangesByAttribute.values()) {
+				info.setId(b.getBucketId());
+			}
 		} else {
 			System.out.println("Bad things have happened in unmarshall");
+			System.out.println(type);
 		}
 
 		return this;

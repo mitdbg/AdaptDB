@@ -30,7 +30,7 @@ public class InputReader {
 	MDIndex index;
 	CartilageIndexKey key;
 
-	boolean firstPass;
+	public boolean firstPass;
 
 	public InputReader(MDIndex index, CartilageIndexKey key){
 		this.index = index;
