@@ -1,6 +1,6 @@
 package core.utils;
 
-import core.utils.RangeUtils.SimpleDateRange.SimpleDate;
+import core.utils.TypeUtils.SimpleDate;
 
 /**
  * Created by qui on 7/9/15.

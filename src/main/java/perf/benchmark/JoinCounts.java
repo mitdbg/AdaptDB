@@ -1,22 +1,18 @@
-package core.access.benchmark;
+package perf.benchmark;
 
 import core.access.AccessMethod.PartitionSplit;
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.Query;
 import core.adapt.opt.Optimizer;
-import core.index.Settings;
 import core.utils.ConfUtils;
-import core.utils.CuratorUtils;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.TYPE;
 
 import java.io.BufferedReader;
 import java.nio.charset.Charset;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,7 +21,7 @@ import java.util.Map;
  */
 public class JoinCounts {
 
-    ConfUtils conf = new ConfUtils(Settings.cartilageConf);
+    ConfUtils conf = new ConfUtils(BenchmarkSettings.cartilageConf);
     int scaleFactor = 1000;
     int[] numChunkValues = new int[]{1, 2, 4, 8, 16, 32, 50};
     Map<String, Map<Integer, Double>> bucketSizes = new HashMap<String, Map<Integer, Double>>();
@@ -66,15 +62,15 @@ public class JoinCounts {
                 Predicate part1 = new Predicate(0, TYPE.LONG, (long) start, PREDTYPE.GT);
                 Predicate part2 = new Predicate(0, TYPE.LONG, (long) end, PREDTYPE.LEQ);
 
-                Optimizer partOpt = new Optimizer(conf.getHDFS_HOMEDIR() + "/"+small, conf.getHADOOP_HOME());
-                partOpt.loadIndex(conf.getZOOKEEPER_HOSTS());
+                Optimizer partOpt = new Optimizer(conf);
+                partOpt.loadIndex();
                 PartitionSplit[] partSplits = partOpt.buildAccessPlan(new Query.FilterQuery(new Predicate[]{part1, part2}));
 
                 Predicate lineitem1 = new Predicate(1, TYPE.INT, (int) start, PREDTYPE.GT);
                 Predicate lineitem2 = new Predicate(1, TYPE.INT, (int) end, PREDTYPE.LEQ);
 
-                Optimizer lineOpt = new Optimizer(conf.getHDFS_HOMEDIR() + "/"+big, conf.getHADOOP_HOME());
-                lineOpt.loadIndex(conf.getZOOKEEPER_HOSTS());
+                Optimizer lineOpt = new Optimizer(conf);
+                lineOpt.loadIndex();
                 PartitionSplit[] lineSplits = lineOpt.buildAccessPlan(new Query.FilterQuery(new Predicate[]{lineitem1, lineitem2}));
 
                 for (PartitionSplit split : lineSplits) {
@@ -101,8 +97,8 @@ public class JoinCounts {
     public void testOriginalSplit(String big, String small) {
         fillBucketSizes(small);
         fillBucketSizes(big);
-        Optimizer partOpt = new Optimizer(conf.getHDFS_HOMEDIR() + "/" + small, conf.getHADOOP_HOME());
-        partOpt.loadIndex(conf.getZOOKEEPER_HOSTS());
+        Optimizer partOpt = new Optimizer(conf);
+        partOpt.loadIndex();
 
         Map<Integer, Integer> partCount = new HashMap<Integer, Integer>();
         double partOverlap = 0;

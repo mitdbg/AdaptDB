@@ -36,7 +36,7 @@ import core.index.MDIndex;
 import core.index.robusttree.RobustTreeHs;
 import core.utils.HDFSUtils;
 import core.utils.Range;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.TYPE;
 
 public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTuplePair> implements Serializable {
 
@@ -147,12 +147,12 @@ public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTupl
 */
 
 		AccessMethod am = new AccessMethod();
-		queryConf.setDataset(joinInput1);
+		queryConf.setWorkingDir(joinInput1);
 		am.init(queryConf);
 
 		// get bucket splits from larger table
-		Optimizer opt = new Optimizer(joinInput2, queryConf.getHadoopHome());
-		opt.loadIndex(queryConf.getZookeeperHosts());
+		Optimizer opt = new Optimizer(queryConf);
+		opt.loadIndex(joinInput2);
 
 		RobustTreeHs index = opt.getIndex();
 		Map<Integer, MDIndex.BucketInfo> ranges = index.getBucketRanges(joinKey2);
@@ -223,7 +223,7 @@ public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTupl
 			System.out.println("predicate2: "+lookupPred2);
 
 			// ids from smaller table that match this range of values
-			PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(new Predicate[]{lookupPred1,lookupPred2}), 100, true);
+			PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(new Predicate[]{lookupPred1,lookupPred2}), true);
 			
 			// add files from the smaller input first (build input)
 			for(PartitionSplit split: splits){

@@ -1,6 +1,5 @@
 package core.index;
 import core.utils.Range;
-import core.utils.SchemaUtils;
 import core.utils.TypeUtils;
 import org.apache.curator.framework.CuratorFramework;
 

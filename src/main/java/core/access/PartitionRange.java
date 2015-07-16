@@ -2,7 +2,7 @@ package core.access;
 
 import core.index.MDIndex;
 import core.utils.Range;
-import core.utils.SchemaUtils;
+import core.utils.TypeUtils.TYPE;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +14,7 @@ public class PartitionRange extends Range {
 
     private List<MDIndex.BucketInfo> buckets;
 
-    public PartitionRange(SchemaUtils.TYPE type, Object low, Object high) {
+    public PartitionRange(TYPE type, Object low, Object high) {
         super(type, low, high);
         this.buckets = new ArrayList<MDIndex.BucketInfo>();
     }

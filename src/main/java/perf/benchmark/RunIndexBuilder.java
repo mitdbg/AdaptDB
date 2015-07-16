@@ -4,8 +4,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import core.index.AttributeRangeTree;
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKeySet;
+import core.utils.TypeUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.fs.FileSystem;
 
@@ -123,6 +125,22 @@ public class RunIndexBuilder {
 		byte[] indexBytes = HDFSUtils.readFile(fs, hdfsPartitionDir + "/index");
 		RobustTreeHs index = new RobustTreeHs(1);
 		index.unmarshall(indexBytes);
+		builder.buildDistributedFromIndex(index,
+				key,
+				BenchmarkSettings.pathToDataset,
+				getHDFSWriter(hdfsPartitionDir + "/partitions" + partitionsId, (short) replication));
+	}
+
+	public void testWritePartitionsFromRangeIndex(String partitionsId){
+		AttributeRangeTree index = new AttributeRangeTree(1, TypeUtils.TYPE.INT);
+		int start = 0;
+		int range = 200000000;
+		int numBuckets = 100;
+		Object[] buckets = new Integer[numBuckets+1];
+		for (int i = 0; i <= numBuckets; i++) {
+			buckets[i] = start + (range / numBuckets) * i;
+		}
+		index.setBoundaries(buckets);
 		builder.buildDistributedFromIndex(index,
 				key,
 				BenchmarkSettings.pathToDataset,

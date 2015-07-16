@@ -1,16 +1,16 @@
-package core.access.spark;
+package perf.benchmark;
 
 import core.access.Predicate;
 import core.access.iterator.IteratorRecord;
-import core.utils.SchemaUtils;
-import junit.framework.TestCase;
-import core.index.Settings;
+import core.access.spark.MapToKeyFunction;
+import core.access.spark.SparkQuery;
+import core.utils.TypeUtils.*;
 import core.utils.ConfUtils;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.spark.api.java.JavaPairRDD;
 
-public class TestJoinQueries extends TestCase {
-	public final static String propertyFile = Settings.cartilageConf;
+public class TestJoinQueries {
+	public final static String propertyFile = BenchmarkSettings.cartilageConf;
 	public final static ConfUtils cfg = new ConfUtils(propertyFile);
 	public final static int scaleFactor = 1000;
 	public static int numQueries = 1;
@@ -55,13 +55,13 @@ public class TestJoinQueries extends TestCase {
 	public void testScans() {
 		System.out.println("INFO: Running ORDERS scan");
 		long start = System.currentTimeMillis();
-		long result = sq.createScanRDD("/user/anil/orders/0", new Predicate[]{new Predicate(0, SchemaUtils.TYPE.LONG, -1L, Predicate.PREDTYPE.GT)}).count();
+		long result = sq.createScanRDD("/user/anil/orders/0", new Predicate[]{new Predicate(0, TYPE.LONG, -1L, Predicate.PREDTYPE.GT)}).count();
 		long end = System.currentTimeMillis();
 		System.out.println("RES: ORDERS scan " + (end - start) + " " + result);
 
 		System.out.println("INFO: Running PART scan");
 		long start2 = System.currentTimeMillis();
-		long result2 = sq.createScanRDD("/user/anil/part/0", new Predicate[]{new Predicate(0, SchemaUtils.TYPE.LONG, -1L, Predicate.PREDTYPE.GT)}).count();
+		long result2 = sq.createScanRDD("/user/anil/part/0", new Predicate[]{new Predicate(0, TYPE.LONG, -1L, Predicate.PREDTYPE.GT)}).count();
 		long end2 = System.currentTimeMillis();
 		System.out.println("RES: PART scan " + (end2 - start2) + " " + result2);
 	}
@@ -93,14 +93,14 @@ public class TestJoinQueries extends TestCase {
 			long startChunk = System.currentTimeMillis();
 			JavaPairRDD<String, String> partRDD = sq.createRDD(
 						input1,
-						new Predicate(0, SchemaUtils.TYPE.LONG, lowVal, Predicate.PREDTYPE.GT),
-						new Predicate(0, SchemaUtils.TYPE.LONG, highVal, Predicate.PREDTYPE.LEQ))
+						new Predicate(0, TYPE.LONG, lowVal, Predicate.PREDTYPE.GT),
+						new Predicate(0, TYPE.LONG, highVal, Predicate.PREDTYPE.LEQ))
 					.mapToPair(new MapToKeyFunction(0));
 
 			JavaPairRDD<String, String> lineRDD = sq.createRDD(
 						input2,
-						new Predicate(1, SchemaUtils.TYPE.INT, (int) lowVal, Predicate.PREDTYPE.GT),
-						new Predicate(1, SchemaUtils.TYPE.INT, (int) highVal, Predicate.PREDTYPE.LEQ))
+						new Predicate(1, TYPE.INT, (int) lowVal, Predicate.PREDTYPE.GT),
+						new Predicate(1, TYPE.INT, (int) highVal, Predicate.PREDTYPE.LEQ))
 					.mapToPair(new MapToKeyFunction(1));
 			long result = partRDD.join(lineRDD).count();
 			total += result;
