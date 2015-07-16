@@ -4,7 +4,7 @@ import com.google.common.base.Joiner;
 import core.index.key.CartilageIndexKey;
 import core.index.key.CartilageIndexKeySet;
 import core.index.key.MDIndexKey;
-import core.utils.SchemaUtils.TYPE;
+import core.utils.TypeUtils.TYPE;
 import core.utils.TypeUtils;
 
 import java.util.Arrays;

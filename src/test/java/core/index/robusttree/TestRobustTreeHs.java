@@ -1,13 +1,13 @@
 package core.index.robusttree;
 
 import core.index.MDIndex;
-import core.index.Settings;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.Range;
-import core.utils.SchemaUtils;
+import core.utils.TypeUtils.*;
 import junit.framework.TestCase;
 import org.apache.hadoop.fs.FileSystem;
+import perf.benchmark.BenchmarkSettings;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -45,12 +45,12 @@ public class TestRobustTreeHs extends TestCase {
         Map<Integer, MDIndex.BucketInfo> ranges1 = index.getBucketRanges(1);
         System.out.println(ranges1);
         Range[] expected = new Range[]{
-                new MDIndex.BucketInfo(1, SchemaUtils.TYPE.INT, null, 32),
-                new MDIndex.BucketInfo(2, SchemaUtils.TYPE.INT, null, 32),
-                new MDIndex.BucketInfo(3, SchemaUtils.TYPE.INT, null, 18),
-                new MDIndex.BucketInfo(4, SchemaUtils.TYPE.INT, 18, 32),
-                new MDIndex.BucketInfo(5, SchemaUtils.TYPE.INT, 32, null),
-                new MDIndex.BucketInfo(6, SchemaUtils.TYPE.INT, 32, null)
+                new MDIndex.BucketInfo(1, TYPE.INT, null, 32),
+                new MDIndex.BucketInfo(2, TYPE.INT, null, 32),
+                new MDIndex.BucketInfo(3, TYPE.INT, null, 18),
+                new MDIndex.BucketInfo(4, TYPE.INT, 18, 32),
+                new MDIndex.BucketInfo(5, TYPE.INT, 32, null),
+                new MDIndex.BucketInfo(6, TYPE.INT, 32, null)
         };
         for (int i = 1; i <= 6; i++) {
             assertEquals(ranges1.get(i), expected[i-1]);
