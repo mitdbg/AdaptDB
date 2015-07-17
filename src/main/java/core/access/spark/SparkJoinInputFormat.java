@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import core.index.key.CartilageIndexKeySet;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
@@ -97,10 +98,10 @@ public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTupl
 			}
 		}
 
-/*
+		/*
 		List<InputSplit> finalSplits = new ArrayList<InputSplit>();
 
-		int numPerSplit = partitionIdFileMap1.keys().size() / 50;
+		int numPerSplit = partitionIdFileMap1.keys().size() / 10;
 		int num = 0;
 		List<Path> splitFiles = Lists.newArrayList();
 		List<Long> lengths = Lists.newArrayList();
@@ -153,47 +154,18 @@ public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTupl
 		// get bucket splits from larger table
 		Optimizer opt = new Optimizer(queryConf);
 		opt.loadIndex(joinInput2);
-
 		RobustTreeHs index = opt.getIndex();
-		Map<Integer, MDIndex.BucketInfo> ranges = index.getBucketRanges(joinKey2);
 
-		Object[] cutpoints = index.sample.getCutpoints(joinKey2, SPLIT_FANOUT);
-		TYPE type = index.sample.getTypes()[joinKey2];
+		List<Tuple2<Range, List<Integer>>> bigSplits; // map from ranges on the smaller table, to partitions on the larger table
 
-		List<Tuple2<Range, List<Integer>>> bigSplits;
 		if (assignBuckets) { // assign bucket ids from larger tables to ranges
-			List<PartitionRange> partitions = new ArrayList<PartitionRange>();
-			int rangeSize = 1;
-			int currentStart = 0;
-			Range fullRange = new Range(type, cutpoints[0], cutpoints[cutpoints.length-1]);
-			fullRange.expand(0.001);
-			cutpoints[0] = fullRange.getLow();
-			cutpoints[cutpoints.length-1] = fullRange.getHigh();
-			while (rangeSize <= SPLIT_FANOUT) {
-				while (currentStart < (cutpoints.length - rangeSize)) {
-					partitions.add(new PartitionRange(type, cutpoints[currentStart], cutpoints[currentStart + rangeSize]));
-					currentStart += rangeSize;
-				}
-				rangeSize *= 2;
-				currentStart = 0;
-			}
-			System.out.println(partitions);
-
-			bigSplits = assignBucketsToSplits(partitions, fullRange, ranges, partitionIdFileMap2);
+			List<PartitionRange> startingRanges = getStartingRanges(index, joinKey2, true);
+			Map<Integer, MDIndex.BucketInfo> bucketRanges = index.getBucketRanges(joinKey2);
+			bigSplits = assignBucketsToSplits(startingRanges, startingRanges.get(startingRanges.size()-1), bucketRanges, partitionIdFileMap2);
 		} else { // use index on larger table to get bucket ids for each range
-			bigSplits = new ArrayList<Tuple2<Range, List<Integer>>>();
-			List<PartitionRange> partitions = new ArrayList<PartitionRange>();
-			int rangeSize = 1;
-			int currentStart = 0;
-			Range fullRange = new Range(type, cutpoints[0], cutpoints[cutpoints.length-1]);
-			fullRange.expand(0.001);
-			cutpoints[0] = fullRange.getLow();
-			cutpoints[cutpoints.length-1] = fullRange.getHigh();
-			while (currentStart < cutpoints.length) {
-				partitions.add(new PartitionRange(type, cutpoints[currentStart], cutpoints[currentStart + rangeSize]));
-				currentStart += rangeSize;
-			}
+			List<PartitionRange> partitions = getStartingRanges(index, joinKey2, false);
 
+			bigSplits = new ArrayList<Tuple2<Range, List<Integer>>>();
 			for (PartitionRange r : partitions) {
 				Predicate lookupPred1 = new Predicate(joinKey2, r.getType(), r.getLow(), PREDTYPE.GT);
 				Predicate lookupPred2 = new Predicate(joinKey2, r.getType(), r.getHigh(), PREDTYPE.LEQ);
@@ -229,8 +201,7 @@ public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTupl
 			for(PartitionSplit split: splits){
 				int[] partitionIds = split.getPartitions();
 				for(int i=0;i<partitionIds.length;i++){
-					for(FileStatus fs: partitionIdFileMap1.get(partitionIds[i])){ // CHECK: from Map2 to Map1
-						//System.out.println(fs.getPath());
+					for(FileStatus fs: partitionIdFileMap1.get(partitionIds[i])){
 						splitFiles.add(fs.getPath());
 						lengths.add(fs.getLen());
 					}
@@ -243,8 +214,7 @@ public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTupl
 
 			// add files from the larger input (probe input)
 			for(Integer input1Id: p._2()){
-				for(FileStatus fs: partitionIdFileMap2.get(input1Id)){ // CHECK: changed from Map1 to Map2
-					//System.out.println("probe "+fs.getPath());
+				for(FileStatus fs: partitionIdFileMap2.get(input1Id)){
 					splitFiles.add(fs.getPath());
 					lengths.add(fs.getLen());
 				}
@@ -284,6 +254,33 @@ public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTupl
 		}
 
 		return predicatePartitionIds;
+	}
+
+	private static List<PartitionRange> getStartingRanges(RobustTreeHs index, int key, boolean overlap) {
+		List<PartitionRange> partitions = new ArrayList<PartitionRange>();
+
+		CartilageIndexKeySet sample = ((RobustTreeHs) index).sample;
+		Object[] cutpoints = sample.getCutpoints(key, SPLIT_FANOUT);
+		TYPE type = sample.getTypes()[key];
+
+		Range fullRange = new Range(type, cutpoints[0], cutpoints[cutpoints.length-1]);
+		fullRange.expand(0.001);
+		cutpoints[0] = fullRange.getLow();
+		cutpoints[cutpoints.length-1] = fullRange.getHigh();
+
+		int rangeSize = 1;
+		int currentStart = 0;
+		int maxRangeSize = overlap ? SPLIT_FANOUT : rangeSize;
+		while (rangeSize <= maxRangeSize) {
+			while (currentStart < (cutpoints.length - rangeSize)) {
+				partitions.add(new PartitionRange(type, cutpoints[currentStart], cutpoints[currentStart + rangeSize]));
+				currentStart += rangeSize;
+			}
+			rangeSize *= 2;
+			currentStart = 0;
+		}
+		System.out.println(partitions);
+		return partitions;
 	}
 
 	private static List<Tuple2<Range, List<Integer>>> assignBucketsToSplits(List<PartitionRange> ranges, Range fullRange, Map<Integer, MDIndex.BucketInfo> bucketRanges, ArrayListMultimap<Integer,FileStatus> partitionFileStatuses) {
