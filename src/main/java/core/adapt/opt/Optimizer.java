@@ -118,20 +118,6 @@ public class Optimizer {
 		this.rt.loadSample(sampleBytes);
 	}
 
-	public void loadIndex(String workingDir) {
-		FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
-		Bucket.counters = new MDIndex.BucketCounts(zookeeperHosts);
-		String pathToIndex = workingDir + "/index";
-		String pathToSample = workingDir + "/sample";
-
-		byte[] indexBytes = HDFSUtils.readFile(fs, pathToIndex);
-		this.rt = new RobustTreeHs(0.01);
-		this.rt.unmarshall(indexBytes);
-
-		byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
-		this.rt.loadSample(sampleBytes);
-	}
-
 	public RobustTreeHs getIndex() {
 		return rt;
 	}

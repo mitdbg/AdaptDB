@@ -27,9 +27,9 @@ public class SparkQuery {
 								.setSparkHome(cfg.getSPARK_HOME())
 								.setJars(new String[]{cfg.getSPARK_APPLICATION_JAR()})
 								.set("spark.hadoop.cloneConf", "false")
-								.set("spark.executor.memory", "100g")
+								.set("spark.executor.memory", "150g")
 								.set("spark.driver.memory", "10g")
-								.set("spark.task.cpus", "8");
+								.set("spark.task.cpus", "64");
 				
 
 		ctx = new JavaSparkContext(sconf);
@@ -56,7 +56,7 @@ public class SparkQuery {
 		queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
 		
 		return ctx.newAPIHadoopFile(
-				cfg.getHADOOP_NAMENODE() +  hdfsPath,
+				cfg.getHADOOP_NAMENODE() +  hdfsPath + "/" + replicaId,
 				SparkInputFormat.class,
 				LongWritable.class,
 				IteratorRecord.class,
@@ -88,6 +88,7 @@ public class SparkQuery {
 
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
+		queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
 
 		System.out.println(hdfsPath1 +";"+  hdfsPath2);
 

@@ -26,10 +26,10 @@ public class TestJoinQueries {
 		System.out.println("INFO: Running ORDERS, LINEITEM join Query");
 		long start = System.currentTimeMillis();
 		long result = sq.createJoinRDD(true,
-				"/user/anil/orders/0",
+				"/user/anil/orders",
 				0,
 				0,
-				"/user/anil/repl/0",
+				"/user/anil/repl",
 				1,
 				0
 		).count();
@@ -41,10 +41,10 @@ public class TestJoinQueries {
 		System.out.println("INFO: Running PART, LINEITEM join Query");
 		long start = System.currentTimeMillis();
 		long result = sq.createJoinRDD(true,
-				"/user/anil/part/0",
+				"/user/anil/part",
 				0,
 				0,
-				"/user/anil/repl/0",
+				"/user/anil/repl",
 				1,
 				1
 		).count();
@@ -55,31 +55,32 @@ public class TestJoinQueries {
 	public void testScans() {
 		System.out.println("INFO: Running ORDERS scan");
 		long start = System.currentTimeMillis();
-		long result = sq.createScanRDD("/user/anil/orders/0", new Predicate[]{new Predicate(0, TYPE.LONG, -1L, Predicate.PREDTYPE.GT)}).count();
+		long result = sq.createScanRDD("/user/anil/orders", new Predicate[]{new Predicate(0, TYPE.LONG, -1L, Predicate.PREDTYPE.GT)}).count();
 		long end = System.currentTimeMillis();
 		System.out.println("RES: ORDERS scan " + (end - start) + " " + result);
 
 		System.out.println("INFO: Running PART scan");
 		long start2 = System.currentTimeMillis();
-		long result2 = sq.createScanRDD("/user/anil/part/0", new Predicate[]{new Predicate(0, TYPE.LONG, -1L, Predicate.PREDTYPE.GT)}).count();
+		long result2 = sq.createScanRDD("/user/anil/part", new Predicate[]{new Predicate(0, TYPE.LONG, -1L, Predicate.PREDTYPE.GT)}).count();
 		long end2 = System.currentTimeMillis();
 		System.out.println("RES: PART scan " + (end2 - start2) + " " + result2);
 	}
 
 	public void testBaseline() {
-		JavaPairRDD<LongWritable, IteratorRecord> part = sq.createScanRDD("/user/anil/original/part");
-		JavaPairRDD<LongWritable, IteratorRecord> lineitem = sq.createScanRDD("/user/anil/original/lineitem");
+		//JavaPairRDD<LongWritable, IteratorRecord> part = sq.createScanRDD("/user/anil/original/part");
+		JavaPairRDD<LongWritable, IteratorRecord> orders = sq.createScanRDD("/user/anil/orders/");
+		JavaPairRDD<LongWritable, IteratorRecord> lineitem = sq.createScanRDD("/user/anil/repl/");
 
 		long start = System.currentTimeMillis();
-		JavaPairRDD<String, String> partKey = part.mapToPair(new MapToKeyFunction(0));
-		JavaPairRDD<String, String> lineKey = lineitem.mapToPair(new MapToKeyFunction(1));
-		long result = lineKey.join(partKey).count();
-		System.out.println("JOIN PART-LINEITEM: time "+(System.currentTimeMillis()-start)+" result "+result);
+		JavaPairRDD<String, String> ordersKey = orders.mapToPair(new MapToKeyFunction(0));
+		JavaPairRDD<String, String> lineKey = lineitem.mapToPair(new MapToKeyFunction(0));
+		long result = lineKey.join(ordersKey).count();
+		System.out.println("JOIN ORDERS-LINEITEM: time "+(System.currentTimeMillis()-start)+" result "+result);
 	}
 
 	public void testSmallJoins() {
-		String input1 = "/user/anil/part/0";
-		String input2 = "/user/anil/repl/0";
+		String input1 = "/user/anil/part";
+		String input2 = "/user/anil/repl";
 		int numChunks = 10;
 		int range = 200000 * 1000;
 		int chunkSize = range/numChunks;

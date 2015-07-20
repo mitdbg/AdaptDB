@@ -8,6 +8,7 @@ import java.util.Map;
 
 import core.index.key.CartilageIndexKeySet;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -72,14 +73,17 @@ public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTupl
 		rid2 = Integer.parseInt(tokens[1].split("\\.")[0]);
 		joinKey2 = Integer.parseInt(tokens[1].split("\\.")[1]);
 
+		int joinReplica1 = 0; // todo: should be able to figure this out automatically
+		int joinReplica2 = 0;
+
 		// hack
 		System.out.println("reading from input: "+joinInput1);
-		job.getConfiguration().set(FileInputFormat.INPUT_DIR, "hdfs://istc2.csail.mit.edu:9000"+joinInput1);	// read hadoop namenode from conf
+		job.getConfiguration().set(FileInputFormat.INPUT_DIR, "hdfs://istc2.csail.mit.edu:9000"+joinInput1+"/"+joinReplica1);	// read hadoop namenode from conf
 		List<FileStatus> files = listStatus(job);
 		System.out.println("files from first join input: "+files.size());
 		
 		System.out.println("reading from input: "+joinInput2);
-		job.getConfiguration().set(FileInputFormat.INPUT_DIR, "hdfs://istc2.csail.mit.edu:9000"+joinInput2);
+		job.getConfiguration().set(FileInputFormat.INPUT_DIR, "hdfs://istc2.csail.mit.edu:9000"+joinInput2+"/"+joinReplica2);
 		files.addAll(listStatus(job));
 		System.out.println("files from both join inputs: "+files.size());
 		
@@ -149,11 +153,15 @@ public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTupl
 
 		AccessMethod am = new AccessMethod();
 		queryConf.setWorkingDir(joinInput1);
+		queryConf.setReplicaId(joinReplica1);
 		am.init(queryConf);
 
 		// get bucket splits from larger table
+		SparkQueryConf conf2 = new SparkQueryConf(new Configuration(queryConf.getConf()));
+		queryConf.setWorkingDir(joinInput2);
+		conf2.setReplicaId(joinReplica2);
 		Optimizer opt = new Optimizer(queryConf);
-		opt.loadIndex(joinInput2);
+		opt.loadIndex();
 		RobustTreeHs index = opt.getIndex();
 
 		List<Tuple2<Range, List<Integer>>> bigSplits; // map from ranges on the smaller table, to partitions on the larger table
@@ -186,11 +194,24 @@ public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTupl
 			
 			List<Path> splitFiles = Lists.newArrayList();
 			List<Long> lengths = Lists.newArrayList();
-			
+
+			// get type of joinKey1 (might be different than joinKey2 if int vs. long)
+			// make sure the predicate values are the correct type
+			TYPE[] types = am.getIndex().dimensionTypes;
+			Object lowVal = p._1().getLow();
+			Object highVal = p._1().getHigh();
+			if (types[joinKey1] == TYPE.LONG) {
+				lowVal = ((Number)lowVal).longValue();
+				highVal = ((Number)highVal).longValue();
+			} else if (types[joinKey1] == TYPE.INT) {
+				lowVal = ((Number)lowVal).intValue();
+				highVal = ((Number)highVal).intValue();
+			}
+
 			// lookup the predicate in the smaller table (filter query)
-			// int vs long distinction... won't work for other types of keys
-			Predicate lookupPred1 = new Predicate(joinKey1, TYPE.LONG, ((Integer)p._1().getLow()).longValue(), PREDTYPE.GT);
-			Predicate lookupPred2 = new Predicate(joinKey1, TYPE.LONG, ((Integer)p._1().getHigh()).longValue(), PREDTYPE.LEQ);
+			Predicate lookupPred1 = new Predicate(joinKey1, types[joinKey1], lowVal, PREDTYPE.GT);
+			Predicate lookupPred2 = new Predicate(joinKey1, types[joinKey2], highVal, PREDTYPE.LEQ);
+
 			System.out.println("predicate1: "+lookupPred1);
 			System.out.println("predicate2: "+lookupPred2);
 
