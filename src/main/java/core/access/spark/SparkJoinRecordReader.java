@@ -3,7 +3,6 @@ package core.access.spark;
 import java.io.IOException;
 import java.util.Iterator;
 
-import com.google.common.collect.ArrayListMultimap;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -13,11 +12,12 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
-import core.access.HDFSPartition;
+import core.access.ReusableHDFSPartition;
 import core.access.iterator.IteratorRecord;
-import core.access.iterator.PartitionIterator;
+import core.access.iterator.ReusablePartitionIterator;
 import core.access.spark.SparkInputFormat.SparkFileSplit;
 import core.access.spark.SparkJoinRecordReader.JoinTuplePair;
 import core.utils.Pair;
@@ -29,7 +29,7 @@ public class SparkJoinRecordReader extends RecordReader<LongWritable, JoinTupleP
 	protected SparkFileSplit sparkSplit;
 	int currentFile;
 	
-	protected PartitionIterator iterator;
+	protected ReusablePartitionIterator iterator;
 
 	LongWritable key;
 	long recordId;
@@ -56,7 +56,7 @@ public class SparkJoinRecordReader extends RecordReader<LongWritable, JoinTupleP
 		client = null;
 		sparkSplit = (SparkFileSplit)split;
 
-		iterator = sparkSplit.getIterator();
+		iterator = (ReusablePartitionIterator)sparkSplit.getIterator();
 		currentFile = 0;
 
 		hasNext = initializeNext();
@@ -105,7 +105,7 @@ public class SparkJoinRecordReader extends RecordReader<LongWritable, JoinTupleP
 		else{
 			Path filePath = sparkSplit.getPath(currentFile);
 			final FileSystem fs = filePath.getFileSystem(conf);
-			HDFSPartition partition = new HDFSPartition(fs, filePath.toString(), client);
+			ReusableHDFSPartition partition = new ReusableHDFSPartition(fs, filePath.toString(), client);
 			System.out.println("loading path: " + filePath.toString());
 			try {
 				partition.loadNext();

@@ -5,6 +5,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.List;
@@ -25,7 +26,7 @@ import com.google.common.io.ByteStreams;
 
 public class HDFSUtils {
 
-	private static final int WRITE_BUFFER_SIZE = 64 * 1024 * 1024;
+	public static final int WRITE_BUFFER_SIZE = 64 * 1024 * 1024;
 
 	public static class HDFSData{
 		protected static FileSystem fs;
@@ -179,6 +180,15 @@ public class HDFSUtils {
 			throw new RuntimeException("Could not open the file:"+filename);
 		} catch (IOException e) {
 			throw new RuntimeException("Could not open the file:"+filename+", "+e.getMessage());
+		}
+	}
+	
+	public static InputStream getHDFSInputStream(FileSystem hdfs, String filename) {
+		try {
+			return hdfs.open(new Path(filename));
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new RuntimeException("Could not read from file:"+filename);
 		}
 	}
 

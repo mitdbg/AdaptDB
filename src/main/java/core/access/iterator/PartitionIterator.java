@@ -19,15 +19,15 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 
 	public static enum ITERATOR {SCAN,FILTER,REPART};
 	
-	private IteratorRecord record;
-	private byte[] recordBytes;
-	private byte[] brokenRecordBytes;
+	protected IteratorRecord record;
+	protected byte[] recordBytes;
+	protected byte[] brokenRecordBytes;
 
-	private static char newLine = '\n';
+	protected static char newLine = '\n';
 	static char delimiter = '|';
 
-	private byte[] bytes;
-	private int bytesLength, offset, previous;
+	protected byte[] bytes;
+	protected int bytesLength, offset, previous;
 
 	protected Partition partition;
 	

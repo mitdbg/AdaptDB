@@ -9,6 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
@@ -72,7 +73,13 @@ public class IOUtils {
 	
 	
 	
-	
+	public static InputStream getFileInputStream(String filename) {
+		try {
+			return new FileInputStream(filename);
+		} catch (FileNotFoundException e) {
+			throw new RuntimeException("Could not open the file:"+filename);
+		}
+	}
 	
 	public static OutputStream getFileOutputStream(String filename) {
 		try {
@@ -109,6 +116,14 @@ public class IOUtils {
 		try {
 			writer.flush();
 			writer.close();
+		} catch (IOException e) {
+			throw new RuntimeException("Cannot close file. " + e.getMessage());
+		}
+	}
+	
+	public static void closeInputStream(InputStream in) {
+		try {
+			in.close();
 		} catch (IOException e) {
 			throw new RuntimeException("Cannot close file. " + e.getMessage());
 		}
