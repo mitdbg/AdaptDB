@@ -15,7 +15,7 @@ public class ReusablePartitionIterator extends PartitionIterator {
 		this.partition = partition;
 		record = new IteratorRecord();
 		ByteBuffer bb = partition.getNextBytes();
-		bytes = bytes == null ? null : bb.array();
+		bytes = bb == null ? null : bb.array();
 		bytesLength = bytes == null ? 0 : bb.limit();
 		offset = bb.position();
 		previous = bb.position();
@@ -53,7 +53,7 @@ public class ReusablePartitionIterator extends PartitionIterator {
 			brokenRecordBytes = null;
 
 		ByteBuffer bb = partition.getNextBytes();
-		bytes = bytes == null ? null : bb.array();
+		bytes = bb == null ? null : bb.array();
 		//bytes = partition == null ? null : partition.getNextBytes();
 		if(bytes!=null){
 			bytesLength = bb.limit();

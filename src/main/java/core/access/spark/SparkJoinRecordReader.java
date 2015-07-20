@@ -20,6 +20,7 @@ import core.access.iterator.IteratorRecord;
 import core.access.iterator.ReusablePartitionIterator;
 import core.access.spark.SparkInputFormat.SparkFileSplit;
 import core.access.spark.SparkJoinRecordReader.JoinTuplePair;
+import core.utils.BufferManager;
 import core.utils.Pair;
 
 public class SparkJoinRecordReader extends RecordReader<LongWritable, JoinTuplePair> {
@@ -30,6 +31,7 @@ public class SparkJoinRecordReader extends RecordReader<LongWritable, JoinTupleP
 	int currentFile;
 	
 	protected ReusablePartitionIterator iterator;
+	protected BufferManager buffMgr;
 
 	LongWritable key;
 	long recordId;
@@ -50,7 +52,8 @@ public class SparkJoinRecordReader extends RecordReader<LongWritable, JoinTupleP
 	public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
 		
 		System.out.println("Initializing SparkRecordReader");
-
+		buffMgr = new BufferManager();
+		
 		conf = context.getConfiguration();
 		//client = CuratorUtils.createAndStartClient(conf.get(SparkQueryConf.ZOOKEEPER_HOSTS));
 		client = null;
@@ -105,7 +108,7 @@ public class SparkJoinRecordReader extends RecordReader<LongWritable, JoinTupleP
 		else{
 			Path filePath = sparkSplit.getPath(currentFile);
 			final FileSystem fs = filePath.getFileSystem(conf);
-			ReusableHDFSPartition partition = new ReusableHDFSPartition(fs, filePath.toString(), client);
+			ReusableHDFSPartition partition = new ReusableHDFSPartition(fs, filePath.toString(), client, buffMgr);
 			System.out.println("loading path: " + filePath.toString());
 			try {
 				partition.loadNext();

@@ -35,17 +35,19 @@ public class ReusablePartition implements Cloneable, Serializable {
 	 * Create an existing  partition object.
 	 * @param pathAndPartitionId
 	 */
-	public ReusablePartition(String pathAndPartitionId){
+	public ReusablePartition(String pathAndPartitionId, BufferManager buffMgr){
 		this(FilenameUtils.getPath(pathAndPartitionId),
-				Integer.parseInt(FilenameUtils.getBaseName(pathAndPartitionId)));
+				Integer.parseInt(FilenameUtils.getBaseName(pathAndPartitionId)),
+				buffMgr);
 	}
 
-	public ReusablePartition(String path, int partitionId){
+	public ReusablePartition(String path, int partitionId, BufferManager buffMgr){
 		this.path = path;
 		this.partitionId = partitionId;
 		this.state = State.ORIG;
 		this.offset = 0;
 		this.recordCount = 0;
+		this.buffMgr = buffMgr;
 	}
 
 	/* hack: currently the clone object is the standard Partition object, i.e. we do not support reusing for writing.

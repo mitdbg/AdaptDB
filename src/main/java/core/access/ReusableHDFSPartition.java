@@ -14,6 +14,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import core.index.MDIndex;
+import core.utils.BufferManager;
 import core.utils.ConfUtils;
 import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
@@ -34,12 +35,12 @@ public class ReusableHDFSPartition extends ReusablePartition{
 	CuratorFramework client;
 
 
-	public ReusableHDFSPartition(String path, String propertiesFile) {
-		this(path,propertiesFile, (short)3);
+	public ReusableHDFSPartition(String path, String propertiesFile, BufferManager buffMgr) {
+		this(path,propertiesFile, (short)3, buffMgr);
 	}
 	
-	public ReusableHDFSPartition(String pathAndPartitionId, String propertiesFile, short replication) {
-		super(pathAndPartitionId);
+	public ReusableHDFSPartition(String pathAndPartitionId, String propertiesFile, short replication, BufferManager buffMgr) {
+		super(pathAndPartitionId, buffMgr);
 		ConfUtils conf = new ConfUtils(propertiesFile);
 		String coreSitePath = conf.getHADOOP_HOME()+"/etc/hadoop/core-site.xml";
 		Configuration e = new Configuration();
@@ -53,15 +54,15 @@ public class ReusableHDFSPartition extends ReusablePartition{
 		client = CuratorUtils.createAndStartClient(conf.getZOOKEEPER_HOSTS());
 	}
 
-	public ReusableHDFSPartition(FileSystem hdfs, String pathAndPartitionId, short replication, CuratorFramework client) {
-		super(pathAndPartitionId);
+	public ReusableHDFSPartition(FileSystem hdfs, String pathAndPartitionId, short replication, CuratorFramework client, BufferManager buffMgr) {
+		super(pathAndPartitionId, buffMgr);
 		this.hdfs = hdfs;
 		this.replication = replication;
 		this.client = client;
 	}
 
-	public ReusableHDFSPartition(FileSystem hdfs, String pathAndPartitionId, CuratorFramework client) {
-		this(hdfs, pathAndPartitionId, (short)3, client);
+	public ReusableHDFSPartition(FileSystem hdfs, String pathAndPartitionId, CuratorFramework client, BufferManager buffMgr) {
+		this(hdfs, pathAndPartitionId, (short)3, client, buffMgr);
 	}
 		
 	public Partition clone() {
