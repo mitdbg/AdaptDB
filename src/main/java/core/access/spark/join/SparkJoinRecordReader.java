@@ -40,12 +40,12 @@ public class SparkJoinRecordReader extends RecordReader<LongWritable, JoinTupleP
 	CuratorFramework client;
 	long relationId;
 	
-	Multimap<Long, String> hashTable;
+	ArrayListMultimap<Long, byte[]> hashTable;
 	int joinAttribute1, joinAttribute2;
 	
 	boolean secondInputFirstRecord = false;
-	Iterator<String> firstRecords;
-	String secondRecord;
+	Iterator<byte[]> firstRecords;
+	byte[] secondRecord;
 	JoinTuplePair value;
 
 	@Override
@@ -64,7 +64,7 @@ public class SparkJoinRecordReader extends RecordReader<LongWritable, JoinTupleP
 
 		hasNext = initializeNext();
 		key = new LongWritable();
-		value = new JoinTuplePair(null, null);
+		value = new JoinTuplePair(new IteratorRecord(), new IteratorRecord());
 		recordId = 0;
 
 		hashTable = ArrayListMultimap.create();
@@ -86,7 +86,7 @@ public class SparkJoinRecordReader extends RecordReader<LongWritable, JoinTupleP
 				firstRelation = relationId;
 			if(firstRelation==relationId){
 				IteratorRecord r = iterator.next();
-				hashTable.put(r.getLongAttribute(joinAttribute1), r.getKeyString());
+				hashTable.put(r.getLongAttribute(joinAttribute1), r.getBytes());
 			}
 			else{
 				recordId = 0;
@@ -148,7 +148,7 @@ public class SparkJoinRecordReader extends RecordReader<LongWritable, JoinTupleP
 			long key = r.getLongAttribute(joinAttribute2);
 			if(hashTable.containsKey(key)){
 				firstRecords = hashTable.get(key).iterator();
-				secondRecord = r.getKeyString();
+				secondRecord = r.getBytes();
 				return true;
 			}			
 		}
@@ -165,8 +165,8 @@ public class SparkJoinRecordReader extends RecordReader<LongWritable, JoinTupleP
 
 	@Override
 	public JoinTuplePair getCurrentValue() throws IOException, InterruptedException {
-		value.first = firstRecords.next();
-		value.second = secondRecord;		
+		value.first.setBytes(firstRecords.next());
+		value.second.setBytes(secondRecord);
 		return value;
 	}
 
@@ -180,8 +180,8 @@ public class SparkJoinRecordReader extends RecordReader<LongWritable, JoinTupleP
 		iterator.finish();		// this method could even be called earlier in case the entire split does not fit in main-memory
 	}
 	
-	public static class JoinTuplePair extends Pair<String,String>{
-		public JoinTuplePair(String first, String second) {
+	public static class JoinTuplePair extends Pair<IteratorRecord,IteratorRecord>{
+		public JoinTuplePair(IteratorRecord first, IteratorRecord second) {
 			super(first, second);
 		}
 	}

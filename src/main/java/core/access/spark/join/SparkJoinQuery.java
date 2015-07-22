@@ -18,6 +18,7 @@ public class SparkJoinQuery extends SparkQuery{
 		ctx.hadoopConfiguration().set("JOIN_INPUT1", hdfsPath1);
 		ctx.hadoopConfiguration().set("JOIN_INPUT2", hdfsPath2);
 		ctx.hadoopConfiguration().set("JOIN_CONDITION", rid1+"."+joinAttribute1+"="+rid2+"."+joinAttribute2);
+		ctx.hadoopConfiguration().set("HADOOP_NAMENODE", cfg.getHADOOP_NAMENODE());
 
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());

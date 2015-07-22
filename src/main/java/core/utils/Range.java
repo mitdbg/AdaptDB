@@ -125,6 +125,19 @@ public class Range implements Cloneable {
         }
     }
 
+    public void subtractLeft(Range other) {
+        // todo: not general. null pointers in some cases
+        Range copy = this.clone();
+        copy.intersect(other);
+        if (TypeUtils.compareTo(copy.low, other.low, type) == 0 && TypeUtils.compareTo(copy.high, other.high, type) == 0) {
+            low = copy.high;
+        } else if (TypeUtils.compareTo(copy.low, low, type) == 0) {
+            low = copy.high;
+        } else if (TypeUtils.compareTo(copy.high, high, type) == 0) {
+            high = copy.low;
+        }
+    }
+
     public void expand(double percentage) {
         if (low == null || high == null) {
             throw new RuntimeException("can't expand open range");

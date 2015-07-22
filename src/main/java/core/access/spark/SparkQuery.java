@@ -74,6 +74,4 @@ public class SparkQuery {
 		queryConf.setRepartitionScan(true);
 		return createRDD(hdfsPath, ps);
 	}
-
-	
 }

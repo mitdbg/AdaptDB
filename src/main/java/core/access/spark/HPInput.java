@@ -83,6 +83,22 @@ public class HPInput {
 		
 		return splitFilesArr;
 	}
+
+	public Path[] getPaths(PartitionSplit[] splits) {
+		int totalLength = 0;
+		for (PartitionSplit split : splits) {
+			totalLength += split.getPartitions().length;
+		}
+		int[] partitions = new int[totalLength];
+		int currentIndex = 0;
+		for (PartitionSplit split : splits) {
+			for (int id : split.getPartitions()) {
+				partitions[currentIndex] = id;
+				currentIndex++;
+			}
+		}
+		return getPaths(partitions);
+	}
 	
 	public long[] getLengths(int[] partitionIds){
 		List<Long> lengths = Lists.newArrayList();
@@ -95,6 +111,22 @@ public class HPInput {
 			lengthsArr[i] = lengths.get(i);
 		
 		return lengthsArr;
+	}
+
+	public long[] getLengths(PartitionSplit[] splits) {
+		int totalLength = 0;
+		for (PartitionSplit split : splits) {
+			totalLength += split.getPartitions().length;
+		}
+		int[] partitions = new int[totalLength];
+		int currentIndex = 0;
+		for (PartitionSplit split : splits) {
+			for (int id : split.getPartitions()) {
+				partitions[currentIndex] = id;
+				currentIndex++;
+			}
+		}
+		return getLengths(partitions);
 	}
 	
 	public int getNumPartitions(){
