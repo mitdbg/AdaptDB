@@ -2,15 +2,14 @@ package core.index.build;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
 
-import core.index.MDIndex;
 import core.access.spark.SparkUpfrontPartitioner;
+import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
 import core.index.key.CartilageIndexKeySet;
 import core.index.robusttree.RobustTreeHs;

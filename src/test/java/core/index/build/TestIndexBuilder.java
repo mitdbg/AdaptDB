@@ -4,22 +4,21 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import core.index.MDIndex;
-import core.index.key.CartilageIndexKeySet;
-import core.utils.ConfUtils;
-import core.utils.CuratorUtils;
-import core.utils.HDFSUtils;
-import junit.framework.TestCase;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
-import perf.benchmark.BenchmarkSettings;
+
+import core.index.MDIndex;
 import core.index.kdtree.KDMedianTree;
 import core.index.key.CartilageIndexKey;
-import core.index.key.CartilageIndexKeyMT;
+import core.index.key.CartilageIndexKeySet;
 import core.index.robusttree.RobustTreeHs;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.hadoop.fs.FileSystem;
+import core.utils.ConfUtils;
+import core.utils.CuratorUtils;
+import core.utils.HDFSUtils;
+import perf.benchmark.BenchmarkSettings;
 
 public class TestIndexBuilder {
 	String inputFilename;

@@ -23,8 +23,8 @@ public class TestHDFSScanIterator extends TestScanIterator{
 
 	@Override
 	public void setUp(){
-		propertiesFile = "/Users/alekh/Work/Cartilage/MDIndex/conf/cartilage.properties";
-		partitionDir = "/mydir";
+		propertiesFile = "/Users/alekh/Work/MDIndex/conf/cartilage.properties";
+		partitionDir = "hdfs://localhost:9000/user/alekh/dodo";
 		int attributeIdx = 0;
 		//Range r = RangeUtils.closed(3000000, 6000000);
 		Predicate p1 = new Predicate(attributeIdx, TYPE.INT, 3000000, PREDTYPE.GEQ);
@@ -36,8 +36,13 @@ public class TestHDFSScanIterator extends TestScanIterator{
 		FileSystem hdfs = HDFSUtils.getFS(cfg.getHADOOP_HOME()+"/etc/hadoop/core-site.xml");
 		try {
 			for(FileStatus fileStatus: hdfs.listStatus(new Path(partitionDir))){
-				if(fileStatus.isFile() && !fileStatus.getPath().getName().startsWith("."))
-					partitionPaths.add(fileStatus.getPath().toUri().getPath());	// Do something with child
+				String name = fileStatus.getPath().getName();
+				try{
+					Integer.parseInt(name);
+					if(fileStatus.isFile() && !fileStatus.getPath().getName().startsWith("."))
+						partitionPaths.add("hdfs://localhost:9000"+fileStatus.getPath().toUri().getPath());	// Do something with child
+				}catch(Exception e){
+				}
 			}
 		} catch (IOException e) {
 			System.out.println("No files to repartition");

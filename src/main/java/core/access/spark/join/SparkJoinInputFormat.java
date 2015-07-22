@@ -1,4 +1,4 @@
-package core.access.spark;
+package core.access.spark.join;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -6,9 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import core.index.key.CartilageIndexKeySet;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -18,27 +15,24 @@ import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
-import scala.Tuple2;
-
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 
-import core.access.AccessMethod;
 import core.access.AccessMethod.PartitionSplit;
 import core.access.PartitionRange;
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
-import core.access.Query;
-import core.access.Query.FilterQuery;
 import core.access.iterator.PartitionIterator;
 import core.access.spark.SparkInputFormat.SparkFileSplit;
-import core.access.spark.SparkJoinRecordReader.JoinTuplePair;
-import core.adapt.opt.Optimizer;
+import core.access.spark.SparkQueryConf;
+import core.access.spark.join.SparkJoinRecordReader.JoinTuplePair;
 import core.index.MDIndex;
+import core.index.key.CartilageIndexKeySet;
 import core.index.robusttree.RobustTreeHs;
 import core.utils.HDFSUtils;
 import core.utils.Range;
 import core.utils.TypeUtils.TYPE;
+import scala.Tuple2;
 
 public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTuplePair> implements Serializable {
 
@@ -50,58 +44,26 @@ public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTupl
 	private static final double OVERLAP_THRESHOLD = 0.75;
 	
 	SparkQueryConf queryConf;
-	
-	String joinInput1;	// smaller input
-	Integer rid1;
-	Integer joinKey1;
-	
-	String joinInput2;	// larger input
-	Integer rid2;
-	Integer joinKey2;
 
 	public List<InputSplit> getSplits(JobContext job) throws IOException {
 		
-		queryConf = new SparkQueryConf(job.getConfiguration());
+		// gather query configuration
+		queryConf = new SparkQueryConf(job.getConfiguration());		
+		boolean assignBuckets = job.getConfiguration().getBoolean("ASSIGN_BUCKETS", true);	//TODO: this should be a query conf!
 		
-		boolean assignBuckets = job.getConfiguration().getBoolean("ASSIGN_BUCKETS", true);
-		joinInput1 = job.getConfiguration().get("JOIN_INPUT1");
-		joinInput2 = job.getConfiguration().get("JOIN_INPUT2");
-		String joinCond = job.getConfiguration().get("JOIN_CONDITION");
-		String tokens[] = joinCond.split("=");
-		rid1 = Integer.parseInt(tokens[0].split("\\.")[0]);
-		joinKey1 = Integer.parseInt(tokens[0].split("\\.")[1]);
-		rid2 = Integer.parseInt(tokens[1].split("\\.")[0]);
-		joinKey2 = Integer.parseInt(tokens[1].split("\\.")[1]);
+		// join input 1
+		HPJoinInput input1 = new HPJoinInput(job.getConfiguration());
+		input1.initialize(listStatus(job), queryConf);
+		
+		// join input 2
+		HPJoinInput input2 = new HPJoinInput(job.getConfiguration());
+		input2.initialize(listStatus(job), queryConf);
+				
+		System.out.println("files from first join input: "+input1.getNumPartitions());
+		System.out.println("files from both join inputs: "+input2.getNumPartitions());
 
-		int joinReplica1 = 0; // todo: should be able to figure this out automatically
-		int joinReplica2 = 0;
-
-		// hack
-		System.out.println("reading from input: "+joinInput1);
-		job.getConfiguration().set(FileInputFormat.INPUT_DIR, "hdfs://istc2.csail.mit.edu:9000"+joinInput1+"/"+joinReplica1);	// read hadoop namenode from conf
-		List<FileStatus> files = listStatus(job);
-		System.out.println("files from first join input: "+files.size());
-		
-		System.out.println("reading from input: "+joinInput2);
-		job.getConfiguration().set(FileInputFormat.INPUT_DIR, "hdfs://istc2.csail.mit.edu:9000"+joinInput2+"/"+joinReplica2);
-		files.addAll(listStatus(job));
-		System.out.println("files from both join inputs: "+files.size());
 		
 		
-		ArrayListMultimap<Integer,FileStatus> partitionIdFileMap1 = ArrayListMultimap.create(); // partitions in smaller table
-		ArrayListMultimap<Integer,FileStatus> partitionIdFileMap2 = ArrayListMultimap.create(); // partitions in lineitem
-		for(FileStatus file: files){
-			try {
-				String hdfsPath = file.getPath().toString();
-				int id = Integer.parseInt(FilenameUtils.getName(hdfsPath));
-				if(hdfsPath.contains(joinInput1))
-					partitionIdFileMap1.put(id, file);
-				else if(hdfsPath.contains(joinInput2))
-					partitionIdFileMap2.put(id, file);
-			} catch (NumberFormatException e) {
-			}
-		}
-
 		/*
 		List<InputSplit> finalSplits = new ArrayList<InputSplit>();
 
@@ -151,27 +113,24 @@ public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTupl
 		return finalSplits;
 */
 
-		AccessMethod am = new AccessMethod();
-		queryConf.setWorkingDir(joinInput1);
-		queryConf.setReplicaId(joinReplica1);
-		am.init(queryConf);
-
-		// get bucket splits from larger table
-		SparkQueryConf conf2 = new SparkQueryConf(new Configuration(queryConf.getConf()));
-		queryConf.setWorkingDir(joinInput2);
-		conf2.setReplicaId(joinReplica2);
-		Optimizer opt = new Optimizer(queryConf);
-		opt.loadIndex();
-		RobustTreeHs index = opt.getIndex();
 
 		List<Tuple2<Range, List<Integer>>> bigSplits; // map from ranges on the smaller table, to partitions on the larger table
 
+		
+		// added the next 5 lines just for consistency; need to use the input1 and input2 objects throughout		
+		Integer joinKey1 = input1.getJoinKey();
+		ArrayListMultimap<Integer,FileStatus> partitionIdFileMap1 = input1.getPartitionIdFileMap();		
+		RobustTreeHs index2 = input2.getIndex();
+		Integer joinKey2 = input2.getJoinKey();
+		ArrayListMultimap<Integer,FileStatus> partitionIdFileMap2 = input2.getPartitionIdFileMap();
+		
+		
 		if (assignBuckets) { // assign bucket ids from larger tables to ranges
-			List<PartitionRange> startingRanges = getStartingRanges(index, joinKey2, true);
-			Map<Integer, MDIndex.BucketInfo> bucketRanges = index.getBucketRanges(joinKey2);
+			List<PartitionRange> startingRanges = getStartingRanges(index2, joinKey2, true);
+			Map<Integer, MDIndex.BucketInfo> bucketRanges = index2.getBucketRanges(joinKey2);
 			bigSplits = assignBucketsToSplits(startingRanges, startingRanges.get(startingRanges.size()-1), bucketRanges, partitionIdFileMap2);
 		} else { // use index on larger table to get bucket ids for each range
-			List<PartitionRange> partitions = getStartingRanges(index, joinKey2, false);
+			List<PartitionRange> partitions = getStartingRanges(index2, joinKey2, false);
 
 			bigSplits = new ArrayList<Tuple2<Range, List<Integer>>>();
 			for (PartitionRange r : partitions) {
@@ -179,7 +138,8 @@ public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTupl
 				Predicate lookupPred2 = new Predicate(joinKey2, r.getType(), r.getHigh(), PREDTYPE.LEQ);
 
 				List<Integer> ids = new ArrayList<Integer>();
-				PartitionSplit[] optSplits = opt.buildAccessPlan(new Query.FilterQuery(new Predicate[]{lookupPred1, lookupPred2}));
+				PartitionSplit[] optSplits = input2.getIndexScan(true, lookupPred1, lookupPred2);
+				//PartitionSplit[] optSplits = opt.buildAccessPlan(new Query.FilterQuery(new Predicate[]{lookupPred1, lookupPred2}));
 				for (PartitionSplit s : optSplits) {
 					for (int i : s.getPartitions()) {
 						ids.add(i);
@@ -197,7 +157,7 @@ public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTupl
 
 			// get type of joinKey1 (might be different than joinKey2 if int vs. long)
 			// make sure the predicate values are the correct type
-			TYPE[] types = am.getIndex().dimensionTypes;
+			TYPE[] types = input1.getIndex().dimensionTypes;
 			Object lowVal = p._1().getLow();
 			Object highVal = p._1().getHigh();
 			if (types[joinKey1] == TYPE.LONG) {
@@ -216,7 +176,8 @@ public class SparkJoinInputFormat extends FileInputFormat<LongWritable, JoinTupl
 			System.out.println("predicate2: "+lookupPred2);
 
 			// ids from smaller table that match this range of values
-			PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(new Predicate[]{lookupPred1,lookupPred2}), true);
+			PartitionSplit[] splits = input2.getIndexScan(true, lookupPred1,lookupPred2);
+			//PartitionSplit[] splits = am.getPartitionSplits(new FilterQuery(new Predicate[]{lookupPred1,lookupPred2}), true);
 			
 			// add files from the smaller input first (build input)
 			for(PartitionSplit split: splits){

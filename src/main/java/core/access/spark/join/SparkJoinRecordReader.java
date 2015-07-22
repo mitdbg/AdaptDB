@@ -1,4 +1,4 @@
-package core.access.spark;
+package core.access.spark.join;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -19,7 +19,7 @@ import core.access.ReusableHDFSPartition;
 import core.access.iterator.IteratorRecord;
 import core.access.iterator.ReusablePartitionIterator;
 import core.access.spark.SparkInputFormat.SparkFileSplit;
-import core.access.spark.SparkJoinRecordReader.JoinTuplePair;
+import core.access.spark.join.SparkJoinRecordReader.JoinTuplePair;
 import core.utils.BufferManager;
 import core.utils.Pair;
 

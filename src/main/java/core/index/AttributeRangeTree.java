@@ -1,13 +1,10 @@
 package core.index;
 
 import com.google.common.base.Joiner;
-import core.index.key.CartilageIndexKey;
-import core.index.key.CartilageIndexKeySet;
-import core.index.key.MDIndexKey;
-import core.utils.TypeUtils.TYPE;
-import core.utils.TypeUtils;
 
-import java.util.Arrays;
+import core.index.key.MDIndexKey;
+import core.utils.TypeUtils;
+import core.utils.TypeUtils.TYPE;
 
 /**
  * Created by qui on 7/14/15.

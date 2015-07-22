@@ -57,13 +57,15 @@ public class TestScanIterator extends TestCase{
 	}
 
 	public void testScanAll(){
-		Partition partition = getPartitionInstance("");
+		Partition partition; // = getPartitionInstance("");
 		PostFilterIterator itr =  new PostFilterIterator(query);
 
+		Runtime rt = Runtime.getRuntime();
 		int recCount = 0;
 		long startTime = System.nanoTime();
 		for(String partitionPath: partitionPaths){
-			partition.setPathAndPartitionId(partitionPath);
+			//partition.setPathAndPartitionId(partitionPath);
+			partition = getPartitionInstance(partitionPath);
 			partition.load();
 			itr.setPartition(partition);
 
@@ -71,6 +73,9 @@ public class TestScanIterator extends TestCase{
 				itr.next();
 				recCount++;
 			}
+			
+			long usedMB = (rt.totalMemory() - rt.freeMemory()) / 1024 / 1024;
+		    System.out.println("memory usage: " + usedMB +" MB");
 		}
 		System.out.println("Number of records = "+recCount);
 		double time = (System.nanoTime()-startTime)/1E9;

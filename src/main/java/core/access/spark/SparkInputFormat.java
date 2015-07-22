@@ -9,10 +9,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -25,17 +23,14 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
 
 import core.access.AccessMethod;
 import core.access.AccessMethod.PartitionSplit;
-import core.access.Query.FilterQuery;
 import core.access.iterator.DistributedRepartitionIterator;
 import core.access.iterator.IteratorRecord;
 import core.access.iterator.PartitionIterator;
-import core.access.iterator.PostFilterIterator;
 import core.access.iterator.RepartitionIterator;
 import core.utils.ReflectionUtils;
 
@@ -94,80 +89,46 @@ public class SparkInputFormat extends FileInputFormat<LongWritable, IteratorReco
 	public List<InputSplit> getSplits(JobContext job) throws IOException {
 
 		List<InputSplit> finalSplits = new ArrayList<InputSplit>();
-		List<FileStatus> files = listStatus(job);
-
 		queryConf = new SparkQueryConf(job.getConfiguration());
 		AccessMethod am = new AccessMethod();
 		am.init(queryConf);
-		// am.init(queryConf.getDataset(), queryConf.getHadoopHome());
-
-		ArrayListMultimap<Integer,FileStatus> partitionIdFileMap = ArrayListMultimap.create();
-		Map<Integer,Long> partitionIdSizeMap = Maps.newHashMap();
-		for(FileStatus file: files){
-			try {
-				int id = Integer.parseInt(FilenameUtils.getName(file.getPath().toString()));
-				partitionIdFileMap.put(id, file);
-				long currentSize = partitionIdSizeMap.containsKey(id) ? partitionIdSizeMap.get(id) : 0;
-				partitionIdSizeMap.put(id, currentSize + file.getLen());
-			} catch (NumberFormatException e) {
-			}
-		}
-
+		
+		HPInput hpInput = new HPInput();
+		hpInput.initialize(listStatus(job), am);
+		
+		// get the splits based on the query configuration
 		PartitionSplit[] splits;
-		if(queryConf.getFullScan()){
-				splits = new PartitionSplit[]{ new PartitionSplit(
-													Ints.toArray(partitionIdFileMap.keySet()),
-													new PostFilterIterator(new FilterQuery(queryConf.getPredicates(), am.getKey()))
-													)
-											};
-		}
-		else if (queryConf.getRepartitionScan()) {
-			splits = new PartitionSplit[]{new PartitionSplit(
-					Ints.toArray(partitionIdFileMap.keySet()),
-					new DistributedRepartitionIterator(new FilterQuery(queryConf.getPredicates(), am.getKey()), am.getIndex().getRoot())
-			)};
-		}
+		if(queryConf.getFullScan())
+				splits = hpInput.getFullScan(queryConf.getPredicates());
+		else if (queryConf.getRepartitionScan())
+			splits = hpInput.getRepartitionScan(queryConf.getPredicates());
 		else
-			splits = am.getPartitionSplits(new FilterQuery(queryConf.getPredicates(), am.getKey()), queryConf.getJustAccess());
+			splits = hpInput.getIndexScan(queryConf.getJustAccess(), queryConf.getPredicates()); 
+			
 		System.out.println("Number of partition splits = "+splits.length);
 		//splits = resizeSplits(splits, partitionIdFileMap, queryConf.getMaxSplitSize());
-		splits = resizeSplits(splits, partitionIdSizeMap, queryConf.getMaxSplitSize(), queryConf.getMinSplitSize());
+		splits = resizeSplits(splits, hpInput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize(), queryConf.getMinSplitSize());
 		System.out.println("Number of partition splits after splitting= "+splits.length);
 		//splits = combineSplits(splits, queryConf.getMinSplitSize(), queryConf.getMaxSplitSize());
 		//System.out.println("Number of partition splits after combining= "+splits.length);
 		for (PartitionSplit split: splits) {
 			System.out.println("SPLIT: " + split.getIterator().getClass().getName() + " buckets: " + Arrays.toString(split.getPartitions()));
 		}
-
+		
+		// create the InputSplit (HDFS object) from the PartitionSplit (internal hyper partitioning object)
 		for(PartitionSplit split: splits){
-			int[] partitionIds = split.getPartitions();
-			List<Path> splitFiles = Lists.newArrayList();
-			List<Long> lengths = Lists.newArrayList();
-
-			for(int i=0;i<partitionIds.length;i++){
-//				System.out.println(partitionIds[i]);
-				for(FileStatus fs: partitionIdFileMap.get(partitionIds[i])){
-					splitFiles.add(fs.getPath());
-					lengths.add(fs.getLen());
-				}
-			}
-
 			PartitionIterator itr = split.getIterator();
 			if(itr instanceof RepartitionIterator || itr instanceof DistributedRepartitionIterator)		// hack to set the zookeeper hosts
 				((RepartitionIterator)itr).setZookeeper(queryConf.getZookeeperHosts());
 
-			Path[] splitFilesArr = new Path[splitFiles.size()];
-			long[] lengthsArr = new long[lengths.size()];
-			for(int i=0;i<splitFilesArr.length;i++){
-				splitFilesArr[i] = splitFiles.get(i);
-				lengthsArr[i] = lengths.get(i);
-			}
-			
-			SparkFileSplit thissplit = new SparkFileSplit(splitFilesArr, lengthsArr, itr);
+			SparkFileSplit thissplit = new SparkFileSplit(
+											hpInput.getPaths(split.getPartitions()), 
+											hpInput.getLengths(split.getPartitions()), 
+											itr);
 			finalSplits.add(thissplit);
 		}
 
-		job.getConfiguration().setLong(NUM_INPUT_FILES, files.size());
+		job.getConfiguration().setLong(NUM_INPUT_FILES, hpInput.getNumPartitions());
 		LOG.debug("Total # of splits: " + finalSplits.size());
 		System.out.println("done with getting splits");
 

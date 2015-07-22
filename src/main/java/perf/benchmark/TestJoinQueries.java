@@ -1,13 +1,14 @@
 package perf.benchmark;
 
+import org.apache.hadoop.io.LongWritable;
+import org.apache.spark.api.java.JavaPairRDD;
+
 import core.access.Predicate;
 import core.access.iterator.IteratorRecord;
 import core.access.spark.MapToKeyFunction;
-import core.access.spark.SparkQuery;
-import core.utils.TypeUtils.*;
+import core.access.spark.join.SparkJoinQuery;
 import core.utils.ConfUtils;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.spark.api.java.JavaPairRDD;
+import core.utils.TypeUtils.TYPE;
 
 public class TestJoinQueries {
 	public final static String propertyFile = BenchmarkSettings.cartilageConf;
@@ -16,10 +17,10 @@ public class TestJoinQueries {
 	public static int numQueries = 1;
 
 	double selectivity = 0.05;
-	SparkQuery sq;
+	SparkJoinQuery sq;
 
 	public void setUp() {
-		sq = new SparkQuery(cfg);
+		sq = new SparkJoinQuery(cfg);
 	}
 
 	public void testOrderLineitemJoin() {

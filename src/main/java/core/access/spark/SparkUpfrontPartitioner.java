@@ -1,17 +1,7 @@
 package core.access.spark;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
 
-import core.access.HDFSPartition;
-import core.index.build.HDFSPartitionWriter;
-import core.index.build.InputReader;
-import core.index.key.CartilageIndexKey;
-import core.index.robusttree.RobustTreeHs;
-import core.utils.HDFSUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
@@ -20,7 +10,9 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 
 import core.access.iterator.DistributedPartitioningIterator;
 import core.index.robusttree.RNode;
+import core.index.robusttree.RobustTreeHs;
 import core.utils.ConfUtils;
+import core.utils.HDFSUtils;
 
 public class SparkUpfrontPartitioner {
 

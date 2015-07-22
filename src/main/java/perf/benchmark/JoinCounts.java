@@ -53,8 +53,8 @@ public class JoinCounts {
             double lineOverlap = 0;
             double partOverlap = 0;
 
-            Map<Integer, Integer> lineCount = new HashMap<Integer, Integer>();
-            Map<Integer, Integer> partCount = new HashMap<Integer, Integer>();
+            //Map<Integer, Integer> lineCount = new HashMap<Integer, Integer>();
+            //Map<Integer, Integer> partCount = new HashMap<Integer, Integer>();
             for (int i = 0; i < numChunks; i++) {
                 long start = domainStart + (range / numChunks) * i;
                 long end = start + range / numChunks;
@@ -100,7 +100,7 @@ public class JoinCounts {
         Optimizer partOpt = new Optimizer(conf);
         partOpt.loadIndex();
 
-        Map<Integer, Integer> partCount = new HashMap<Integer, Integer>();
+        //Map<Integer, Integer> partCount = new HashMap<Integer, Integer>();
         double partOverlap = 0;
         double lineOverlap = 0;
 

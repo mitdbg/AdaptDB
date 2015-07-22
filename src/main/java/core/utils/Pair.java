@@ -17,7 +17,8 @@ public class Pair<A, B> {
     	return (hashFirst + hashSecond) * hashSecond + hashFirst;
     }
 
-    public boolean equals(Object other) {
+    @SuppressWarnings("unchecked")
+	public boolean equals(Object other) {
     	if (other instanceof Pair) {
     		Pair<A,B> otherPair = (Pair<A,B>) other;
     		return 

@@ -2,10 +2,7 @@ package core.access.spark;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.TreeMap;
 
-import core.access.spark.SparkUpfrontPartitioner;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -18,14 +15,11 @@ import org.apache.hadoop.mapred.lib.MultipleTextOutputFormat;
 import org.apache.hadoop.util.Progressable;
 import org.apache.spark.api.java.function.PairFunction;
 
-import scala.Tuple2;
 import core.access.iterator.IteratorRecord;
-import core.index.build.HDFSPartitionWriter;
-import core.index.build.InputReader;
-import core.index.key.CartilageIndexKey;
 import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTreeHs;
 import core.utils.HDFSUtils;
+import scala.Tuple2;
 
 public class SparkMapReducePartitioner extends SparkUpfrontPartitioner {
 
@@ -110,10 +104,10 @@ public class SparkMapReducePartitioner extends SparkUpfrontPartitioner {
 
 	public static void main(String[] args) {
 
-		long bucketSize = 64;//*1024*1024l;
-		int scaleFactor = 1000;
+		//long bucketSize = 64;//*1024*1024l;
+		//int scaleFactor = 1000;
 		//int scaleFactor = 1;
-		int numBuckets = (int)((scaleFactor * 759) / bucketSize + 1);
+		//int numBuckets = (int)((scaleFactor * 759) / bucketSize + 1);
 		//double samplingRate = (1000 * numBuckets) / ((double)(6000000 * scaleFactor));
 		double samplingRate = 0.01;
 		System.out.println("sampling rate: "+samplingRate);
