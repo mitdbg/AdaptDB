@@ -1,15 +1,15 @@
 package core.access.spark.join.algo;
 
-import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapreduce.InputSplit;
+
 import core.access.AccessMethod;
 import core.access.spark.join.HPJoinInput;
 import core.utils.Range;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapreduce.InputSplit;
 import scala.Tuple2;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class HyperJoinOverlappingRanges extends JoinAlgo {
 

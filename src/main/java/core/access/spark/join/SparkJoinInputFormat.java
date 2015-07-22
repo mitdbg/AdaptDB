@@ -5,10 +5,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import core.access.spark.join.algo.CoPartitionedJoin;
-import core.access.spark.join.algo.HyperJoinOverlappingRanges;
-import core.access.spark.join.algo.IndexNestedLoopJoin;
-import core.access.spark.join.algo.JoinAlgo;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
@@ -20,6 +16,9 @@ import com.google.common.collect.Lists;
 
 import core.access.spark.SparkQueryConf;
 import core.access.spark.join.SparkJoinRecordReader.JoinTuplePair;
+import core.access.spark.join.algo.HyperJoinOverlappingRanges;
+import core.access.spark.join.algo.IndexNestedLoopJoin;
+import core.access.spark.join.algo.JoinAlgo;
 import core.utils.HDFSUtils;
 import scala.Tuple2;
 

@@ -1,14 +1,12 @@
 package core.access.spark.join.algo;
 
-import core.access.AccessMethod;
-import core.access.PartitionRange;
-import core.access.spark.join.HPJoinInput;
-import core.utils.Range;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.InputSplit;
 
-import java.util.ArrayList;
-import java.util.List;
+import core.access.spark.join.HPJoinInput;
 
 public class CoPartitionedJoin extends JoinAlgo {
 
