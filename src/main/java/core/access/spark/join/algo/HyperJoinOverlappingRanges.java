@@ -13,8 +13,6 @@ import scala.Tuple2;
 
 public class HyperJoinOverlappingRanges extends JoinAlgo {
 
-    static int SPLIT_FANOUT = 4;
-
     HPJoinInput joinInput1;
     HPJoinInput joinInput2;
 

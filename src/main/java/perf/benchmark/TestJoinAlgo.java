@@ -1,19 +1,20 @@
-package core.access.spark.join;
+package perf.benchmark;
 
 import core.access.spark.SparkQueryConf;
+import core.access.spark.join.HPJoinInput;
 import core.access.spark.join.algo.HyperJoinOverlappingRanges;
+import core.access.spark.join.algo.HyperJoinReplicatedBuckets;
+import core.access.spark.join.algo.IndexNestedLoopJoin;
 import core.access.spark.join.algo.JoinAlgo;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.lib.input.CombineFileSplit;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import perf.benchmark.BenchmarkSettings;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -22,13 +23,17 @@ import java.util.List;
  */
 public class TestJoinAlgo {
 
-    String hdfsPath1 = "/user/qui/copy";
-    String hdfsPath2 = "/user/qui/repl";
+    String hdfsPath1 = "/user/anil/orders";
+    String hdfsPath2 = "/user/anil/repl";
     int rid1 = 0;
     int joinAttribute1 = 0;
     int rid2 = 0;
     int joinAttribute2 = 0;
     FileSystem fs;
+
+    long maxSplitSize;
+    int fanout;
+    int algoType;
 
     public List<InputSplit> getSplits(Class<? extends JoinAlgo> algoClass) throws Exception {
         ConfUtils cfg = new ConfUtils(BenchmarkSettings.cartilageConf);
@@ -48,16 +53,25 @@ public class TestJoinAlgo {
 
         Class[] argTypes = new Class[]{HPJoinInput.class, HPJoinInput.class};
         HPJoinInput joinInput1 = new HPJoinInput(conf);
-        joinInput1.initialize(
-                Arrays.asList(fs.listStatus(new Path(conf.get(FileInputFormat.INPUT_DIR, hdfsPath1)))),
-                queryConf);
+        RemoteIterator<LocatedFileStatus> join1FileIterator = fs.listFiles(new Path(conf.get(FileInputFormat.INPUT_DIR, hdfsPath1)), true);
+        List<FileStatus> join1Files = new ArrayList<FileStatus>();
+        while (join1FileIterator.hasNext()) {
+            join1Files.add(join1FileIterator.next());
+        }
+        joinInput1.initialize(join1Files, queryConf);
 
         HPJoinInput joinInput2 = new HPJoinInput(conf);
-        joinInput2.initialize(
-                Arrays.asList(fs.listStatus(new Path(conf.get(FileInputFormat.INPUT_DIR, hdfsPath1)))),
-                queryConf);
+        RemoteIterator<LocatedFileStatus> join2FileIterator = fs.listFiles(new Path(conf.get(FileInputFormat.INPUT_DIR, hdfsPath2)), true);
+        List<FileStatus> join2Files = new ArrayList<FileStatus>();
+        while (join2FileIterator.hasNext()) {
+            join2Files.add(join2FileIterator.next());
+        }
+        joinInput2.initialize(join2Files, queryConf);
+
+        HPJoinInput.MAX_SPLIT_SIZE = maxSplitSize;
 
         JoinAlgo algo = algoClass.getConstructor(argTypes).newInstance(new Object[]{joinInput1, joinInput2});
+        JoinAlgo.SPLIT_FANOUT = fanout;
         return algo.getSplits();
     }
 
@@ -90,8 +104,16 @@ public class TestJoinAlgo {
 
     public static void main(String[] args) {
         TestJoinAlgo test = new TestJoinAlgo();
+        test.maxSplitSize = Integer.parseInt(args[args.length-1]) * 1000000L;
+        test.fanout = Integer.parseInt(args[args.length-2]);
+        test.algoType = Integer.parseInt(args[args.length-3]);
         try {
-            List<InputSplit> splits = test.getSplits(HyperJoinOverlappingRanges.class);
+            List<InputSplit> splits;
+            switch(test.algoType) {
+                case 1: splits = test.getSplits(HyperJoinOverlappingRanges.class); break;
+                case 2: splits = test.getSplits(HyperJoinReplicatedBuckets.class); break;
+                default: splits = test.getSplits(IndexNestedLoopJoin.class); break;
+            }
             test.analyzeSplits(splits);
         } catch (Exception e) {
             e.printStackTrace();

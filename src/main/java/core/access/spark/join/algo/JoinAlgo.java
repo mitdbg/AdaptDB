@@ -12,6 +12,8 @@ import java.util.List;
  */
 public abstract class JoinAlgo {
 
+    public static int SPLIT_FANOUT = 4;
+
     public abstract List<InputSplit> getSplits();
 
     public static InputSplit formSplit(Path[] paths1, Path[] paths2, long[] lengths1, long[] lengths2) {

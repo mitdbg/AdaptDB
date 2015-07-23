@@ -22,8 +22,8 @@ import scala.Tuple2;
 
 public class HPJoinInput extends HPInput{
 
-	private static double OVERLAP_THRESHOLD = 0.75;
-	private static final long MAX_SPLIT_SIZE = 160000 * 1000000L;
+	private static double OVERLAP_THRESHOLD = 0.95;
+	public static long MAX_SPLIT_SIZE = 160000 * 1000000L;
 
 	private String joinInput;
 	private Integer joinKey;

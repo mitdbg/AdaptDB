@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HyperJoinReplicatedBuckets extends JoinAlgo {
-    static int SPLIT_FANOUT = 4;
 
     HPJoinInput joinInput1;
     HPJoinInput joinInput2;
