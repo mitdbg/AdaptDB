@@ -46,7 +46,7 @@ public class HPJoinInput extends HPInput{
 		joinKey = Integer.parseInt(tokens[idx].split("\\.")[1]);
 		idx++;	// increment the idx for the next instantiation of HPJoinInput
 		
-		conf.set(FileInputFormat.INPUT_DIR, hadoopNamenode + joinInput+"/"+joinReplica);		
+		conf.set(FileInputFormat.INPUT_DIR, hadoopNamenode + joinInput + "/" + joinReplica);
 	}
 	
 	public void initialize(List<FileStatus> files, SparkQueryConf queryConf){
@@ -55,6 +55,10 @@ public class HPJoinInput extends HPInput{
 		queryConf.setReplicaId(joinReplica);
 		am.init(queryConf);
 		super.initialize(files, am);
+	}
+
+	public List<MDIndex.BucketInfo> getBucketRanges() {
+		return new ArrayList<MDIndex.BucketInfo>(am.getIndex().getBucketRanges(joinKey).values());
 	}
 
 	public List<PartitionRange> getRangeSplits(int fanout, boolean overlap) {
@@ -235,7 +239,7 @@ public class HPJoinInput extends HPInput{
 	
 	// utility methods
 
-	private Range getFullRange() {
+	public Range getFullRange() {
 		CartilageIndexKeySet sample = am.getIndex().sample;
 		Object[] cutpoints = sample.getCutpoints(joinKey, 1);
 		TypeUtils.TYPE type = sample.getTypes()[joinKey];

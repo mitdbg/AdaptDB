@@ -2,10 +2,7 @@ package perf.benchmark;
 
 import core.access.spark.SparkQueryConf;
 import core.access.spark.join.HPJoinInput;
-import core.access.spark.join.algo.HyperJoinOverlappingRanges;
-import core.access.spark.join.algo.HyperJoinReplicatedBuckets;
-import core.access.spark.join.algo.IndexNestedLoopJoin;
-import core.access.spark.join.algo.JoinAlgo;
+import core.access.spark.join.algo.*;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -112,6 +109,7 @@ public class TestJoinAlgo {
             switch(test.algoType) {
                 case 1: splits = test.getSplits(HyperJoinOverlappingRanges.class); break;
                 case 2: splits = test.getSplits(HyperJoinReplicatedBuckets.class); break;
+                case 3: splits = test.getSplits(HyperJoinOverlapReplicaTuned.class); break;
                 default: splits = test.getSplits(IndexNestedLoopJoin.class); break;
             }
             test.analyzeSplits(splits);

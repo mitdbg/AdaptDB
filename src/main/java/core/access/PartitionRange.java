@@ -5,18 +5,20 @@ import core.utils.Range;
 import core.utils.TypeUtils.TYPE;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by qui on 7/9/15.
  */
 public class PartitionRange extends Range {
 
-    private List<MDIndex.BucketInfo> buckets;
+    private Map<Integer, MDIndex.BucketInfo> buckets;
 
     public PartitionRange(TYPE type, Object low, Object high) {
         super(type, low, high);
-        this.buckets = new ArrayList<MDIndex.BucketInfo>();
+        this.buckets = new HashMap<Integer, MDIndex.BucketInfo>();
     }
 
     public void addBucket(MDIndex.BucketInfo bucketInfo) {
@@ -24,13 +26,25 @@ public class PartitionRange extends Range {
     }
 
     public void addBucket(MDIndex.BucketInfo bucketInfo, boolean updateRange) {
-        buckets.add(bucketInfo);
+        if (buckets.containsKey(bucketInfo.getId())) {
+            buckets.get(bucketInfo.getId()).union(bucketInfo);
+        } else {
+            buckets.put(bucketInfo.getId(), bucketInfo);
+        }
         if (updateRange) {
             this.union(bucketInfo);
         }
     }
 
     public List<MDIndex.BucketInfo> getBuckets() {
-        return buckets;
+        return new ArrayList<MDIndex.BucketInfo>(buckets.values());
+    }
+
+    public boolean containsBucket(int id) {
+        return buckets.containsKey(id);
+    }
+
+    public int getNumBuckets() {
+        return buckets.size();
     }
 }

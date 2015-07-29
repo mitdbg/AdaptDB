@@ -1,11 +1,15 @@
 package core.utils;
 
 import core.utils.TypeUtils.SimpleDate;
+import org.apache.commons.math3.ml.clustering.Clusterable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by qui on 7/9/15.
  */
-public class Range implements Cloneable {
+public class Range implements Cloneable, Clusterable {
 
     private Object low;
     private Object high;
@@ -95,6 +99,14 @@ public class Range implements Cloneable {
         return intersection.getLength() / this.getLength();
     }
 
+    public double jaccardSimilarity(Range other) {
+        Range intersection = this.clone();
+        intersection.intersect(other);
+        Range union = this.clone();
+        union.union(other);
+        return intersection.getLength() / union.getLength();
+    }
+
     public void intersect(Range other) {
         if (low == null) {
             low = other.low;
@@ -161,6 +173,33 @@ public class Range implements Cloneable {
         }
     }
 
+    public List<Range> split(int numSplits) {
+        double splitLength = this.getLength() / numSplits;
+        List<Range> splits = new ArrayList<Range>();
+        for (int i = 0; i < numSplits; i++) {
+            Object splitLow;
+            Object splitHigh;
+            switch (type) {
+                case INT:
+                    splitLow = (int) (((Integer)low) + splitLength * i);
+                    splitHigh = (int) (((Integer)low) + splitLength * (i+1));
+                    break;
+                case LONG:
+                    splitLow = (long) (((Long)low) + splitLength * i);
+                    splitHigh = (long) (((Long)low) + splitLength * (i+1));
+                    break;
+                case FLOAT:
+                    splitLow = (float) (((Float)low) + splitLength * i);
+                    splitHigh = (float) (((Float)low) + splitLength * (i+1));
+                    break;
+                default:
+                    throw new RuntimeException("can't split non-numeric ranges");
+            }
+            splits.add(new Range(type, splitLow, splitHigh));
+        }
+        return splits;
+    }
+
     public boolean contains(Range other) {
         Range me = this.clone();
         me.intersect(other);
@@ -198,5 +237,17 @@ public class Range implements Cloneable {
                 low +
                 ", " + high +
                 ']';
+    }
+
+    @Override
+    public double[] getPoint() {
+        switch (type) {
+            case INT:
+            case LONG:
+            case FLOAT:
+                return new double[]{((Number)low).doubleValue(), ((Number)high).doubleValue()};
+            default:
+                throw new RuntimeException("clustering of "+type.toString()+" not supported");
+        }
     }
 }
