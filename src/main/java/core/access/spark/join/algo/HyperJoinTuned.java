@@ -5,14 +5,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.InputSplit;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import core.access.iterator.ReusablePartitionIterator;
-import core.access.spark.SparkInputFormat.SparkFileSplit;
 import core.access.spark.join.HPJoinInput;
 import core.index.MDIndex;
 import core.utils.Range;
@@ -166,16 +163,17 @@ public class HyperJoinTuned extends JoinAlgo {
 	 * @author alekh
 	 */
 	public static class PBucket{
+		private int id;
 		private long size;
-		private Path path;
-		public PBucket(MDIndex.BucketInfo info){
-			// TODO: extract bucket size and path from info
+		public PBucket(MDIndex.BucketInfo info, HPJoinInput input){
+			id = info.getId();
+			size = input.getPartitionIdSizeMap().get(id);
+		}
+		public int id(){
+			return id;
 		}
 		public long size(){
 			return size;
-		}
-		public Path path(){
-			return path;
 		}
 	}
 	
@@ -208,21 +206,40 @@ public class HyperJoinTuned extends JoinAlgo {
 		private Set<PBucket> pbuckets;
 		private Range range;
 		private long sizeA, sizeB;
+		private HPJoinInput secondInput;
 		
 		public Partition(VBucket vbucket, HPJoinInput secondInput){
 			vbuckets = Sets.newHashSet(vbucket);
 			pbuckets = Sets.newHashSet(vbucket.b());
-			range = vbucket.range().clone();	// TODO: make sure clone is implemented in range 
-												// (we use clone because the range of this partition could be later extended)
+			range = vbucket.range().clone();	// we use clone because the range of this partition could be later extended 
 			sizeA = vbucket.b().size();
 			sizeB = lookupSizeB(range);
+			this.secondInput = secondInput;
 		}
 		protected Partition clone(){
-			return null;	// TODO: implement
+			try {
+				Partition p = (Partition) super.clone();
+				p.vbuckets = Sets.newHashSet(vbuckets);
+				p.pbuckets = Sets.newHashSet(pbuckets);
+				p.range = range.clone();
+				p.sizeA = sizeA;
+				p.sizeB = sizeB;
+				p.secondInput = secondInput;
+				return p;
+			} catch (CloneNotSupportedException e) {
+				e.printStackTrace();
+				throw new RuntimeException("Failed to clone Partition: "+e.getMessage());
+			}
 		}
 		private long lookupSizeB(Range r){
-			// TODO: need to do index lookup from the second input
-			return 0;
+			// index lookup from the second input			
+			long[] lengths = secondInput.getLengths(
+									secondInput.getRangeScan(true, range.getLow(), range.getHigh())
+								);
+			long totalLength = 0;
+			for(long l: lengths)
+				totalLength += l;
+			return totalLength;
 		}
 		public Set<VBucket> v(){
 			return vbuckets;
@@ -335,22 +352,24 @@ public class HyperJoinTuned extends JoinAlgo {
 		public Set<Partition> getPartitions(){
 			return partitions;
 		}
+		// TODO: need to fix this because the buckets are virtual (and hence range predicates, possibly)
 		public List<InputSplit> getInputSplits(){
-			List<InputSplit> finalSplits = Lists.newArrayList();
-			for(Partition partition: partitions){
-				Path[] paths =new Path[partition.b().size()];
-				long[] lengths =new long[partition.b().size()];
-				int i=0;
-				for(PBucket pbucket: partition.b()){
-					paths[i] = pbucket.path();
-					lengths[i] = pbucket.size();
-					i++;
-				}
-				finalSplits.add(
-						new SparkFileSplit(paths, lengths, new ReusablePartitionIterator())
-					);
-			}			
-			return finalSplits;
+//			List<InputSplit> finalSplits = Lists.newArrayList();
+//			for(Partition partition: partitions){
+//				Path[] paths =new Path[partition.b().size()];
+//				long[] lengths =new long[partition.b().size()];
+//				int i=0;
+//				for(PBucket pbucket: partition.b()){
+//					paths[i] = pbucket.path();
+//					lengths[i] = pbucket.size();
+//					i++;
+//				}
+//				finalSplits.add(
+//						new SparkFileSplit(paths, lengths, new ReusablePartitionIterator())
+//					);
+//			}			
+//			return finalSplits;
+			return null;
 		}
 	}
 }
