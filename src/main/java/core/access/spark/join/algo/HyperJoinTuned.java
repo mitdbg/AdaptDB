@@ -1,5 +1,7 @@
 package core.access.spark.join.algo;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -13,7 +15,6 @@ import core.access.iterator.ReusablePartitionIterator;
 import core.access.spark.SparkInputFormat.SparkFileSplit;
 import core.access.spark.join.HPJoinInput;
 import core.index.MDIndex;
-import core.utils.Pair;
 import core.utils.Range;
 
 /**
@@ -91,21 +92,33 @@ public class HyperJoinTuned extends JoinAlgo {
 	 */
 	protected void iterate(PartitionSet partitionSet){
 		// create a list of all combine-able partition pairs 
-		List<Pair<Partition,Partition>> candidatePairs = Lists.newArrayList();
+		List<PartitionPair> candidatePairs = Lists.newArrayList();
 		for(Partition p1: partitionSet.getPartitions())
-			for(Partition p2: partitionSet.getPartitions())
-				if(p1!=p2 && p1.isCombineCandidate() && p2.isCombineCandidate())
-					candidatePairs.add(new Pair<Partition,Partition>(p1, p2));
-		
-		// TODO: sort the partition pairs based on how much they can reduce the cost
-
-		// combine the first pair which succeeds 
-		for(Pair<Partition,Partition> p: candidatePairs){
-			if(p.first.tryCombine(p.second, maxPartitionSize, maxHashTableSize)){
-				partitionSet.remove(p.second);
-				break;
+			for(Partition p2: partitionSet.getPartitions()){
+				PartitionPair partitionPair = new PartitionPair(p1, p2);
+				if(partitionPair.checkCombine(maxPartitionSize, maxHashTableSize))
+					candidatePairs.add(partitionPair);
 			}
-		}
+		
+		// sort the partition pairs based on how much they can reduce the cost
+		Collections.sort(candidatePairs, new Comparator<PartitionPair>() {
+			public int compare(PartitionPair o1, PartitionPair o2) {
+				if(o1.reductionC() > o2.reductionC())
+					return 1;
+				else if(o1.reductionC() < o2.reductionC())
+					return -1;
+				else
+					return 0;
+			}
+		});
+
+		// combine the first pair
+		if(candidatePairs.size() > 0){
+			PartitionPair p = candidatePairs.get(0);
+			partitionSet.add(p.combine());
+			partitionSet.remove(p.first());
+			partitionSet.remove(p.second());
+		}		
 	}
 	
 	/**
@@ -128,7 +141,6 @@ public class HyperJoinTuned extends JoinAlgo {
 			iterate(partitionSet);
 		} while(
 				(initialC - partitionSet.C() > 0) &&			// (i) there is reduction in size
-				(partitionSet.combineCandidates() > 0) &&		// (ii) at least one partition is combine-able
 				(partitionSet.size() > minSplits)				// (iii) number of partitions greater than threshold 
 			);
 		
@@ -192,12 +204,6 @@ public class HyperJoinTuned extends JoinAlgo {
 	 * @author alekh
 	 */
 	public static class Partition{
-		/*
-		 * This is true as long as:
-		 * - the partition is less than the max size
-		 * - the hash table size, i.e. sB, is less than the max size 
-		 */
-		private boolean combineCandidate = true;
 		private Set<VBucket> vbuckets;
 		private Set<PBucket> pbuckets;
 		private Range range;
@@ -210,6 +216,9 @@ public class HyperJoinTuned extends JoinAlgo {
 												// (we use clone because the range of this partition could be later extended)
 			sizeA = vbucket.b().size();
 			sizeB = lookupSizeB(range);
+		}
+		protected Partition clone(){
+			return null;	// TODO: implement
 		}
 		private long lookupSizeB(Range r){
 			// TODO: need to do index lookup from the second input
@@ -232,34 +241,67 @@ public class HyperJoinTuned extends JoinAlgo {
 		}
 		public long C(){
 			return sA() + sB();
+		}		
+	}
+	
+	/**
+	 * A pair of partitions which are candidate for combining
+	 * 
+	 * @author alekh
+	 */
+	public static class PartitionPair{
+		private Partition p1, p2;
+		private long combinedSizeA, combinedSizeB;
+		public PartitionPair(Partition p1, Partition p2){
+			this.p1 = p1;
+			this.p2 = p2;
+			combinedSizeA = p1.sA() + p2.sA();
+			Range tmp = p1.r().clone();
+			tmp.union(p2.r());
+			combinedSizeB = p1.lookupSizeB(tmp);
+		}
+		public Partition first(){
+			return p1;
+		}
+		public Partition second(){
+			return p2;
 		}
 		/**
-		 * Try to combine this partition with a new one.
+		 * Check whether combining this partition pair makes sense or not.
 		 * 
-		 * @param p -- the new partition to be combined with.
-		 * @return -- true, if the combine was successful; false, otherwise.
+		 * @param maxPartitionSize
+		 * @param maxHashTableSize
+		 * @return 
+		 * 		- the reduction in size due to combine, if the combined size is less than the max threshold and the hash table size is less than the max hash table threshold.
+		 * 		- minimum long value otherwise.
+		 * 
 		 */
-		public boolean tryCombine(Partition p, double maxPartitionSize, double maxHashTableSize){
-			// check max partition size
-			combineCandidate &= (sizeA + p.sizeA) <= maxPartitionSize;
-			
-			// check max hash table size
-			Range tmp = range.clone();	// TODO: again, verify that Range supports clone
-			tmp.union(p.range);
-			combineCandidate &= lookupSizeB(tmp) <= maxHashTableSize;
-			
-			if(combineCandidate){				
-				vbuckets.addAll(p.vbuckets);
-				pbuckets.addAll(p.pbuckets);
-				range.union(p.range);
-				sizeA += p.sizeA;
-				sizeB = lookupSizeB(range);
-			}
-
-			return combineCandidate;
+		public boolean checkCombine(double maxPartitionSize, double maxHashTableSize){
+			return 
+					(p1!=p2) &&
+					(combinedSizeA + combinedSizeB <= maxPartitionSize) &&		// max split size check
+					(combinedSizeB <= maxHashTableSize);						// max hash table size check
 		}
-		public boolean isCombineCandidate(){
-			return combineCandidate;					
+		public Partition combine(){
+			Partition p3 = p1.clone();
+			p3.v().addAll(p2.v());
+			p3.b().addAll(p2.b());
+			p3.r().union(p2.r());
+			p3.sizeA += p2.sizeA;
+			p3.sizeB = p3.lookupSizeB(p3.r());
+			return p3;
+		}
+		public long combinedSA(){
+			return combinedSizeA;
+		}
+		public long combinedSB(){
+			return combinedSizeB;
+		}
+		public long combinedC(){
+			return combinedSA() + combinedSB();
+		}
+		public long reductionC(){
+			return p1.C() + p2.C() - combinedC();
 		}
 	}
 	
@@ -288,12 +330,6 @@ public class HyperJoinTuned extends JoinAlgo {
 			long c = 0;
 			for(Partition p: partitions)
 				c += p.C();
-			return c;
-		}
-		public int combineCandidates(){
-			int c = 0;
-			for(Partition p: partitions)
-				c += p.combineCandidate ? 1:0;
 			return c;
 		}
 		public Set<Partition> getPartitions(){
