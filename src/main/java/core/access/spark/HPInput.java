@@ -128,6 +128,19 @@ public class HPInput {
 		}
 		return getLengths(partitions);
 	}
+
+	public long getTotalSize(PartitionSplit[] splits) {
+		long length = 0;
+		for (PartitionSplit split : splits) {
+			for (int id : split.getPartitions()) {
+				for (FileStatus fs : partitionIdFileMap.get(id)) {
+					length += fs.getLen();
+				}
+			}
+		}
+		return length;
+	}
+
 	
 	public int getNumPartitions(){
 		return partitionIdSizeMap.size();

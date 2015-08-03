@@ -23,7 +23,7 @@ public class IndexNestedLoopJoin extends JoinAlgo {
     @Override
     public List<InputSplit> getSplits() {
         List<InputSplit> finalSplits = new ArrayList<InputSplit>();
-        List<PartitionRange> ranges = joinInput2.getRangeSplits(SPLIT_FANOUT, false);
+        List<Range> ranges = joinInput2.getRangeSplits(SPLIT_FANOUT, false);
         for(Range r : ranges){
             // ids from smaller table that match this range of values
             AccessMethod.PartitionSplit[] splits1 = joinInput1.getRangeScan(true, r.getLow(), r.getHigh());

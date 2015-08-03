@@ -47,4 +47,9 @@ public class PartitionRange extends Range {
     public int getNumBuckets() {
         return buckets.size();
     }
+
+    @Override
+    public String toString() {
+        return super.toString() + ", " + getNumBuckets();
+    }
 }

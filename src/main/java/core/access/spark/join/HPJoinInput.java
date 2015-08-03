@@ -61,8 +61,8 @@ public class HPJoinInput extends HPInput{
 		return new ArrayList<MDIndex.BucketInfo>(am.getIndex().getBucketRanges(joinKey).values());
 	}
 
-	public List<PartitionRange> getRangeSplits(int fanout, boolean overlap) {
-		List<PartitionRange> partitions = new ArrayList<PartitionRange>();
+	public List<Range> getRangeSplits(int fanout, boolean overlap) {
+		List<Range> partitions = new ArrayList<Range>();
 
 		CartilageIndexKeySet sample = am.getIndex().sample;
 		Object[] cutpoints = sample.getCutpoints(joinKey, fanout);
@@ -88,8 +88,12 @@ public class HPJoinInput extends HPInput{
 	}
 
 	public List<Tuple2<Range, int[]>> getAssignedBucketSplits(int fanout, boolean overlap) {
-		List<PartitionRange> ranges = getRangeSplits(fanout, overlap);
-		List<Tuple2<Range, List<Integer>>> bucketLists = assignBucketsToRanges(ranges);
+		List<Range> ranges = getRangeSplits(fanout, overlap);
+		List<PartitionRange> partitions = new ArrayList<PartitionRange>();
+		for (Range r : ranges) {
+			partitions.add(new PartitionRange(r.getType(), r.getLow(), r.getHigh()));
+		}
+		List<Tuple2<Range, List<Integer>>> bucketLists = assignBucketsToRanges(partitions);
 		List<Tuple2<Range, int[]>> result = new ArrayList<Tuple2<Range, int[]>>();
 		for (Tuple2<Range, List<Integer>> list : bucketLists) {
 			int[] ids = new int[list._2().size()];
@@ -157,7 +161,7 @@ public class HPJoinInput extends HPInput{
 		}
 
 		System.out.println("Ranges formed: "+ranges);
-		System.out.println("Unassigned buckets: "+unassignedBuckets.size());
+		System.out.println("Unassigned buckets: " + unassignedBuckets.size());
 
 		// Split up any ranges of buckets that are too large
 		List<Tuple2<Range, List<Integer>>> splits = new ArrayList<Tuple2<Range, List<Integer>>>();

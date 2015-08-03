@@ -1,14 +1,12 @@
 package core.access.spark.join.algo;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
+import com.google.common.collect.*;
+import core.access.AccessMethod;
+import core.utils.TypeUtils;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.InputSplit;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import core.access.spark.join.HPJoinInput;
 import core.index.MDIndex;
@@ -37,16 +35,25 @@ public class HyperJoinTuned extends JoinAlgo {
 	private HPJoinInput joinInput2;	
 	
 	private int minSplits;
-	private double maxPartitionSize;
-	private double maxHashTableSize;
+	private double maxPartitionSize = 400000 * 1000000L;
+	private double maxHashTableSize = 40000 * 1000000L;
+
+	//private Set<PartitionPair> candidatePairs = Sets.newHashSet();
+	private List<PartitionPair> candidatePairs = Lists.newArrayList();
+	private Partition lastCombined = null;
 	
 	public HyperJoinTuned(HPJoinInput joinInput1, HPJoinInput joinInput2, int minSplits) {
 		this.joinInput1 = joinInput1;
 		this.joinInput2 = joinInput2;
 		this.minSplits = minSplits;
 	}
-	
-	
+
+	public HyperJoinTuned(HPJoinInput joinInput1, HPJoinInput joinInput2) {
+		this.joinInput1 = joinInput1;
+		this.joinInput2 = joinInput2;
+		this.minSplits = SPLIT_FANOUT;
+	}
+
 	/**
 	 * Return the ranges units (called Rangelets here).
 	 * The return set contains disjoint and complete set of ranges.
@@ -61,7 +68,7 @@ public class HyperJoinTuned extends JoinAlgo {
 	 * @return
 	 */
 	protected List<Range> getRangelets(Range overallRange){
-		return null;	// TODO
+		return joinInput1.getRangeSplits(minSplits, false); // uses samples and distributions
 	}
 	
 	
@@ -75,7 +82,24 @@ public class HyperJoinTuned extends JoinAlgo {
 	 * @return
 	 */
 	protected List<VBucket> getVirtualBuckets(List<MDIndex.BucketInfo> buckets, List<Range> rangelets){
-		return null;	// TODO
+		List<VBucket> vbuckets = new ArrayList<VBucket>();
+		Range fullRange = joinInput2.getFullRange();
+		for (MDIndex.BucketInfo b : buckets) {
+			b.intersect(fullRange);
+			PBucket p = new PBucket(b, joinInput2);
+			for (Range rangelet : rangelets) {
+				if (b.intersectionFraction(rangelet) > 0) {
+					vbuckets.add(new VBucket(p, rangelet));
+				}
+			}
+		}
+		Collections.sort(vbuckets, new Comparator<VBucket>() {
+			public int compare(VBucket o1, VBucket o2) {
+				return TypeUtils.compareTo(o1.range().getLow(), o2.range().getLow(), o1.range().getType());
+			}
+		});
+		System.out.println("Initial vbuckets: "+vbuckets.size());
+		return vbuckets;
 	}
 	
 	
@@ -87,34 +111,96 @@ public class HyperJoinTuned extends JoinAlgo {
 	 * @param partitionSet
 	 * @return
 	 */
-	protected void iterate(PartitionSet partitionSet){
+	protected void iterate(PartitionSet partitionSet) {
 		// create a list of all combine-able partition pairs 
-		List<PartitionPair> candidatePairs = Lists.newArrayList();
-		for(Partition p1: partitionSet.getPartitions())
-			for(Partition p2: partitionSet.getPartitions()){
-				PartitionPair partitionPair = new PartitionPair(p1, p2);
-				if(partitionPair.checkCombine(maxPartitionSize, maxHashTableSize))
-					candidatePairs.add(partitionPair);
+		//List<PartitionPair> candidatePairs; // = Lists.newArrayList();
+		long start = System.currentTimeMillis();
+
+		if (lastCombined == null) {
+			// First time, consider all possible pairs
+			List<Partition> partitions = new ArrayList<Partition>(partitionSet.getPartitions());
+			Iterator<Partition> itr = partitions.iterator();
+			while (itr.hasNext()) {
+				Partition p1 = itr.next();
+				itr.remove();
+				for (Partition p2 : partitions) {
+					PartitionPair partitionPair = new PartitionPair(p1, p2);
+					if (!partitionPair.checkAdjacent()) {
+						break;
+					}
+					if (partitionPair.checkCombine(maxPartitionSize, maxHashTableSize)) {
+						candidatePairs.add(partitionPair);
+					}
+				}
 			}
+		} else {
+			// Add all combinations of the lastCombined range
+			for (Partition p2 : partitionSet.getPartitions()) {
+				PartitionPair partitionPair = new PartitionPair(lastCombined, p2);
+				if (!partitionPair.checkAdjacent()) {
+					continue;
+				}
+				if (partitionPair.checkCombine(maxPartitionSize, maxHashTableSize)) {
+					candidatePairs.add(partitionPair);
+				}
+			}
+		}
+		System.out.println("time: " + (System.currentTimeMillis() - start));
 		
 		// sort the partition pairs based on how much they can reduce the cost
-		Collections.sort(candidatePairs, new Comparator<PartitionPair>() {
-			public int compare(PartitionPair o1, PartitionPair o2) {
-				if(o1.reductionC() > o2.reductionC())
-					return 1;
-				else if(o1.reductionC() < o2.reductionC())
-					return -1;
-				else
-					return 0;
+		//Collections.sort(candidatePairs, new Comparator<PartitionPair>() {
+		PartitionPair p = null;
+		if (candidatePairs.size() > 0) {
+			// TODO: could improve sort algorithm (radix?)
+			Collections.sort(candidatePairs, new Comparator<PartitionPair>() {
+				public int compare(PartitionPair o1, PartitionPair o2) {
+					if (o1.reductionC() > o2.reductionC())
+						return -1;
+					else if (o1.reductionC() < o2.reductionC())
+						return 1;
+					else
+						return 0;
+				}
+			});
+			p = candidatePairs.get(0);
+
+			// remove things that were marked for removal in the last round (have reductionC = -1)
+			PartitionPair removed = new PartitionPair(null, null);
+			removed.reductionC = 0;
+			int indexRemove = Collections.binarySearch(candidatePairs, removed, new Comparator<PartitionPair>() {
+				public int compare(PartitionPair o1, PartitionPair o2) {
+					if (o1.reductionC() > o2.reductionC())
+						return -1;
+					else if (o1.reductionC() < o2.reductionC())
+						return 1;
+					else
+						return 0;
+				}
+			});
+			if (indexRemove < 0) {
+				indexRemove = (indexRemove + 1) * -1;
 			}
-		});
+			System.out.println("removing from "+indexRemove+", "+candidatePairs.size());
+			candidatePairs = candidatePairs.subList(0, indexRemove);
+		}
 
 		// combine the first pair
-		if(candidatePairs.size() > 0){
-			PartitionPair p = candidatePairs.get(0);
-			partitionSet.add(p.combine());
+		// TODO: maybe combine several pairs at once
+		if (p != null) {
+			System.out.println("time: " + (System.currentTimeMillis() - start));
 			partitionSet.remove(p.first());
 			partitionSet.remove(p.second());
+			lastCombined = p.combine();
+			partitionSet.add(lastCombined);
+
+			// mark for removal all pairs that include one of the combined partitions from the candidate pairs
+			System.out.println("time: " + (System.currentTimeMillis() - start));
+			for (PartitionPair pair : candidatePairs) {
+				if (pair.first().equals(p.first()) || pair.first().equals(p.second()) || pair.second().equals(p.first()) || pair.second().equals(p.second())) {
+					pair.reductionC = -1;
+				}
+			}
+			System.out.println("time: " + (System.currentTimeMillis() - start) + ", combining " + p.first().r().toString() + "," + p.second().r().toString());
 		}		
 	}
 	
@@ -127,14 +213,16 @@ public class HyperJoinTuned extends JoinAlgo {
 		List<Range> rangelets = getRangelets(joinInput1.getFullRange());		
 		
 		// step 2: create virtual buckets
-		List<VBucket> vbuckets = getVirtualBuckets(joinInput1.getBucketRanges(), rangelets);
+		List<VBucket> vbuckets = getVirtualBuckets(joinInput2.getBucketRanges(), rangelets);
 		
 		// step 3: initialize the partition set
-		PartitionSet partitionSet = new PartitionSet(vbuckets, joinInput2);
+		PartitionSet partitionSet = new PartitionSet(vbuckets, joinInput1);
 		
 		// step 4: the heuristic based combine step
-		long initialC = partitionSet.C();
+		long initialC; // = partitionSet.C();
 		do{
+			initialC = partitionSet.C();
+			System.out.println("iterating, cost before: "+initialC);
 			iterate(partitionSet);
 		} while(
 				(initialC - partitionSet.C() > 0) &&			// (i) there is reduction in size
@@ -142,6 +230,7 @@ public class HyperJoinTuned extends JoinAlgo {
 			);
 		
 		// step 5: return the final partition set as input splits
+		System.out.println("final cost: "+partitionSet.C());
 		return partitionSet.getInputSplits();
 		
 	}
@@ -187,6 +276,7 @@ public class HyperJoinTuned extends JoinAlgo {
 		private Range r;
 		public VBucket(PBucket b, Range r){
 			this.b = b;
+			this.r = r;
 		}
 		public PBucket b(){
 			return b;
@@ -207,39 +297,43 @@ public class HyperJoinTuned extends JoinAlgo {
 		private Range range;
 		private long sizeA, sizeB;
 		private HPJoinInput secondInput;
-		
+		private static Map<Range, Long> rangeLookups = new HashMap<Range, Long>();
+
+		private Partition() {}
 		public Partition(VBucket vbucket, HPJoinInput secondInput){
+			this.secondInput = secondInput;
 			vbuckets = Sets.newHashSet(vbucket);
 			pbuckets = Sets.newHashSet(vbucket.b());
 			range = vbucket.range().clone();	// we use clone because the range of this partition could be later extended 
 			sizeA = vbucket.b().size();
 			sizeB = lookupSizeB(range);
-			this.secondInput = secondInput;
 		}
 		protected Partition clone(){
-			try {
-				Partition p = (Partition) super.clone();
-				p.vbuckets = Sets.newHashSet(vbuckets);
-				p.pbuckets = Sets.newHashSet(pbuckets);
-				p.range = range.clone();
-				p.sizeA = sizeA;
-				p.sizeB = sizeB;
-				p.secondInput = secondInput;
-				return p;
-			} catch (CloneNotSupportedException e) {
-				e.printStackTrace();
-				throw new RuntimeException("Failed to clone Partition: "+e.getMessage());
-			}
+			Partition p = new Partition();
+			p.vbuckets = Sets.newHashSet(vbuckets);
+			p.pbuckets = Sets.newHashSet(pbuckets);
+			p.range = range.clone();
+			p.sizeA = sizeA;
+			p.sizeB = sizeB;
+			p.secondInput = secondInput;
+			return p;
 		}
 		private long lookupSizeB(Range r){
 			// index lookup from the second input			
-			long[] lengths = secondInput.getLengths(
-									secondInput.getRangeScan(true, range.getLow(), range.getHigh())
+			/*long[] lengths = secondInput.getLengths(
+									secondInput.getRangeScan(true, r.getLow(), r.getHigh())
 								);
 			long totalLength = 0;
 			for(long l: lengths)
 				totalLength += l;
-			return totalLength;
+			return totalLength;*/
+			if (rangeLookups.containsKey(r)) {
+				return rangeLookups.get(r);
+			} else {
+				long result = secondInput.getTotalSize(secondInput.getRangeScan(true, r.getLow(), r.getHigh()));
+				rangeLookups.put(r, result);
+				return result;
+			}
 		}
 		public Set<VBucket> v(){
 			return vbuckets;
@@ -269,13 +363,10 @@ public class HyperJoinTuned extends JoinAlgo {
 	public static class PartitionPair{
 		private Partition p1, p2;
 		private long combinedSizeA, combinedSizeB;
+		private long reductionC = 0;
 		public PartitionPair(Partition p1, Partition p2){
 			this.p1 = p1;
 			this.p2 = p2;
-			combinedSizeA = p1.sA() + p2.sA();
-			Range tmp = p1.r().clone();
-			tmp.union(p2.r());
-			combinedSizeB = p1.lookupSizeB(tmp);
 		}
 		public Partition first(){
 			return p1;
@@ -283,8 +374,19 @@ public class HyperJoinTuned extends JoinAlgo {
 		public Partition second(){
 			return p2;
 		}
+
+		public boolean checkAdjacent() {
+			if (p1.r().intersectionFraction(p2.r()) <= 0) {
+				Range tmp = p1.r().clone();
+				tmp.union(p2.r());
+				if (tmp.getLength() > p1.r().getLength() + p2.r().getLength()) {
+					return false;
+				}
+			}
+			return true;
+		}
 		/**
-		 * Check whether combining this partition pair makes sense or not.
+		 * Check whether combining this partition pair makes sense or not. (or is allowed or not)
 		 * 
 		 * @param maxPartitionSize
 		 * @param maxHashTableSize
@@ -294,6 +396,8 @@ public class HyperJoinTuned extends JoinAlgo {
 		 * 
 		 */
 		public boolean checkCombine(double maxPartitionSize, double maxHashTableSize){
+			combinedSA();
+			combinedSB();
 			return 
 					(p1!=p2) &&
 					(combinedSizeA + combinedSizeB <= maxPartitionSize) &&		// max split size check
@@ -304,21 +408,36 @@ public class HyperJoinTuned extends JoinAlgo {
 			p3.v().addAll(p2.v());
 			p3.b().addAll(p2.b());
 			p3.r().union(p2.r());
-			p3.sizeA += p2.sizeA;
-			p3.sizeB = p3.lookupSizeB(p3.r());
+			p3.sizeA = combinedSA();
+			p3.sizeB = combinedSB();
 			return p3;
 		}
 		public long combinedSA(){
+			if (combinedSizeA == 0) {
+				Set<PBucket> combined = Sets.newHashSet(p1.b());
+				combined.addAll(p2.b());
+				for (PBucket b : combined) {
+					combinedSizeA += b.size();
+				}
+			}
 			return combinedSizeA;
 		}
 		public long combinedSB(){
+			if (combinedSizeB == 0) {
+				Range tmp = p1.r().clone();
+				tmp.union(p2.r());
+				combinedSizeB = p1.lookupSizeB(tmp);
+			}
 			return combinedSizeB;
 		}
 		public long combinedC(){
 			return combinedSA() + combinedSB();
 		}
 		public long reductionC(){
-			return p1.C() + p2.C() - combinedC();
+			if (reductionC == 0 && p1 != null) {
+				reductionC = p1.C() + p2.C() - combinedC();
+			}
+			return reductionC;
 		}
 	}
 	
@@ -327,10 +446,10 @@ public class HyperJoinTuned extends JoinAlgo {
 	 * 
 	 * @author alekh
 	 */
-	public static class PartitionSet {
-		private Set<Partition> partitions;		
+	public class PartitionSet {
+		private List<Partition> partitions;
 		public PartitionSet(List<VBucket> vbuckets, HPJoinInput secondInput){
-			partitions = Sets.newHashSet();
+			partitions = Lists.newArrayList();
 			for(VBucket vbucket: vbuckets)
 				partitions.add(new Partition(vbucket, secondInput));
 		}
@@ -349,27 +468,31 @@ public class HyperJoinTuned extends JoinAlgo {
 				c += p.C();
 			return c;
 		}
-		public Set<Partition> getPartitions(){
+		public List<Partition> getPartitions(){
 			return partitions;
 		}
 		// TODO: need to fix this because the buckets are virtual (and hence range predicates, possibly)
 		public List<InputSplit> getInputSplits(){
-//			List<InputSplit> finalSplits = Lists.newArrayList();
-//			for(Partition partition: partitions){
-//				Path[] paths =new Path[partition.b().size()];
-//				long[] lengths =new long[partition.b().size()];
-//				int i=0;
-//				for(PBucket pbucket: partition.b()){
-//					paths[i] = pbucket.path();
-//					lengths[i] = pbucket.size();
-//					i++;
-//				}
-//				finalSplits.add(
-//						new SparkFileSplit(paths, lengths, new ReusablePartitionIterator())
-//					);
-//			}			
-//			return finalSplits;
-			return null;
+			List<InputSplit> finalSplits = Lists.newArrayList();
+
+			for(Partition partition: partitions){
+				int[] joinInput2Buckets = new int[partition.b().size()];
+				int i=0;
+				for(PBucket pbucket: partition.b()){
+					joinInput2Buckets[i] = pbucket.id;
+					i++;
+				}
+				AccessMethod.PartitionSplit[] splits = joinInput1.getRangeScan(true, partition.range.getLow(), partition.range.getHigh());
+
+				Path[] input1Paths = joinInput1.getPaths(splits);
+				Path[] input2Paths = joinInput2.getPaths(joinInput2Buckets);
+				long[] input1Lengths = joinInput1.getLengths(splits);
+				long[] input2Lengths = joinInput2.getLengths(joinInput2Buckets);
+
+				InputSplit thissplit = formSplit(input1Paths, input2Paths, input1Lengths, input2Lengths);
+				finalSplits.add(thissplit);
+			}
+			return finalSplits;
 		}
 	}
 }

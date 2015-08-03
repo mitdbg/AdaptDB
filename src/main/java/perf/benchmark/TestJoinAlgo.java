@@ -67,8 +67,8 @@ public class TestJoinAlgo {
 
         HPJoinInput.MAX_SPLIT_SIZE = maxSplitSize;
 
-        JoinAlgo algo = algoClass.getConstructor(argTypes).newInstance(new Object[]{joinInput1, joinInput2});
         JoinAlgo.SPLIT_FANOUT = fanout;
+        JoinAlgo algo = algoClass.getConstructor(argTypes).newInstance(new Object[]{joinInput1, joinInput2});
         return algo.getSplits();
     }
 
@@ -110,6 +110,7 @@ public class TestJoinAlgo {
                 case 1: splits = test.getSplits(HyperJoinOverlappingRanges.class); break;
                 case 2: splits = test.getSplits(HyperJoinReplicatedBuckets.class); break;
                 case 3: splits = test.getSplits(HyperJoinOverlapReplicaTuned.class); break;
+                case 4: splits = test.getSplits(HyperJoinTuned.class); break;
                 default: splits = test.getSplits(IndexNestedLoopJoin.class); break;
             }
             test.analyzeSplits(splits);
