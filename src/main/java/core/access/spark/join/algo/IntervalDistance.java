@@ -6,8 +6,10 @@ import org.apache.commons.math3.ml.distance.DistanceMeasure;
  * Created by qui on 7/29/15.
  */
 public class IntervalDistance implements DistanceMeasure {
-    @Override
-    public double compute(double[] doubles, double[] doubles1) {
+
+	private static final long serialVersionUID = 5702558222518414334L;
+
+	public double compute(double[] doubles, double[] doubles1) {
         // self.high > other.low and self.low < other.high
         if (doubles[1] > doubles1[0] && doubles[0] < doubles1[1]) {
             double interval1 = doubles[1] - doubles1[0];

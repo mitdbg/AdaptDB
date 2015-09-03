@@ -1,10 +1,11 @@
 package core.utils;
 
-import core.utils.TypeUtils.SimpleDate;
-import org.apache.commons.math3.ml.clustering.Clusterable;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.math3.ml.clustering.Clusterable;
+
+import core.utils.TypeUtils.SimpleDate;
 
 /**
  * Created by qui on 7/9/15.
@@ -77,16 +78,16 @@ public class Range implements Cloneable, Clusterable {
         }
         switch (this.type) {
             case INT:
-                return (double) ((Integer)this.high - (Integer)this.low);
+                return (Integer)this.high - (Integer)this.low;
             case LONG:
-                return (double) ((Long)this.high - (Long)this.low);
+                return (Long)this.high - (Long)this.low;
             case FLOAT:
-                return (double) ((Float)this.high - (Float)this.low);
+                return (Float)this.high - (Float)this.low;
             case DATE:
                 // not quite accurate, but should be fine for estimation purposes
                 SimpleDate low = (SimpleDate)this.low;
                 SimpleDate high = (SimpleDate)this.high;
-                return (double) (365*(high.getYear()-low.getYear()) + 30*(high.getMonth()-low.getMonth()) + (high.getDay()*low.getDay()));
+                return 365*(high.getYear()-low.getYear()) + 30*(high.getMonth()-low.getMonth()) + (high.getDay()*low.getDay());
             default:
                 throw new RuntimeException(this.type+" not implemented for range");
         }
@@ -239,7 +240,6 @@ public class Range implements Cloneable, Clusterable {
                 ']';
     }
 
-    @Override
     public double[] getPoint() {
         switch (type) {
             case INT:

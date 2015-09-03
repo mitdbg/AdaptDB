@@ -57,7 +57,6 @@ public class TypeUtils {
 			return new SimpleDate(nYear, nMonth, nDay);
 		}
 
-		@Override
 		public int compareTo(SimpleDate d){
 			if(d.getYear() < year || (d.getYear()==year && d.getMonth() < month) || (d.getYear()==year && d.getMonth()==month && d.getDay()<day))
 				return 1;
@@ -80,8 +79,8 @@ public class TypeUtils {
 			ret += (day < 10 ? "0" + day: day);
 			return ret;
 		}
-	}	
-	
+	}
+
 	public static boolean isInt(String s){
 		try{
 			Integer.parseInt(s);

@@ -21,23 +21,19 @@ public class AttributeRangeTree implements MDIndex {
     }
 
     @Override
-    public MDIndex clone() throws CloneNotSupportedException {
+	public MDIndex clone() throws CloneNotSupportedException {
         return new AttributeRangeTree(attribute, type);
     }
 
-    @Override
     public void initBuild(int numBuckets) {
     }
 
-    @Override
     public void insert(MDIndexKey key) {
     }
 
-    @Override
     public void bulkLoad(MDIndexKey[] keys) {
     }
 
-    @Override
     public void initProbe() {
     }
 
@@ -45,7 +41,6 @@ public class AttributeRangeTree implements MDIndex {
         this.bucketBoundaries = boundaries;
     }
 
-    @Override
     public Object getBucketId(MDIndexKey key) {
         Object val;
         switch (type) {
@@ -64,12 +59,10 @@ public class AttributeRangeTree implements MDIndex {
         return bucketBoundaries.length;
     }
 
-    @Override
     public byte[] marshall() {
         return (type.toString() + ";" + String.valueOf(attribute) + ";" + Joiner.on(",").join(bucketBoundaries)).getBytes();
     }
 
-    @Override
     public void unmarshall(byte[] bytes) {
         String[] tokens = (new String(bytes)).split(";");
         type = TYPE.valueOf(tokens[0]);

@@ -107,7 +107,6 @@ public class HDFSUtils {
 			try {
 				FileStatus[] siblingStatuses = fs.listStatus(new Path(parentDir),
 						new PathFilter() {
-							@Override
 							public boolean accept(Path path) {
 								return path.getName().startsWith(siblingPrefix);
 							}
@@ -182,7 +181,7 @@ public class HDFSUtils {
 			throw new RuntimeException("Could not open the file:"+filename+", "+e.getMessage());
 		}
 	}
-	
+
 	public static InputStream getHDFSInputStream(FileSystem hdfs, String filename) {
 		try {
 			return hdfs.open(new Path(filename));
@@ -214,7 +213,7 @@ public class HDFSUtils {
 			FSDataInputStream in = hdfs.open(new Path(filename));
 			byte[] bytes = ByteStreams.toByteArray(in);
 			in.close();
-			return bytes;	
+			return bytes;
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException("Could not read from file:"+filename);
@@ -237,8 +236,8 @@ public class HDFSUtils {
 			throw new RuntimeException("Failed to create the file: "+path+", "+e.getMessage());
 		}
 	}
-	
-	public static boolean tryCreateFile(FileSystem fs, String path){		
+
+	public static boolean tryCreateFile(FileSystem fs, String path){
 		try {
 			return fs.createNewFile(new Path(path));
 		} catch (IOException e1) {
@@ -279,7 +278,7 @@ public class HDFSUtils {
 			throw new RuntimeException("could not read the inputstream!");
 		}
 	}
-	
+
 	public static List<String> readHDFSLines(FileSystem fs, String filename){
 		try {
 			Path path = new Path(filename);
@@ -334,15 +333,15 @@ public class HDFSUtils {
 			throw new RuntimeException("failed to write the hdfs file: "+filename+", "+e.getMessage());
 		}
 	}
-	
+
 	public static OutputStream getOutputStreamWithRetry(FileSystem fs, String filename, long retryIntervalMs, int maxRetryCount){
 		return getOutputStreamWithRetry(fs, filename, (short)3, retryIntervalMs, maxRetryCount);
 	}
-	
+
 	public static OutputStream getOutputStreamWithRetry(FileSystem fs, String filename, short replication, long retryIntervalMs, int maxRetryCount){
 		FSDataOutputStream fout = null;
 		Path path = new Path(filename);
-		
+
 		int retryCount = 0;
 		while(retryCount < maxRetryCount){
 			try{
@@ -364,7 +363,7 @@ public class HDFSUtils {
 		else
 			return fout;
 	}
-	
+
 //	public static void writeFileWithRetry(FileSystem fs, String filename, List<String> lines, long retryIntervalMs, int maxRetryCount){
 //		try {
 //			OutputStream fout = getOutputStreamWithRetry(fs, filename, retryIntervalMs, maxRetryCount);
@@ -381,12 +380,12 @@ public class HDFSUtils {
 
 	public static boolean tryDelete(FileSystem hdfs, String filename, boolean recursive){
 		try {
-			return hdfs.delete(new Path(filename), recursive);			
+			return hdfs.delete(new Path(filename), recursive);
 		} catch (IOException e) {
 			return false;
 		}
 	}
-	
+
 	public static void deleteFile(FileSystem hdfs, String filename, boolean recursive){
 		try {
 			hdfs.delete(new Path(filename), recursive);
