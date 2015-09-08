@@ -26,7 +26,7 @@ public class TestSparkJoinInputFormat {
 
     public void setUp(){
         Configuration conf = new Configuration();
-        ConfUtils cfg = new ConfUtils(BenchmarkSettings.cartilageConf);
+        ConfUtils cfg = new ConfUtils(BenchmarkSettings.conf);
 
         conf.setBoolean("ASSIGN_BUCKETS", true);
         conf.set("JOIN_INPUT1", hdfsPath1);

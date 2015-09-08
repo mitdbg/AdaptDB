@@ -10,6 +10,7 @@ import java.nio.file.Paths;
 
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
+import core.index.key.CartilageIndexKeySet;
 import core.utils.BinaryUtils;
 import core.utils.IOUtils;
 
@@ -77,12 +78,11 @@ public class InputReader {
 				if(nRead==0)
 					continue;
 
-
 				counter++;
 
 				byteArrayIdx = previous = 0;
 				temp1 = System.nanoTime();
-				processByteBuffer(writer);
+				processByteBuffer(writer, null);
 				processTime += System.nanoTime() - temp1;
 
 				long startTime = System.nanoTime();
@@ -120,7 +120,7 @@ public class InputReader {
 	 * @param filename
 	 * @param samplingRate
 	 */
-	public void scanWithBlockSampling(String filename, double samplingRate) {
+	public void scanWithBlockSampling(String filename, double samplingRate, CartilageIndexKeySet sample) {
 		initScan(blockSampleSize);
 
 		FileChannel ch = IOUtils.openFileChannel(filename);
@@ -139,7 +139,7 @@ public class InputReader {
 					byteArrayIdx++;
 				}
 				previous = ++byteArrayIdx;
-				processByteBuffer(null);
+				processByteBuffer(null, sample);
 
 				bb.clear();
 
@@ -155,7 +155,7 @@ public class InputReader {
 		firstPass = false;
 	}
 
-	private void processByteBuffer(PartitionWriter writer){
+	private void processByteBuffer(PartitionWriter writer, CartilageIndexKeySet sample) {
 		long startTime;
 		for ( ; byteArrayIdx<nRead; byteArrayIdx++ ){
 	    	if(byteArray[byteArrayIdx]==newLine){
@@ -192,8 +192,8 @@ public class InputReader {
 
 	    		lineCount++;
 
-	    		if(firstPass)
-	    			index.insert(key);
+	    		if (sample != null)
+	    			sample.insert(key);
 	    	}
 	    }
 	}

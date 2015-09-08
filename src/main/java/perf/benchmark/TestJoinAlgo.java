@@ -33,7 +33,7 @@ public class TestJoinAlgo {
     int algoType;
 
     public List<InputSplit> getSplits(Class<? extends JoinAlgo> algoClass) throws Exception {
-        ConfUtils cfg = new ConfUtils(BenchmarkSettings.cartilageConf);
+        ConfUtils cfg = new ConfUtils(BenchmarkSettings.conf);
         Configuration conf = new Configuration();
 
         conf.set("JOIN_INPUT1", hdfsPath1);

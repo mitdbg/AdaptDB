@@ -32,8 +32,9 @@ public class WorkloadAnalyser {
 		public int attribute;
 	    public TYPE type;
 	    public Object value;
-	    
-	    public boolean equals(Object obj) {
+
+	    @Override
+		public boolean equals(Object obj) {
 	    	if (obj instanceof Candidate) {
 	    		Candidate objC = (Candidate) obj;
 	    		if (objC.attribute == attribute) {
@@ -42,20 +43,20 @@ public class WorkloadAnalyser {
 	    			}
 	    		}
 	    	}
-	    	
+
 	    	return false;
 	    }
 	}
-	
+
 	List<Query> queryWindow = new ArrayList<Query>();
 	List<Candidate> candidates = new LinkedList<Candidate>();
 	RobustTreeHs rt;
-	
+
 	float totalNumTuples;
 	float totalNumSamples;
-	
+
 	/**
-	 * 
+	 *
 	 * @param hdfsHomeDir
 	 * @param depth depth of index tree
 	 */
@@ -64,9 +65,9 @@ public class WorkloadAnalyser {
 		String hdfsHomeDir = conf.getHDFS_WORKING_DIR();
 		String pathToQueries = hdfsHomeDir + "/queries";
 		String pathToSample = hdfsHomeDir + "/sample";
-		
+
 		totalNumTuples = ((float)6000000) * SF;
-		
+
 		FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
 		try {
 			if (fs.exists(new Path(pathToQueries))) {
@@ -83,7 +84,7 @@ public class WorkloadAnalyser {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 		for (int i=0; i<queryWindow.size(); i++) {
 			Query k = queryWindow.get(i);
 			if (k instanceof FilterQuery) {
@@ -96,26 +97,26 @@ public class WorkloadAnalyser {
 					c.value = ps[j].getHelpfulCutpoint();
 
 					if (!candidates.contains(c)) {
-						candidates.add(c);						
+						candidates.add(c);
 					}
 				}
 			}
 		}
-		
-		rt = new RobustTreeHs(0.01);
+
+		rt = new RobustTreeHs();
 		rt.initBuild(16);
 		byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
 		rt.sample.unmarshall(sampleBytes);
-		
+
 		totalNumSamples = rt.sample.size();
 
 		buildOptTree(rt.getRoot(), rt.sample, depth);
 	}
-	
+
 	public float numEstimatedTuples(float numSamples) {
 		return numSamples * totalNumTuples / totalNumSamples;
 	}
-	
+
 	public void buildOptTree(RNode n, CartilageIndexKeySet sample, int depth) {
 		n.bucket = new Bucket();
 		n.bucket.setSample(sample);
@@ -126,10 +127,10 @@ public class WorkloadAnalyser {
 		}
 
 		double numAccessedOld = getNumTuplesAccessed(n);
-		
+
         double benefit = 0;
         Candidate cChosen = null;
-        
+
 		n.bucket = null; // Needed for making sure this is not treated as bucket
 		n.leftChild = new RNode();
 		n.leftChild.parent = n;
@@ -138,29 +139,29 @@ public class WorkloadAnalyser {
 		n.leftChild.bucket = new Bucket();
 		n.rightChild.bucket = new Bucket();
 
-		for (Candidate c: candidates) {			
+		for (Candidate c: candidates) {
 			if (!Optimizer.checkValidToRoot(n, c.attribute, c.type, c.value)) {
 				continue;
 			}
-			
+
 			n.attribute = c.attribute;
 			n.type = c.type;
 			n.value = c.value;
-			
+
 			sample.sort(n.attribute);
 			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample.splitAt(n.attribute, n.value);
 			n.leftChild.bucket.estimatedTuples = numEstimatedTuples(halves.first.size());
 			n.rightChild.bucket.estimatedTuples = numEstimatedTuples(halves.second.size());
-			
+
 	        double numAccessedNew = getNumTuplesAccessed(n);
 	        double extraBenefit = numAccessedOld - numAccessedNew;
-	        
+
 	        if (extraBenefit > benefit) {
 	        	benefit = extraBenefit;
 	        	cChosen = c;
 	        }
 		}
-		
+
 		if (cChosen == null) {
 			n.bucket = new Bucket();
 			n.bucket.setSample(sample);
@@ -177,7 +178,7 @@ public class WorkloadAnalyser {
 			buildOptTree(n.rightChild, halves.second, depth -1);
 		}
 	}
-	
+
 	public float getNumTuplesAccessed(RNode changed) {
 		float numTuples = 0;
 		for (int i=queryWindow.size() - 1; i >= 0; i--) {
@@ -187,7 +188,7 @@ public class WorkloadAnalyser {
 
 		return numTuples;
 	}
-	
+
 	public List<Float> getPerQueryCost(RNode root) {
 		List<Float> costs = new ArrayList<Float>();
 		for (int i=0; i < queryWindow.size(); i++) {
@@ -201,7 +202,7 @@ public class WorkloadAnalyser {
 	public int getNumCandidates() {
 		return candidates.size();
 	}
-	
+
 	public RobustTreeHs getOptTree() {
 		return rt;
 	}

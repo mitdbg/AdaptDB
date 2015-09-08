@@ -35,7 +35,7 @@ public class TestSparkRecordReader extends TestCase{
 		
 		
 		conf = new Configuration();
-		ConfUtils cfg = new ConfUtils(BenchmarkSettings.cartilageConf);
+		ConfUtils cfg = new ConfUtils(BenchmarkSettings.conf);
 		
 		SparkQueryConf queryConf = new SparkQueryConf(conf);
 		queryConf.setWorkingDir(hdfsPath);

@@ -29,7 +29,7 @@ public class Simulator {
 
 	public void setUp(){
 		sf = 1000;
-		cfg = new ConfUtils(BenchmarkSettings.cartilageConf);
+		cfg = new ConfUtils(BenchmarkSettings.conf);
 		this.cleanUp();
 		opt = new Optimizer(cfg);
 		opt.loadIndex();

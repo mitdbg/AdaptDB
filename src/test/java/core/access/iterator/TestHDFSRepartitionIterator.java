@@ -22,7 +22,7 @@ public class TestHDFSRepartitionIterator extends TestRepartitionIterator {
 
 	@Override
 	public void setUp(){
-		ConfUtils cfg = new ConfUtils(BenchmarkSettings.cartilageConf);
+		ConfUtils cfg = new ConfUtils(BenchmarkSettings.conf);
 		partitionDir = cfg.getHDFS_WORKING_DIR();
 		
 		int attributeIdx = 0;
@@ -46,7 +46,7 @@ public class TestHDFSRepartitionIterator extends TestRepartitionIterator {
 
 	@Override
 	protected Partition getPartitionInstance(String path){
-		return new HDFSPartition(path, BenchmarkSettings.cartilageConf, (short)1);
+		return new HDFSPartition(path, BenchmarkSettings.conf, (short)1);
 	}
 
 	@Override

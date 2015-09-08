@@ -3,10 +3,10 @@ package core.index.build;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Scanner;
 
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
+import core.index.key.CartilageIndexKeySet;
 import core.utils.BinaryUtils;
 import core.utils.IOUtils;
 
@@ -15,20 +15,20 @@ public class ReplicatedInputReader {
 	int bufferSize = 5 * 1024 * 1024;
 	int blockSampleSize = 5 * 1024;
 	char newLine = '\n';
-	
+
 	byte[] byteArray, brokenLine;
 	ByteBuffer bb;
-	int nRead, byteArrayIdx, previous;	
+	int nRead, byteArrayIdx, previous;
 	boolean hasLeftover;
-	
+
 	int totalLineSize, lineCount;
 	long arrayCopyTime, bucketIdTime, brokenTime, clearTime;
-	
+
 	MDIndex[] indexes;
 	CartilageIndexKey[] keys;
-	
+
 	boolean firstPass;
-	
+
 	public ReplicatedInputReader(MDIndex[] indexes, CartilageIndexKey[] keys){
 		this.indexes = indexes;
 		this.keys = keys;
@@ -36,15 +36,14 @@ public class ReplicatedInputReader {
 		arrayCopyTime = 0;
 		bucketIdTime = 0;
 	}
-	
-	
+
 	private void initScan(int bufferSize){
 		byteArray = new byte[bufferSize];
 		brokenLine = null;
 		bb = ByteBuffer.wrap(byteArray);
-		nRead=0; byteArrayIdx=0; previous=0;	
+		nRead=0; byteArrayIdx=0; previous=0;
 		hasLeftover = false;
-		
+
 		totalLineSize = 0;
 		lineCount = 0;
 		arrayCopyTime = 0;
@@ -52,11 +51,11 @@ public class ReplicatedInputReader {
 		brokenTime = 0;
 		clearTime = 0;
 	}
-	
+
 	public void scan(String filename){
 		scan(filename, null);
 	}
-	
+
 	public void scan(String filename, PartitionWriter[] writers){
 		initScan(bufferSize);
 		long sStartTime = System.nanoTime(), temp1;
@@ -80,7 +79,7 @@ public class ReplicatedInputReader {
 
 				byteArrayIdx = previous = 0;
 				temp1 = System.nanoTime();
-				processByteBuffer(writers);
+				processByteBuffer(writers, null);
 				processTime += System.nanoTime() - temp1;
 
 				long startTime = System.nanoTime();
@@ -113,7 +112,7 @@ public class ReplicatedInputReader {
 		System.out.println("SCAN: Buffer clear time = " + clearTime/1E9);
 	}
 
-	public void scanWithBlockSampling(String filename, double samplingRate) {
+	public void scanWithBlockSampling(String filename, double samplingRate, CartilageIndexKeySet sample) {
 		initScan(blockSampleSize);
 
 		FileChannel ch = IOUtils.openFileChannel(filename);
@@ -132,7 +131,7 @@ public class ReplicatedInputReader {
 					byteArrayIdx++;
 				}
 				previous = ++byteArrayIdx;
-				processByteBuffer(null);
+				processByteBuffer(null, sample);
 
 				bb.clear();
 
@@ -147,12 +146,12 @@ public class ReplicatedInputReader {
 		IOUtils.closeFileChannel(ch);
 		firstPass = false;
 	}
-	
-	private void processByteBuffer(PartitionWriter[] writers){
+
+	private void processByteBuffer(PartitionWriter[] writers, CartilageIndexKeySet sample){
 		long startTime;
 		for ( ; byteArrayIdx<nRead; byteArrayIdx++ ){
 	    	if(byteArray[byteArrayIdx]==newLine){
-	    		
+
 	    		totalLineSize += byteArrayIdx-previous;
 	    		if(hasLeftover){
 					startTime = System.nanoTime();
@@ -160,10 +159,10 @@ public class ReplicatedInputReader {
 	    			System.arraycopy(brokenLine, 0, a, 0, brokenLine.length);
 	    			System.arraycopy(byteArray, previous, a, brokenLine.length, byteArrayIdx-previous);
 					arrayCopyTime += System.nanoTime() - startTime;
-	    			
+
 	    			totalLineSize += brokenLine.length;
 	    			hasLeftover = false;
-	    			
+
 	    			for(int i=0; i<indexes.length; i++){
 	    				keys[i].setBytes(a);
 						if(writers!=null) {
@@ -187,30 +186,12 @@ public class ReplicatedInputReader {
 	    		}
 
 	    		previous = ++byteArrayIdx;
-	    		
+
 	    		lineCount++;
-	    		
-	    		if(firstPass)
-	    			for(int i=0;i<indexes.length;i++)
-	    				indexes[i].insert(keys[i]);
+
+	    		if (sample != null)
+	    			sample.insert(keys[0]);
 	    	}
 	    }
 	}
-
-	public void scanSample(String sample) {
-		Scanner sc = new Scanner(sample);
-		sc.nextLine(); // first line of sample is types
-		while (sc.hasNextLine()) {
-			String record = sc.nextLine();
-			for(int i=0;i<indexes.length;i++) {
-				if (record.getBytes().length == 0) {
-					continue;
-				}
-				keys[i].setBytes(record.getBytes());
-				indexes[i].insert(keys[i]);
-			}
-		}
-		sc.close();
-	}
-	
 }

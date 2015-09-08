@@ -116,7 +116,7 @@ public class TestSparkInputFormat extends TestCase{
 		String hdfsPath = "hdfs://localhost:9000/user/alekh/dodo";
 		
 		Configuration conf = new Configuration();
-		ConfUtils cfg = new ConfUtils(BenchmarkSettings.cartilageConf);
+		ConfUtils cfg = new ConfUtils(BenchmarkSettings.conf);
 		
 		SparkQueryConf queryConf = new SparkQueryConf(conf);
 		queryConf.setWorkingDir(hdfsPath);

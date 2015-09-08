@@ -21,7 +21,7 @@ import java.util.Map;
  */
 public class JoinCounts {
 
-    ConfUtils conf = new ConfUtils(BenchmarkSettings.cartilageConf);
+    ConfUtils conf = new ConfUtils(BenchmarkSettings.conf);
     int scaleFactor = 1000;
     int[] numChunkValues = new int[]{1, 2, 4, 8, 16, 32, 50};
     Map<String, Map<Integer, Double>> bucketSizes = new HashMap<String, Map<Integer, Double>>();

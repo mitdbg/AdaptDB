@@ -27,8 +27,8 @@ import core.index.robusttree.RobustTreeHs;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.Pair;
-import core.utils.TypeUtils.*;
 import core.utils.TypeUtils;
+import core.utils.TypeUtils.TYPE;
 
 /**
  *
@@ -52,7 +52,7 @@ public class Optimizer {
 	String hadoopHome;
 	short fileReplicationFactor;
 	String zookeeperHosts;
-	
+
 	List<Query> queryWindow = new ArrayList<Query>();
 
 	public static class Plan {
@@ -76,9 +76,9 @@ public class Optimizer {
 	public static class Plans {
 		// Indicates if the entire subtree is accessed.
 		boolean fullAccess;
-		
+
 		// TODO(anil): Think if this is needed at all.
-		Plan PTop; 
+		Plan PTop;
 
 		// Best plan encountered for this subtree.
 		Plan Best;
@@ -96,7 +96,7 @@ public class Optimizer {
 		this.fileReplicationFactor = cfg.getHDFSReplicationFactor();
 		this.zookeeperHosts = cfg.getZookeeperHosts();
 	}
-	
+
 	public Optimizer(ConfUtils cfg) {
 		this.workingDir = cfg.getHDFS_WORKING_DIR();
 		this.hadoopHome = cfg.getHADOOP_HOME();
@@ -109,9 +109,9 @@ public class Optimizer {
 		Bucket.counters = new MDIndex.BucketCounts(zookeeperHosts);
 		String pathToIndex = this.workingDir + "/index";
 		String pathToSample = this.workingDir + "/sample";
-		
+
 		byte[] indexBytes = HDFSUtils.readFile(fs, pathToIndex);
-		this.rt = new RobustTreeHs(0.01);
+		this.rt = new RobustTreeHs();
 		this.rt.unmarshall(indexBytes);
 
 		byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
@@ -199,7 +199,7 @@ public class Optimizer {
 				for (int j=0; j<bids.length; j++) {
 					numTuplesAccessed += Bucket.counters.getBucketCount(bids[j]);
 				}
-				
+
 				totalCostOfQuery += numTuplesAccessed;
 			}
 			System.out.println("Query Cost: " + totalCostOfQuery);
@@ -479,11 +479,11 @@ public class Optimizer {
 	 * @param isLeft - indicates if node is to the left(1) or right(-1) of parent
 	 * @return
 	 */
-	public boolean checkValidForSubtree(RNode node, int attrId, TYPE t, 
+	public boolean checkValidForSubtree(RNode node, int attrId, TYPE t,
 			Object val, int isLeft) {
 		LinkedList<RNode> stack = new LinkedList<RNode>();
 		stack.add(node);
-		
+
 		while (stack.size() > 0) {
 			RNode n = stack.removeLast();
 			if (n.bucket == null) {
@@ -497,7 +497,7 @@ public class Optimizer {
 		}
 		return true;
 	}
-	
+
 	/**
 	 * Puts the new estimated number of tuples in each bucket after change
 	 * @param changed
@@ -751,10 +751,10 @@ public class Optimizer {
 				rightPlan.fullAccess = false;
 			}
 
-			// When trying to replace by predicate; 
+			// When trying to replace by predicate;
 			// Replace by testVal, not the actual predicate value
 			Object testVal = p.getHelpfulCutpoint();
-			
+
 			// replace attribute by one in the predicate
 			if (leftPlan.fullAccess && rightPlan.fullAccess) {
 				ret.fullAccess = true;
@@ -826,7 +826,7 @@ public class Optimizer {
 			        	updatePlan(pTop, pl);
 			        	updatePlan(best, pl);
 					}
-					
+
 					//Rotate right
 					if (c > 0 && leftPlan.PTop != null) {
 						Plan pl = new Plan();
@@ -840,10 +840,10 @@ public class Optimizer {
 						updatePlan(pTop, pl);
 			        	updatePlan(best, pl);
 					}
-					
+
 					// Replace by the predicate
 					// If we traverse to root and see that there is no node with cutoff point less than
-					// that of predicate, 
+					// that of predicate,
 					if (checkValidToRoot(node, p.attribute, p.type, testVal)) {
 						boolean allGood;
 						if (c > 0) {
@@ -851,7 +851,7 @@ public class Optimizer {
 						} else {
 							allGood = checkValidForSubtree(node.rightChild, p.attribute, p.type, testVal, -1);
 						}
-						
+
 						if (allGood) {
 					        double numAccessedOld = getNumTuplesAccessed(node, true);
 
@@ -880,7 +880,7 @@ public class Optimizer {
 					        }
 
 					        // Restore
-					        replaceInTree(r, node);	
+					        replaceInTree(r, node);
 						}
 					}
 				}
@@ -974,7 +974,7 @@ public class Optimizer {
 	public void persistIndexToDisk() {
 		String pathToIndex = this.workingDir + "/index";
 		FileSystem fs = HDFSUtils.getFSByHadoopHome(hadoopHome);
-		try {			
+		try {
 			if(fs.exists(new Path(pathToIndex))) {
 				// If index file exists, move it to a new filename
 				long currentMillis = System.currentTimeMillis();
@@ -983,13 +983,13 @@ public class Optimizer {
 				if (!successRename) {
 					System.out.println("Index rename to " + oldIndexPath + " failed");
 				}
-			}	
+			}
 			HDFSUtils.safeCreateFile(hadoopHome, pathToIndex, this.fileReplicationFactor);
 		} catch (IOException e) {
 			System.out.println("ERR: Writing Index failed: " + e.getMessage());
 			e.printStackTrace();
 		}
-		
+
 		byte[] indexBytes = this.rt.marshall();
 		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome), pathToIndex, this.fileReplicationFactor, this.rt.marshall(), 0, indexBytes.length, false);
 	}

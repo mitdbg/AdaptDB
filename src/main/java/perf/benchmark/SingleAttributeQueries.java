@@ -11,7 +11,7 @@ import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 
 public class SingleAttributeQueries {
-	public final static String propertyFile = BenchmarkSettings.cartilageConf;
+	public final static String propertyFile = BenchmarkSettings.conf;
 	public final static ConfUtils cfg = new ConfUtils(propertyFile);
 	public final static int scaleFactor = 1000;
 	public static int numQueries = 1;

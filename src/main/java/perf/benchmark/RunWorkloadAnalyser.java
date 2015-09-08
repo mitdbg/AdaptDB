@@ -137,7 +137,7 @@ public class RunWorkloadAnalyser {
 	}
 	
 	public static void main(String[] args) {
-		String propertyFile = BenchmarkSettings.cartilageConf;
+		String propertyFile = BenchmarkSettings.conf;
 		ConfUtils cfg = new ConfUtils(propertyFile);
 		RunWorkloadAnalyser rwa = new RunWorkloadAnalyser(cfg);
 		rwa.generateShipDateDrillDown();

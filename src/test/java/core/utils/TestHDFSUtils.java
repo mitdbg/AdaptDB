@@ -12,7 +12,7 @@ public class TestHDFSUtils extends TestCase {
 	private short replication;
 	
 	public void setUp(){
-		ConfUtils cfg = new ConfUtils(BenchmarkSettings.cartilageConf);
+		ConfUtils cfg = new ConfUtils(BenchmarkSettings.conf);
 		hadoopHome = cfg.getHADOOP_HOME();
 		filepath = cfg.getHDFS_WORKING_DIR() + "/testUtils.txt";
 		replication = cfg.getHDFS_REPLICATION_FACTOR();

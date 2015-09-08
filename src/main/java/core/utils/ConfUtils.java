@@ -29,6 +29,12 @@ public class ConfUtils {
 		return Boolean.parseBoolean(p.getProperty("ENABLE_OPTIMIZER").trim());
 	}
 
+	public String getMACHINE_ID() {
+		String machineId = p.getProperty("MACHINE_ID").trim().replaceAll("\\W+", "");
+		assert !machineId.equals("");
+		return machineId;
+	}
+
 	/********** SPARK CONFIG **************/
 	public String getSPARK_MASTER() {
 		return p.getProperty("SPARK_MASTER").trim();
@@ -68,11 +74,19 @@ public class ConfUtils {
 	}
 
 	/**
-	 * Get working directory in HDFS
+	 * Get working directory in HDFS.
 	 * @return filepath to hdfs working dir
 	 */
 	public String getHDFS_WORKING_DIR() {
 		return p.getProperty("HDFS_WORKING_DIR").trim();
+	}
+
+	/**
+	 * Get directory containing sample files.
+	 * @return filepath to directory
+	 */
+	public String getSAMPLES_DIR() {
+		return p.getProperty("SAMPLES_DIR").trim();
 	}
 
 	/**

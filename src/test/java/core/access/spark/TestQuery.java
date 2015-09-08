@@ -11,7 +11,7 @@ import core.utils.ConfUtils;
 import core.utils.TypeUtils.*;
 
 public class TestQuery extends TestCase{
-	public final static String propertyFile = BenchmarkSettings.cartilageConf;
+	public final static String propertyFile = BenchmarkSettings.conf;
 	public final static ConfUtils cfg = new ConfUtils(propertyFile);
 
 	SparkQuery sq;

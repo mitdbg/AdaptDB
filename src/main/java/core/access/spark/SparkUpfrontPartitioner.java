@@ -21,7 +21,7 @@ public class SparkUpfrontPartitioner {
 	//private SparkQueryConf queryConf;
 	JavaSparkContext ctx;
 	String hdfsPath;
-	
+
 	public SparkUpfrontPartitioner(String propertiesFile, String hdfsPath){
 		this.cfg = new ConfUtils(propertiesFile);
 		this.hdfsPath = hdfsPath;
@@ -50,8 +50,8 @@ public class SparkUpfrontPartitioner {
 	public void buildIndex(String sampleDir, RNode index) {
 
 	}
-	
-	
+
+
 	public void createTextFile(String localDataDir, RNode newIndexTree){
 		final DistributedPartitioningIterator partitioner = new DistributedPartitioningIterator(cfg.getZOOKEEPER_HOSTS(), newIndexTree, propertiesFile, hdfsPath);
 		FlatMapFunction<Iterator<String>, String> mapFunc = new SparkPartitioningMapFunction(partitioner);
@@ -105,7 +105,7 @@ public class SparkUpfrontPartitioner {
 		ConfUtils conf = new ConfUtils(propertiesFile);
 		FileSystem fs = HDFSUtils.getFS(conf.getHADOOP_HOME() + "/etc/hadoop/core-site.xml");
 		byte[] indexBytes = HDFSUtils.readFile(fs, hdfsDir + "/index");
-		RobustTreeHs index = new RobustTreeHs(1);
+		RobustTreeHs index = new RobustTreeHs();
 		index.unmarshall(indexBytes);
 
 		SparkUpfrontPartitioner p = new SparkUpfrontPartitioner(propertiesFile, hdfsDir+"/partitions");

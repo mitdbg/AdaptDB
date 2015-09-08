@@ -21,7 +21,7 @@ import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 
 public class TestConvergence {
-	public final static String propertyFile = BenchmarkSettings.cartilageConf;
+	public final static String propertyFile = BenchmarkSettings.conf;
 	public final static ConfUtils cfg = new ConfUtils(propertyFile);
 
 	public void setUp() {

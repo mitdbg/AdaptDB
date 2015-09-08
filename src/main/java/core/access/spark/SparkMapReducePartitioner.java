@@ -15,11 +15,11 @@ import org.apache.hadoop.mapred.lib.MultipleTextOutputFormat;
 import org.apache.hadoop.util.Progressable;
 import org.apache.spark.api.java.function.PairFunction;
 
+import scala.Tuple2;
 import core.access.iterator.IteratorRecord;
 import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTreeHs;
 import core.utils.HDFSUtils;
-import scala.Tuple2;
 
 public class SparkMapReducePartitioner extends SparkUpfrontPartitioner {
 
@@ -38,6 +38,7 @@ public class SparkMapReducePartitioner extends SparkUpfrontPartitioner {
 			this.newIndexTree = newIndexTree;
 			this.t = new Tuple2<Integer, String>(0,"");
 		}
+		@Override
 		public Tuple2<Integer, String> call(String p) {
 			record.setBytes(p.getBytes());
 			int id = newIndexTree.getBucketId(record);
@@ -60,6 +61,7 @@ public class SparkMapReducePartitioner extends SparkUpfrontPartitioner {
 
 	public static class MyOutputFormat extends MultipleTextOutputFormat<Integer, Iterable<String>> {
 		public static String HDFS_OUTPUT_PATH = "HDFS_OUTPUT_PATH";
+		@Override
 		protected String generateFileNameForKeyValue(Integer key, Iterable<String> value, String name) {
 			return key.toString() + "/" + name;
 		}
@@ -68,14 +70,17 @@ public class SparkMapReducePartitioner extends SparkUpfrontPartitioner {
 			public MyRecordWriter(DataOutputStream out){
 				this.out = out;
 			}
+			@Override
 			public void write(Integer arg0, Iterable<String> arg1) throws IOException {
 				for(String v: arg1)
 					out.write(v.getBytes());
 			}
+			@Override
 			public void close(Reporter arg0) throws IOException {
 				out.close();
 			}
 		}
+		@Override
 		protected RecordWriter<Integer, Iterable<String>> getBaseRecordWriter(FileSystem fs, JobConf job, String name, Progressable progress) throws IOException {
 			Path file = FileOutputFormat.getTaskOutputPath(job, name);
 			//FileSystem fs = file.getFileSystem(job);
@@ -89,7 +94,7 @@ public class SparkMapReducePartitioner extends SparkUpfrontPartitioner {
 		// read the index
 		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 		byte[] indexBytes = HDFSUtils.readFile(fs, hdfsPath + "/index");
-		RobustTreeHs index = new RobustTreeHs(1);
+		RobustTreeHs index = new RobustTreeHs();
 		index.unmarshall(indexBytes);
 		final RNode t = index.getRoot();
 

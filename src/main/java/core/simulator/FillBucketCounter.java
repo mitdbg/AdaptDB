@@ -14,7 +14,7 @@ public class FillBucketCounter {
 		System.out.println("Enter mode:");
 		Scanner in = new Scanner(System.in);
 		String input = in.nextLine().trim();
-	    ConfUtils cfg = new ConfUtils(BenchmarkSettings.cartilageConf);
+	    ConfUtils cfg = new ConfUtils(BenchmarkSettings.conf);
 	    String zookeeperHosts = cfg.getZOOKEEPER_HOSTS();
 		if (input.equals("put")) {
 			try {

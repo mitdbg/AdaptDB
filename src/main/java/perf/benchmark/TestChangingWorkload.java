@@ -21,7 +21,7 @@ import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 
 public class TestChangingWorkload {
-	public final static String propertyFile = BenchmarkSettings.cartilageConf;
+	public final static String propertyFile = BenchmarkSettings.conf;
 	public final static ConfUtils cfg = new ConfUtils(propertyFile);
 	final static String[] shipModes = new String[]{"REG AIR", "AIR", "RAIL", "SHIP", "TRUCK", "MAIL", "FOB"};
 

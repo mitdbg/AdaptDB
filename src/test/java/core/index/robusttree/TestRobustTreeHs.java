@@ -1,16 +1,18 @@
 package core.index.robusttree;
 
+import java.util.Arrays;
+import java.util.Map;
+
+import junit.framework.TestCase;
+
+import org.apache.hadoop.fs.FileSystem;
+
+import perf.benchmark.BenchmarkSettings;
 import core.index.MDIndex;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.Range;
-import core.utils.TypeUtils.*;
-import junit.framework.TestCase;
-import org.apache.hadoop.fs.FileSystem;
-import perf.benchmark.BenchmarkSettings;
-
-import java.util.Arrays;
-import java.util.Map;
+import core.utils.TypeUtils.TYPE;
 
 /**
  * Created by qui on 7/4/15.
@@ -40,7 +42,7 @@ public class TestRobustTreeHs extends TestCase {
     }
 
     public void testBucketRanges() {
-        RobustTreeHs index = new RobustTreeHs(1);
+        RobustTreeHs index = new RobustTreeHs();
         index.unmarshall(testTree1.getBytes());
         Map<Integer, MDIndex.BucketInfo> ranges1 = index.getBucketRanges(1);
         System.out.println(ranges1);
@@ -61,16 +63,16 @@ public class TestRobustTreeHs extends TestCase {
     }
 
     public void testBucketRangesFile() {
-        FileSystem fs = HDFSUtils.getFSByHadoopHome((new ConfUtils(BenchmarkSettings.cartilageConf)).getHADOOP_HOME());
+        FileSystem fs = HDFSUtils.getFSByHadoopHome((new ConfUtils(BenchmarkSettings.conf)).getHADOOP_HOME());
         byte[] indexBytes = HDFSUtils.readFile(fs, "/user/qui/orders/index");
-        RobustTreeHs index = new RobustTreeHs(1);
+        RobustTreeHs index = new RobustTreeHs();
         index.unmarshall(indexBytes);
         System.out.println(index.getBucketRanges(0));
         System.out.println(Arrays.toString(index.getAllocations()));
     }
 
     public void testGetAllocations() {
-        RobustTreeHs index = new RobustTreeHs(1);
+        RobustTreeHs index = new RobustTreeHs();
         index.unmarshall(testTree1.getBytes());
         double[] expectedAllocations = new double[]{2.0, 1.25, 1.5, 0.75};
         double[] allocations = index.getAllocations();
@@ -93,7 +95,7 @@ public class TestRobustTreeHs extends TestCase {
                 "b 3\n" +
                 "b 4\n" +
                 "b 5\n";
-        RobustTreeHs index = new RobustTreeHs(1);
+        RobustTreeHs index = new RobustTreeHs();
         index.unmarshall(indexString.getBytes());
         double[] expectedAllocations = new double[]{2.0, 1.0, 0.5, 0.25};
         double[] allocations = index.getAllocations();

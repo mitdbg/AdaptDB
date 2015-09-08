@@ -74,7 +74,7 @@ public class RepartitionIterator extends PartitionIterator{
 				path = FilenameUtils.getPath(path);
 			}
 			byte[] indexBytes = HDFSUtils.readFile(((HDFSPartition)partition).getFS(), path+"/index");
-			RobustTreeHs tree = new RobustTreeHs(1);
+			RobustTreeHs tree = new RobustTreeHs();
 			tree.unmarshall(indexBytes);
 			newIndexTree = tree.getRoot();
 		}
@@ -114,7 +114,7 @@ public class RepartitionIterator extends PartitionIterator{
 				System.out.println("dropping old partition id "+p.getPartitionId());
 				p.drop();
 				//c.removeBucketCount(p.getPartitionId());
-			}			
+			}
 			//c.close();
 			oldPartitions = Maps.newHashMap();
 			newPartitions = Maps.newHashMap();
