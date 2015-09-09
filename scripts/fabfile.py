@@ -1,11 +1,16 @@
-from fabric.api import *
+from fabric.api import run,put,cd,env,parallel,roles,serial,sudo,local,runs_once
 from fabric.contrib.files import exists
-from conf import *
 
 env.use_ssh_config = True
 env.user = 'mdindex'
 env.hosts = ['istc2', 'istc5', 'istc6', 'istc7', 'istc8', 'istc9', 'istc10', 'istc11', 'istc12', 'istc13']
-# env.hosts = ['istc1', 'istc4']
+
+env.roledefs = {
+    'master': ['istc2']
+}
+
+lineitem_schema = "l_orderkey long, l_partkey int, l_suppkey int, l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, l_tax double, l_returnflag string,  l_linestatus string, l_shipdate date, l_commitdate date, l_receiptdate date, l_shipinstruct string, l_shipmode string, l_comment string"
+
 ######################
 ## Hadoop Setup
 ######################
@@ -51,6 +56,51 @@ def configure_systems():
 		java_home = "export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64"
 		run('echo "%s" > .bashrc' % java_home)
 
+@roles('master')
+def copy_scripts():
+    run('mkdir -p /home/mdindex/scripts/')
+    put('/Users/anil/Dev/repos/mdindex/scripts/config.sh.server', '/home/mdindex/scripts/config.sh')
+    put('/Users/anil/Dev/repos/mdindex/scripts/startSystems.sh', '/home/mdindex/scripts/startSystems.sh')
+    put('/Users/anil/Dev/repos/mdindex/scripts/stopSystems.sh', '/home/mdindex/scripts/stopSystems.sh')
+    put('/Users/anil/Dev/repos/mdindex/scripts/startZookeeper.sh', '/home/mdindex/scripts/startZookeeper.sh')
+    put('/Users/anil/Dev/repos/mdindex/scripts/stopZookeeper.sh', '/home/mdindex/scripts/stopZookeeper.sh')
+    with cd('/home/mdindex/scripts/'):
+        run('chmod +x config.sh')
+        run('chmod +x startSystems.sh')
+        run('chmod +x stopSystems.sh')
+        run('chmod +x startZookeeper.sh')
+        run('chmod +x stopZookeeper.sh')
+
+@roles('master')
+def start_zookeeper():
+    run('/home/mdindex/scripts/startZookeeper.sh')
+
+@roles('master')
+def stop_zookeeper():
+    run('/home/mdindex/scripts/stopZookeeper.sh')
+
+@roles('master')
+def start_spark():
+    run('/home/mdindex/scripts/startSystems.sh')
+
+@roles('master')
+def stop_spark():
+    run('/home/mdindex/scripts/stopSystems.sh')
+
+@parallel
+def kill_all():
+    run('pkill java')
+
+@roles('master')
+def start_all():
+    start_spark()
+    start_zookeeper()
+
+@roles('master')
+def stop_all():
+    stop_zookeeper()
+    stop_spark()
+
 #########################
 ## TPCH DataGen
 #########################
@@ -89,22 +139,10 @@ counter = 0
 
 # Note parallel doesn't work with global counter
 @serial
-def tpch_run_dbgen():
-	global counter
-	with cd('/home/mdindex/tpch-dbgen'):
-		for i in xrange(1, 11):
-			partition = counter*10 + i
-			cmd = './dbgen -T L -s 10000 -C 100 -S %d' % partition
-			run_bg(cmd)
-
-	counter += 1
-
-# Note parallel doesn't work with global counter
-@serial
 def tpch_script_gen():
 	global counter
 	try:
-		with cd('/home/mdindex/tpch-dbgen'):
+		with cd('/data/mdindex/tpch-dbgen'):
 			script = "#!/bin/sh\n"
 			for i in xrange(1, 11):
 				partition = counter*10 + i
@@ -117,37 +155,101 @@ def tpch_script_gen():
 
 	counter += 1
 
+@runs_once
+def build_jar():
+    local('cd /Users/anil/Dev/repos/mdindex/; gradle shadowJar')
+
 @parallel
-def enable_ssh():
-	# Setting istc2 as the master node
-	with cd('/home/mdindex/.ssh/'):
-		ssh_key = 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDgr8w9ukEIXuAciuGbPGAr2nHqTNjupWKZQdx2pMTdQ8l3p1SuzJq0ZzNI7alCc+smJUHUOJf8+Iy4X67l7fkmQIswDGq/5g6POai/urOy18drKoEII7pG1NLekJQLzTqKe74IdQmBwO6LWlFCZmQQg0Jaixm/Dhbh/XYY3laVZvO6hMeP2lhE24WEhG6iPsS0H2MM95nit5Xz/NkMqYg6bqDAwC0aaQhT7EhMIt6nLL4Th+owqCdMLOQ2PL2yCzrfPiA5JyFMbKk04mlLNT6NkwQvkL0UqQx5WtEEx4LRY6XIhEVdk8tn5FkvVdqsfhOpuYU9FPIXnU99FpPWrd15 mdindex@istc2'
-		run('echo "%s" >> authorized_keys' % ssh_key)
-
-
-#####################################
-## Sample Generator
-#####################################
-@parallel
-def download_sampler():
-	with cd('/home/mdindex/hadoop-2.6.0/etc/hadoop/'):
-		run('mv hadoop-env.sh hadoop-env.sh.backup')
-		run('wget http://anilshanbhag.in/hadoop-env.sh')
-
-	# with cd('/data/mdindex/tpch-dbgen/'):
-		# run('mv sampler.jar.3 sampler.jar')
-		# run('wget http://anilshanbhag.in/sampler2.jar')
+def update_jar():
+    if not exists('/data/mdindex/jars'):
+        run('mkdir /data/mdindex/jars')
+    put('/Users/anil/Dev/repos/mdindex/build/libs/mdindex-all.jar', '/data/mdindex/jars/')
 
 @serial
-def bulk_sample_gen():
-	global counter
-	with cd('~/hadoop-2.6.0/bin/'):
-		script = "#!/bin/sh\n"
-		for i in xrange(1, 11):
-			partition = counter*10 + i
-			cmd = './hadoop jar /data/mdindex/tpch-dbgen/sampler2.jar core.index.Sampler /data/mdindex/tpch-dbgen/lineitem/lineitem.tbl.%d &\n' % partition
-			script += cmd
+def update_config():
+    global counter
+    put('/Users/anil/Dev/repos/mdindex/conf/cartilage.properties.server', '/home/mdindex/cartilage.properties')
+    run('echo "MACHINE_ID = %d" >> /home/mdindex/cartilage.properties' % counter)
+    counter += 1
 
-		run('echo "%s" > sample_gen.sh' % script)
-		run('chmod +x sample_gen.sh')
-	counter += 1
+@parallel
+def bulk_sample_gen():
+    run('mkdir -p /home/mdindex/logs')
+
+    with cd('~/hadoop-2.6.0/bin/'):
+        run('./hadoop fs -mkdir -p /user/mdindex/lineitem1000')
+        cmd = './hadoop jar /data/mdindex/jars/mdindex-all.jar perf.benchmark.RunIndexBuilder' + \
+            ' --conf /home/mdindex/cartilage.properties' + \
+            ' --inputsDir /data/mdindex/lineitem1000/' + \
+            ' --samplesDir  /user/mdindex/lineitem1000/samples/' + \
+            ' --method 1 ' + \
+            ' --numReplicas 1' + \
+            ' --samplingRate 0.0002' + \
+            (' --schema "%s"' % lineitem_schema) + \
+            ' --numFields 16' + \
+            ' > ~/logs/sample_stats.log'
+        run(cmd)
+
+@roles('master')
+def create_robust_tree():
+    with cd('~/hadoop-2.6.0/bin/'):
+        cmd = './hadoop jar /data/mdindex/jars/mdindex-all.jar perf.benchmark.RunIndexBuilder ' + \
+            ' --conf /home/mdindex/cartilage.properties' + \
+            ' --inputsDir /data/mdindex/lineitem1000/' + \
+            ' --samplesDir  /user/mdindex/lineitem1000/samples/ ' + \
+            ' --method 2 ' + \
+            ' --numReplicas 1' + \
+            ' --numBuckets 8192' + \
+            (' --schema "%s"' % lineitem_schema) + \
+            ' --numFields 16' + \
+            ' > ~/logs/create_tree.log'
+        run(cmd)
+
+@parallel
+def create_robust_tree_per_replica():
+    with cd('~/hadoop-2.6.0/bin/'):
+        cmd = './hadoop jar /data/mdindex/jars/mdindex-all.jar perf.benchmark.RunIndexBuilder ' + \
+            ' --conf /user/mdindex/cartilage.properties' + \
+            ' --inputsDir /data/mdindex/lineitem1000/' + \
+            ' --samplesDir  /user/mdindex/lineitem1000/samples/ ' + \
+            ' --method 3 ' + \
+            ' --numReplicas 3' + \
+            ' --numBuckets 8192' + \
+            (' --schema "%s"' % lineitem_schema) + \
+            ' --numFields 16' + \
+            ' > ~/logs/create_replicated_tree.log'
+        run(cmd)
+
+@parallel
+def write_partitions():
+    with cd('~/hadoop-2.6.0/bin/'):
+        cmd = './hadoop jar /data/mdindex/jars/mdindex-all.jar perf.benchmark.RunIndexBuilder ' + \
+            ' --conf /home/mdindex/cartilage.properties' + \
+            ' --inputsDir /data/mdindex/lineitem1000/' + \
+            ' --samplesDir  /user/mdindex/lineitem1000/samples/ ' + \
+            ' --method 4 ' + \
+            ' --numReplicas 1' + \
+            ' --numBuckets 8192' + \
+            (' --schema "%s"' % lineitem_schema) + \
+            ' --numFields 16' + \
+            ' > ~/logs/write_partitions.log'
+        run(cmd)
+
+@roles('master')
+def delete_partitions():
+    with cd('~/hadoop-2.6.0/bin/'):
+        bp = '/user/mdindex/lineitem1000/partitions'
+        paths = ''
+        for i in xrange(0,10):
+            paths += bp + str(i) + ' '
+        cmd = './hadoop fs -rm -R ' + paths
+        run(cmd)
+
+@parallel
+def check_max_memory():
+    with cd('~/hadoop-2.6.0/bin/'):
+        cmd = './hadoop jar /data/mdindex/jars/mdindex-all.jar perf.benchmark.RunIndexBuilder ' + \
+            ' --conf /home/mdindex/cartilage.properties' + \
+            ' --method 5 '
+        run(cmd)
+

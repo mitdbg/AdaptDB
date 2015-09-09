@@ -55,7 +55,6 @@ jar {
 }
 
 shadowJar {
-  println 'In Here'
   exclude "LICENSE", "META-INF/*.RSA", "META-INF/*.SF","META-INF/*.DSA", "META-INF/license"
   transform(ApacheLicenseResourceTransformer)
 }

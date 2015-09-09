@@ -14,3 +14,5 @@ ZOOKEEPER_HOSTS = localhost
 
 # Optimizer
 ENABLE_OPTIMIZER = true
+
+MACHINE_ID = 0
