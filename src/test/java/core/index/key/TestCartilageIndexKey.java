@@ -18,7 +18,7 @@ public class TestCartilageIndexKey extends TestCase{
 	
 	public void setUp(){
 		tuple1 = "1|1552|93|1|17|24710.35|0.04|0.02|N|O|1996-03-13|1996-02-12|1996-03-22|DELIVER IN PERSON|TRUCK|egular courts above the";
-		types = new TYPE[]{TYPE.INT, TYPE.INT, TYPE.INT, TYPE.INT, TYPE.INT, TYPE.FLOAT, TYPE.FLOAT, TYPE.FLOAT, 
+		types = new TYPE[]{TYPE.INT, TYPE.INT, TYPE.INT, TYPE.INT, TYPE.INT, TYPE.DOUBLE, TYPE.DOUBLE, TYPE.DOUBLE, 
 				TYPE.STRING, TYPE.STRING, TYPE.DATE, TYPE.DATE, TYPE.DATE, TYPE.STRING, TYPE.STRING, TYPE.VARCHAR};
 		
 		//r1 = new CartilageBinaryRecord('|');

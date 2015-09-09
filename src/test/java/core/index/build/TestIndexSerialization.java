@@ -25,7 +25,7 @@ public class TestIndexSerialization extends TestCase {
 		root.rightChild = r;
 
 		l.attribute = 1;
-		l.type = TYPE.FLOAT;
+		l.type = TYPE.DOUBLE;
 		l.value = 3.2;
 
 		r.attribute = 2;
@@ -49,7 +49,7 @@ public class TestIndexSerialization extends TestCase {
 
 		t.maxBuckets = 4;
 		t.numAttributes = 4;
-		t.dimensionTypes = new TYPE[]{TYPE.INT, TYPE.FLOAT, TYPE.STRING, TYPE.LONG};
+		t.dimensionTypes = new TYPE[]{TYPE.INT, TYPE.DOUBLE, TYPE.STRING, TYPE.LONG};
 
 		byte[] treeBytes = t.marshall();
 

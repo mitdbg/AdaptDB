@@ -42,8 +42,8 @@ public class RunWorkloadAnalyser {
 			Random r = new Random();
 			double ddisc = r.nextFloat() * 0.07 + 0.02;
 			float disc = (float) ddisc;
-			Predicate p1 = new Predicate(6, TYPE.FLOAT, disc - 0.01, PREDTYPE.GT);
-			Predicate p2 = new Predicate(6, TYPE.FLOAT, disc + 0.01, PREDTYPE.LEQ);
+			Predicate p1 = new Predicate(6, TYPE.DOUBLE, disc - 0.01, PREDTYPE.GT);
+			Predicate p2 = new Predicate(6, TYPE.DOUBLE, disc + 0.01, PREDTYPE.LEQ);
 			FilterQuery q = new FilterQuery(new Predicate[]{p1, p2});
 			toWrite += q.toString() + "\n";
 		}

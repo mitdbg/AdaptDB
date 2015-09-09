@@ -136,7 +136,7 @@ public class IndexBuilder {
 			r.firstPass = true;
 		}
 		double time1 = (System.nanoTime()-startTime)/1E9;
-		System.out.println("Scanning and sampling time = "+time1+" sec");
+		System.out.println("Scanning and sampling time: " + time1 + " sec");
 
 		startTime = System.nanoTime();
         byte[] sampleBytes = sample.marshall();
@@ -146,29 +146,11 @@ public class IndexBuilder {
             out.write(sampleBytes);
             out.flush();
             out.close();
-            System.out.println("SAMPLE: sample writing time = " + ((System.nanoTime() - startTime) / 1E9));
         } catch (IOException e) {
             e.printStackTrace();
         }
 		double time2 = (System.nanoTime()-startTime)/1E9;
-		System.out.println("Sample Write Time: " + time2 + " sec");
-	}
-
-	// Given an index that has already been constructed, and a directory of files to partition,
-	// writes out the appropriate partition files
-	public void buildDistributedFromIndex(MDIndex index, CartilageIndexKey key, String inputDirectory, PartitionWriter writer){
-		InputReader r = new InputReader(index, key);
-		r.firstPass = false;
-		File[] files = new File(inputDirectory).listFiles();
-
-		long startTime = System.nanoTime();
-		for (File f : files) {
-			r.scan(f.getPath(), writer);
-			writer.flush();
-		}
-		writer.flush();
-		double time3 = (System.nanoTime()-startTime)/1E9;
-		System.out.println("Index Probe Time = " + time3 + " sec");
+		System.out.println("Sample write time: " + time2 + " sec");
 	}
 
 	// Given an index that has already been constructed, and a directory of files to partition,
@@ -337,7 +319,7 @@ public class IndexBuilder {
 		System.out.println("Total time = " + (time2 + time4) + " sec");
 	}
 
-	public void buildWithSample(CartilageIndexKeySet sample, int numBuckets, MDIndex index, PartitionWriter writer) {
+	public void buildIndexFromSample(CartilageIndexKeySet sample, int numBuckets, MDIndex index, PartitionWriter writer) {
 		index.initBuild(numBuckets);
 		((RobustTreeHs)index).loadSample(sample);
 
@@ -347,8 +329,25 @@ public class IndexBuilder {
 
 		startTime = System.nanoTime();
 		byte[] indexBytes = index.marshall();
+		System.out.println("Index Size: " + indexBytes.length);
 		writer.writeToPartition("index", indexBytes, 0, indexBytes.length);
+		writer.flush();
 		System.out.println("BUILD: index writing time = " + ((System.nanoTime() - startTime) / 1E9));
 	}
 
+	// Given an index that has already been constructed, and a directory of files to partition,
+	// writes out the appropriate partition files
+	public void buildDistributedFromIndex(MDIndex index, CartilageIndexKey key, String inputDirectory, PartitionWriter writer){
+		InputReader r = new InputReader(index, key);
+		r.firstPass = false;
+		File[] files = new File(inputDirectory).listFiles();
+
+		long startTime = System.nanoTime();
+		for (File f : files) {
+			r.scan(f.getPath(), writer);
+		}
+		writer.flush();
+		double time3 = (System.nanoTime()-startTime)/1E9;
+		System.out.println("Index Probe Time = " + time3 + " sec");
+	}
 }

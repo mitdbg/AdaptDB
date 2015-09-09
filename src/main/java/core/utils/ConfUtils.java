@@ -82,14 +82,6 @@ public class ConfUtils {
 	}
 
 	/**
-	 * Get directory containing sample files.
-	 * @return filepath to directory
-	 */
-	public String getSAMPLES_DIR() {
-		return p.getProperty("SAMPLES_DIR").trim();
-	}
-
-	/**
 	 * Get HDFS Replication Factor
 	 * @return
 	 */

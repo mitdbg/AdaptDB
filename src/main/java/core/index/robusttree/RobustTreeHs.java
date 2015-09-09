@@ -375,7 +375,7 @@ public class RobustTreeHs implements MDIndex {
 		if (node.bucket != null) {
 			System.out.format("B");
 		} else {
-			System.out.format("Node: %d %f { ", node.attribute, node.quantile);
+			System.out.format("Node: %d %s { ", node.attribute, node.value.toString());
 			printNode(node.leftChild);
 			System.out.print(" }{ ");
 			printNode(node.rightChild);

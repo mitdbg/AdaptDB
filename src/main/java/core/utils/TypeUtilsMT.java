@@ -60,7 +60,7 @@ public class TypeUtilsMT {
 			if ((Integer)x > (Integer)y) return 1;
 			else if ((Integer)x < (Integer)y) return -1;
 			else return 0;
-		case FLOAT:
+		case DOUBLE:
 			if ((Float)x > (Float)y) return 1;
 			else if ((Float)x < (Float)y) return -1;
 			else return 0;
@@ -97,7 +97,7 @@ public class TypeUtilsMT {
 					return ((Long)o1).compareTo((Long)o2);
 				}
 			};
-		case FLOAT:
+		case DOUBLE:
 			return new Comparator<Object> (){
 				public int compare(Object o1, Object o2) {
 					return ((Float)o1).compareTo((Float)o2);
@@ -132,7 +132,7 @@ public class TypeUtilsMT {
 			return Integer.parseInt(token);
 		case LONG:
 			return Long.parseLong(token);
-		case FLOAT:
+		case DOUBLE:
 			return Float.parseFloat(token);
 		case DATE:
 			byte[] bytes = token.getBytes();
@@ -159,7 +159,7 @@ public class TypeUtilsMT {
 			return (Integer)value - 1;
 		case LONG:
 			return (Long)value - 1;
-		case FLOAT:
+		case DOUBLE:
 			return (Float)value - 0.001;
 		case DATE:
 			SimpleDate d = (SimpleDate)value;

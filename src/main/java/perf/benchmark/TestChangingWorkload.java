@@ -82,8 +82,8 @@ public class TestChangingWorkload {
 			double startPrice = (Math.random() * range * (1 - selectivity)) + 25900;
 			double endPrice = Math.max(startPrice + 1, startPrice + range * selectivity);
 			System.out.println("INFO: Running EXTENDEDPRICE Query from " + startPrice + " to " + endPrice);
-			p1 = new Predicate(5, TYPE.FLOAT, startPrice, PREDTYPE.GT);
-			p2 = new Predicate(5, TYPE.FLOAT, endPrice, PREDTYPE.LEQ);
+			p1 = new Predicate(5, TYPE.DOUBLE, startPrice, PREDTYPE.GT);
+			p2 = new Predicate(5, TYPE.DOUBLE, endPrice, PREDTYPE.LEQ);
 			start = System.currentTimeMillis();
 			result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			end = System.currentTimeMillis();
@@ -94,8 +94,8 @@ public class TestChangingWorkload {
 			double startDisc = (int) (Math.random() * range * (1 - selectivity)) * 0.01;
 			double endDisc = Math.max(startDisc + 0.01, startDisc + (int) (range * selectivity) * 0.01);
 			System.out.println("INFO: Running DISCOUNT Query from " + startDisc + " to " + endDisc);
-			p1 = new Predicate(6, TYPE.FLOAT, startDisc, PREDTYPE.GT);
-			p2 = new Predicate(6, TYPE.FLOAT, endDisc, PREDTYPE.LEQ);
+			p1 = new Predicate(6, TYPE.DOUBLE, startDisc, PREDTYPE.GT);
+			p2 = new Predicate(6, TYPE.DOUBLE, endDisc, PREDTYPE.LEQ);
 			start = System.currentTimeMillis();
 			result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			end = System.currentTimeMillis();

@@ -107,8 +107,8 @@ public class SingleAttributeQueries {
 			double startNum = (Math.random() * range * (1 - selectivity)) + 900;
 			double endNum = Math.max(startNum + 1, startNum + range * selectivity);
 			System.out.println("INFO: Running EXTENDEDPRICE Query " + i + " from " + startNum + " to " + endNum);
-			Predicate p1 = new Predicate(5, TYPE.FLOAT, startNum, PREDTYPE.GT);
-			Predicate p2 = new Predicate(5, TYPE.FLOAT, endNum, PREDTYPE.LEQ);
+			Predicate p1 = new Predicate(5, TYPE.DOUBLE, startNum, PREDTYPE.GT);
+			Predicate p2 = new Predicate(5, TYPE.DOUBLE, endNum, PREDTYPE.LEQ);
 			long start = System.currentTimeMillis();
 			long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			long end = System.currentTimeMillis();
@@ -122,8 +122,8 @@ public class SingleAttributeQueries {
 			double startNum = (int) (Math.random() * range * (1 - selectivity)) * 0.01;
 			double endNum = Math.max(startNum + 0.01, startNum + (int) (range * selectivity) * 0.01);
 			System.out.println("INFO: Running DISCOUNT Query " + i + " from " + startNum + " to " + endNum);
-			Predicate p1 = new Predicate(6, TYPE.FLOAT, startNum, PREDTYPE.GT);
-			Predicate p2 = new Predicate(6, TYPE.FLOAT, endNum, PREDTYPE.LEQ);
+			Predicate p1 = new Predicate(6, TYPE.DOUBLE, startNum, PREDTYPE.GT);
+			Predicate p2 = new Predicate(6, TYPE.DOUBLE, endNum, PREDTYPE.LEQ);
 			long start = System.currentTimeMillis();
 			long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			long end = System.currentTimeMillis();
@@ -138,8 +138,8 @@ public class SingleAttributeQueries {
 			double startNum = (int) (Math.random() * range * (1 - selectivity)) * 0.01;
 			double endNum = Math.max(startNum + 0.01, startNum + (int) (range * selectivity) * 0.01);
 			System.out.println("INFO: Running TAX Query " + i + " from " + startNum + " to " + endNum);
-			Predicate p1 = new Predicate(7, TYPE.FLOAT, startNum, PREDTYPE.GT);
-			Predicate p2 = new Predicate(7, TYPE.FLOAT, endNum, PREDTYPE.LEQ);
+			Predicate p1 = new Predicate(7, TYPE.DOUBLE, startNum, PREDTYPE.GT);
+			Predicate p2 = new Predicate(7, TYPE.DOUBLE, endNum, PREDTYPE.LEQ);
 			long start = System.currentTimeMillis();
 			long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			long end = System.currentTimeMillis();
@@ -342,8 +342,8 @@ public class SingleAttributeQueries {
 			double startNum = (Math.random() * range * (1 - selectivity)) + 900;
 			double endNum = Math.max(startNum + 1, startNum + range * selectivity);
 			System.out.println("INFO: Running EXTENDEDPRICE Query " + i + " from " + startNum + " to " + endNum);
-			Predicate p1 = new Predicate(5, TYPE.FLOAT, startNum, PREDTYPE.GT);
-			Predicate p2 = new Predicate(5, TYPE.FLOAT, endNum, PREDTYPE.LEQ);
+			Predicate p1 = new Predicate(5, TYPE.DOUBLE, startNum, PREDTYPE.GT);
+			Predicate p2 = new Predicate(5, TYPE.DOUBLE, endNum, PREDTYPE.LEQ);
 			long start = System.currentTimeMillis();
 			long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			long end = System.currentTimeMillis();
@@ -357,8 +357,8 @@ public class SingleAttributeQueries {
 			double startNum = (int) (Math.random() * range * (1 - selectivity)) * 0.01;
 			double endNum = Math.max(startNum + 0.01, startNum + (int) (range * selectivity) * 0.01);
 			System.out.println("INFO: Running DISCOUNT Query " + i + " from " + startNum + " to " + endNum);
-			Predicate p1 = new Predicate(6, TYPE.FLOAT, startNum, PREDTYPE.GT);
-			Predicate p2 = new Predicate(6, TYPE.FLOAT, endNum, PREDTYPE.LEQ);
+			Predicate p1 = new Predicate(6, TYPE.DOUBLE, startNum, PREDTYPE.GT);
+			Predicate p2 = new Predicate(6, TYPE.DOUBLE, endNum, PREDTYPE.LEQ);
 			long start = System.currentTimeMillis();
 			long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			long end = System.currentTimeMillis();
@@ -373,8 +373,8 @@ public class SingleAttributeQueries {
 			double startNum = (int) (Math.random() * range * (1 - selectivity)) * 0.01;
 			double endNum = Math.max(startNum + 0.01, startNum + (int) (range * selectivity) * 0.01);
 			System.out.println("INFO: Running TAX Query " + i + " from " + startNum + " to " + endNum);
-			Predicate p1 = new Predicate(7, TYPE.FLOAT, startNum, PREDTYPE.GT);
-			Predicate p2 = new Predicate(7, TYPE.FLOAT, endNum, PREDTYPE.LEQ);
+			Predicate p1 = new Predicate(7, TYPE.DOUBLE, startNum, PREDTYPE.GT);
+			Predicate p2 = new Predicate(7, TYPE.DOUBLE, endNum, PREDTYPE.LEQ);
 			long start = System.currentTimeMillis();
 			long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			long end = System.currentTimeMillis();

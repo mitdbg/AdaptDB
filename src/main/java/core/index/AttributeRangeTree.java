@@ -46,7 +46,7 @@ public class AttributeRangeTree implements MDIndex {
         switch (type) {
             case INT: val = key.getIntAttribute(attribute); break;
             case LONG: val = key.getLongAttribute(attribute); break;
-            case FLOAT: val = key.getFloatAttribute(attribute); break;
+            case DOUBLE: val = key.getFloatAttribute(attribute); break;
             case DATE: val = key.getDateAttribute(attribute); break;
             default:
                 throw new RuntimeException("unsupported type");

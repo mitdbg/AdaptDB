@@ -86,7 +86,7 @@ public class HyperJoinOverlapReplicaTuned extends JoinAlgo {
 					low = (long) center[0];
 					high = (long) center[1];
 					break;
-				case FLOAT:
+				case DOUBLE:
 					low = (float) center[0];
 					high = (float) center[1];
 					break;

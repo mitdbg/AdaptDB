@@ -26,7 +26,7 @@ public class Range implements Cloneable, Clusterable {
                 case LONG:
                     this.low = Long.MIN_VALUE;
                     break;
-                case FLOAT:
+                case DOUBLE:
                     this.low = Float.MIN_VALUE;
                     break;
                 case DATE:
@@ -46,7 +46,7 @@ public class Range implements Cloneable, Clusterable {
                 case LONG:
                     this.high = Long.MAX_VALUE;
                     break;
-                case FLOAT:
+                case DOUBLE:
                     this.high = Float.MAX_VALUE;
                     break;
                 case DATE:
@@ -81,7 +81,7 @@ public class Range implements Cloneable, Clusterable {
                 return (Integer)this.high - (Integer)this.low;
             case LONG:
                 return (Long)this.high - (Long)this.low;
-            case FLOAT:
+            case DOUBLE:
                 return (Float)this.high - (Float)this.low;
             case DATE:
                 // not quite accurate, but should be fine for estimation purposes
@@ -165,7 +165,7 @@ public class Range implements Cloneable, Clusterable {
                 this.low = (long)((Long)this.low - length * percentage);
                 this.high = (long)((Long)this.high + length * percentage);
                 break;
-            case FLOAT:
+            case DOUBLE:
                 this.low = (float)((Float)this.low - length * percentage);
                 this.high = (float)((Float)this.high + length * percentage);
                 break;
@@ -189,7 +189,7 @@ public class Range implements Cloneable, Clusterable {
                     splitLow = (long) (((Long)low) + splitLength * i);
                     splitHigh = (long) (((Long)low) + splitLength * (i+1));
                     break;
-                case FLOAT:
+                case DOUBLE:
                     splitLow = (float) (((Float)low) + splitLength * i);
                     splitHigh = (float) (((Float)low) + splitLength * (i+1));
                     break;
@@ -244,7 +244,7 @@ public class Range implements Cloneable, Clusterable {
         switch (type) {
             case INT:
             case LONG:
-            case FLOAT:
+            case DOUBLE:
                 return new double[]{((Number)low).doubleValue(), ((Number)high).doubleValue()};
             default:
                 throw new RuntimeException("clustering of "+type.toString()+" not supported");

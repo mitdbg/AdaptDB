@@ -1,6 +1,9 @@
 package core.index.key;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
 
 import org.apache.commons.lang.ArrayUtils;
 
@@ -10,8 +13,9 @@ import com.google.common.primitives.Bytes;
 
 import core.utils.BinaryUtils;
 import core.utils.Pair;
-import core.utils.TypeUtils.*;
 import core.utils.TypeUtils;
+import core.utils.TypeUtils.SimpleDate;
+import core.utils.TypeUtils.TYPE;
 
 /**
  * A class to collect a set of keys during index building.
@@ -59,14 +63,14 @@ public class CartilageIndexKeySet {
 							break;
 			case LONG:		keyValues[i] = key.getLongAttribute(i);
 							break;
-			case FLOAT:		keyValues[i] = key.getFloatAttribute(i);
+			case DOUBLE:		keyValues[i] = key.getFloatAttribute(i);
 							break;
 			case DATE:		keyValues[i] = key.getDateAttribute(i, new SimpleDate(0,0,0));
 							break;
 			case STRING:	keyValues[i] = key.getStringAttribute(i,20);
 							break;
 			case VARCHAR:	break; // skip partitioning on varchar attribute
-			default:		throw new RuntimeException("Unknown dimension type: "+key.types[i]);
+			default:		throw new RuntimeException("Unknown dimension type: " + key.types[i]);
 			}
 		}
 		values.add(keyValues);
@@ -107,30 +111,35 @@ public class CartilageIndexKeySet {
 		switch(type){
 		case INT:
 			return new Comparator<Object[]> (){
+				@Override
 				public int compare(Object[] o1, Object[] o2) {
 					return ((Integer)o1[attributeIdx]).compareTo((Integer)o2[attributeIdx]);
 				}
 			};
 		case LONG:
 			return new Comparator<Object[]> (){
+				@Override
 				public int compare(Object[] o1, Object[] o2) {
 					return ((Long)o1[attributeIdx]).compareTo((Long)o2[attributeIdx]);
 				}
 			};
-		case FLOAT:
+		case DOUBLE:
 			return new Comparator<Object[]> (){
+				@Override
 				public int compare(Object[] o1, Object[] o2) {
 					return ((Float)o1[attributeIdx]).compareTo((Float)o2[attributeIdx]);
 				}
 			};
 		case DATE:
 			return new Comparator<Object[]> (){
+				@Override
 				public int compare(Object[] o1, Object[] o2) {
 					return ((SimpleDate)o1[attributeIdx]).compareTo((SimpleDate)o2[attributeIdx]);
 				}
 			};
 		case STRING:
 			return new Comparator<Object[]> (){
+				@Override
 				public int compare(Object[] o1, Object[] o2) {
 					return ((String)o1[attributeIdx]).compareTo((String)o2[attributeIdx]);
 				}
@@ -154,7 +163,12 @@ public class CartilageIndexKeySet {
 	 */
 	public void sort(final int attributeIdx){
 		final TYPE sortType = types[attributeIdx];
-		Collections.sort(values, this.getComparatorForType(sortType, attributeIdx));
+		try {
+			Collections.sort(values, this.getComparatorForType(sortType, attributeIdx));
+		} catch (ClassCastException e) {
+			System.out.println("EXCEPTION: " + attributeIdx + " " + sortType.toString());
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -220,7 +234,7 @@ public class CartilageIndexKeySet {
         switch(type) {
             case INT:       comparison = ((Integer)middle).compareTo((Integer)val); break;
             case LONG:		comparison = ((Long)middle).compareTo((Long)val); break;
-            case FLOAT:		comparison = ((Float)middle).compareTo((Float)val); break;
+            case DOUBLE:		comparison = ((Float)middle).compareTo((Float)val); break;
             case DATE:		comparison = ((SimpleDate)middle).compareTo((SimpleDate)val); break;
             case STRING:	comparison = ((String)middle).compareTo((String)val); break;
             case VARCHAR:	throw new RuntimeException("sorting over varchar is not supported"); // skip partitioning on varchar attribute
@@ -239,7 +253,6 @@ public class CartilageIndexKeySet {
             return getFirstIndexOfAttributeVal(attributeIdx, type, val, sublist.subList(sublist.size()/2+1, sublist.size()), start+sublist.size()/2+1);
         }
     }
-
 
 	/**
 	 * Sort and then split the key set.
@@ -292,24 +305,30 @@ public class CartilageIndexKeySet {
 	public static class KeySetIterator implements Iterator<CartilageIndexKey>{
 		private Iterator<Object[]> valueItr;
 		private ParsedIndexKey key;
+
 		public KeySetIterator(List<Object[]> values, TYPE[] types){
 			this.valueItr = values.iterator();
 			key = new ParsedIndexKey(types);
 		}
+
+		@Override
 		public boolean hasNext() {
 			return valueItr.hasNext();
 		}
+
+		@Override
 		public CartilageIndexKey next() {
 			key.setValues(valueItr.next());
 			return key;
 		}
+
+		@Override
 		public void remove() {
 			next();
 		}
 	}
 
-
-	public byte[] marshall(){
+	public byte[] marshall() {
 		List<byte[]> byteArrays = Lists.newArrayList();
 
 		byteArrays.add(Joiner.on("|").join(types).getBytes());
@@ -319,7 +338,7 @@ public class CartilageIndexKeySet {
 		byte[] recordBytes = new byte[initialSize];
 
 		int offset = 0;
-		for(Object[] v: values){
+		for (Object[] v: values) {
 			byte[] vBytes = Joiner.on("|").join(v).getBytes();
 			if(offset + vBytes.length + 1 > recordBytes.length){
 				byteArrays.add(BinaryUtils.resize(recordBytes, offset));

@@ -47,7 +47,7 @@ public class KDNode {
                 return key.getIntAttribute(dimension);
             case LONG:
                 return key.getLongAttribute(dimension);
-            case FLOAT:
+            case DOUBLE:
                 return key.getFloatAttribute(dimension);
             case DATE:
                 return key.getDateAttribute(dimension);
@@ -64,7 +64,7 @@ public class KDNode {
                 return ((Integer) value).compareTo(key.getIntAttribute(dimension));
             case LONG:
                 return ((Long) value).compareTo(key.getLongAttribute(dimension));
-            case FLOAT:
+            case DOUBLE:
                 return ((Float) value).compareTo(key.getFloatAttribute(dimension));
             case DATE:
                 return ((SimpleDate) value).compareTo(key.getDateAttribute(dimension));

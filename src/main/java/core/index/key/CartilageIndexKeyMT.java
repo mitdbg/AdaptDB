@@ -53,7 +53,7 @@ public class CartilageIndexKeyMT extends CartilageIndexKey{
 			else if(typeUtils.isLong(t))
 				types.add(TYPE.LONG);
 			else if(typeUtils.isFloat(t))
-				types.add(TYPE.FLOAT);
+				types.add(TYPE.DOUBLE);
 			else if(typeUtils.isDate(t, sdf))
 				types.add(TYPE.DATE);
 			else

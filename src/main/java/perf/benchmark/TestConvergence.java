@@ -143,8 +143,8 @@ public class TestConvergence {
 			double ddisc = r.nextFloat() * 0.07 + 0.02;
 			float disc = (float) ddisc;
 			long start = System.currentTimeMillis();
-			Predicate p1 = new Predicate(6, TYPE.FLOAT, disc - 0.01, PREDTYPE.GT);
-			Predicate p2 = new Predicate(6, TYPE.FLOAT, disc + 0.01, PREDTYPE.LEQ);
+			Predicate p1 = new Predicate(6, TYPE.DOUBLE, disc - 0.01, PREDTYPE.GT);
+			Predicate p2 = new Predicate(6, TYPE.DOUBLE, disc + 0.01, PREDTYPE.LEQ);
 			long c = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(), p1, p2).count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: DISCOUNT " + (end - start) + " " + disc + " " + c);

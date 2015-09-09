@@ -11,39 +11,39 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import com.google.common.collect.Maps;
 
 public abstract class PartitionWriter implements Cloneable{
-
-	protected int bufferPartitionSize = 5*1024*1024;
+	protected int bufferPartitionSize = 1024*1024;
 	protected int maxBufferPartitions = 100;
 	protected String partitionDir;
-	
+
 	protected Map<String,OutputStream> buffer;
 	protected Map<String,MutableInt> partitionRecordCount;
 	private long writingTime = 0;
-	
-	
+
+
 	public PartitionWriter(String partitionDir, int bufferPartitionSize, int maxBufferPartitions){
 		this(partitionDir);
 		this.bufferPartitionSize = bufferPartitionSize;
 		this.maxBufferPartitions = maxBufferPartitions;
 	}
-	
+
 	public PartitionWriter(String partitionDir) {
 		this.partitionDir = partitionDir;
 		this.buffer = Maps.newHashMap();
 		this.partitionRecordCount = Maps.newHashMap();
 	}
-	
+
+	@Override
 	public PartitionWriter clone() throws CloneNotSupportedException {
 		PartitionWriter w = (PartitionWriter) super.clone();
 		w.buffer = Maps.newHashMap();
 		w.partitionRecordCount = Maps.newHashMap();
         return w;
 	}
-	
+
 	public void setPartitionDir(String partitionDir){
 		this.partitionDir = partitionDir;
 	}
-	
+
 	public String getPartitionDir(){
 		return this.partitionDir;
 	}
@@ -55,11 +55,11 @@ public abstract class PartitionWriter implements Cloneable{
 			// if there is a hard limit on the number of buffers, then close some of them before opening new ones!
 			//if(buffer.size() > maxBufferPartitions)
 			//	flush((int)(flushFraction*maxBufferPartitions));
-			
+
 			b = getOutputStream(partitionDir+"/"+partitionId);
 			buffer.put(partitionId, b);
 		}
-		
+
 		try {
 			b.write(bytes, b_offset, b_length);
 			b.write('\n');
@@ -71,20 +71,20 @@ public abstract class PartitionWriter implements Cloneable{
 			else
 				count.increment();
 			writingTime += System.nanoTime()-start;
-			
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	protected abstract OutputStream getOutputStream(String path);
-	
+
 	public abstract void createPartitionDir();
-	
+
 	public void flush(){
-		flush(buffer.size());		
+		flush(buffer.size());
 	}
-	
+
 	protected void flush(int numPartitions){
 		System.out.println("SCAN: partition writing time = "+writingTime/1E9);
 		long start = System.nanoTime();

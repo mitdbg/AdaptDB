@@ -107,6 +107,7 @@ public class HDFSUtils {
 			try {
 				FileStatus[] siblingStatuses = fs.listStatus(new Path(parentDir),
 						new PathFilter() {
+							@Override
 							public boolean accept(Path path) {
 								return path.getName().startsWith(siblingPrefix);
 							}
@@ -158,8 +159,6 @@ public class HDFSUtils {
 				Configuration conf = new Configuration();
 				conf.addResource(new Path(coreSitePath));
 				fs = FileSystem.get(conf);
-				//URI uri = new URI(conf.get("fs.default.name"));
-				//fs = FileSystem.get(uri, conf, "alekh");
 			} catch (Exception e) {
 				throw new RuntimeException("Failed to get the HDFS Filesystem! "+e.getMessage());
 			}
@@ -169,7 +168,6 @@ public class HDFSUtils {
 
 	public static OutputStream getHDFSOutputStream(FileSystem hdfs, String filename, short replication, int bufferSize) {
 		try {
-			//FileSystem hdfs = getFS();
 			Path path = new Path(filename);
 			if(hdfs.exists(path))
 				return new BufferedOutputStream(hdfs.append(path, replication), bufferSize);
@@ -364,21 +362,7 @@ public class HDFSUtils {
 			return fout;
 	}
 
-//	public static void writeFileWithRetry(FileSystem fs, String filename, List<String> lines, long retryIntervalMs, int maxRetryCount){
-//		try {
-//			OutputStream fout = getOutputStreamWithRetry(fs, filename, retryIntervalMs, maxRetryCount);
-//			for(String line: lines){
-//				fout.write(line.getBytes());
-//				fout.write('\n');
-//			}
-//			fout.close();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//			throw new RuntimeException("failed to write the hdfs file: "+filename+", "+e.getMessage());
-//		}
-//	}
-
-	public static boolean tryDelete(FileSystem hdfs, String filename, boolean recursive){
+	public static boolean tryDelete(FileSystem hdfs, String filename, boolean recursive) {
 		try {
 			return hdfs.delete(new Path(filename), recursive);
 		} catch (IOException e) {
@@ -386,7 +370,7 @@ public class HDFSUtils {
 		}
 	}
 
-	public static void deleteFile(FileSystem hdfs, String filename, boolean recursive){
+	public static void deleteFile(FileSystem hdfs, String filename, boolean recursive) {
 		try {
 			hdfs.delete(new Path(filename), recursive);
 		} catch (IOException e) {
@@ -395,7 +379,7 @@ public class HDFSUtils {
 		}
 	}
 
-	public static List<String> getDataNodes(String hadoopHome){
+	public static List<String> getDataNodes(String hadoopHome) {
 		List<String> lines = Lists.newArrayList();
 		BufferedReader reader = null;
 		try {
