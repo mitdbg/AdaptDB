@@ -17,7 +17,7 @@ public class HDFSPartitionWriter extends PartitionWriter{
 
 	private short replication = 3;
 	private FileSystem hdfs;
-	
+
 	//private String zookeeperHosts;
 
 	public HDFSPartitionWriter(String partitionDir, int bufferPartitionSize, int maxBufferPartitions, short replication, String propertiesFile){
@@ -40,7 +40,7 @@ public class HDFSPartitionWriter extends PartitionWriter{
 	public PartitionWriter clone() throws CloneNotSupportedException {
 		HDFSPartitionWriter w = (HDFSPartitionWriter) super.clone();
 		w.createHDFS(propertiesFile);
-        return w;
+		return w;
 	}
 
 	private void createHDFS(String propertiesFile){

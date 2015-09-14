@@ -15,12 +15,12 @@ public abstract class PartitionWriter implements Cloneable{
 	protected int maxBufferPartitions = 100;
 	protected String partitionDir;
 
-	protected Map<String,OutputStream> buffer;
-	protected Map<String,MutableInt> partitionRecordCount;
+	protected Map<String, OutputStream> buffer;
+	protected Map<String, MutableInt> partitionRecordCount;
 	private long writingTime = 0;
 
 
-	public PartitionWriter(String partitionDir, int bufferPartitionSize, int maxBufferPartitions){
+	public PartitionWriter(String partitionDir, int bufferPartitionSize, int maxBufferPartitions) {
 		this(partitionDir);
 		this.bufferPartitionSize = bufferPartitionSize;
 		this.maxBufferPartitions = maxBufferPartitions;
@@ -40,18 +40,18 @@ public abstract class PartitionWriter implements Cloneable{
         return w;
 	}
 
-	public void setPartitionDir(String partitionDir){
+	public void setPartitionDir(String partitionDir) {
 		this.partitionDir = partitionDir;
 	}
 
-	public String getPartitionDir(){
+	public String getPartitionDir() {
 		return this.partitionDir;
 	}
 
-	public void writeToPartition(String partitionId, byte[] bytes, int b_offset, int b_length){
+	public void writeToPartition(String partitionId, byte[] bytes, int b_offset, int b_length) {
 		long start = System.nanoTime();
 		OutputStream b = buffer.get(partitionId);
-		if(b==null){
+		if (b==null) {
 			// if there is a hard limit on the number of buffers, then close some of them before opening new ones!
 			//if(buffer.size() > maxBufferPartitions)
 			//	flush((int)(flushFraction*maxBufferPartitions));

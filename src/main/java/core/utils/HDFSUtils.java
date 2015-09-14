@@ -139,14 +139,6 @@ public class HDFSUtils {
 		}
 	}
 
-
-
-
-
-
-
-
-
 	private static FileSystem fs;
 
 	public static FileSystem getFSByHadoopHome(String hadoopHome){
@@ -169,7 +161,7 @@ public class HDFSUtils {
 	public static OutputStream getHDFSOutputStream(FileSystem hdfs, String filename, short replication, int bufferSize) {
 		try {
 			Path path = new Path(filename);
-			if(hdfs.exists(path))
+			if (hdfs.exists(path))
 				return new BufferedOutputStream(hdfs.append(path, replication), bufferSize);
 			else
 				return new BufferedOutputStream(hdfs.create(path, replication), bufferSize);
@@ -178,6 +170,10 @@ public class HDFSUtils {
 		} catch (IOException e) {
 			throw new RuntimeException("Could not open the file:"+filename+", "+e.getMessage());
 		}
+	}
+
+	public static OutputStream getBufferedHDFSOutputStream(FileSystem fs, String filename, short replication, int bufferSize) {
+		return new HDFSBufferedOutputStream(fs, filename, replication, bufferSize);
 	}
 
 	public static InputStream getHDFSInputStream(FileSystem hdfs, String filename) {
@@ -235,18 +231,13 @@ public class HDFSUtils {
 		}
 	}
 
-	public static boolean tryCreateFile(FileSystem fs, String path){
-		try {
-			return fs.createNewFile(new Path(path));
-		} catch (IOException e1) {
-			//e1.printStackTrace();
-			return false;
-		}
+	public static void safeCreateFile(String hadoopHome, String path, short replication){
+		FileSystem fs = getFSByHadoopHome(hadoopHome);
+		safeCreateFile(fs, path, replication);
 	}
 
-	public static void safeCreateFile(String hadoopHome, String path, short replication){
+	public static void safeCreateFile(FileSystem fs, String path, short replication) {
 		try {
-			FileSystem fs = getFSByHadoopHome(hadoopHome);
 			if(!fs.exists(new Path(path))) {
 				FSDataOutputStream os = fs.create(new Path(path), replication);
 				os.close();
@@ -301,6 +292,21 @@ public class HDFSUtils {
 			FSDataOutputStream fout = getFSByHadoopHome(hadoopHome).append(new Path(filepath));
 			fout.write(line.getBytes());
 			fout.write('\n');
+			fout.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new RuntimeException("could not append to file: "+filepath);
+		}
+	}
+
+	public static void appendBytes(String hadoopHome, String filePath, byte[] bytes, int start, int length) {
+		appendBytes(getFSByHadoopHome(hadoopHome), filePath, bytes, start, length);
+	}
+
+	public static void appendBytes(FileSystem fs, String filepath, byte[] bytes, int start, int length) {
+		try {
+			FSDataOutputStream fout = fs.append(new Path(filepath));
+			fout.write(bytes, start, length);
 			fout.close();
 		} catch (IOException e) {
 			e.printStackTrace();
