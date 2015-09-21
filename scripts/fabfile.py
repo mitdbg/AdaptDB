@@ -1,5 +1,7 @@
 from fabric.api import run,put,cd,env,parallel,roles,serial,sudo,local,runs_once
 from fabric.contrib.files import exists
+from conf_server import conf_server
+from conf_local import conf_local
 
 env.use_ssh_config = True
 env.user = 'mdindex'
@@ -8,6 +10,8 @@ env.hosts = ['istc2', 'istc5', 'istc6', 'istc7', 'istc8', 'istc9', 'istc10', 'is
 env.roledefs = {
     'master': ['istc2']
 }
+
+conf = None
 
 lineitem_schema = "l_orderkey long, l_partkey int, l_suppkey int, l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, l_tax double, l_returnflag string,  l_linestatus string, l_shipdate date, l_commitdate date, l_receiptdate date, l_shipinstruct string, l_shipmode string, l_comment string"
 
@@ -155,6 +159,62 @@ def tpch_script_gen():
 
 	counter += 1
 
+def setup(mode="server"):
+    global conf
+    if mode == "server":
+        conf = conf_server
+        env.user = 'mdindex'
+        env.hosts = ['istc2', 'istc5', 'istc6', 'istc7', 'istc8', 'istc9', 'istc10', 'istc11', 'istc12', 'istc13']
+    else:
+        conf = conf_local
+        env.user = 'anil'
+        env.hosts = ['localhost']
+
+@serial
+def tpch_script_gen_100():
+    global counter
+    try:
+        if not exists('/data/mdindex/tpch100'):
+            run('mkdir /data/mdindex/tpch100')
+
+        with cd('/data/mdindex/tpch-dbgen'):
+            try:
+                # delete any old tables before creating new ones
+                run('rm *.tbl.%d' % (counter + 1))
+            except:
+                pass
+            script = "#!/bin/bash\n"
+            script += "cd /data/mdindex/tpch-dbgen/\n"
+            cmd = './dbgen -s 100 -C 10 -S %d\n' % (counter + 1)
+            script += cmd
+
+            run('echo "%s" > data_gen.sh' % script)
+            run('chmod +x data_gen.sh')
+    except:
+        pass
+
+    counter += 1
+
+@parallel
+def tpch_gen_100():
+    run('nohup /data/mdindex/tpch-dbgen/data_gen.sh >> /tmp/xxx 2>&1 < /dev/null &', pty=False)
+
+@serial
+def create_script_move_data():
+    global counter
+    with cd('/data/mdindex/'):
+        script = "#!/bin/bash\n"
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -copyFromLocal " + \
+            "/data/mdindex/tpch-dbgen/*.tbl.%d /user/mdindex/tpch100/" % (counter + 1)
+        run('echo "%s" > move_data.sh' % script)
+        run('chmod +x move_data.sh')
+
+    counter += 1
+
+@parallel
+def move_data():
+    run('nohup /data/mdindex/move_data.sh >> /tmp/xxx 2>&1 < /dev/null &', pty=False)
+
 @runs_once
 def build_jar():
     local('cd /Users/anil/Dev/repos/mdindex/; gradle shadowJar')
@@ -172,77 +232,94 @@ def update_config():
     run('echo "MACHINE_ID = %d" >> /home/mdindex/cartilage.properties' % counter)
     counter += 1
 
+def fill_cmd(cmd):
+    global conf
+    print conf
+    for k in conf.keys():
+        cmd = cmd.replace('$' + k, conf[k])
+    return cmd
+
 @parallel
 def bulk_sample_gen():
-    run('mkdir -p /home/mdindex/logs')
+    global conf
+    run('mkdir -p %slogs' % conf['HOMEDIR'])
 
-    with cd('~/hadoop-2.6.0/bin/'):
-        run('./hadoop fs -mkdir -p /user/mdindex/lineitem1000')
-        cmd = './hadoop jar /data/mdindex/jars/mdindex-all.jar perf.benchmark.RunIndexBuilder' + \
-            ' --conf /home/mdindex/cartilage.properties' + \
-            ' --inputsDir /data/mdindex/lineitem1000/' + \
-            ' --samplesDir  /user/mdindex/lineitem1000/samples/' + \
+    with cd(conf['HADOOPBIN']):
+        run('./hadoop fs -mkdir -p %s' % conf['HDFSDIR'])
+        cmd = './hadoop jar $JAR perf.benchmark.RunIndexBuilder' + \
+            ' --conf $CONF' + \
+            ' --inputsDir $INPUTSDIR' + \
+            ' --samplesDir $HDFSDIRsamples/' + \
             ' --method 1 ' + \
             ' --numReplicas 1' + \
-            ' --samplingRate 0.0002' + \
+            ' --samplingRate $SAMPLINGRATE' + \
             (' --schema "%s"' % lineitem_schema) + \
             ' --numFields 16' + \
             ' > ~/logs/sample_stats.log'
+        cmd = fill_cmd(cmd)
         run(cmd)
 
 @roles('master')
-def create_robust_tree():
-    with cd('~/hadoop-2.6.0/bin/'):
-        cmd = './hadoop jar /data/mdindex/jars/mdindex-all.jar perf.benchmark.RunIndexBuilder ' + \
-            ' --conf /home/mdindex/cartilage.properties' + \
-            ' --inputsDir /data/mdindex/lineitem1000/' + \
-            ' --samplesDir  /user/mdindex/lineitem1000/samples/ ' + \
+def create_robust_tree(mode='server'):
+    global conf
+    with cd(conf['HADOOPBIN']):
+        cmd = './hadoop jar $JAR perf.benchmark.RunIndexBuilder ' + \
+            ' --conf $CONF' + \
+            ' --inputsDir $INPUTSDIR' + \
+            ' --samplesDir $HDFSDIRsamples/' + \
             ' --method 2 ' + \
             ' --numReplicas 1' + \
-            ' --numBuckets 8192' + \
+            ' --numBuckets $NUMBUCKETS' + \
             (' --schema "%s"' % lineitem_schema) + \
             ' --numFields 16' + \
             ' > ~/logs/create_tree.log'
+        cmd = fill_cmd(cmd)
         run(cmd)
 
 @parallel
-def create_robust_tree_per_replica():
+def create_robust_tree_per_replica(mode='server'):
+    global conf
     with cd('~/hadoop-2.6.0/bin/'):
-        cmd = './hadoop jar /data/mdindex/jars/mdindex-all.jar perf.benchmark.RunIndexBuilder ' + \
-            ' --conf /user/mdindex/cartilage.properties' + \
-            ' --inputsDir /data/mdindex/lineitem1000/' + \
-            ' --samplesDir  /user/mdindex/lineitem1000/samples/ ' + \
+        cmd = './hadoop jar $JAR perf.benchmark.RunIndexBuilder ' + \
+            ' --conf $CONF' + \
+            ' --inputsDir $INPUTSDIR' + \
+            ' --samplesDir $HDFSDIRsamples/' + \
             ' --method 3 ' + \
             ' --numReplicas 3' + \
-            ' --numBuckets 8192' + \
+            ' --numBuckets $NUMBUCKETS' + \
             (' --schema "%s"' % lineitem_schema) + \
             ' --numFields 16' + \
             ' > ~/logs/create_replicated_tree.log'
+        cmd = fill_cmd(cmd)
         run(cmd)
 
 @parallel
-def write_partitions():
-    with cd('~/hadoop-2.6.0/bin/'):
-        cmd = './hadoop jar /data/mdindex/jars/mdindex-all.jar perf.benchmark.RunIndexBuilder ' + \
-            ' --conf /home/mdindex/cartilage.properties' + \
-            ' --inputsDir /data/mdindex/lineitem1000/' + \
-            ' --samplesDir  /user/mdindex/lineitem1000/samples/ ' + \
+def write_partitions(mode='server'):
+    global conf
+    with cd(conf['HADOOPBIN']):
+        cmd = './hadoop jar $JAR perf.benchmark.RunIndexBuilder ' + \
+            ' --conf $CONF' + \
+            ' --inputsDir $INPUTSDIR' + \
+            ' --samplesDir $HDFSDIRsamples/' + \
             ' --method 4 ' + \
             ' --numReplicas 1' + \
-            ' --numBuckets 8192' + \
+            ' --numBuckets $NUMBUCKETS' + \
             (' --schema "%s"' % lineitem_schema) + \
             ' --numFields 16' + \
             ' > ~/logs/write_partitions.log'
+        cmd = fill_cmd(cmd)
         run(cmd)
 
 @roles('master')
-def delete_partitions():
-    with cd('~/hadoop-2.6.0/bin/'):
-        bp = '/user/mdindex/lineitem1000/partitions'
+def delete_partitions(mode='server'):
+    global conf
+    with cd(conf['HADOOPBIN']):
+        bp = '%spartitions' % conf['HDFSDIR']
         paths = ''
         for i in xrange(0,10):
             paths += bp + str(i) + ' '
         cmd = './hadoop fs -rm -R ' + paths
+        cmd = fill_cmd(cmd)
         run(cmd)
 
 @parallel
@@ -252,4 +329,8 @@ def check_max_memory():
             ' --conf /home/mdindex/cartilage.properties' + \
             ' --method 5 '
         run(cmd)
+
+@roles('master')
+def test_dtach():
+    run('nohup sleep 100 >> /tmp/xxx 2>&1 < /dev/null &', pty=False)
 
