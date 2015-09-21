@@ -24,21 +24,22 @@ public class ByteMappedPartitionWriter extends PartitionWriter{
 
 	private Map<String,byte[]> buffer;
 	private Map<String,Integer> bufferOffset;
-	
-	public ByteMappedPartitionWriter(String partitionDir, int bufferPartitionSize, int maxBufferPartitions){
-		super(partitionDir, bufferPartitionSize, maxBufferPartitions);
+
+	public ByteMappedPartitionWriter(String partitionDir, int bufferPartitionSize){
+		super(partitionDir, bufferPartitionSize);
 		this.buffer = Maps.newHashMap();
 		this.bufferOffset = Maps.newHashMap();
 	}
-	
+
 	public ByteMappedPartitionWriter(String partitionDir){
 		super(partitionDir);
 		this.buffer = Maps.newHashMap();
 		this.bufferOffset = Maps.newHashMap();
 	}
 
+	@Override
 	public void writeToPartition(String partitionId, byte[] bytes, int b_offset, int b_length){
-		Integer offset = bufferOffset.get(partitionId);		
+		Integer offset = bufferOffset.get(partitionId);
 		if(offset==null){
 			//if(buffer.size() >= maxBufferPartitions)	// flush flushFraction of the partitions
 			//	flush((int)(flushFraction*maxBufferPartitions));
@@ -51,19 +52,21 @@ public class ByteMappedPartitionWriter extends PartitionWriter{
 			bufferOffset.put(partitionId, 0);
 			offset = 0;
 		}
-		
+
 		// write the bytes to buffer[partitionId] at position bufferOffset[partitionId]
 		System.arraycopy(bytes, b_offset, buffer.get(partitionId), offset, b_length);
 		buffer.get(partitionId)[offset+b_length] = '\n';
-		
+
 		// increment bufferOffset[partitionId] by the written number of bytes
 		bufferOffset.put(partitionId, offset + b_length + 1);
 	}
-	
+
+	@Override
 	protected OutputStream getOutputStream(String path){
 		throw new UnsupportedOperationException("no output streams in this method");
 	}
-	
+
+	@Override
 	public void createPartitionDir(){
 		try {
 			FileUtils.forceMkdir(new File(partitionDir));
@@ -71,17 +74,19 @@ public class ByteMappedPartitionWriter extends PartitionWriter{
 			e.printStackTrace();
 		}
 	}
-	
+
+	@Override
 	protected void flush(int numPartitions){
 		// sort the partitions by their size
 		List<Entry<String,Integer>> l = Lists.newArrayList(bufferOffset.entrySet());
-		Collections.sort(l, 
+		Collections.sort(l,
 				new Comparator<Entry<String,Integer>>(){
+					@Override
 					public int compare(Entry<String,Integer> o1, Entry<String,Integer> o2) {
 						return o2.getValue().compareTo(o1.getValue());
 					}
 		});
-		
+
 		// flush the numPartitions number of largest partitions in memory
 		for(int i=0; i<numPartitions; i++){
 			String key = l.get(i).getKey();
@@ -90,7 +95,7 @@ public class ByteMappedPartitionWriter extends PartitionWriter{
 			bufferOffset.remove(key);
 		}
 	}
-	
+
 	public void appendByteArray(String filename, byte[] bytes, int offset, int size){
 		try {
 			OutputStream os = new FileOutputStream(filename, true);
@@ -102,17 +107,17 @@ public class ByteMappedPartitionWriter extends PartitionWriter{
 			e.printStackTrace();
 		}
 	}
-	
-	
-	
-	
-	
-	
-	
+
+
+
+
+
+
+
 	public static void writeIOUtils(String filename, byte[] bytes){
 		IOUtils.appendByteArray(filename, bytes);
 	}
-	
+
 	static OutputStream os;
 	public static void writeBufferedWrite(String filename, byte[] bytes){
 		try {
@@ -124,7 +129,7 @@ public class ByteMappedPartitionWriter extends PartitionWriter{
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static void writeFileOS(String filename, byte[] bytes){
 		try {
 			OutputStream os = new FileOutputStream(filename, true);
@@ -137,30 +142,30 @@ public class ByteMappedPartitionWriter extends PartitionWriter{
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static void main(String[] args) {
 		String filename = "/Users/alekh/test";
 		int byteSize = 10*1024*1024;
 		int bufferWrites = 100;
-		
+
 		byte[] bytes = new byte[byteSize];
 		FileUtils.deleteQuietly(new File(filename));
-		
+
 		Random r = new Random(System.currentTimeMillis());
-		
-		long start = System.nanoTime();				
+
+		long start = System.nanoTime();
 		for(int i=0; i<bufferWrites; i++){
-			
+
 			bytes[r.nextInt(byteSize)] = 1;
-			
+
 			//writeIOUtils(filename, bytes);
 			writeBufferedWrite(filename, bytes);
 			//writeFileOS(filename, bytes);
 		}
-		
+
 		IOUtils.closeOutputStream(os);
-		System.out.println("Time take = "+(double)(System.nanoTime()-start)/1E9);
-		
+		System.out.println("Time take = "+(System.nanoTime()-start)/1E9);
+
 	}
-	
+
 }

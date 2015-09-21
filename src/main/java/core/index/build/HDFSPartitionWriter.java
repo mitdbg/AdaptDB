@@ -12,41 +12,32 @@ import core.utils.HDFSUtils;
 
 public class HDFSPartitionWriter extends PartitionWriter{
 
-	private String propertiesFile;
 	private ConfUtils conf;
 
 	private short replication = 3;
 	private FileSystem hdfs;
 
-	//private String zookeeperHosts;
-
-	public HDFSPartitionWriter(String partitionDir, int bufferPartitionSize, int maxBufferPartitions, short replication, String propertiesFile){
-		super(partitionDir, bufferPartitionSize, maxBufferPartitions);
+	public HDFSPartitionWriter(String partitionDir, int bufferPartitionSize, short replication, ConfUtils cfg){
+		super(partitionDir, bufferPartitionSize);
 		this.replication = replication;
-		createHDFS(propertiesFile);
+		createHDFS(cfg);
 	}
 
-	public HDFSPartitionWriter(String partitionDir, int bufferPartitionSize, int maxBufferPartitions, String propertiesFile){
-		super(partitionDir, bufferPartitionSize, maxBufferPartitions);
-		createHDFS(propertiesFile);
-	}
-
-	public HDFSPartitionWriter(String partitionDir, String propertiesFile) {
+	public HDFSPartitionWriter(String partitionDir, ConfUtils cfg) {
 		super(partitionDir);
-		createHDFS(propertiesFile);
+		createHDFS(cfg);
 	}
 
 	@Override
 	public PartitionWriter clone() throws CloneNotSupportedException {
 		HDFSPartitionWriter w = (HDFSPartitionWriter) super.clone();
-		w.createHDFS(propertiesFile);
+		w.createHDFS(this.conf);
 		return w;
 	}
 
-	private void createHDFS(String propertiesFile){
-		this.propertiesFile = propertiesFile;
-		this.conf = new ConfUtils(propertiesFile);
-		this.hdfs = HDFSUtils.getFS(conf.getHADOOP_HOME()+"/etc/hadoop/core-site.xml");
+	private void createHDFS(ConfUtils cfg){
+		this.conf = cfg;
+		this.hdfs = HDFSUtils.getFS(this.conf.getHADOOP_HOME()+"/etc/hadoop/core-site.xml");
 	}
 
 	@Override
@@ -74,7 +65,7 @@ public class HDFSPartitionWriter extends PartitionWriter{
 	@Override
 	public void flush(){
 		MDIndex.BucketCounts c = new MDIndex.BucketCounts(conf.getZOOKEEPER_HOSTS());
-		for(String k: buffer.keySet())
+		for (String k: buffer.keySet())
 			try {
 				c.setToBucketCount(Integer.parseInt(k), partitionRecordCount.get(k).intValue());
 			} catch (NumberFormatException e) {

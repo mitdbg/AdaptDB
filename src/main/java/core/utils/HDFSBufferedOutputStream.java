@@ -9,7 +9,7 @@ import org.apache.hadoop.fs.FileSystem;
  * Custom HDFS Output Stream implementation.
  * Buffers the writes and writes out the buffer once full.
  * Differs from using OutputStream with connection to HDFS in that it doesn't
- * maintain a persistant connection.
+ * maintain a persistent connection.
  * @author anil
  *
  */

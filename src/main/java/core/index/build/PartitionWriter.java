@@ -12,7 +12,6 @@ import com.google.common.collect.Maps;
 
 public abstract class PartitionWriter implements Cloneable{
 	protected int bufferPartitionSize = 1024*1024;
-	protected int maxBufferPartitions = 100;
 	protected String partitionDir;
 
 	protected Map<String, OutputStream> buffer;
@@ -20,10 +19,9 @@ public abstract class PartitionWriter implements Cloneable{
 	private long writingTime = 0;
 
 
-	public PartitionWriter(String partitionDir, int bufferPartitionSize, int maxBufferPartitions) {
+	public PartitionWriter(String partitionDir, int bufferPartitionSize) {
 		this(partitionDir);
 		this.bufferPartitionSize = bufferPartitionSize;
-		this.maxBufferPartitions = maxBufferPartitions;
 	}
 
 	public PartitionWriter(String partitionDir) {

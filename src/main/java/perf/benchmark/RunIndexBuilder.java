@@ -29,16 +29,14 @@ public class RunIndexBuilder {
 	CartilageIndexKey key;
 	IndexBuilder builder;
 
-	int numPartitions;
 	int partitionBufferSize;
 
 	String localPartitionDir;
 	String hdfsPartitionDir;
 
-	String propertiesFile;
 	ConfUtils cfg;
 
-	// Directory on local filesystem containing the inputs.
+	// Directory on local file system containing the inputs.
 	String inputsDir;
 
 	// Directory in HDFS containing the samples.
@@ -64,11 +62,9 @@ public class RunIndexBuilder {
 	int numFields = -1;
 
 	public void setUp(){
-		partitionBufferSize = 5*1024*1024;
-		numPartitions = 16;
+		partitionBufferSize = 2*1024*1024;
 
-		propertiesFile = BenchmarkSettings.conf;
-		cfg = new ConfUtils(propertiesFile);
+		cfg = new ConfUtils(BenchmarkSettings.conf);
 		hdfsPartitionDir = cfg.getHDFS_WORKING_DIR();
 
 		key = new CartilageIndexKey('|');
@@ -76,7 +72,7 @@ public class RunIndexBuilder {
 	}
 
 	private PartitionWriter getHDFSWriter(String partitionDir, short replication) {
-		return new HDFSPartitionWriter(partitionDir, partitionBufferSize, numPartitions, replication, propertiesFile);
+		return new HDFSPartitionWriter(partitionDir, partitionBufferSize, replication, this.cfg);
 	}
 
 //	public void testBuildKDMedianTreeBlockSamplingOnly(int scaleFactor) {

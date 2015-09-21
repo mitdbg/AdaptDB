@@ -156,7 +156,7 @@ public class TestChangingWorkload {
 	 * At the start we have probability of attr1 = 1, other = 0 and
 	 * at the end we have probability of attr1 = 0, other = 1
 	 */
-	public void testChangingQueries(){
+	public void testChangingQueries() {
 		int[] attrs = new int[]{6,10,12};
 		int numQueries = 30;
 		SparkQuery sq = new SparkQuery(cfg);
@@ -201,6 +201,6 @@ public class TestChangingWorkload {
 		TestChangingWorkload tcw = new TestChangingWorkload();
 		tcw.setUp();
 		tcw.testChangingQueries();
-		//tcw.testSwitchingSets();		
+		//tcw.testSwitchingSets();
 	}
 }

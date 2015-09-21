@@ -161,10 +161,11 @@ public class HDFSUtils {
 	public static OutputStream getHDFSOutputStream(FileSystem hdfs, String filename, short replication, int bufferSize) {
 		try {
 			Path path = new Path(filename);
-			if (hdfs.exists(path))
+			if (hdfs.exists(path)){
 				return new BufferedOutputStream(hdfs.append(path, replication), bufferSize);
-			else
+			} else {
 				return new BufferedOutputStream(hdfs.create(path, replication), bufferSize);
+			}
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException("Could not open the file:"+filename);
 		} catch (IOException e) {
