@@ -1,4 +1,5 @@
 package core.index;
+
 import org.apache.curator.framework.CuratorFramework;
 
 import core.index.key.CartilageIndexKeySet;
@@ -6,7 +7,6 @@ import core.index.key.MDIndexKey;
 import core.utils.CuratorUtils;
 import core.utils.Range;
 import core.utils.TypeUtils;
-
 
 /**
  *
@@ -18,10 +18,9 @@ public interface MDIndex {
 
 	/*
 	 * Placeholder class for the index leaves.
-	 *
 	 */
 
-	public final static class Bucket{
+	public final static class Bucket {
 		/* Actual Values */
 		int bucketId;
 		CartilageIndexKeySet sample;
@@ -42,12 +41,12 @@ public interface MDIndex {
 
 		public Bucket(int id) {
 			bucketId = id;
-			maxBucketId = Math.max(bucketId+1, maxBucketId);
+			maxBucketId = Math.max(bucketId + 1, maxBucketId);
 			bucketCount = -1;
 		}
 
 		public int getNumTuples() {
-			if(bucketCount == -1)
+			if (bucketCount == -1)
 				bucketCount = counters.getBucketCount(bucketId);
 			return bucketCount;
 		}
@@ -71,65 +70,62 @@ public interface MDIndex {
 		}
 	}
 
-	public static class BucketCounts{
+	public static class BucketCounts {
 
 		private CuratorFramework client;
 		private String counterPathBase = "/partition-count-";
 
-		public BucketCounts(String zookeeperHosts){
+		public BucketCounts(String zookeeperHosts) {
 			client = CuratorUtils.createAndStartClient(zookeeperHosts);
 		}
 
-		public BucketCounts(CuratorFramework client){
+		public BucketCounts(CuratorFramework client) {
 			this.client = client;
 		}
 
-		public void addToBucketCount(int bucketId, int count){
+		public void addToBucketCount(int bucketId, int count) {
 			CuratorUtils.addCounter(client, counterPathBase + bucketId, count);
 		}
 
-		public int getBucketCount(int bucketId){
+		public int getBucketCount(int bucketId) {
 			return CuratorUtils.getCounter(client, counterPathBase + bucketId);
 		}
 
-		public void setToBucketCount(int bucketId, int count){
+		public void setToBucketCount(int bucketId, int count) {
 			CuratorUtils.setCounter(client, counterPathBase + bucketId, count);
 		}
 
-		public void removeBucketCount(int bucketId){
+		public void removeBucketCount(int bucketId) {
 			CuratorUtils.setCounter(client, counterPathBase + bucketId, 0);
 		}
 
-		public void close(){
+		public void close() {
 			client.close();
 		}
 
-		public CuratorFramework getClient(){
+		public CuratorFramework getClient() {
 			return this.client;
 		}
 	}
 
 	public MDIndex clone() throws CloneNotSupportedException;
 
-
 	/*
-	 *
+	 * 
 	 * The Build phase of the index
-	 *
 	 */
-
 
 	/**
 	 * Initialize the index with the maximum number of buckets.
 	 *
-	 * @param numBuckets;
+	 * @param numBuckets
+	 *            ;
 	 */
 	public void initBuild(int numBuckets);
 
 	/*
-	 *
+	 * 
 	 * The Probe phase of the index
-	 *
 	 */
 	public void initProbe();
 

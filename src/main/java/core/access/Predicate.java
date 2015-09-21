@@ -1,15 +1,17 @@
-
 package core.access;
 
 import core.utils.TypeUtils.TYPE;
 import core.utils.TypeUtils;
 
 public class Predicate {
-	public enum PREDTYPE {LEQ, GEQ, GT, LT, EQ};
+	public enum PREDTYPE {
+		LEQ, GEQ, GT, LT, EQ
+	};
+
 	public int attribute;
-    public TYPE type;
-    public Object value;
-    public PREDTYPE predtype;
+	public TYPE type;
+	public Object value;
+	public PREDTYPE predtype;
 
 	public Predicate(int attr, TYPE t, Object val, PREDTYPE predtype) {
 		this.attribute = attr;
@@ -27,26 +29,33 @@ public class Predicate {
 	}
 
 	/**
-	 * Check if tuple with value for attribute is accepted (true) or rejected (false) by predicate
+	 * Check if tuple with value for attribute is accepted (true) or rejected
+	 * (false) by predicate
+	 * 
 	 * @param value
 	 * @return
 	 */
 	public boolean isRelevant(Object value) {
 		switch (this.predtype) {
 		case GEQ:
-			if (TypeUtils.compareTo(this.value, value, this.type) <= 0) return true;
+			if (TypeUtils.compareTo(this.value, value, this.type) <= 0)
+				return true;
 			break;
 		case LEQ:
-			if (TypeUtils.compareTo(this.value, value, this.type) >= 0) return true;
+			if (TypeUtils.compareTo(this.value, value, this.type) >= 0)
+				return true;
 			break;
 		case GT:
-			if (TypeUtils.compareTo(this.value, value, this.type) < 0) return true;
+			if (TypeUtils.compareTo(this.value, value, this.type) < 0)
+				return true;
 			break;
 		case LT:
-			if (TypeUtils.compareTo(this.value, value, this.type) < 0) return true;
+			if (TypeUtils.compareTo(this.value, value, this.type) < 0)
+				return true;
 			break;
 		case EQ:
-			if (TypeUtils.compareTo(this.value, value, this.type) == 0) return true;
+			if (TypeUtils.compareTo(this.value, value, this.type) == 0)
+				return true;
 		}
 
 		return false;
@@ -54,7 +63,9 @@ public class Predicate {
 
 	@Override
 	public String toString() {
-		return "" + attribute + ":" + type.toString() + ":" + TypeUtils.serializeValue(value, type) + ":" + predtype.toString();
+		return "" + attribute + ":" + type.toString() + ":"
+				+ TypeUtils.serializeValue(value, type) + ":"
+				+ predtype.toString();
 	}
 
 	public Object getHelpfulCutpoint() {
@@ -64,8 +75,8 @@ public class Predicate {
 		case LEQ:
 			return value;
 
-		// TODO: LT is still wrong in this implementation
-		// Avoid using LT anywhere in the evaluation
+			// TODO: LT is still wrong in this implementation
+			// Avoid using LT anywhere in the evaluation
 		case GEQ:
 		case LT:
 			return TypeUtils.deltaLess(value, type);

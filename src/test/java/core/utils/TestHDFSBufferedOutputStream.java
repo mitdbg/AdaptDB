@@ -18,9 +18,9 @@ public class TestHDFSBufferedOutputStream extends TestCase {
 	ConfUtils cfg;
 
 	@Override
-	public void setUp(){
+	public void setUp() {
 		this.cfg = new ConfUtils(BenchmarkSettings.conf);
-		this.testFile =  "/user/mdindex/testOutputStream.txt";
+		this.testFile = "/user/mdindex/testOutputStream.txt";
 		this.fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 		HDFSUtils.deleteFile(this.fs, this.testFile, false);
 	}
@@ -28,10 +28,11 @@ public class TestHDFSBufferedOutputStream extends TestCase {
 	public void testAppends() {
 		String outputString = "";
 		String testLine = "Lorem ipsum dolor sit amet\n";
-		OutputStream os = HDFSUtils.getBufferedHDFSOutputStream(this.fs, this.testFile, this.cfg.getHDFS_REPLICATION_FACTOR(), 10000);
+		OutputStream os = HDFSUtils.getBufferedHDFSOutputStream(this.fs,
+				this.testFile, this.cfg.getHDFS_REPLICATION_FACTOR(), 10000);
 
 		try {
-			for (int i=0; i<10; i++) {
+			for (int i = 0; i < 10; i++) {
 				os.write(testLine.getBytes());
 				outputString += testLine;
 			}
@@ -49,10 +50,11 @@ public class TestHDFSBufferedOutputStream extends TestCase {
 		String outputString = "";
 		String testLine = "Lorem ipsum dolor sit amet\n";
 		String actualLine = "Lorem ipsum dolor sit amet";
-		OutputStream os = HDFSUtils.getBufferedHDFSOutputStream(this.fs, this.testFile, this.cfg.getHDFS_REPLICATION_FACTOR(), 10000);
+		OutputStream os = HDFSUtils.getBufferedHDFSOutputStream(this.fs,
+				this.testFile, this.cfg.getHDFS_REPLICATION_FACTOR(), 10000);
 
 		try {
-			for (int i=0; i<10000; i++) {
+			for (int i = 0; i < 10000; i++) {
 				byte[] stringBytes = testLine.getBytes();
 				os.write(stringBytes, 0, stringBytes.length - 1);
 				outputString += actualLine;

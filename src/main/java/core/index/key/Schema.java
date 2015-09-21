@@ -3,8 +3,8 @@ package core.index.key;
 import core.utils.TypeUtils.TYPE;
 
 /**
- * Defines the schema of the table.
- * Needs to populated first.
+ * Defines the schema of the table. Needs to populated first.
+ * 
  * @author anil
  *
  */

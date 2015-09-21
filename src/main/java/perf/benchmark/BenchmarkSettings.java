@@ -1,6 +1,5 @@
 package perf.benchmark;
 
-
 public class BenchmarkSettings {
 	public static String conf = "/Users/anil/Dev/repos/mdindex/conf/cartilage.properties";
 

@@ -21,29 +21,28 @@ import core.access.iterator.IteratorRecord;
 import core.utils.ConfUtils;
 import core.utils.TypeUtils.*;
 
-public class TestSparkRecordReader extends TestCase{
+public class TestSparkRecordReader extends TestCase {
 
 	Configuration conf;
 	Job job;
-	
-	
-	public void setUp(){
-		
+
+	public void setUp() {
+
 		// query predicate and input data path
-		Predicate[] predicates = new Predicate[]{new Predicate(0, TYPE.INT, 3002147, PREDTYPE.LEQ)};
+		Predicate[] predicates = new Predicate[] { new Predicate(0, TYPE.INT,
+				3002147, PREDTYPE.LEQ) };
 		String hdfsPath = "hdfs://localhost:9000/user/alekh/dodo";
-		
-		
+
 		conf = new Configuration();
 		ConfUtils cfg = new ConfUtils(BenchmarkSettings.conf);
-		
+
 		SparkQueryConf queryConf = new SparkQueryConf(conf);
 		queryConf.setWorkingDir(hdfsPath);
 		queryConf.setPredicates(predicates);
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
 		queryConf.setMaxSplitSize(1024 / 64);
-		
+
 		try {
 			job = Job.getInstance(conf);
 			FileInputFormat.setInputPaths(job, hdfsPath);
@@ -51,18 +50,19 @@ public class TestSparkRecordReader extends TestCase{
 			e.printStackTrace();
 		}
 	}
-	
-	
-	public void testNextKeyValue(){
+
+	public void testNextKeyValue() {
 		int count = 0;
-		
+
 		try {
 			SparkInputFormat sparkInputFormat = new SparkInputFormat();
-			for(InputSplit split: sparkInputFormat.getSplits(job)){			
-				RecordReader<LongWritable, IteratorRecord> recordReader = sparkInputFormat.createRecordReader(split, null);				
-				TaskAttemptContext ctx = new TaskAttemptContextImpl(conf, new TaskAttemptID());
+			for (InputSplit split : sparkInputFormat.getSplits(job)) {
+				RecordReader<LongWritable, IteratorRecord> recordReader = sparkInputFormat
+						.createRecordReader(split, null);
+				TaskAttemptContext ctx = new TaskAttemptContextImpl(conf,
+						new TaskAttemptID());
 				recordReader.initialize(split, ctx);
-				while(recordReader.nextKeyValue()){
+				while (recordReader.nextKeyValue()) {
 					recordReader.getCurrentKey();
 					recordReader.getCurrentValue();
 					count++;
@@ -73,8 +73,8 @@ public class TestSparkRecordReader extends TestCase{
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		
-		System.out.println("Output record count = "+count);
+
+		System.out.println("Output record count = " + count);
 	}
-	
+
 }

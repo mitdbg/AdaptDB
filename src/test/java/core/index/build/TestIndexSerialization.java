@@ -19,7 +19,7 @@ public class TestIndexSerialization extends TestCase {
 		root.value = 3;
 
 		RNode l = new RNode();
-		RNode r  = new RNode();
+		RNode r = new RNode();
 
 		root.leftChild = l;
 		root.rightChild = r;
@@ -49,13 +49,14 @@ public class TestIndexSerialization extends TestCase {
 
 		t.maxBuckets = 4;
 		t.numAttributes = 4;
-		t.dimensionTypes = new TYPE[]{TYPE.INT, TYPE.DOUBLE, TYPE.STRING, TYPE.LONG};
+		t.dimensionTypes = new TYPE[] { TYPE.INT, TYPE.DOUBLE, TYPE.STRING,
+				TYPE.LONG };
 
 		byte[] treeBytes = t.marshall();
 
 		RobustTreeHs clone = new RobustTreeHs();
 		clone.unmarshall(treeBytes);
 
-		assert(t == clone);
+		assert (t == clone);
 	}
 }

@@ -24,28 +24,29 @@ import core.utils.TypeUtils.TYPE;
 
 /**
  * Finds the best index tree for a given workload
+ * 
  * @author anil
  *
  */
 public class WorkloadAnalyser {
 	public class Candidate {
 		public int attribute;
-	    public TYPE type;
-	    public Object value;
+		public TYPE type;
+		public Object value;
 
-	    @Override
+		@Override
 		public boolean equals(Object obj) {
-	    	if (obj instanceof Candidate) {
-	    		Candidate objC = (Candidate) obj;
-	    		if (objC.attribute == attribute) {
-	    			if (TypeUtils.compareTo(value, objC.value, type) == 0) {
-	    				return true;
-	    			}
-	    		}
-	    	}
+			if (obj instanceof Candidate) {
+				Candidate objC = (Candidate) obj;
+				if (objC.attribute == attribute) {
+					if (TypeUtils.compareTo(value, objC.value, type) == 0) {
+						return true;
+					}
+				}
+			}
 
-	    	return false;
-	    }
+			return false;
+		}
 	}
 
 	List<Query> queryWindow = new ArrayList<Query>();
@@ -58,7 +59,8 @@ public class WorkloadAnalyser {
 	/**
 	 *
 	 * @param hdfsHomeDir
-	 * @param depth depth of index tree
+	 * @param depth
+	 *            depth of index tree
 	 */
 	public WorkloadAnalyser(ConfUtils conf, int depth, int SF) {
 		String hadoopHome = conf.getHADOOP_HOME();
@@ -66,9 +68,10 @@ public class WorkloadAnalyser {
 		String pathToQueries = hdfsHomeDir + "/queries";
 		String pathToSample = hdfsHomeDir + "/sample";
 
-		totalNumTuples = ((float)6000000) * SF;
+		totalNumTuples = ((float) 6000000) * SF;
 
-		FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
+		FileSystem fs = HDFSUtils.getFS(hadoopHome
+				+ "/etc/hadoop/core-site.xml");
 		try {
 			if (fs.exists(new Path(pathToQueries))) {
 				byte[] queryBytes = HDFSUtils.readFile(fs, pathToQueries);
@@ -85,12 +88,12 @@ public class WorkloadAnalyser {
 			e.printStackTrace();
 		}
 
-		for (int i=0; i<queryWindow.size(); i++) {
+		for (int i = 0; i < queryWindow.size(); i++) {
 			Query k = queryWindow.get(i);
 			if (k instanceof FilterQuery) {
 				FilterQuery fq = (FilterQuery) k;
 				Predicate[] ps = fq.getPredicates();
-				for (int j=0; j<ps.length; j++) {
+				for (int j = 0; j < ps.length; j++) {
 					Candidate c = new Candidate();
 					c.attribute = ps[j].attribute;
 					c.type = ps[j].type;
@@ -128,8 +131,8 @@ public class WorkloadAnalyser {
 
 		double numAccessedOld = getNumTuplesAccessed(n);
 
-        double benefit = 0;
-        Candidate cChosen = null;
+		double benefit = 0;
+		Candidate cChosen = null;
 
 		n.bucket = null; // Needed for making sure this is not treated as bucket
 		n.leftChild = new RNode();
@@ -139,7 +142,7 @@ public class WorkloadAnalyser {
 		n.leftChild.bucket = new Bucket();
 		n.rightChild.bucket = new Bucket();
 
-		for (Candidate c: candidates) {
+		for (Candidate c : candidates) {
 			if (!Optimizer.checkValidToRoot(n, c.attribute, c.type, c.value)) {
 				continue;
 			}
@@ -149,17 +152,20 @@ public class WorkloadAnalyser {
 			n.value = c.value;
 
 			sample.sort(n.attribute);
-			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample.splitAt(n.attribute, n.value);
-			n.leftChild.bucket.estimatedTuples = numEstimatedTuples(halves.first.size());
-			n.rightChild.bucket.estimatedTuples = numEstimatedTuples(halves.second.size());
+			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample
+					.splitAt(n.attribute, n.value);
+			n.leftChild.bucket.estimatedTuples = numEstimatedTuples(halves.first
+					.size());
+			n.rightChild.bucket.estimatedTuples = numEstimatedTuples(halves.second
+					.size());
 
-	        double numAccessedNew = getNumTuplesAccessed(n);
-	        double extraBenefit = numAccessedOld - numAccessedNew;
+			double numAccessedNew = getNumTuplesAccessed(n);
+			double extraBenefit = numAccessedOld - numAccessedNew;
 
-	        if (extraBenefit > benefit) {
-	        	benefit = extraBenefit;
-	        	cChosen = c;
-	        }
+			if (extraBenefit > benefit) {
+				benefit = extraBenefit;
+				cChosen = c;
+			}
 		}
 
 		if (cChosen == null) {
@@ -171,17 +177,18 @@ public class WorkloadAnalyser {
 			n.type = cChosen.type;
 			n.value = cChosen.value;
 
-			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample.splitAt(n.attribute, n.value);
+			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample
+					.splitAt(n.attribute, n.value);
 			n.leftChild.bucket = null;
 			n.rightChild.bucket = null;
 			buildOptTree(n.leftChild, halves.first, depth - 1);
-			buildOptTree(n.rightChild, halves.second, depth -1);
+			buildOptTree(n.rightChild, halves.second, depth - 1);
 		}
 	}
 
 	public float getNumTuplesAccessed(RNode changed) {
 		float numTuples = 0;
-		for (int i=queryWindow.size() - 1; i >= 0; i--) {
+		for (int i = queryWindow.size() - 1; i >= 0; i--) {
 			Query q = queryWindow.get(i);
 			numTuples += Optimizer.getNumTuplesAccessed(changed, q, false);
 		}
@@ -191,7 +198,7 @@ public class WorkloadAnalyser {
 
 	public List<Float> getPerQueryCost(RNode root) {
 		List<Float> costs = new ArrayList<Float>();
-		for (int i=0; i < queryWindow.size(); i++) {
+		for (int i = 0; i < queryWindow.size(); i++) {
 			Query q = queryWindow.get(i);
 			costs.add(Optimizer.getNumTuplesAccessed(root, q, false));
 		}

@@ -9,9 +9,9 @@ import java.io.OutputStream;
 
 import org.apache.commons.io.FileUtils;
 
-public class BufferedPartitionWriter extends PartitionWriter{
+public class BufferedPartitionWriter extends PartitionWriter {
 
-	public BufferedPartitionWriter(String partitionDir, int bufferPartitionSize){
+	public BufferedPartitionWriter(String partitionDir, int bufferPartitionSize) {
 		super(partitionDir, bufferPartitionSize);
 	}
 
@@ -20,16 +20,17 @@ public class BufferedPartitionWriter extends PartitionWriter{
 	}
 
 	@Override
-	protected OutputStream getOutputStream(String path){
+	protected OutputStream getOutputStream(String path) {
 		try {
-			return new BufferedOutputStream(new FileOutputStream(path, true), bufferPartitionSize);
+			return new BufferedOutputStream(new FileOutputStream(path, true),
+					bufferPartitionSize);
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException("Failed to create an output stream!");
 		}
 	}
 
 	@Override
-	public void createPartitionDir(){
+	public void createPartitionDir() {
 		try {
 			FileUtils.forceMkdir(new File(partitionDir));
 		} catch (IOException e) {

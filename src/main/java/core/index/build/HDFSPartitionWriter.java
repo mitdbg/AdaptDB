@@ -10,14 +10,15 @@ import core.index.MDIndex;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 
-public class HDFSPartitionWriter extends PartitionWriter{
+public class HDFSPartitionWriter extends PartitionWriter {
 
 	private ConfUtils conf;
 
 	private short replication = 3;
 	private FileSystem hdfs;
 
-	public HDFSPartitionWriter(String partitionDir, int bufferPartitionSize, short replication, ConfUtils cfg){
+	public HDFSPartitionWriter(String partitionDir, int bufferPartitionSize,
+			short replication, ConfUtils cfg) {
 		super(partitionDir, bufferPartitionSize);
 		this.replication = replication;
 		createHDFS(cfg);
@@ -35,13 +36,14 @@ public class HDFSPartitionWriter extends PartitionWriter{
 		return w;
 	}
 
-	private void createHDFS(ConfUtils cfg){
+	private void createHDFS(ConfUtils cfg) {
 		this.conf = cfg;
-		this.hdfs = HDFSUtils.getFS(this.conf.getHADOOP_HOME()+"/etc/hadoop/core-site.xml");
+		this.hdfs = HDFSUtils.getFS(this.conf.getHADOOP_HOME()
+				+ "/etc/hadoop/core-site.xml");
 	}
 
 	@Override
-	public void createPartitionDir(){
+	public void createPartitionDir() {
 		try {
 			hdfs.mkdirs(new Path(partitionDir));
 		} catch (IOException e) {
@@ -49,7 +51,7 @@ public class HDFSPartitionWriter extends PartitionWriter{
 		}
 	}
 
-	public void deletePartitionDir(){
+	public void deletePartitionDir() {
 		try {
 			hdfs.delete(new Path(partitionDir), true);
 		} catch (IOException e) {
@@ -58,16 +60,19 @@ public class HDFSPartitionWriter extends PartitionWriter{
 	}
 
 	@Override
-	protected OutputStream getOutputStream(String path){
-		return HDFSUtils.getHDFSOutputStream(hdfs, path, replication, bufferPartitionSize);
+	protected OutputStream getOutputStream(String path) {
+		return HDFSUtils.getHDFSOutputStream(hdfs, path, replication,
+				bufferPartitionSize);
 	}
 
 	@Override
-	public void flush(){
-		MDIndex.BucketCounts c = new MDIndex.BucketCounts(conf.getZOOKEEPER_HOSTS());
-		for (String k: buffer.keySet())
+	public void flush() {
+		MDIndex.BucketCounts c = new MDIndex.BucketCounts(
+				conf.getZOOKEEPER_HOSTS());
+		for (String k : buffer.keySet())
 			try {
-				c.setToBucketCount(Integer.parseInt(k), partitionRecordCount.get(k).intValue());
+				c.setToBucketCount(Integer.parseInt(k), partitionRecordCount
+						.get(k).intValue());
 			} catch (NumberFormatException e) {
 
 			}

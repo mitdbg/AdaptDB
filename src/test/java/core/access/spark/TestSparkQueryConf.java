@@ -8,7 +8,7 @@ import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.utils.TypeUtils.*;
 
-public class TestSparkQueryConf extends TestCase{
+public class TestSparkQueryConf extends TestCase {
 
 	SparkQueryConf sparkConf;
 	String dummyDataset;
@@ -16,7 +16,7 @@ public class TestSparkQueryConf extends TestCase{
 	Predicate[] dummyPredicates;
 
 	@Override
-	public void setUp(){
+	public void setUp() {
 		Configuration conf = new Configuration();
 		sparkConf = new SparkQueryConf(conf);
 
@@ -26,15 +26,16 @@ public class TestSparkQueryConf extends TestCase{
 		dummyPredicates[0] = new Predicate(0, TYPE.INT, 3002147, PREDTYPE.LEQ);
 	}
 
-	public void testDataset(){
+	public void testDataset() {
 		sparkConf.setWorkingDir(dummyDataset);
 		assertEquals(dummyDataset, sparkConf.getWorkingDir());
 	}
 
-	public void testPredicates(){
+	public void testPredicates() {
 		sparkConf.setPredicates(dummyPredicates);
 		Predicate[] actualPredicates = sparkConf.getPredicates();
-		for(int i=0; i<dummyPredicates.length; i++)
-			assertEquals(dummyPredicates[i].toString(), actualPredicates[i].toString());
+		for (int i = 0; i < dummyPredicates.length; i++)
+			assertEquals(dummyPredicates[i].toString(),
+					actualPredicates[i].toString());
 	}
 }

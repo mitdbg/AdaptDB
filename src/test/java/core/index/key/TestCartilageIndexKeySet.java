@@ -5,27 +5,26 @@ import java.util.List;
 
 import junit.framework.TestCase;
 
-public class TestCartilageIndexKeySet extends TestCase{
+public class TestCartilageIndexKeySet extends TestCase {
 
 	private CartilageIndexKey key;
 	private CartilageIndexKeySet keyset;
-
 
 	int[] keyIds;
 	String tuple1, tuple2;
 	String datafile;
 
 	@Override
-	public void setUp(){
+	public void setUp() {
 		tuple1 = "1|1552|93|1|17|24710.35|0.04|0.02|N|O|1996-03-13|1996-02-12|1996-03-22|DELIVER IN PERSON|TRUCK|egular courts above the";
 		tuple2 = "1|674|75|2|36|56688.12|0.09|0.06|N|O|1996-04-12|1996-02-28|1996-04-20|TAKE BACK RETURN|MAIL|ly final dependencies: slyly bold ";
 
-		keyIds = new int[]{2,3};
+		keyIds = new int[] { 2, 3 };
 		key = new CartilageIndexKey('|', keyIds);
 		keyset = new CartilageIndexKeySet();
 	}
 
-	private void doInsert(){
+	private void doInsert() {
 		key.setBytes(tuple1.getBytes());
 		keyset.insert(key);
 		key.setBytes(tuple2.getBytes());
@@ -33,23 +32,23 @@ public class TestCartilageIndexKeySet extends TestCase{
 		printKeysetValues();
 	}
 
-	private void doCheck(Object[] obj, String tuple){
+	private void doCheck(Object[] obj, String tuple) {
 		String[] attrs = tuple.split("\\|");
 		assertEquals(obj.length, keyIds.length);
-		for(int i=0;i<keyIds.length;i++)
+		for (int i = 0; i < keyIds.length; i++)
 			assertEquals(obj[i].toString(), attrs[keyIds[i]]);
 	}
 
-	private void printKeysetValues(){
+	private void printKeysetValues() {
 		System.out.println();
-		for(Object[] values: keyset.getValues()){
-			for(Object obj: values)
-				System.out.print(obj+",");
+		for (Object[] values : keyset.getValues()) {
+			for (Object obj : values)
+				System.out.print(obj + ",");
 			System.out.println();
 		}
 	}
 
-	public void testInsert(){
+	public void testInsert() {
 		doInsert();
 
 		List<Object[]> values = keyset.getValues();
@@ -58,10 +57,10 @@ public class TestCartilageIndexKeySet extends TestCase{
 		doCheck(values.get(0), tuple1);
 		doCheck(values.get(1), tuple2);
 
-		//System.out.println(values);
+		// System.out.println(values);
 	}
 
-	public void testSort(){
+	public void testSort() {
 		doInsert();
 
 		keyset.sort(0);
@@ -80,12 +79,12 @@ public class TestCartilageIndexKeySet extends TestCase{
 		doCheck(values.get(1), tuple2);
 	}
 
-	public void testIterate(){
+	public void testIterate() {
 		doInsert();
 
 		System.out.println();
 		Iterator<CartilageIndexKey> itr = keyset.iterator();
-		while(itr.hasNext()){
+		while (itr.hasNext()) {
 			CartilageIndexKey k = itr.next();
 			System.out.println(k.getKeyString());
 		}

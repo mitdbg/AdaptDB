@@ -17,8 +17,10 @@ import core.utils.ReflectionUtils;
 
 public class PartitionIterator implements Iterator<IteratorRecord> {
 
-	public static enum ITERATOR {SCAN,FILTER,REPART};
-	
+	public static enum ITERATOR {
+		SCAN, FILTER, REPART
+	};
+
 	protected IteratorRecord record;
 	protected byte[] recordBytes;
 	protected byte[] brokenRecordBytes;
@@ -30,21 +32,20 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 	protected int bytesLength, offset, previous;
 
 	protected Partition partition;
-	
+
 	protected Predicate[] predicates;
 
-	public PartitionIterator(){
+	public PartitionIterator() {
 	}
-	
-	public PartitionIterator(String itrString){
+
+	public PartitionIterator(String itrString) {
 	}
-	
-	
-	public void setPartition(Partition partition){
+
+	public void setPartition(Partition partition) {
 		this.partition = partition;
 		record = new IteratorRecord();
 		bytes = partition.getNextBytes();
-		//bytesLength = partition.getSize();
+		// bytesLength = partition.getSize();
 		bytesLength = bytes == null ? 0 : bytes.length;
 		offset = 0;
 		previous = 0;
@@ -52,47 +53,49 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 	}
 
 	public boolean hasNext() {
-		for ( ; offset<bytesLength; offset++ ){
-	    	if(bytes[offset]==newLine){
-	    		//record.setBytes(bytes, previous, offset-previous);
-	    		recordBytes = ArrayUtils.subarray(bytes, previous, offset);
-				if(brokenRecordBytes!=null) {
-					recordBytes = BinaryUtils.concatenate(brokenRecordBytes, recordBytes);
+		for (; offset < bytesLength; offset++) {
+			if (bytes[offset] == newLine) {
+				// record.setBytes(bytes, previous, offset-previous);
+				recordBytes = ArrayUtils.subarray(bytes, previous, offset);
+				if (brokenRecordBytes != null) {
+					recordBytes = BinaryUtils.concatenate(brokenRecordBytes,
+							recordBytes);
 					brokenRecordBytes = null;
 				}
 				try {
 					record.setBytes(recordBytes);
 				} catch (ArrayIndexOutOfBoundsException e) {
-					System.out.println("Index out of bounds while setting bytes: "+(new String(recordBytes)));
+					System.out
+							.println("Index out of bounds while setting bytes: "
+									+ (new String(recordBytes)));
 					throw e;
 				}
-	    		previous = ++offset;
-	    		if(isRelevant(record)){
-	    			//System.out.println("relevant record found ..");
-	    			return true;
-	    		}
-	    		else
-	    			continue;
-	    	}
+				previous = ++offset;
+				if (isRelevant(record)) {
+					// System.out.println("relevant record found ..");
+					return true;
+				} else
+					continue;
+			}
 		}
-		
-		if(previous < bytesLength)
-			brokenRecordBytes = BinaryUtils.getBytes(bytes, previous, bytesLength-previous);
+
+		if (previous < bytesLength)
+			brokenRecordBytes = BinaryUtils.getBytes(bytes, previous,
+					bytesLength - previous);
 		else
 			brokenRecordBytes = null;
 
 		bytes = partition == null ? null : partition.getNextBytes();
-		if(bytes!=null){
+		if (bytes != null) {
 			bytesLength = bytes.length;
 			offset = 0;
 			previous = 0;
 			return hasNext();
-		}
-		else
+		} else
 			return false;
 	}
 
-	protected boolean isRelevant(IteratorRecord record){
+	protected boolean isRelevant(IteratorRecord record) {
 		return true;
 	}
 
@@ -103,24 +106,23 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 	public IteratorRecord next() {
 		return record;
 	}
-	
+
 	public void finish() {
 	}
-	
-	public void write(DataOutput out) throws IOException{
+
+	public void write(DataOutput out) throws IOException {
 	}
-	
-	public void readFields(DataInput in) throws IOException{
+
+	public void readFields(DataInput in) throws IOException {
 	}
-	
-//	public static PartitionIterator read(DataInput in) throws IOException {
-//		PartitionIterator it = new PartitionIterator();
-//        it.readFields(in);
-//        return it;
-//	}
-	
-	
-	public static String iteratorToString(PartitionIterator itr){
+
+	// public static PartitionIterator read(DataInput in) throws IOException {
+	// PartitionIterator it = new PartitionIterator();
+	// it.readFields(in);
+	// return it;
+	// }
+
+	public static String iteratorToString(PartitionIterator itr) {
 		ByteArrayDataOutput dat = ByteStreams.newDataOutput();
 		try {
 			itr.write(dat);
@@ -128,11 +130,12 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 			e.printStackTrace();
 			throw new RuntimeException("Failed to serialize the partitioner");
 		}
-		return itr.getClass().getName() +"@"+ new String(dat.toByteArray());		
+		return itr.getClass().getName() + "@" + new String(dat.toByteArray());
 	}
-	
-	public static PartitionIterator stringToIterator(String itrString){
-		String[] tokens = itrString.split("@",2);
-		return (PartitionIterator) ReflectionUtils.getInstance(tokens[0], new Class<?>[]{String.class}, new Object[]{tokens[1]});
+
+	public static PartitionIterator stringToIterator(String itrString) {
+		String[] tokens = itrString.split("@", 2);
+		return (PartitionIterator) ReflectionUtils.getInstance(tokens[0],
+				new Class<?>[] { String.class }, new Object[] { tokens[1] });
 	}
 }

@@ -9,7 +9,7 @@ import org.apache.hadoop.fs.PathFilter;
 import core.access.AccessMethod;
 import core.access.Predicate;
 
-public class SparkPathFilter implements PathFilter, Configurable  {
+public class SparkPathFilter implements PathFilter, Configurable {
 
 	protected Configuration conf;
 	protected AccessMethod am;
@@ -24,8 +24,9 @@ public class SparkPathFilter implements PathFilter, Configurable  {
 	}
 
 	public boolean accept(Path arg0) {
-		for(Predicate predicate: predicates)
-			if(!am.isRelevant(FilenameUtils.getName(arg0.toString()), predicate))
+		for (Predicate predicate : predicates)
+			if (!am.isRelevant(FilenameUtils.getName(arg0.toString()),
+					predicate))
 				return false;
 		return true;
 	}

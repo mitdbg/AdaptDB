@@ -33,7 +33,7 @@ public class InputReader {
 
 	public boolean firstPass;
 
-	public InputReader(MDIndex index, CartilageIndexKey key){
+	public InputReader(MDIndex index, CartilageIndexKey key) {
 		this.index = index;
 		this.key = key;
 		this.firstPass = true;
@@ -41,11 +41,13 @@ public class InputReader {
 		bucketIdTime = 0;
 	}
 
-	private void initScan(int bufferSize){
+	private void initScan(int bufferSize) {
 		byteArray = new byte[bufferSize];
 		brokenLine = null;
 		bb = ByteBuffer.wrap(byteArray);
-		nRead=0; byteArrayIdx=0; previous=0;
+		nRead = 0;
+		byteArrayIdx = 0;
+		previous = 0;
 		hasLeftover = false;
 
 		totalLineSize = 0;
@@ -56,14 +58,14 @@ public class InputReader {
 		clearTime = 0;
 	}
 
-	public void scan(String filename){
+	public void scan(String filename) {
 		scan(filename, null);
 	}
 
-	public void scan(String filename, PartitionWriter writer){
+	public void scan(String filename, PartitionWriter writer) {
 		initScan(bufferSize);
 		long sStartTime = System.nanoTime(), temp1;
-		long readTime=0, processTime=0;
+		long readTime = 0, processTime = 0;
 		FileChannel ch = IOUtils.openFileChannel(filename);
 		int counter = 0;
 		try {
@@ -75,7 +77,7 @@ public class InputReader {
 				if (!allGood)
 					break;
 
-				if(nRead==0)
+				if (nRead == 0)
 					continue;
 
 				counter++;
@@ -86,15 +88,16 @@ public class InputReader {
 				processTime += System.nanoTime() - temp1;
 
 				long startTime = System.nanoTime();
-			    if(previous < nRead){	// is there a broken line in the end?
-			    	brokenLine = BinaryUtils.getBytes(byteArray, previous, nRead-previous);
-			    	hasLeftover = true;
-			    }
-			    brokenTime += System.nanoTime() - startTime;
+				if (previous < nRead) { // is there a broken line in the end?
+					brokenLine = BinaryUtils.getBytes(byteArray, previous,
+							nRead - previous);
+					hasLeftover = true;
+				}
+				brokenTime += System.nanoTime() - startTime;
 
-			    startTime = System.nanoTime();
-			    bb.clear();
-			    clearTime += System.nanoTime() - startTime;
+				startTime = System.nanoTime();
+				bb.clear();
+				clearTime += System.nanoTime() - startTime;
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -103,24 +106,28 @@ public class InputReader {
 		firstPass = false;
 
 		System.out.println("counter:" + counter);
-		System.out.println("SCAN: Total Time taken = "+(System.nanoTime()-sStartTime)/1E9+" sec");
+		System.out.println("SCAN: Total Time taken = "
+				+ (System.nanoTime() - sStartTime) / 1E9 + " sec");
 		System.out.println("Line count = " + lineCount);
-		System.out.println("Average line size = " + (double) totalLineSize / lineCount);
-		System.out.println("SCAN: Read into buffer time = " + readTime/1E9);
-		System.out.println("SCAN: Process buffer time = " + processTime/1E9);
+		System.out.println("Average line size = " + (double) totalLineSize
+				/ lineCount);
+		System.out.println("SCAN: Read into buffer time = " + readTime / 1E9);
+		System.out.println("SCAN: Process buffer time = " + processTime / 1E9);
 
-		System.out.println("SCAN: Array copy time = " + arrayCopyTime/1E9);
-		System.out.println("SCAN: Get bucket ID time = " + bucketIdTime/1E9);
-		System.out.println("SCAN: Broken line fix time = " + brokenTime/1E9);
-		System.out.println("SCAN: Buffer clear time = " + clearTime/1E9);
+		System.out.println("SCAN: Array copy time = " + arrayCopyTime / 1E9);
+		System.out.println("SCAN: Get bucket ID time = " + bucketIdTime / 1E9);
+		System.out.println("SCAN: Broken line fix time = " + brokenTime / 1E9);
+		System.out.println("SCAN: Buffer clear time = " + clearTime / 1E9);
 	}
 
 	/**
 	 * Picks a block with samplingRate probability
+	 * 
 	 * @param filename
 	 * @param samplingRate
 	 */
-	public void scanWithBlockSampling(String filename, double samplingRate, CartilageIndexKeySet sample) {
+	public void scanWithBlockSampling(String filename, double samplingRate,
+			CartilageIndexKeySet sample) {
 		initScan(blockSampleSize);
 
 		FileChannel ch = IOUtils.openFileChannel(filename);
@@ -131,11 +138,12 @@ public class InputReader {
 			}
 			ch.position(position);
 			while ((nRead = ch.read(bb)) != -1) {
-				if(nRead==0)
+				if (nRead == 0)
 					continue;
 
 				byteArrayIdx = previous = 0;
-				while (byteArrayIdx < nRead && byteArray[byteArrayIdx] != newLine) {
+				while (byteArrayIdx < nRead
+						&& byteArray[byteArrayIdx] != newLine) {
 					byteArrayIdx++;
 				}
 				previous = ++byteArrayIdx;
@@ -147,7 +155,8 @@ public class InputReader {
 					position += blockSampleSize;
 				}
 				ch.position(position);
-			};
+			}
+			;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -155,69 +164,76 @@ public class InputReader {
 		firstPass = false;
 	}
 
-	private void processByteBuffer(PartitionWriter writer, CartilageIndexKeySet sample) {
+	private void processByteBuffer(PartitionWriter writer,
+			CartilageIndexKeySet sample) {
 		long startTime;
-		for ( ; byteArrayIdx<nRead; byteArrayIdx++ ){
-	    	if(byteArray[byteArrayIdx]==newLine){
+		for (; byteArrayIdx < nRead; byteArrayIdx++) {
+			if (byteArray[byteArrayIdx] == newLine) {
 
-	    		totalLineSize += byteArrayIdx-previous;
-	    		if(hasLeftover){
-	    			startTime = System.nanoTime();
-	    			byte[] a = new byte[brokenLine.length + byteArrayIdx-previous];
-	    			System.arraycopy(brokenLine, 0, a, 0, brokenLine.length);
-	    			System.arraycopy(byteArray, previous, a, brokenLine.length, byteArrayIdx-previous);
-	    			key.setBytes(a);
-	    			arrayCopyTime += System.nanoTime() - startTime;
+				totalLineSize += byteArrayIdx - previous;
+				if (hasLeftover) {
+					startTime = System.nanoTime();
+					byte[] a = new byte[brokenLine.length + byteArrayIdx
+							- previous];
+					System.arraycopy(brokenLine, 0, a, 0, brokenLine.length);
+					System.arraycopy(byteArray, previous, a, brokenLine.length,
+							byteArrayIdx - previous);
+					key.setBytes(a);
+					arrayCopyTime += System.nanoTime() - startTime;
 
-	    			totalLineSize += brokenLine.length;
-	    			hasLeftover = false;
+					totalLineSize += brokenLine.length;
+					hasLeftover = false;
 
-	    			if(writer!=null){
+					if (writer != null) {
 						startTime = System.nanoTime();
 						String bucketId = index.getBucketId(key).toString();
 						bucketIdTime += System.nanoTime() - startTime;
-	    				writer.writeToPartition(bucketId, a, 0, a.length);
-	    			}
+						writer.writeToPartition(bucketId, a, 0, a.length);
+					}
 				} else {
-					key.setBytes(byteArray, previous, byteArrayIdx-previous);
-	    			if(writer!=null){
+					key.setBytes(byteArray, previous, byteArrayIdx - previous);
+					if (writer != null) {
 						startTime = System.nanoTime();
 						String bucketId = index.getBucketId(key).toString();
 						bucketIdTime += System.nanoTime() - startTime;
-	    				writer.writeToPartition(bucketId, byteArray, previous, byteArrayIdx-previous);
-	    			}
-	    		}
+						writer.writeToPartition(bucketId, byteArray, previous,
+								byteArrayIdx - previous);
+					}
+				}
 
-	    		previous = ++byteArrayIdx;
+				previous = ++byteArrayIdx;
 
-	    		lineCount++;
+				lineCount++;
 
-	    		if (sample != null)
-	    			sample.insert(key);
-	    	}
-	    }
+				if (sample != null)
+					sample.insert(key);
+			}
+		}
 	}
 
 	public static void main(String[] args) {
-		java.nio.file.Path file = Paths.get("/Users/anil/Dev/repos/tpch-dbgen/lineitem.tbl");
+		java.nio.file.Path file = Paths
+				.get("/Users/anil/Dev/repos/tpch-dbgen/lineitem.tbl");
 		long t = System.nanoTime();
-		if(Files.exists(file) && Files.isReadable(file)) {
-		    try {
-		        // File reader
-		        BufferedReader reader = Files.newBufferedReader(file, Charset.defaultCharset());
+		if (Files.exists(file) && Files.isReadable(file)) {
+			try {
+				// File reader
+				BufferedReader reader = Files.newBufferedReader(file,
+						Charset.defaultCharset());
 
-		        String line;
-		        long count = 0;
-		        // read each line
-		        while((line = reader.readLine()) != null) {
-		        	count += line.length();
-		        }
-		        reader.close();
-		        System.out.println("String length is : " + count);
-		    } catch (Exception e) {
-		        e.printStackTrace();
-		    }
+				String line;
+				long count = 0;
+				// read each line
+				while ((line = reader.readLine()) != null) {
+					count += line.length();
+				}
+				reader.close();
+				System.out.println("String length is : " + count);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
-		System.out.println("SCAN: Total Time taken = "+(System.nanoTime()-t)/1E9+" sec");
+		System.out.println("SCAN: Total Time taken = "
+				+ (System.nanoTime() - t) / 1E9 + " sec");
 	}
 }

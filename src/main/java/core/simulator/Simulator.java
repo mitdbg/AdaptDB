@@ -27,38 +27,42 @@ public class Simulator {
 	final long TUPLES_PER_SF = 6000000;
 	ConfUtils cfg;
 
-	public void setUp(){
+	public void setUp() {
 		sf = 1000;
 		cfg = new ConfUtils(BenchmarkSettings.conf);
 		this.cleanUp();
 		opt = new Optimizer(cfg);
 		opt.loadIndex();
 	}
-	
+
 	public void cleanUp() {
 		// Cleanup queries file - to remove past query workload
 		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
-							cfg.getHDFS_WORKING_DIR() + "/queries", false);
+				cfg.getHDFS_WORKING_DIR() + "/queries", false);
 
-		CuratorFramework client = CuratorUtils.createAndStartClient(cfg.getZOOKEEPER_HOSTS());
+		CuratorFramework client = CuratorUtils.createAndStartClient(cfg
+				.getZOOKEEPER_HOSTS());
 		CuratorUtils.deleteAll(client, "/", "partition-");
-		CuratorUtils.stopClient(client);		
+		CuratorUtils.stopClient(client);
 	}
 
-	public void testRunQuery(){
-		Predicate[] predicates = new Predicate[]{new Predicate(0, TYPE.LONG, 3002147L, PREDTYPE.LEQ)};
+	public void testRunQuery() {
+		Predicate[] predicates = new Predicate[] { new Predicate(0, TYPE.LONG,
+				3002147L, PREDTYPE.LEQ) };
 		opt.buildPlan(new FilterQuery(predicates));
 	}
 
 	public void testSinglePredicateRun() {
 		int numQueries = 50;
-		for (int i=1; i <= numQueries; i++) {
+		for (int i = 1; i <= numQueries; i++) {
 			int year = 1993 + (i + 1) % 5;
-			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(year-1,12,31), PREDTYPE.GT);
-			// Predicate p2 = new Predicate(10, TYPE.DATE, new SimpleDate(year+1,1,1), PREDTYPE.LT);
+			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(
+					year - 1, 12, 31), PREDTYPE.GT);
+			// Predicate p2 = new Predicate(10, TYPE.DATE, new
+			// SimpleDate(year+1,1,1), PREDTYPE.LT);
 			opt.updateCountsBasedOnSample(sf * TUPLES_PER_SF);
 			System.out.println("Updated Bucket Counts");
-			opt.buildPlan(new FilterQuery(new Predicate[]{p1}));
+			opt.buildPlan(new FilterQuery(new Predicate[] { p1 }));
 			System.out.println("Completed Query " + i);
 		}
 	}
@@ -66,17 +70,20 @@ public class Simulator {
 	public void testCyclicShipDatePredicate() {
 		int numQueries = 25;
 		boolean doUpdate = true;
-		for (int i=0; i < numQueries; i++) {
+		for (int i = 0; i < numQueries; i++) {
 			int year = 1993 + i % 6;
-			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(year-1,12,31), PREDTYPE.GT);
-			Predicate p2 = new Predicate(10, TYPE.DATE, new SimpleDate(year,12,31), PREDTYPE.LEQ);
+			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(
+					year - 1, 12, 31), PREDTYPE.GT);
+			Predicate p2 = new Predicate(10, TYPE.DATE, new SimpleDate(year,
+					12, 31), PREDTYPE.LEQ);
 			if (doUpdate) {
 				opt.updateCountsBasedOnSample(sf * TUPLES_PER_SF);
 				System.out.println("Updated Bucket Counts");
 				doUpdate = false;
 			}
 
-			PartitionSplit[] splits = opt.buildPlan(new FilterQuery(new Predicate[]{p1, p2}));
+			PartitionSplit[] splits = opt.buildPlan(new FilterQuery(
+					new Predicate[] { p1, p2 }));
 			for (PartitionSplit ps : splits) {
 				if (ps.getIterator() instanceof RepartitionIterator) {
 					doUpdate = true;
@@ -94,13 +101,15 @@ public class Simulator {
 		int range = 2525;
 		Random r = new Random(1);
 		Calendar c = new GregorianCalendar();
-		for (int i=0; i < numQueries; i++) {
+		for (int i = 0; i < numQueries; i++) {
 			int startOffset = (int) (r.nextDouble() * range * (1 - selectivity)) + 1;
 			c.set(1992, Calendar.JANUARY, 02);
 			c.add(Calendar.DAY_OF_MONTH, startOffset);
-			SimpleDate startDate = new SimpleDate(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
+			SimpleDate startDate = new SimpleDate(c.get(Calendar.YEAR),
+					c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
 			c.add(Calendar.DAY_OF_MONTH, (int) (range * selectivity));
-			SimpleDate endDate = new SimpleDate(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
+			SimpleDate endDate = new SimpleDate(c.get(Calendar.YEAR),
+					c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
 
 			Predicate p1 = new Predicate(10, TYPE.DATE, startDate, PREDTYPE.GT);
 			Predicate p2 = new Predicate(10, TYPE.DATE, endDate, PREDTYPE.LEQ);
@@ -110,7 +119,8 @@ public class Simulator {
 				doUpdate = false;
 			}
 
-			PartitionSplit[] splits = opt.buildPlan(new FilterQuery(new Predicate[]{p1, p2}));
+			PartitionSplit[] splits = opt.buildPlan(new FilterQuery(
+					new Predicate[] { p1, p2 }));
 			for (PartitionSplit ps : splits) {
 				if (ps.getIterator() instanceof RepartitionIterator) {
 					doUpdate = true;
@@ -130,13 +140,15 @@ public class Simulator {
 		int startOffset = (int) (r.nextDouble() * range * (1 - selectivity)) + 1;
 		c.set(1992, Calendar.JANUARY, 02);
 		c.add(Calendar.DAY_OF_MONTH, startOffset);
-		SimpleDate startDate = new SimpleDate(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
+		SimpleDate startDate = new SimpleDate(c.get(Calendar.YEAR),
+				c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
 		c.add(Calendar.DAY_OF_MONTH, (int) (range * selectivity));
 
 		int reduction = (int) (range * selectivity * -1);
 		boolean doUpdate = true;
-		for (int i=0; i < numQueries; i++) {
-			SimpleDate endDate = new SimpleDate(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
+		for (int i = 0; i < numQueries; i++) {
+			SimpleDate endDate = new SimpleDate(c.get(Calendar.YEAR),
+					c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
 			Predicate p1 = new Predicate(10, TYPE.DATE, startDate, PREDTYPE.GT);
 			Predicate p2 = new Predicate(10, TYPE.DATE, endDate, PREDTYPE.LEQ);
 			if (doUpdate) {
@@ -145,7 +157,8 @@ public class Simulator {
 				doUpdate = false;
 			}
 
-			PartitionSplit[] splits = opt.buildPlan(new FilterQuery(new Predicate[]{p1, p2}));
+			PartitionSplit[] splits = opt.buildPlan(new FilterQuery(
+					new Predicate[] { p1, p2 }));
 			for (PartitionSplit ps : splits) {
 				if (ps.getIterator() instanceof RepartitionIterator) {
 					doUpdate = true;

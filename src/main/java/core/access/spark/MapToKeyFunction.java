@@ -9,18 +9,23 @@ import core.access.iterator.IteratorRecord;
 /**
  * Created by qui on 7/1/15.
  */
-public class MapToKeyFunction implements PairFunction<Tuple2<LongWritable, IteratorRecord>, String, String> {
+public class MapToKeyFunction implements
+		PairFunction<Tuple2<LongWritable, IteratorRecord>, String, String> {
 
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    int joinAttr;
-    public MapToKeyFunction(int joinAttribute) {
-        joinAttr = joinAttribute;
-    }
+	int joinAttr;
 
-    public Tuple2<String, String> call(Tuple2<LongWritable, IteratorRecord> longWritableIteratorRecordTuple2) throws Exception {
-        String key = String.valueOf(longWritableIteratorRecordTuple2._2().getLongAttribute(joinAttr));
-        String record = longWritableIteratorRecordTuple2._2().getKeyString();
-        return new Tuple2<String, String>(key, record);
-    }
+	public MapToKeyFunction(int joinAttribute) {
+		joinAttr = joinAttribute;
+	}
+
+	public Tuple2<String, String> call(
+			Tuple2<LongWritable, IteratorRecord> longWritableIteratorRecordTuple2)
+			throws Exception {
+		String key = String.valueOf(longWritableIteratorRecordTuple2._2()
+				.getLongAttribute(joinAttr));
+		String record = longWritableIteratorRecordTuple2._2().getKeyString();
+		return new Tuple2<String, String>(key, record);
+	}
 }

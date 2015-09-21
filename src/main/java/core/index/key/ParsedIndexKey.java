@@ -4,7 +4,7 @@ import com.google.common.base.Joiner;
 
 import core.utils.TypeUtils.*;
 
-public class ParsedIndexKey extends CartilageIndexKey{
+public class ParsedIndexKey extends CartilageIndexKey {
 
 	private Object[] values;
 
@@ -13,43 +13,43 @@ public class ParsedIndexKey extends CartilageIndexKey{
 		this.types = types;
 	}
 
-	public void setValues(Object[] values){
+	public void setValues(Object[] values) {
 		this.values = values;
 	}
-	
+
 	public String getKeyString() {
 		return Joiner.on(",").join(values);
 	}
-	
+
 	public String getStringAttribute(int index, int maxSize) {
-		return (String)values[index];
+		return (String) values[index];
 	}
-	
+
 	public int getIntAttribute(int index) {
-		return (Integer)values[index];
+		return (Integer) values[index];
 	}
-	
+
 	public long getLongAttribute(int index) {
-		return (Long)values[index];
+		return (Long) values[index];
 	}
-	
+
 	public float getFloatAttribute(int index) {
-		return (Float)values[index];
+		return (Float) values[index];
 	}
-	
+
 	public double getDoubleAttribute(int index) {
-		return (Double)values[index];
+		return (Double) values[index];
 	}
-	
+
 	public SimpleDate getDateAttribute(int index) {
-		return (SimpleDate)values[index];
+		return (SimpleDate) values[index];
 	}
 
 	public SimpleDate getDateAttribute(int index, SimpleDate date) {
 		return getDateAttribute(index);
 	}
-	
+
 	public boolean getBooleanAttribute(int index) {
-		return (Boolean)values[index];
-	}	
+		return (Boolean) values[index];
+	}
 }

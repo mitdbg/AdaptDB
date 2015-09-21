@@ -9,15 +9,16 @@ import com.google.common.io.ByteStreams;
 
 import core.access.Query.FilterQuery;
 
-public class PostFilterIterator extends PartitionIterator implements Serializable{
+public class PostFilterIterator extends PartitionIterator implements
+		Serializable {
 	private static final long serialVersionUID = 1L;
-	
+
 	protected FilterQuery query;
 
-	public PostFilterIterator(){		
+	public PostFilterIterator() {
 	}
-	
-	public PostFilterIterator(String iteratorString){
+
+	public PostFilterIterator(String iteratorString) {
 		try {
 			readFields(ByteStreams.newDataInput(iteratorString.getBytes()));
 		} catch (IOException e) {
@@ -26,30 +27,30 @@ public class PostFilterIterator extends PartitionIterator implements Serializabl
 		}
 	}
 
-	public PostFilterIterator(FilterQuery query){
+	public PostFilterIterator(FilterQuery query) {
 		this.query = query;
 	}
 
 	@Override
-	protected boolean isRelevant(IteratorRecord record){
+	protected boolean isRelevant(IteratorRecord record) {
 		return query.qualifies(record);
 	}
 
 	@Override
-	public void write(DataOutput out) throws IOException{
+	public void write(DataOutput out) throws IOException {
 		query.write(out);
 	}
 
 	@Override
-	public void readFields(DataInput in) throws IOException{
-		query = new FilterQuery();	// hard coded
+	public void readFields(DataInput in) throws IOException {
+		query = new FilterQuery(); // hard coded
 		query.readFields(in);
 	}
-	
+
 	public static PostFilterIterator read(DataInput in) throws IOException {
 		PostFilterIterator it = new PostFilterIterator();
-        it.readFields(in);
-        return it;
+		it.readFields(in);
+		return it;
 	}
-	
+
 }

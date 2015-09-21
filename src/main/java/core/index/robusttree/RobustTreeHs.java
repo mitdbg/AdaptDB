@@ -19,7 +19,7 @@ import core.utils.TypeUtils.TYPE;
 public class RobustTreeHs implements MDIndex {
 	public int maxBuckets;
 	public int numAttributes;
-    public CartilageIndexKeySet sample;
+	public CartilageIndexKeySet sample;
 
 	public TYPE[] dimensionTypes;
 	RNode root;
@@ -34,7 +34,7 @@ public class RobustTreeHs implements MDIndex {
 		}
 	}
 
-	public RobustTreeHs(){
+	public RobustTreeHs() {
 
 	}
 
@@ -45,19 +45,19 @@ public class RobustTreeHs implements MDIndex {
 
 	@Override
 	public void initBuild(int buckets) {
-        this.maxBuckets = buckets;
+		this.maxBuckets = buckets;
 		root = new RNode();
-        this.sample = new CartilageIndexKeySet();
+		this.sample = new CartilageIndexKeySet();
 	}
 
 	public void loadSampleAndBuild(int buckets, byte[] bytes) {
-        this.maxBuckets = buckets;
+		this.maxBuckets = buckets;
 		root = new RNode();
-        this.sample = new CartilageIndexKeySet();
+		this.sample = new CartilageIndexKeySet();
 		this.sample.unmarshall(bytes);
 
-    	this.dimensionTypes = this.sample.getTypes();
-        this.numAttributes = this.dimensionTypes.length;
+		this.dimensionTypes = this.sample.getTypes();
+		this.numAttributes = this.dimensionTypes.length;
 	}
 
 	public RNode getRoot() {
@@ -71,26 +71,26 @@ public class RobustTreeHs implements MDIndex {
 
 	@Override
 	public boolean equals(Object obj) {
-        if(obj instanceof RobustTreeHs){
-        	RobustTreeHs rhs = (RobustTreeHs) obj;
-        	boolean allGood = true;
-        	allGood &= rhs.numAttributes == this.numAttributes;
-        	allGood &= rhs.maxBuckets == this.maxBuckets;
-        	allGood &= rhs.dimensionTypes.length == this.dimensionTypes.length;
-        	if (!allGood)
-        		return false;
+		if (obj instanceof RobustTreeHs) {
+			RobustTreeHs rhs = (RobustTreeHs) obj;
+			boolean allGood = true;
+			allGood &= rhs.numAttributes == this.numAttributes;
+			allGood &= rhs.maxBuckets == this.maxBuckets;
+			allGood &= rhs.dimensionTypes.length == this.dimensionTypes.length;
+			if (!allGood)
+				return false;
 
-        	for (int i=0; i<this.dimensionTypes.length; i++) {
-        		allGood &= this.dimensionTypes[i] == rhs.dimensionTypes[i];
-        	}
-        	if (!allGood)
-        		return false;
+			for (int i = 0; i < this.dimensionTypes.length; i++) {
+				allGood &= this.dimensionTypes[i] == rhs.dimensionTypes[i];
+			}
+			if (!allGood)
+				return false;
 
-        	allGood = this.root == rhs.root;
-        	return allGood;
-        }
-        return false;
-    }
+			allGood = this.root == rhs.root;
+			return allGood;
+		}
+		return false;
+	}
 
 	public class Task {
 		RNode node;
@@ -108,11 +108,12 @@ public class RobustTreeHs implements MDIndex {
 
 		// Computes log(this.maxBuckets)
 		int maxDepth = 31 - Integer.numberOfLeadingZeros(this.maxBuckets);
-		double allocationPerAttribute = RobustTreeHs.nthroot(this.numAttributes, this.maxBuckets);
+		double allocationPerAttribute = RobustTreeHs.nthroot(
+				this.numAttributes, this.maxBuckets);
 		System.out.println("Max allocation: " + allocationPerAttribute);
 
 		double[] allocations = new double[this.numAttributes];
-		for (int i=0; i<this.numAttributes; i++) {
+		for (int i = 0; i < this.numAttributes; i++) {
 			allocations[i] = allocationPerAttribute;
 		}
 
@@ -130,71 +131,75 @@ public class RobustTreeHs implements MDIndex {
 		while (nodeQueue.size() > 0) {
 			Task t = nodeQueue.pollFirst();
 			if (t.depth < maxDepth) {
-			    int dim = -1;
-			    int round = 0;
-			    Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = null;
+				int dim = -1;
+				int round = 0;
+				Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = null;
 
-			    while (dim == -1 && round < allocations.length) {
-		            int testDim = getLeastAllocated(allocations);
-		            allocations[testDim] -= 2.0 / Math.pow(2, t.depth);
+				while (dim == -1 && round < allocations.length) {
+					int testDim = getLeastAllocated(allocations);
+					allocations[testDim] -= 2.0 / Math.pow(2, t.depth);
 
-		            // TODO: For low cardinality values, it might be better to
+					// TODO: For low cardinality values, it might be better to
 					// choose some set of values on each side.
 					// TPCH attribute 9 for example has only two distinct values
-		            // TODO: This might repeatedly use the same attribute
+					// TODO: This might repeatedly use the same attribute
 					halves = t.sample.sortAndSplit(testDim);
 					if (halves.first.size() > 0 && halves.second.size() > 0) {
-					    dim = testDim;
+						dim = testDim;
 					} else {
-					    System.err.println("WARN: Skipping attribute " + testDim);
+						System.err.println("WARN: Skipping attribute "
+								+ testDim);
 					}
 
 					round++;
-			    }
+				}
 
-			    if (dim == -1) {
-		            System.err.println("ERR: No attribute to partition on");
-		            Bucket b = new Bucket();
-		            b.setSample(sample);
-		            t.node.bucket = b;
-			    } else {
-		            t.node.attribute = dim;
-		            t.node.type = this.dimensionTypes[dim];
-		            t.node.value = halves.first.getLast(dim); // Need to traverse up for range
+				if (dim == -1) {
+					System.err.println("ERR: No attribute to partition on");
+					Bucket b = new Bucket();
+					b.setSample(sample);
+					t.node.bucket = b;
+				} else {
+					t.node.attribute = dim;
+					t.node.type = this.dimensionTypes[dim];
+					t.node.value = halves.first.getLast(dim); // Need to
+																// traverse up
+																// for range
 
-	                t.node.leftChild = new RNode();
-	                t.node.leftChild.parent = t.node;
-	                Task tl = new Task();
-	                tl.node = t.node.leftChild;
-	                tl.depth = t.depth + 1;
-	                tl.sample = halves.first;
-	                nodeQueue.add(tl);
+					t.node.leftChild = new RNode();
+					t.node.leftChild.parent = t.node;
+					Task tl = new Task();
+					tl.node = t.node.leftChild;
+					tl.depth = t.depth + 1;
+					tl.sample = halves.first;
+					nodeQueue.add(tl);
 
-	                t.node.rightChild = new RNode();
-	                t.node.rightChild.parent = t.node;
-	                Task tr = new Task();
-	                tr.node = t.node.rightChild;
-	                tr.depth = t.depth + 1;
-	                tr.sample = halves.second;
-	                nodeQueue.add(tr);
-			    }
+					t.node.rightChild = new RNode();
+					t.node.rightChild.parent = t.node;
+					Task tr = new Task();
+					tr.node = t.node.rightChild;
+					tr.depth = t.depth + 1;
+					tr.sample = halves.second;
+					nodeQueue.add(tr);
+				}
 			} else {
-			     Bucket b = new Bucket();
-			     b.setSample(sample);
-			     t.node.bucket = b;
+				Bucket b = new Bucket();
+				b.setSample(sample);
+				t.node.bucket = b;
 			}
 		}
 
-		System.out.println("Final Allocations: " + Arrays.toString(allocations));
+		System.out
+				.println("Final Allocations: " + Arrays.toString(allocations));
 	}
 
 	// TODO: Add capacity
-	static List<Integer> leastAllocated  = new ArrayList<Integer>(20);
+	static List<Integer> leastAllocated = new ArrayList<Integer>(20);
 	static Random randGenerator = new Random();
 
 	/**
-	 * Return the dimension which has the maximum
-	 * allocation unfulfilled
+	 * Return the dimension which has the maximum allocation unfulfilled
+	 * 
 	 * @return
 	 */
 	public static int getLeastAllocated(double[] allocations) {
@@ -204,7 +209,7 @@ public class RobustTreeHs implements MDIndex {
 		leastAllocated.add(0);
 
 		double alloc = allocations[0];
-		for (int i=1; i < numAttributes; i++) {
+		for (int i = 1; i < numAttributes; i++) {
 			if (allocations[i] > alloc) {
 				alloc = allocations[i];
 				leastAllocated.clear();
@@ -243,7 +248,7 @@ public class RobustTreeHs implements MDIndex {
 		int total = 0;
 		List<RNode> matchingBuckets = getMatchingBuckets(predicates);
 		// Note that the above list is a linked-list; don't use .get over it
-		for (RNode node: matchingBuckets) {
+		for (RNode node : matchingBuckets) {
 			total += node.bucket.getNumTuples();
 		}
 
@@ -251,8 +256,7 @@ public class RobustTreeHs implements MDIndex {
 	}
 
 	/**
-	 * Serializes the index to string
-	 * Very brittle - Consider rewriting
+	 * Serializes the index to string Very brittle - Consider rewriting
 	 */
 	@Override
 	public byte[] marshall() {
@@ -263,10 +267,11 @@ public class RobustTreeHs implements MDIndex {
 		// nodes in pre-order
 
 		String robustTree = "";
-		robustTree += String.format("%d %d\n", this.maxBuckets, this.numAttributes);
+		robustTree += String.format("%d %d\n", this.maxBuckets,
+				this.numAttributes);
 
 		String types = "";
-		for (int i=0; i<this.numAttributes; i++) {
+		for (int i = 0; i < this.numAttributes; i++) {
 			types += this.dimensionTypes[i].toString() + " ";
 		}
 		types += "\n";
@@ -285,7 +290,7 @@ public class RobustTreeHs implements MDIndex {
 		this.numAttributes = sc.nextInt();
 
 		this.dimensionTypes = new TYPE[this.numAttributes];
-		for(int i=0; i<this.numAttributes; i++) {
+		for (int i = 0; i < this.numAttributes; i++) {
 			this.dimensionTypes[i] = TYPE.valueOf(sc.next());
 		}
 
@@ -312,26 +317,32 @@ public class RobustTreeHs implements MDIndex {
 			// By sorting we avoid memory allocation
 			// Will most probably be faster
 			sample.sort(n.attribute);
-			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample.splitAt(n.attribute, n.value);
+			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample
+					.splitAt(n.attribute, n.value);
 			initializeBucketSamples(n.leftChild, halves.first);
 			initializeBucketSamples(n.rightChild, halves.second);
 		}
 	}
 
 	/** Use only in the simulator **/
-	public void initializeBucketSamplesAndCounts(RNode n, CartilageIndexKeySet sample, final long totalSamples, final long totalTuples) {
+	public void initializeBucketSamplesAndCounts(RNode n,
+			CartilageIndexKeySet sample, final long totalSamples,
+			final long totalTuples) {
 		if (n.bucket != null) {
 			long sampleSize = sample.size();
-			int numTuples = (int)( (sampleSize * totalTuples) / totalSamples);
+			int numTuples = (int) ((sampleSize * totalTuples) / totalSamples);
 			n.bucket.setSample(sample);
 			Bucket.counters.setToBucketCount(n.bucket.getBucketId(), numTuples);
 		} else {
 			// By sorting we avoid memory allocation
 			// Will most probably be faster
 			sample.sort(n.attribute);
-			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample.splitAt(n.attribute, n.value);
-			initializeBucketSamplesAndCounts(n.leftChild, halves.first, totalSamples, totalTuples);
-			initializeBucketSamplesAndCounts(n.rightChild, halves.second, totalSamples, totalTuples);
+			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample
+					.splitAt(n.attribute, n.value);
+			initializeBucketSamplesAndCounts(n.leftChild, halves.first,
+					totalSamples, totalTuples);
+			initializeBucketSamplesAndCounts(n.rightChild, halves.second,
+					totalSamples, totalTuples);
 		}
 	}
 
@@ -343,21 +354,21 @@ public class RobustTreeHs implements MDIndex {
 		return nthroot(n, A, .001);
 	}
 
-	public static void main (String[] args) {
+	public static void main(String[] args) {
 		System.out.println(nthroot(4, 8));
 		System.out.println(nthroot(2, 16));
 	}
 
 	public static double nthroot(int n, double A, double p) {
-		if(A < 0) {
+		if (A < 0) {
 			System.err.println("A < 0");// we handle only real positive numbers
 			return -1;
-		} else if(A == 0) {
+		} else if (A == 0) {
 			return 0;
 		}
 		double x_prev = A;
-		double x = A / n;  // starting "guessed" value...
-		while(Math.abs(x - x_prev) > p) {
+		double x = A / n; // starting "guessed" value...
+		while (Math.abs(x - x_prev) > p) {
 			x_prev = x;
 			x = ((n - 1.0) * x + A / Math.pow(x, n - 1.0)) / n;
 		}
@@ -375,7 +386,8 @@ public class RobustTreeHs implements MDIndex {
 		if (node.bucket != null) {
 			System.out.format("B");
 		} else {
-			System.out.format("Node: %d %s { ", node.attribute, node.value.toString());
+			System.out.format("Node: %d %s { ", node.attribute,
+					node.value.toString());
 			printNode(node.leftChild);
 			System.out.print(" }{ ");
 			printNode(node.rightChild);
@@ -387,16 +399,20 @@ public class RobustTreeHs implements MDIndex {
 		return getBucketRangeSubtree(this.getRoot(), attribute);
 	}
 
-	private static Map<Integer, BucketInfo> getBucketRangeSubtree(RNode root, int attribute) {
+	private static Map<Integer, BucketInfo> getBucketRangeSubtree(RNode root,
+			int attribute) {
 		if (root.bucket != null) {
 			Map<Integer, BucketInfo> bucketRanges = new HashMap<Integer, BucketInfo>();
 			if (root.rangesByAttribute.get(attribute) != null) {
-				bucketRanges.put(root.bucket.getBucketId(), root.rangesByAttribute.get(attribute));
+				bucketRanges.put(root.bucket.getBucketId(),
+						root.rangesByAttribute.get(attribute));
 			}
 			return bucketRanges;
 		} else {
-			Map<Integer, BucketInfo> bucketRanges = getBucketRangeSubtree(root.leftChild, attribute);
-			bucketRanges.putAll(getBucketRangeSubtree(root.rightChild, attribute));
+			Map<Integer, BucketInfo> bucketRanges = getBucketRangeSubtree(
+					root.leftChild, attribute);
+			bucketRanges.putAll(getBucketRangeSubtree(root.rightChild,
+					attribute));
 			return bucketRanges;
 		}
 	}
@@ -425,7 +441,14 @@ public class RobustTreeHs implements MDIndex {
 			if (!(allocs.containsKey(node.attribute))) {
 				allocs.put(node.attribute, 0.0);
 			}
-			allocs.put(node.attribute, allocs.get(node.attribute) + Math.pow(2, -1 * Math.floor(Math.log(nodeNum) / Math.log(2)) + 1));
+			allocs.put(
+					node.attribute,
+					allocs.get(node.attribute)
+							+ Math.pow(
+									2,
+									-1
+											* Math.floor(Math.log(nodeNum)
+													/ Math.log(2)) + 1));
 			queue.add(node.leftChild);
 			queue.add(node.rightChild);
 		}

@@ -105,7 +105,8 @@ public class Optimizer {
 	}
 
 	public void loadIndex() {
-		FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
+		FileSystem fs = HDFSUtils.getFS(hadoopHome
+				+ "/etc/hadoop/core-site.xml");
 		Bucket.counters = new MDIndex.BucketCounts(zookeeperHosts);
 		String pathToIndex = this.workingDir + "/index";
 		String pathToSample = this.workingDir + "/sample";
@@ -125,10 +126,10 @@ public class Optimizer {
 	public int[] getBidFromRNodes(List<RNode> nodes) {
 		int[] bids = new int[nodes.size()];
 		Iterator<RNode> it = nodes.iterator();
-	    for (int i=0; i<bids.length; i++) {
-	    	bids[i] = it.next().bucket.getBucketId();
-	    }
-	    return bids;
+		for (int i = 0; i < bids.length; i++) {
+			bids[i] = it.next().bucket.getBucketId();
+		}
+		return bids;
 	}
 
 	public PartitionSplit[] buildAccessPlan(final Query q) {
@@ -150,16 +151,16 @@ public class Optimizer {
 
 	// Just for debug
 	public PartitionSplit[] testRepartitionIteratorPlan(final Query q) {
-    	Plan pl = new Plan();
-    	pl.cost = 1;
-    	pl.benefit = 1000;
-    	Action ac = new Action();
-    	ac.pid = 0;
-    	ac.option = 1;
-    	pl.actions = ac;
+		Plan pl = new Plan();
+		pl.cost = 1;
+		pl.benefit = 1000;
+		Action ac = new Action();
+		ac.pid = 0;
+		ac.option = 1;
+		pl.actions = ac;
 
-    	Predicate p1 = new Predicate(0, TYPE.INT, 283359707, PREDTYPE.GT);
-    	FilterQuery dummy = new FilterQuery(new Predicate[]{p1});
+		Predicate p1 = new Predicate(0, TYPE.INT, 283359707, PREDTYPE.GT);
+		FilterQuery dummy = new FilterQuery(new Predicate[] { p1 });
 
 		PartitionSplit[] psplits = this.getPartitionSplits(pl, dummy);
 		return psplits;
@@ -171,7 +172,8 @@ public class Optimizer {
 			this.queryWindow.add(fq);
 			Plan best = getBestPlan(fq.getPredicates());
 
-			System.out.println("plan.cost: " + best.cost + " plan.benefit: " + best.benefit);
+			System.out.println("plan.cost: " + best.cost + " plan.benefit: "
+					+ best.benefit);
 			if (best.cost > best.benefit) {
 				best = null;
 			}
@@ -193,11 +195,12 @@ public class Optimizer {
 
 			// Debug
 			long totalCostOfQuery = 0;
-			for (int i=0; i<psplits.length; i++) {
+			for (int i = 0; i < psplits.length; i++) {
 				int[] bids = psplits[i].getPartitions();
 				long numTuplesAccessed = 0;
-				for (int j=0; j<bids.length; j++) {
-					numTuplesAccessed += Bucket.counters.getBucketCount(bids[j]);
+				for (int j = 0; j < bids.length; j++) {
+					numTuplesAccessed += Bucket.counters
+							.getBucketCount(bids[j]);
 				}
 
 				totalCostOfQuery += numTuplesAccessed;
@@ -211,7 +214,9 @@ public class Optimizer {
 				this.persistIndexToDisk();
 				for (int i = 0; i < psplits.length; i++) {
 					if (psplits[i].getIterator().getClass() == RepartitionIterator.class) {
-						psplits[i] = new PartitionSplit(psplits[i].getPartitions(), new RepartitionIterator(fq, this.rt.getRoot()));
+						psplits[i] = new PartitionSplit(
+								psplits[i].getPartitions(),
+								new RepartitionIterator(fq, this.rt.getRoot()));
 					}
 				}
 			} else {
@@ -225,51 +230,52 @@ public class Optimizer {
 		}
 	}
 
-//	public PartitionSplit[] buildMPPlan(final Query q) {
-//		if (q instanceof FilterQuery) {
-//			FilterQuery fq = (FilterQuery) q;
-//			Predicate[] ps = fq.getPredicates();
-//			int pLength = ps.length;
-//			// Find the initial set of buckets accessed
-//			List<RNode> nodes = this.rt.getRoot().search(ps);
-//			int[] initialBids = this.getBidFromRNodes(nodes);
-//
-//			for (int i=0; i<pLength; i++) {
-//				Plan best = getBestPlan(ps);
-//				this.updateIndex(best, ps);
-//				ps[best.actions.pid] = null;
-//			}
-//
-//			nodes = this.rt.getRoot().search(ps);
-//			int[] finalBids = this.getBidFromRNodes(nodes);
-//
-//			float totalTuples = 0;
-//			for (int i=0; i<initialBids.length; i++) {
-//				int bid = initialBids[i];
-//				boolean found = false;
-//				for (int j=0; j<finalBids.length; j++) {
-//					if (finalBids[j] == bid) {
-//						found = true;
-//						break;
-//					}
-//				}
-//
-//				if (!found) {
-//					totalTuples += Bucket.counters.getBucketCount(bid);
-//				}
-//			}
-//
-//			return null;
-//		} else {
-//			System.err.println("Unimplemented query - Unable to build plan");
-//			return null;
-//		}
-//	}
+	// public PartitionSplit[] buildMPPlan(final Query q) {
+	// if (q instanceof FilterQuery) {
+	// FilterQuery fq = (FilterQuery) q;
+	// Predicate[] ps = fq.getPredicates();
+	// int pLength = ps.length;
+	// // Find the initial set of buckets accessed
+	// List<RNode> nodes = this.rt.getRoot().search(ps);
+	// int[] initialBids = this.getBidFromRNodes(nodes);
+	//
+	// for (int i=0; i<pLength; i++) {
+	// Plan best = getBestPlan(ps);
+	// this.updateIndex(best, ps);
+	// ps[best.actions.pid] = null;
+	// }
+	//
+	// nodes = this.rt.getRoot().search(ps);
+	// int[] finalBids = this.getBidFromRNodes(nodes);
+	//
+	// float totalTuples = 0;
+	// for (int i=0; i<initialBids.length; i++) {
+	// int bid = initialBids[i];
+	// boolean found = false;
+	// for (int j=0; j<finalBids.length; j++) {
+	// if (finalBids[j] == bid) {
+	// found = true;
+	// break;
+	// }
+	// }
+	//
+	// if (!found) {
+	// totalTuples += Bucket.counters.getBucketCount(bid);
+	// }
+	// }
+	//
+	// return null;
+	// } else {
+	// System.err.println("Unimplemented query - Unable to build plan");
+	// return null;
+	// }
+	// }
 
 	public Plan getBestPlan(Predicate[] ps) {
-		//TODO: Multiple predicates seem to complicate the simple idea we had; think more :-/
+		// TODO: Multiple predicates seem to complicate the simple idea we had;
+		// think more :-/
 		Plan plan = null;
-		for (int i=0; i<ps.length; i++) {
+		for (int i = 0; i < ps.length; i++) {
 			Plan option = getBestPlanForPredicate(ps, i);
 			if (plan == null) {
 				plan = option;
@@ -310,7 +316,8 @@ public class Optimizer {
 			replaceInTree(n, r);
 
 			// This is the root
-			if (isRoot) rt.setRoot(r);
+			if (isRoot)
+				rt.setRoot(r);
 
 			break;
 		case 2:
@@ -322,7 +329,8 @@ public class Optimizer {
 			replaceInTree(n.leftChild, n2);
 			replaceInTree(n, right);
 			replaceInTree(right.rightChild, n);
-			if (isRoot) rt.setRoot(right);
+			if (isRoot)
+				rt.setRoot(right);
 			break;
 		case 3:
 			assert a.right == null || a.left == null;
@@ -342,7 +350,8 @@ public class Optimizer {
 				n.rightChild = tl;
 				n.rightChild.parent = n;
 
-				if (isRoot) rt.setRoot(t);
+				if (isRoot)
+					rt.setRoot(t);
 			} else {
 				RNode t = n.leftChild;
 				RNode tr = t.rightChild;
@@ -357,7 +366,8 @@ public class Optimizer {
 				n.leftChild = tr;
 				n.leftChild.parent = n;
 
-				if (isRoot) rt.setRoot(t);
+				if (isRoot)
+					rt.setRoot(t);
 			}
 			break;
 		case 4:
@@ -367,9 +377,9 @@ public class Optimizer {
 		}
 	}
 
-	public PartitionSplit[] getPartitionSplits (Plan best, FilterQuery fq) {
+	public PartitionSplit[] getPartitionSplits(Plan best, FilterQuery fq) {
 		List<PartitionSplit> lps = new ArrayList<PartitionSplit>();
-		final int[] modifyingOptions = new int[]{1};
+		final int[] modifyingOptions = new int[] { 1 };
 		Action acTree = best.actions;
 
 		LinkedList<RNode> nodeStack = new LinkedList<RNode>();
@@ -386,16 +396,16 @@ public class Optimizer {
 			Action a = actionStack.removeLast();
 
 			boolean isModifying = false;
-			for (int t: modifyingOptions){
-		        if (t == a.option) {
-		        	List<RNode> bs = n.search(ps);
-		        	int[] bucketIds = new int[bs.size()];
-		        	for (int i=0; i<bucketIds.length; i++) {
-		        		bucketIds[i] = bs.get(i).bucket.getBucketId();
-		        	}
+			for (int t : modifyingOptions) {
+				if (t == a.option) {
+					List<RNode> bs = n.search(ps);
+					int[] bucketIds = new int[bs.size()];
+					for (int i = 0; i < bucketIds.length; i++) {
+						bucketIds[i] = bs.get(i).bucket.getBucketId();
+					}
 
-		        	Predicate p = ps[a.pid];
-		        	RNode r = n.clone();
+					Predicate p = ps[a.pid];
+					RNode r = n.clone();
 					r.attribute = p.attribute;
 					r.type = p.type;
 					r.value = p.value;
@@ -404,14 +414,13 @@ public class Optimizer {
 					// Give new bucket ids to all nodes below this
 					updateBucketIds(bs);
 
-		        	PartitionIterator pi = new RepartitionIterator(fq, r);
-		        	PartitionSplit psplit = new PartitionSplit(bucketIds, pi);
-		        	lps.add(psplit);
-		        	isModifying = true;
-		        	break;
-		        }
-		    }
-
+					PartitionIterator pi = new RepartitionIterator(fq, r);
+					PartitionSplit psplit = new PartitionSplit(bucketIds, pi);
+					lps.add(psplit);
+					isModifying = true;
+					break;
+				}
+			}
 
 			if (!isModifying) {
 				if (a.right != null) {
@@ -434,26 +443,28 @@ public class Optimizer {
 			PartitionIterator pi = new PostFilterIterator(fq);
 			int[] bids = new int[unmodifiedBuckets.size()];
 			Iterator<Integer> it = unmodifiedBuckets.iterator();
-		    for (int i=0; i<bids.length; i++) {
-		    	bids[i] = it.next();
-		    }
+			for (int i = 0; i < bids.length; i++) {
+				bids[i] = it.next();
+			}
 			PartitionSplit psplit = new PartitionSplit(bids, pi);
 			lps.add(psplit);
 		}
 
-		PartitionSplit[] splits =  lps.toArray(new PartitionSplit[lps.size()]);
+		PartitionSplit[] splits = lps.toArray(new PartitionSplit[lps.size()]);
 		return splits;
 	}
 
 	/**
 	 * Checks if it is valid to partition on attrId with value val at node
+	 * 
 	 * @param node
 	 * @param attrId
 	 * @param t
 	 * @param val
 	 * @return
 	 */
-	public static boolean checkValidToRoot(RNode node, int attrId, TYPE t, Object val) {
+	public static boolean checkValidToRoot(RNode node, int attrId, TYPE t,
+			Object val) {
 		while (node.parent != null) {
 			if (node.parent.attribute == attrId) {
 				int ret = TypeUtils.compareTo(node.parent.value, val, t);
@@ -471,12 +482,15 @@ public class Optimizer {
 	}
 
 	/**
-	 * Checks if it is valid to partition on attrId with value val at node's parent
+	 * Checks if it is valid to partition on attrId with value val at node's
+	 * parent
+	 * 
 	 * @param node
 	 * @param attrId
 	 * @param t
 	 * @param val
-	 * @param isLeft - indicates if node is to the left(1) or right(-1) of parent
+	 * @param isLeft
+	 *            - indicates if node is to the left(1) or right(-1) of parent
 	 * @return
 	 */
 	public boolean checkValidForSubtree(RNode node, int attrId, TYPE t,
@@ -489,7 +503,8 @@ public class Optimizer {
 			if (n.bucket == null) {
 				if (n.attribute == attrId) {
 					int comp = TypeUtils.compareTo(n.value, val, t);
-					if (comp * isLeft >= 0) return false;
+					if (comp * isLeft >= 0)
+						return false;
 				}
 				stack.add(n.rightChild);
 				stack.add(n.leftChild);
@@ -500,6 +515,7 @@ public class Optimizer {
 
 	/**
 	 * Puts the new estimated number of tuples in each bucket after change
+	 * 
 	 * @param changed
 	 */
 	public void populateBucketEstimates(RNode changed) {
@@ -528,17 +544,19 @@ public class Optimizer {
 			}
 		}
 
-		populateBucketEstimates(changed, collector, numTuples/numSamples);
+		populateBucketEstimates(changed, collector, numTuples / numSamples);
 	}
 
-	public void populateBucketEstimates(RNode n, CartilageIndexKeySet sample, float scaleFactor) {
+	public void populateBucketEstimates(RNode n, CartilageIndexKeySet sample,
+			float scaleFactor) {
 		if (n.bucket != null) {
 			n.bucket.estimatedTuples = sample.size() * scaleFactor;
 		} else {
 			// By sorting we avoid memory allocation
 			// Will most probably be faster
 			sample.sort(n.attribute);
-			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample.splitAt(n.attribute, n.value);
+			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample
+					.splitAt(n.attribute, n.value);
 			populateBucketEstimates(n.leftChild, halves.first, scaleFactor);
 			populateBucketEstimates(n.rightChild, halves.second, scaleFactor);
 		}
@@ -546,6 +564,7 @@ public class Optimizer {
 
 	/**
 	 * Gives the number of tuples accessed
+	 * 
 	 * @param changed
 	 * @return
 	 */
@@ -556,9 +575,9 @@ public class Optimizer {
 
 		double lambda = 0.2;
 		int counter = 0;
-		for (int i=queryWindow.size() - 1; i >= 0; i--) {
+		for (int i = queryWindow.size() - 1; i >= 0; i--) {
 			Query q = queryWindow.get(i);
-			double weight = Math.pow(Math.E, - lambda * counter);
+			double weight = Math.pow(Math.E, -lambda * counter);
 
 			numTuples += weight * getNumTuplesAccessed(changed, q, real);
 			counter++;
@@ -567,53 +586,64 @@ public class Optimizer {
 		return numTuples;
 	}
 
-	public static float getNumTuplesAccessed(RNode changed, Query q, boolean real) {
+	public static float getNumTuplesAccessed(RNode changed, Query q,
+			boolean real) {
 		// First traverse to parent to see if query accesses node
 		// If yes, find the number of tuples accessed.
-		Predicate[] ps = ((FilterQuery)q).getPredicates();
+		Predicate[] ps = ((FilterQuery) q).getPredicates();
 
 		RNode node = changed;
 		boolean accessed = true;
 		while (node.parent != null) {
-			for (Predicate p: ps) {
+			for (Predicate p : ps) {
 				if (p.attribute == node.parent.attribute) {
 					if (node.parent.leftChild == node) {
-	        			switch (p.predtype) {
-	                	case EQ:
-	        			case GEQ:
-	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) > 0) accessed = false;
-	                		break;
-	                	case GT:
-	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) >= 0) accessed = false;
-	                		break;
+						switch (p.predtype) {
+						case EQ:
+						case GEQ:
+							if (TypeUtils.compareTo(p.value, node.parent.value,
+									node.parent.type) > 0)
+								accessed = false;
+							break;
+						case GT:
+							if (TypeUtils.compareTo(p.value, node.parent.value,
+									node.parent.type) >= 0)
+								accessed = false;
+							break;
 						default:
 							break;
-	        			}
+						}
 					} else {
-	        			switch (p.predtype) {
-	                	case EQ:
-	        			case LEQ:
-	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) <= 0) accessed = false;
-	                		break;
-	                	case LT:
-	                		if (TypeUtils.compareTo(p.value, node.parent.value, node.parent.type) < 0) accessed = false;
-	                		break;
+						switch (p.predtype) {
+						case EQ:
+						case LEQ:
+							if (TypeUtils.compareTo(p.value, node.parent.value,
+									node.parent.type) <= 0)
+								accessed = false;
+							break;
+						case LT:
+							if (TypeUtils.compareTo(p.value, node.parent.value,
+									node.parent.type) < 0)
+								accessed = false;
+							break;
 						default:
 							break;
-	        			}
+						}
 					}
 				}
 
-				if (!accessed) break;
+				if (!accessed)
+					break;
 			}
 
-			if (!accessed) break;
+			if (!accessed)
+				break;
 			node = node.parent;
 		}
 
 		List<RNode> nodesAccessed = changed.search(ps);
 		float tCount = 0;
-		for (RNode n: nodesAccessed) {
+		for (RNode n : nodesAccessed) {
 			if (real) {
 				tCount += n.bucket.getNumTuples();
 			} else {
@@ -626,23 +656,24 @@ public class Optimizer {
 
 	/**
 	 * Replaces node old by node r in the tree
+	 * 
 	 * @param old
 	 * @param r
 	 */
 	public void replaceInTree(RNode old, RNode r) {
-        old.leftChild.parent = r;
-        old.rightChild.parent = r;
-        if (old.parent != null) {
-        	if (old.parent.rightChild == old) {
-            	old.parent.rightChild = r;
-            } else {
-            	old.parent.leftChild = r;
-            }
-        }
+		old.leftChild.parent = r;
+		old.rightChild.parent = r;
+		if (old.parent != null) {
+			if (old.parent.rightChild == old) {
+				old.parent.rightChild = r;
+			} else {
+				old.parent.leftChild = r;
+			}
+		}
 
-        r.leftChild = old.leftChild;
-        r.rightChild = old.rightChild;
-        r.parent = old.parent;
+		r.leftChild = old.leftChild;
+		r.rightChild = old.rightChild;
+		r.parent = old.parent;
 	}
 
 	public Plan getBestPlanForPredicate(Predicate[] ps, int i) {
@@ -652,7 +683,7 @@ public class Optimizer {
 	}
 
 	public void updateBucketIds(List<RNode> r) {
-		for (RNode n: r) {
+		for (RNode n : r) {
 			n.bucket.updateId();
 		}
 	}
@@ -705,31 +736,42 @@ public class Optimizer {
 			Plans ret = new Plans();
 
 			// Check if both sides are accessed
-        	boolean goLeft = true;
-        	boolean goRight = true;
-        	for (int i = 0; i < ps.length; i++) {
-        		Predicate pd = ps[i];
-        		if (pd.attribute == node.attribute) {
-        			switch (pd.predtype) {
-	                	case GEQ:
-	                		if (TypeUtils.compareTo(pd.value, node.value, node.type) > 0) goLeft = false;
-	                		break;
-	                	case LEQ:
-	                		if (TypeUtils.compareTo(pd.value, node.value, node.type) <= 0) goRight = false;
-	                		break;
-	                	case GT:
-	                		if (TypeUtils.compareTo(pd.value, node.value, node.type) >= 0) goLeft = false;
-	                		break;
-	                	case LT:
-	                		if (TypeUtils.compareTo(pd.value, node.value, node.type) < 0) goRight = false;
-	                		break;
-	                	case EQ:
-	                		if (TypeUtils.compareTo(pd.value, node.value, node.type) <= 0) goRight = false;
-	                		else goLeft = false;
-	                		break;
-                	}
-        		}
-        	}
+			boolean goLeft = true;
+			boolean goRight = true;
+			for (int i = 0; i < ps.length; i++) {
+				Predicate pd = ps[i];
+				if (pd.attribute == node.attribute) {
+					switch (pd.predtype) {
+					case GEQ:
+						if (TypeUtils
+								.compareTo(pd.value, node.value, node.type) > 0)
+							goLeft = false;
+						break;
+					case LEQ:
+						if (TypeUtils
+								.compareTo(pd.value, node.value, node.type) <= 0)
+							goRight = false;
+						break;
+					case GT:
+						if (TypeUtils
+								.compareTo(pd.value, node.value, node.type) >= 0)
+							goLeft = false;
+						break;
+					case LT:
+						if (TypeUtils
+								.compareTo(pd.value, node.value, node.type) < 0)
+							goRight = false;
+						break;
+					case EQ:
+						if (TypeUtils
+								.compareTo(pd.value, node.value, node.type) <= 0)
+							goRight = false;
+						else
+							goLeft = false;
+						break;
+					}
+				}
+			}
 
 			Plans leftPlan;
 			if (goLeft) {
@@ -759,10 +801,11 @@ public class Optimizer {
 			if (leftPlan.fullAccess && rightPlan.fullAccess) {
 				ret.fullAccess = true;
 
-				// If we traverse to root and see that there is no node with cutoff point less than
+				// If we traverse to root and see that there is no node with
+				// cutoff point less than
 				// that of predicate, we can do this
 				if (checkValidToRoot(node, p.attribute, p.type, testVal)) {
-			        double numAccessedOld = getNumTuplesAccessed(node, true);
+					double numAccessedOld = getNumTuplesAccessed(node, true);
 
 					RNode r = node.clone();
 					r.attribute = p.attribute;
@@ -770,27 +813,28 @@ public class Optimizer {
 					r.value = testVal;
 					replaceInTree(node, r);
 
-			        populateBucketEstimates(r);
-			        double numAcccessedNew = getNumTuplesAccessed(r, false);
-			        double benefit = numAccessedOld - numAcccessedNew;
+					populateBucketEstimates(r);
+					double numAcccessedNew = getNumTuplesAccessed(r, false);
+					double benefit = numAccessedOld - numAcccessedNew;
 
-			        if (benefit > 0) {
-			        	// TODO: Better cost model ?
-			        	float cost = this.computeCost(r); // Note that buckets haven't changed
-			        	Plan pl = new Plan();
-			        	pl.cost = cost;
-			        	pl.benefit = (float) benefit;
-			        	Action ac = new Action();
-			        	ac.pid = pid;
-			        	ac.option = 1;
-			        	pl.actions = ac;
+					if (benefit > 0) {
+						// TODO: Better cost model ?
+						float cost = this.computeCost(r); // Note that buckets
+															// haven't changed
+						Plan pl = new Plan();
+						pl.cost = cost;
+						pl.benefit = (float) benefit;
+						Action ac = new Action();
+						ac.pid = pid;
+						ac.option = 1;
+						pl.actions = ac;
 
-			        	updatePlan(pTop, pl);
-			        	updatePlan(best, pl);
-			        }
+						updatePlan(pTop, pl);
+						updatePlan(best, pl);
+					}
 
-			        // Restore
-			        replaceInTree(r, node);
+					// Restore
+					replaceInTree(r, node);
 				}
 			}
 
@@ -805,14 +849,15 @@ public class Optimizer {
 				ac.left = leftPlan.PTop.actions;
 				ac.right = rightPlan.PTop.actions;
 				pl.actions = ac;
-	        	updatePlan(pTop, pl);
-	        	updatePlan(best, pl);
+				updatePlan(pTop, pl);
+				updatePlan(best, pl);
 			}
 
 			if (node.attribute == p.attribute) {
 				int c = TypeUtils.compareTo(node.value, testVal, node.type);
 				if (c != 0) {
-					assert (c < 0 && leftPlan.PTop == null) || (c > 0 && rightPlan.PTop == null);
+					assert (c < 0 && leftPlan.PTop == null)
+							|| (c > 0 && rightPlan.PTop == null);
 					// Rotate left
 					if (c < 0 && rightPlan.PTop != null) {
 						Plan pl = new Plan();
@@ -823,11 +868,11 @@ public class Optimizer {
 						ac.option = 3;
 						ac.right = rightPlan.PTop.actions;
 						pl.actions = ac;
-			        	updatePlan(pTop, pl);
-			        	updatePlan(best, pl);
+						updatePlan(pTop, pl);
+						updatePlan(best, pl);
 					}
 
-					//Rotate right
+					// Rotate right
 					if (c > 0 && leftPlan.PTop != null) {
 						Plan pl = new Plan();
 						pl.cost = leftPlan.PTop.cost;
@@ -838,22 +883,26 @@ public class Optimizer {
 						ac.left = leftPlan.PTop.actions;
 						pl.actions = ac;
 						updatePlan(pTop, pl);
-			        	updatePlan(best, pl);
+						updatePlan(best, pl);
 					}
 
 					// Replace by the predicate
-					// If we traverse to root and see that there is no node with cutoff point less than
+					// If we traverse to root and see that there is no node with
+					// cutoff point less than
 					// that of predicate,
 					if (checkValidToRoot(node, p.attribute, p.type, testVal)) {
 						boolean allGood;
 						if (c > 0) {
-							allGood = checkValidForSubtree(node.leftChild, p.attribute, p.type, testVal, 1);
+							allGood = checkValidForSubtree(node.leftChild,
+									p.attribute, p.type, testVal, 1);
 						} else {
-							allGood = checkValidForSubtree(node.rightChild, p.attribute, p.type, testVal, -1);
+							allGood = checkValidForSubtree(node.rightChild,
+									p.attribute, p.type, testVal, -1);
 						}
 
 						if (allGood) {
-					        double numAccessedOld = getNumTuplesAccessed(node, true);
+							double numAccessedOld = getNumTuplesAccessed(node,
+									true);
 
 							RNode r = node.clone();
 							r.attribute = p.attribute;
@@ -861,26 +910,30 @@ public class Optimizer {
 							r.value = testVal;
 							replaceInTree(node, r);
 
-					        populateBucketEstimates(r);
-					        double numAcccessedNew = getNumTuplesAccessed(r, false);
-					        double benefit = numAccessedOld - numAcccessedNew;
+							populateBucketEstimates(r);
+							double numAcccessedNew = getNumTuplesAccessed(r,
+									false);
+							double benefit = numAccessedOld - numAcccessedNew;
 
-					        if (benefit > 0) {
-					        	float cost = this.computeCost(r); // Note that buckets haven't changed
-					        	Plan pl = new Plan();
-					        	pl.cost = cost;
-					        	pl.benefit = (float) benefit;
-					        	Action ac = new Action();
-					        	ac.pid = pid;
-					        	ac.option = 1;
-					        	pl.actions = ac;
+							if (benefit > 0) {
+								float cost = this.computeCost(r); // Note that
+																	// buckets
+																	// haven't
+																	// changed
+								Plan pl = new Plan();
+								pl.cost = cost;
+								pl.benefit = (float) benefit;
+								Action ac = new Action();
+								ac.pid = pid;
+								ac.option = 1;
+								pl.actions = ac;
 
-					        	updatePlan(pTop, pl);
-					        	updatePlan(best, pl);
-					        }
+								updatePlan(pTop, pl);
+								updatePlan(best, pl);
+							}
 
-					        // Restore
-					        replaceInTree(r, node);
+							// Restore
+							replaceInTree(r, node);
 						}
 					}
 				}
@@ -897,7 +950,7 @@ public class Optimizer {
 				ac.left = leftPlan.Best.actions;
 				ac.right = rightPlan.Best.actions;
 				pl.actions = ac;
-	        	updatePlan(best, pl);
+				updatePlan(best, pl);
 			} else if (rightPlan.Best != null) {
 				Plan pl = new Plan();
 				pl.cost = rightPlan.Best.cost;
@@ -907,7 +960,7 @@ public class Optimizer {
 				ac.option = 5;
 				ac.right = rightPlan.Best.actions;
 				pl.actions = ac;
-	        	updatePlan(best, pl);
+				updatePlan(best, pl);
 			} else if (leftPlan.Best != null) {
 				Plan pl = new Plan();
 				pl.cost = leftPlan.Best.cost;
@@ -917,11 +970,13 @@ public class Optimizer {
 				ac.option = 5;
 				ac.left = leftPlan.Best.actions;
 				pl.actions = ac;
-	        	updatePlan(best, pl);
+				updatePlan(best, pl);
 			}
 
-			if (pTop.benefit != -1) ret.PTop = pTop;
-			if (best.benefit != -1) ret.Best = best;
+			if (pTop.benefit != -1)
+				ret.PTop = pTop;
+			if (best.benefit != -1)
+				ret.Best = best;
 
 			return ret;
 		}
@@ -938,15 +993,16 @@ public class Optimizer {
 
 	public static int getDepthOfIndex(int numBlocks) {
 		int k = 31 - Integer.numberOfLeadingZeros(numBlocks);
-		if (numBlocks == (int)Math.pow(2, k)) {
+		if (numBlocks == (int) Math.pow(2, k)) {
 			return k;
 		} else {
-			return k+1;
+			return k + 1;
 		}
 	}
 
 	public void loadQueries() {
-		FileSystem fs = HDFSUtils.getFS(hadoopHome + "/etc/hadoop/core-site.xml");
+		FileSystem fs = HDFSUtils.getFS(hadoopHome
+				+ "/etc/hadoop/core-site.xml");
 		String pathToQueries = this.workingDir + "/queries";
 		try {
 			if (fs.exists(new Path(pathToQueries))) {
@@ -967,7 +1023,8 @@ public class Optimizer {
 
 	public void persistQueryToDisk(FilterQuery fq) {
 		String pathToQueries = this.workingDir + "/queries";
-		HDFSUtils.safeCreateFile(hadoopHome, pathToQueries, this.fileReplicationFactor);
+		HDFSUtils.safeCreateFile(hadoopHome, pathToQueries,
+				this.fileReplicationFactor);
 		HDFSUtils.appendLine(hadoopHome, pathToQueries, fq.toString());
 	}
 
@@ -975,27 +1032,33 @@ public class Optimizer {
 		String pathToIndex = this.workingDir + "/index";
 		FileSystem fs = HDFSUtils.getFSByHadoopHome(hadoopHome);
 		try {
-			if(fs.exists(new Path(pathToIndex))) {
+			if (fs.exists(new Path(pathToIndex))) {
 				// If index file exists, move it to a new filename
 				long currentMillis = System.currentTimeMillis();
 				String oldIndexPath = pathToIndex + "." + currentMillis;
-				boolean successRename = fs.rename(new Path(pathToIndex), new Path(oldIndexPath));
+				boolean successRename = fs.rename(new Path(pathToIndex),
+						new Path(oldIndexPath));
 				if (!successRename) {
-					System.out.println("Index rename to " + oldIndexPath + " failed");
+					System.out.println("Index rename to " + oldIndexPath
+							+ " failed");
 				}
 			}
-			HDFSUtils.safeCreateFile(hadoopHome, pathToIndex, this.fileReplicationFactor);
+			HDFSUtils.safeCreateFile(hadoopHome, pathToIndex,
+					this.fileReplicationFactor);
 		} catch (IOException e) {
 			System.out.println("ERR: Writing Index failed: " + e.getMessage());
 			e.printStackTrace();
 		}
 
 		byte[] indexBytes = this.rt.marshall();
-		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome), pathToIndex, this.fileReplicationFactor, this.rt.marshall(), 0, indexBytes.length, false);
+		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome),
+				pathToIndex, this.fileReplicationFactor, this.rt.marshall(), 0,
+				indexBytes.length, false);
 	}
 
 	/** Used only in simulator **/
 	public void updateCountsBasedOnSample(long totalTuples) {
-		this.rt.initializeBucketSamplesAndCounts(this.rt.getRoot(), this.rt.sample, this.rt.sample.size(), totalTuples);
+		this.rt.initializeBucketSamplesAndCounts(this.rt.getRoot(),
+				this.rt.sample, this.rt.sample.size(), totalTuples);
 	}
 }

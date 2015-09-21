@@ -5,17 +5,17 @@ import java.lang.reflect.Method;
 
 public class ReflectionUtils {
 
-	public static Object invokeMethod(Object obj, String methodName, Object...args){
+	public static Object invokeMethod(Object obj, String methodName,
+			Object... args) {
 		try {
 			Method m;
-			if(args!=null){
+			if (args != null) {
 				Class<?>[] argClasses = new Class<?>[args.length];
-				for(int i=0;i<args.length;i++)
+				for (int i = 0; i < args.length; i++)
 					argClasses[i] = args[i].getClass();
 				m = obj.getClass().getMethod(methodName, argClasses);
 				return m.invoke(obj, args);
-			}
-			else{
+			} else {
 				m = obj.getClass().getMethod(methodName);
 				return m.invoke(obj);
 			}
@@ -32,20 +32,21 @@ public class ReflectionUtils {
 		}
 		throw new RuntimeException("Error!");
 	}
-	
-	public static Class<?> getClass(String className){
+
+	public static Class<?> getClass(String className) {
 		try {
-			if(className==null)
+			if (className == null)
 				return null;
 			else
 				return Class.forName(className);
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
-			throw new RuntimeException("Error in instantiating class: "+className);
+			throw new RuntimeException("Error in instantiating class: "
+					+ className);
 		}
 	}
-	
-	public static Object getInstance(String className){
+
+	public static Object getInstance(String className) {
 		try {
 			return Class.forName(className).newInstance();
 		} catch (InstantiationException e) {
@@ -55,12 +56,14 @@ public class ReflectionUtils {
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
-		throw new RuntimeException("Error in instantiating class: "+className);
+		throw new RuntimeException("Error in instantiating class: " + className);
 	}
-	
-	public static Object getInstance(String className, Class<?>[] argTypes, Object[] args){
+
+	public static Object getInstance(String className, Class<?>[] argTypes,
+			Object[] args) {
 		try {
-			return Class.forName(className).getConstructor(argTypes).newInstance(args);
+			return Class.forName(className).getConstructor(argTypes)
+					.newInstance(args);
 		} catch (InstantiationException e) {
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
@@ -76,6 +79,6 @@ public class ReflectionUtils {
 		} catch (SecurityException e) {
 			e.printStackTrace();
 		}
-		throw new RuntimeException("Error in instantiating class: "+className);
+		throw new RuntimeException("Error in instantiating class: " + className);
 	}
 }

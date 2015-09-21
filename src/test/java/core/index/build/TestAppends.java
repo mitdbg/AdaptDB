@@ -10,13 +10,18 @@ import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 
 /**
- * Failed attempt to see if parallel appends work.
- * They don't work. We get error of the form :
- * [istc5] out: Exception in thread "main" java.lang.RuntimeException: Could not open the file:/user/mdindex/lineitem1000//testAppends, Failed to create file [/user/mdindex/lineitem1000/testAppends] for [DFSClient_NONMAPREDUCE_-976788346_1] for client [128.30.77.78], because this file is already being created by [DFSClient_NONMAPREDUCE_-1724569306_1] on [128.30.77.86]
- * Particularly, two guys can't write to the same file.
+ * Failed attempt to see if parallel appends work. They don't work. We get error
+ * of the form : [istc5] out: Exception in thread "main"
+ * java.lang.RuntimeException: Could not open the
+ * file:/user/mdindex/lineitem1000//testAppends, Failed to create file
+ * [/user/mdindex/lineitem1000/testAppends] for
+ * [DFSClient_NONMAPREDUCE_-976788346_1] for client [128.30.77.78], because this
+ * file is already being created by [DFSClient_NONMAPREDUCE_-1724569306_1] on
+ * [128.30.77.86] Particularly, two guys can't write to the same file.
  *
- * The other issue is xcievers are sockets open. Each is its seperate thread and takes ~1MB memory each.
- * So we can't increase the xcievers. (Currently its 4096 ~ 4GB memory).
+ * The other issue is xcievers are sockets open. Each is its seperate thread and
+ * takes ~1MB memory each. So we can't increase the xcievers. (Currently its
+ * 4096 ~ 4GB memory).
  *
  * @author anil
  *
@@ -37,11 +42,12 @@ public class TestAppends {
 
 	public void runAppends() {
 		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
-		OutputStream os = HDFSUtils.getHDFSOutputStream(fs, testFile, cfg.getHDFS_REPLICATION_FACTOR(), 1 << 20 /* 1 MB */);
+		OutputStream os = HDFSUtils.getHDFSOutputStream(fs, testFile,
+				cfg.getHDFS_REPLICATION_FACTOR(), 1 << 20 /* 1 MB */);
 
 		sentence = cfg.getMACHINE_ID() + " " + sentence + "\n";
 
-		for (int i=0; i<100000; i++) {
+		for (int i = 0; i < 100000; i++) {
 			try {
 				os.write(sentence.getBytes());
 			} catch (IOException e) {
@@ -69,7 +75,7 @@ public class TestAppends {
 		String[] sentences = fileContents.split("\n");
 
 		boolean allGood = true;
-		for (int i=0; i<sentences.length; i++) {
+		for (int i = 0; i < sentences.length; i++) {
 			char t = sentences[i].charAt(0);
 			int tVal = Character.getNumericValue(t);
 			if (tVal < 0 || tVal > 10) {

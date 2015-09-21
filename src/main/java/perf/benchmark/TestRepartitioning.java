@@ -10,22 +10,22 @@ import core.utils.TypeUtils.TYPE;
  */
 public class TestRepartitioning {
 
-    public final static String propertyFile = BenchmarkSettings.conf;
-    public final static ConfUtils cfg = new ConfUtils(propertyFile);
+	public final static String propertyFile = BenchmarkSettings.conf;
+	public final static ConfUtils cfg = new ConfUtils(propertyFile);
 
-    public void setUp() {
+	public void setUp() {
 
-    }
+	}
 
-    public void testBasic(){
-        SparkQuery sq = new SparkQuery(cfg);
-        Predicate p1 = new Predicate(8, TYPE.STRING, "R", Predicate.PREDTYPE.EQ);
-        sq.createRepartitionRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
-    }
+	public void testBasic() {
+		SparkQuery sq = new SparkQuery(cfg);
+		Predicate p1 = new Predicate(8, TYPE.STRING, "R", Predicate.PREDTYPE.EQ);
+		sq.createRepartitionRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
+	}
 
-    public static void main(String[] args) {
-        TestRepartitioning tp = new TestRepartitioning();
-        tp.setUp();
-        tp.testBasic();
-    }
+	public static void main(String[] args) {
+		TestRepartitioning tp = new TestRepartitioning();
+		tp.setUp();
+		tp.testBasic();
+	}
 }

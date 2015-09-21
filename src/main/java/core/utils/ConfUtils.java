@@ -8,7 +8,7 @@ import java.util.Properties;
 public class ConfUtils {
 	private Properties p;
 
-	public ConfUtils(String propertiesFile){
+	public ConfUtils(String propertiesFile) {
 		p = new Properties();
 		try {
 			p.load(new FileInputStream(propertiesFile));
@@ -20,17 +20,18 @@ public class ConfUtils {
 	}
 
 	/**
-	 * Choose whether to enable optimizer
-	 * If false, just runs the query
-	 * If true, tries to optimize the storage layout
+	 * Choose whether to enable optimizer If false, just runs the query If true,
+	 * tries to optimize the storage layout
+	 * 
 	 * @return
 	 */
-	public boolean getENABLE_OPTIMIZER(){
+	public boolean getENABLE_OPTIMIZER() {
 		return Boolean.parseBoolean(p.getProperty("ENABLE_OPTIMIZER").trim());
 	}
 
 	public String getMACHINE_ID() {
-		String machineId = p.getProperty("MACHINE_ID").trim().replaceAll("\\W+", "");
+		String machineId = p.getProperty("MACHINE_ID").trim()
+				.replaceAll("\\W+", "");
 		assert !machineId.equals("");
 		return machineId;
 	}
@@ -59,6 +60,7 @@ public class ConfUtils {
 	/********** HADOOP CONFIG **************/
 	/**
 	 * Path to hadoop installation
+	 * 
 	 * @return
 	 */
 	public String getHADOOP_HOME() {
@@ -67,6 +69,7 @@ public class ConfUtils {
 
 	/**
 	 * Path to hadoop namenode, eg: hdfs://localhost:9000
+	 * 
 	 * @return
 	 */
 	public String getHADOOP_NAMENODE() {
@@ -75,6 +78,7 @@ public class ConfUtils {
 
 	/**
 	 * Get working directory in HDFS.
+	 * 
 	 * @return filepath to hdfs working dir
 	 */
 	public String getHDFS_WORKING_DIR() {
@@ -83,9 +87,11 @@ public class ConfUtils {
 
 	/**
 	 * Get HDFS Replication Factor
+	 * 
 	 * @return
 	 */
 	public short getHDFS_REPLICATION_FACTOR() {
-		return Short.parseShort(p.getProperty("HDFS_REPLICATION_FACTOR").trim());
+		return Short
+				.parseShort(p.getProperty("HDFS_REPLICATION_FACTOR").trim());
 	}
 }

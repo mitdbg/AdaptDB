@@ -4,6 +4,8 @@ from conf_server import conf_server
 from conf_local import conf_local
 
 env.use_ssh_config = True
+
+# Usually run setup:server or setup:local. This are the default settings.
 env.user = 'mdindex'
 env.hosts = ['istc2', 'istc5', 'istc6', 'istc7', 'istc8', 'istc9', 'istc10', 'istc11', 'istc12', 'istc13']
 
@@ -165,10 +167,16 @@ def setup(mode="server"):
         conf = conf_server
         env.user = 'mdindex'
         env.hosts = ['istc2', 'istc5', 'istc6', 'istc7', 'istc8', 'istc9', 'istc10', 'istc11', 'istc12', 'istc13']
+        env.roledefs = {
+            'master': ['istc2']
+        }
     else:
         conf = conf_local
         env.user = 'anil'
         env.hosts = ['localhost']
+        env.roledefs = {
+            'master': ['localhost']
+        }
 
 @serial
 def tpch_script_gen_100():

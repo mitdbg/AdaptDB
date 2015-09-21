@@ -21,66 +21,57 @@ import core.access.iterator.PostFilterIterator;
 
 public class HPInput {
 
-	protected AccessMethod am;	
-	protected ArrayListMultimap<Integer,FileStatus> partitionIdFileMap;
-	protected Map<Integer,Long> partitionIdSizeMap;
-	
-	
-	public void initialize(List<FileStatus> files, AccessMethod am){
+	protected AccessMethod am;
+	protected ArrayListMultimap<Integer, FileStatus> partitionIdFileMap;
+	protected Map<Integer, Long> partitionIdSizeMap;
+
+	public void initialize(List<FileStatus> files, AccessMethod am) {
 		this.am = am;
 		partitionIdFileMap = ArrayListMultimap.create();
 		partitionIdSizeMap = Maps.newHashMap();
-		for(FileStatus file: files){
+		for (FileStatus file : files) {
 			try {
-				int id = Integer.parseInt(FilenameUtils.getName(file.getPath().toString()));
+				int id = Integer.parseInt(FilenameUtils.getName(file.getPath()
+						.toString()));
 				partitionIdFileMap.put(id, file);
-				long currentSize = partitionIdSizeMap.containsKey(id) ? partitionIdSizeMap.get(id) : 0;
+				long currentSize = partitionIdSizeMap.containsKey(id) ? partitionIdSizeMap
+						.get(id) : 0;
 				partitionIdSizeMap.put(id, currentSize + file.getLen());
 			} catch (NumberFormatException e) {
 			}
 		}
 	}
-	
-	public PartitionSplit[] getFullScan(Predicate...predicates){
-		return new PartitionSplit[]{ new PartitionSplit(
+
+	public PartitionSplit[] getFullScan(Predicate... predicates) {
+		return new PartitionSplit[] { new PartitionSplit(
 				Ints.toArray(partitionIdFileMap.keySet()),
-				new PostFilterIterator(
-						new FilterQuery(predicates, am.getKey()))
-					)
-		};
+				new PostFilterIterator(new FilterQuery(predicates, am.getKey()))) };
 	}
-	
-	public PartitionSplit[] getRepartitionScan(Predicate...predicates){
-		return new PartitionSplit[]{new PartitionSplit(
+
+	public PartitionSplit[] getRepartitionScan(Predicate... predicates) {
+		return new PartitionSplit[] { new PartitionSplit(
 				Ints.toArray(partitionIdFileMap.keySet()),
-				new DistributedRepartitionIterator(
-						new FilterQuery(predicates, am.getKey()), am.getIndex().getRoot()
-					)
-		)};
+				new DistributedRepartitionIterator(new FilterQuery(predicates,
+						am.getKey()), am.getIndex().getRoot())) };
 	}
-	
-	
-	
-	public PartitionSplit[] getIndexScan(boolean justAccess, Predicate...predicates){
-		return am.getPartitionSplits(
-					new FilterQuery(predicates, am.getKey()), justAccess
-				);
+
+	public PartitionSplit[] getIndexScan(boolean justAccess,
+			Predicate... predicates) {
+		return am.getPartitionSplits(new FilterQuery(predicates, am.getKey()),
+				justAccess);
 	}
-	
-	
-	
-	
+
 	// utility methods
-	
-	public Path[] getPaths(int[] partitionIds){
+
+	public Path[] getPaths(int[] partitionIds) {
 		List<Path> splitFiles = Lists.newArrayList();
-		for(int i=0;i<partitionIds.length;i++)
-			for(FileStatus fs: partitionIdFileMap.get(partitionIds[i]))
+		for (int i = 0; i < partitionIds.length; i++)
+			for (FileStatus fs : partitionIdFileMap.get(partitionIds[i]))
 				splitFiles.add(fs.getPath());
 		Path[] splitFilesArr = new Path[splitFiles.size()];
-		for(int i=0;i<splitFilesArr.length;i++)
+		for (int i = 0; i < splitFilesArr.length; i++)
 			splitFilesArr[i] = splitFiles.get(i);
-		
+
 		return splitFilesArr;
 	}
 
@@ -99,17 +90,17 @@ public class HPInput {
 		}
 		return getPaths(partitions);
 	}
-	
-	public long[] getLengths(int[] partitionIds){
+
+	public long[] getLengths(int[] partitionIds) {
 		List<Long> lengths = Lists.newArrayList();
-		for(int i=0;i<partitionIds.length;i++)
-			for(FileStatus fs: partitionIdFileMap.get(partitionIds[i]))
+		for (int i = 0; i < partitionIds.length; i++)
+			for (FileStatus fs : partitionIdFileMap.get(partitionIds[i]))
 				lengths.add(fs.getLen());
-		
+
 		long[] lengthsArr = new long[lengths.size()];
-		for(int i=0;i<lengthsArr.length;i++)
+		for (int i = 0; i < lengthsArr.length; i++)
 			lengthsArr[i] = lengths.get(i);
-		
+
 		return lengthsArr;
 	}
 
@@ -141,12 +132,11 @@ public class HPInput {
 		return length;
 	}
 
-	
-	public int getNumPartitions(){
+	public int getNumPartitions() {
 		return partitionIdSizeMap.size();
 	}
-	
-	public Map<Integer,Long> getPartitionIdSizeMap(){
+
+	public Map<Integer, Long> getPartitionIdSizeMap() {
 		return partitionIdSizeMap;
 	}
 }

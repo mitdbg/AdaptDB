@@ -16,29 +16,29 @@ import java.io.Serializable;
  */
 public class IteratorRecord extends CartilageIndexKey implements Serializable {
 
-    /**
+	/**
      *
      */
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    public IteratorRecord() {
-        //super('|');
-        super(PartitionIterator.delimiter);
-    }
+	public IteratorRecord() {
+		// super('|');
+		super(PartitionIterator.delimiter);
+	}
 
-    public IteratorRecord(int[] keyAttrIdx){
-        super(PartitionIterator.delimiter, keyAttrIdx);
-    }
+	public IteratorRecord(int[] keyAttrIdx) {
+		super(PartitionIterator.delimiter, keyAttrIdx);
+	}
 
-    public byte[] getBytes(){
-        return this.bytes;
-    }
+	public byte[] getBytes() {
+		return this.bytes;
+	}
 
-    public int getOffset(){
-        return this.offset;
-    }
+	public int getOffset() {
+		return this.offset;
+	}
 
-    public int getLength(){
-        return this.length;
-    }
+	public int getLength() {
+		return this.length;
+	}
 }

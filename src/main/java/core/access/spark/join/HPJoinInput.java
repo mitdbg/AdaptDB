@@ -20,7 +20,7 @@ import core.access.spark.HPInput;
 import core.access.spark.SparkQueryConf;
 import scala.Tuple2;
 
-public class HPJoinInput extends HPInput{
+public class HPJoinInput extends HPInput {
 
 	private static double OVERLAP_THRESHOLD = 0.95;
 	public static long MAX_SPLIT_SIZE = 160000 * 1000000L;
@@ -29,27 +29,27 @@ public class HPJoinInput extends HPInput{
 	private Integer joinKey;
 	@SuppressWarnings("unused")
 	private Integer rid;
-	
+
 	// the index number of this input amongst the join relations
 	private static int idx = 0;
-	
+
 	// hard coded .. must be configured
 	int joinReplica = 0;
-	
-	
-	public HPJoinInput(Configuration conf){
-		joinInput = conf.get("JOIN_INPUT"+(idx+1));
+
+	public HPJoinInput(Configuration conf) {
+		joinInput = conf.get("JOIN_INPUT" + (idx + 1));
 		String joinCond = conf.get("JOIN_CONDITION");
 		String hadoopNamenode = conf.get("HADOOP_NAMENODE");
 		String tokens[] = joinCond.split("=");
 		rid = Integer.parseInt(tokens[idx].split("\\.")[0]);
 		joinKey = Integer.parseInt(tokens[idx].split("\\.")[1]);
-		idx++;	// increment the idx for the next instantiation of HPJoinInput
-		
-		conf.set(FileInputFormat.INPUT_DIR, hadoopNamenode + joinInput + "/" + joinReplica);
+		idx++; // increment the idx for the next instantiation of HPJoinInput
+
+		conf.set(FileInputFormat.INPUT_DIR, hadoopNamenode + joinInput + "/"
+				+ joinReplica);
 	}
-	
-	public void initialize(List<FileStatus> files, SparkQueryConf queryConf){
+
+	public void initialize(List<FileStatus> files, SparkQueryConf queryConf) {
 		AccessMethod am = new AccessMethod();
 		queryConf.setWorkingDir(joinInput);
 		queryConf.setReplicaId(joinReplica);
@@ -58,7 +58,8 @@ public class HPJoinInput extends HPInput{
 	}
 
 	public List<MDIndex.BucketInfo> getBucketRanges() {
-		return new ArrayList<MDIndex.BucketInfo>(am.getIndex().getBucketRanges(joinKey).values());
+		return new ArrayList<MDIndex.BucketInfo>(am.getIndex()
+				.getBucketRanges(joinKey).values());
 	}
 
 	public List<Range> getRangeSplits(int fanout, boolean overlap) {
@@ -68,17 +69,20 @@ public class HPJoinInput extends HPInput{
 		Object[] cutpoints = sample.getCutpoints(joinKey, fanout);
 		TypeUtils.TYPE type = sample.getTypes()[joinKey];
 
-		Range fullRange = new Range(type, cutpoints[0], cutpoints[cutpoints.length-1]);
+		Range fullRange = new Range(type, cutpoints[0],
+				cutpoints[cutpoints.length - 1]);
 		fullRange.expand(0.001);
 		cutpoints[0] = fullRange.getLow();
-		cutpoints[cutpoints.length-1] = fullRange.getHigh();
+		cutpoints[cutpoints.length - 1] = fullRange.getHigh();
 
 		int rangeSize = 1;
 		int currentStart = 0;
 		int maxRangeSize = overlap ? fanout : rangeSize;
 		while (rangeSize <= maxRangeSize) {
 			while (currentStart < (cutpoints.length - rangeSize)) {
-				partitions.add(new PartitionRange(type, cutpoints[currentStart], cutpoints[currentStart + rangeSize]));
+				partitions.add(new PartitionRange(type,
+						cutpoints[currentStart], cutpoints[currentStart
+								+ rangeSize]));
 				currentStart += rangeSize;
 			}
 			rangeSize *= 2;
@@ -87,11 +91,13 @@ public class HPJoinInput extends HPInput{
 		return partitions;
 	}
 
-	public List<Tuple2<Range, int[]>> getAssignedBucketSplits(int fanout, boolean overlap) {
+	public List<Tuple2<Range, int[]>> getAssignedBucketSplits(int fanout,
+			boolean overlap) {
 		List<Range> ranges = getRangeSplits(fanout, overlap);
 		List<PartitionRange> partitions = new ArrayList<PartitionRange>();
 		for (Range r : ranges) {
-			partitions.add(new PartitionRange(r.getType(), r.getLow(), r.getHigh()));
+			partitions.add(new PartitionRange(r.getType(), r.getLow(), r
+					.getHigh()));
 		}
 		List<Tuple2<Range, List<Integer>>> bucketLists = assignBucketsToRanges(partitions);
 		List<Tuple2<Range, int[]>> result = new ArrayList<Tuple2<Range, int[]>>();
@@ -105,13 +111,17 @@ public class HPJoinInput extends HPInput{
 		return result;
 	}
 
-	private List<Tuple2<Range, List<Integer>>> assignBucketsToRanges(List<PartitionRange> ranges) {
+	private List<Tuple2<Range, List<Integer>>> assignBucketsToRanges(
+			List<PartitionRange> ranges) {
 		List<MDIndex.BucketInfo> unassignedBuckets = new ArrayList<MDIndex.BucketInfo>();
 		Range fullRange = getFullRange();
-		Map<Integer, MDIndex.BucketInfo> bucketRanges = am.getIndex().getBucketRanges(joinKey);
+		Map<Integer, MDIndex.BucketInfo> bucketRanges = am.getIndex()
+				.getBucketRanges(joinKey);
 
-		// For every bucket, try to assign it to one of the pre-calculated ranges
-		for (Map.Entry<Integer, MDIndex.BucketInfo> bucketRange : bucketRanges.entrySet()) {
+		// For every bucket, try to assign it to one of the pre-calculated
+		// ranges
+		for (Map.Entry<Integer, MDIndex.BucketInfo> bucketRange : bucketRanges
+				.entrySet()) {
 			if (!partitionIdFileMap.containsKey(bucketRange.getKey())) {
 				continue;
 			}
@@ -142,7 +152,7 @@ public class HPJoinInput extends HPInput{
 			List<MDIndex.BucketInfo> current = toAssign;
 			toAssign = new ArrayList<MDIndex.BucketInfo>();
 			for (MDIndex.BucketInfo info : current) {
-				//Collections.shuffle(ranges);
+				// Collections.shuffle(ranges);
 				for (PartitionRange r : ranges) {
 					if (info.intersectionFraction(r) == 1.0) {
 						r.addBucket(info, false);
@@ -160,14 +170,14 @@ public class HPJoinInput extends HPInput{
 			}
 		}
 
-		System.out.println("Ranges formed: "+ranges);
+		System.out.println("Ranges formed: " + ranges);
 		System.out.println("Unassigned buckets: " + unassignedBuckets.size());
 
 		// Split up any ranges of buckets that are too large
 		List<Tuple2<Range, List<Integer>>> splits = new ArrayList<Tuple2<Range, List<Integer>>>();
 		for (PartitionRange r : ranges) {
 			List<MDIndex.BucketInfo> buckets = r.getBuckets();
-			System.out.println(buckets.size() + " buckets in "+r);
+			System.out.println(buckets.size() + " buckets in " + r);
 
 			long bucketSize = 0;
 			for (MDIndex.BucketInfo bucket : buckets) {
@@ -185,7 +195,8 @@ public class HPJoinInput extends HPInput{
 			while (currentIndex < buckets.size()) {
 				while (totalSize < goalSize && currentIndex < buckets.size()) {
 					MDIndex.BucketInfo bucket = buckets.get(currentIndex);
-					List<FileStatus> files = partitionIdFileMap.get(bucket.getId());
+					List<FileStatus> files = partitionIdFileMap.get(bucket
+							.getId());
 					currentBuckets.add(bucket.getId());
 					for (FileStatus f : files) {
 						totalSize += f.getLen();
@@ -200,47 +211,51 @@ public class HPJoinInput extends HPInput{
 		}
 		return splits;
 	}
-	
+
 	public List<int[]> getEvenBucketSplits(int numSplits) {
 		List<int[]> splits = new ArrayList<int[]>();
-		double numPerSplit = Math.max(partitionIdFileMap.keys().size() / (double) numSplits, 1);
+		double numPerSplit = Math.max(partitionIdFileMap.keys().size()
+				/ (double) numSplits, 1);
 		int num = 0;
 		double target = numPerSplit;
-		int[] ids = new int[(int)numPerSplit];
+		int[] ids = new int[(int) numPerSplit];
 
 		for (Integer id : partitionIdFileMap.keys()) {
 			int intTarget = (int) target;
-			ids[intTarget-num-1] = id;
+			ids[intTarget - num - 1] = id;
 			num++;
 
 			if (num >= intTarget) {
 				splits.add(ids);
-				System.out.println("Num buckets in split: "+ids.length);
+				System.out.println("Num buckets in split: " + ids.length);
 				double newTarget = target + numPerSplit;
-				ids = new int[(int)(newTarget - intTarget)];
+				ids = new int[(int) (newTarget - intTarget)];
 				target = newTarget;
 			}
 		}
 		return splits;
 	}
 
-	public PartitionSplit[] getRangeScan(boolean justAccess, Object lowVal, Object highVal) {
+	public PartitionSplit[] getRangeScan(boolean justAccess, Object lowVal,
+			Object highVal) {
 		TypeUtils.TYPE[] types = am.getIndex().dimensionTypes;
 		if (types[joinKey] == TypeUtils.TYPE.LONG) {
-			lowVal = ((Number)lowVal).longValue();
-			highVal = ((Number)highVal).longValue();
+			lowVal = ((Number) lowVal).longValue();
+			highVal = ((Number) highVal).longValue();
 		} else if (types[joinKey] == TypeUtils.TYPE.INT) {
-			lowVal = ((Number)lowVal).intValue();
-			highVal = ((Number)highVal).intValue();
+			lowVal = ((Number) lowVal).intValue();
+			highVal = ((Number) highVal).intValue();
 		}
 
 		// lookup the predicate in the smaller table (filter query)
-		Predicate lookupPred1 = new Predicate(joinKey, types[joinKey], lowVal, Predicate.PREDTYPE.GT);
-		Predicate lookupPred2 = new Predicate(joinKey, types[joinKey], highVal, Predicate.PREDTYPE.LEQ);
+		Predicate lookupPred1 = new Predicate(joinKey, types[joinKey], lowVal,
+				Predicate.PREDTYPE.GT);
+		Predicate lookupPred2 = new Predicate(joinKey, types[joinKey], highVal,
+				Predicate.PREDTYPE.LEQ);
 
 		return getIndexScan(justAccess, lookupPred1, lookupPred2);
 	}
-	
+
 	// utility methods
 
 	public Range getFullRange() {
