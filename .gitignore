@@ -11,6 +11,7 @@ out/
 .classpath
 scripts/config.sh
 conf/cartilage.properties
+conf/cartilage.properties.server
 lib/
 .gradle/
 .settings/
