@@ -4,10 +4,10 @@ BASEDIR=$(dirname $0)
 
 source $BASEDIR/config.sh
 
-# start spark
+# stop spark
 $SPARK_HOME/sbin/stop-all.sh
 
-# start HDFS
+# stop HDFS
 $HADOOP_HOME/sbin/stop-dfs.sh
 
 jps
