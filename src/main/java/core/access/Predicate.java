@@ -1,7 +1,10 @@
 package core.access;
 
-import core.utils.TypeUtils.TYPE;
+import org.junit.Assert;
+
+import core.index.key.Schema;
 import core.utils.TypeUtils;
+import core.utils.TypeUtils.TYPE;
 
 public class Predicate {
 	public enum PREDTYPE {
@@ -20,6 +23,15 @@ public class Predicate {
 		this.predtype = predtype;
 	}
 
+	public Predicate(String attr, TYPE t, Object val, PREDTYPE predtype) {
+		this.attribute = Schema.getAttributeId(attr);
+		Assert.assertNotEquals(this.attribute, -1);
+		Assert.assertEquals(t, Schema.getType(this.attribute));
+		this.type = t;
+		this.value = val;
+		this.predtype = predtype;
+	}
+
 	public Predicate(String predString) {
 		String[] tokens = predString.split(":");
 		this.attribute = Integer.parseInt(tokens[0]);
@@ -31,7 +43,7 @@ public class Predicate {
 	/**
 	 * Check if tuple with value for attribute is accepted (true) or rejected
 	 * (false) by predicate
-	 * 
+	 *
 	 * @param value
 	 * @return
 	 */

@@ -1,6 +1,6 @@
 conf_server = {
     'JAR' : '/data/mdindex/jars/mdindex-all.jar',
-    'CONF' : '/user/mdindex/cartilage.properties',
+    'CONF' : '/home/mdindex/cartilage.properties',
     'INPUTSDIR' : '/data/mdindex/lineitem1000/',
     'HDFSDIR' : '/user/mdindex/lineitem1000/',
     'HOMEDIR' : '/home/mdindex/',
