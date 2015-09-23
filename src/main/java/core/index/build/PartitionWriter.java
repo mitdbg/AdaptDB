@@ -50,10 +50,12 @@ public abstract class PartitionWriter implements Cloneable {
 		long start = System.nanoTime();
 		OutputStream b = buffer.get(partitionId);
 		if (b == null) {
-			// if there is a hard limit on the number of buffers, then close
+			// If there is a hard limit on the number of buffers, then close
 			// some of them before opening new ones!
-			// if(buffer.size() > maxBufferPartitions)
-			// flush((int)(flushFraction*maxBufferPartitions));
+//			int maxBufferPartitions = 400;
+//			double flushFraction = 0.2;
+//			if(buffer.size() > maxBufferPartitions)
+//				flush((int)(flushFraction*maxBufferPartitions));
 
 			b = getOutputStream(partitionDir + "/" + partitionId);
 			buffer.put(partitionId, b);

@@ -13,7 +13,6 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import core.index.MDIndex;
 import core.utils.BufferManager;
 import core.utils.ConfUtils;
 import core.utils.CuratorUtils;
@@ -53,7 +52,7 @@ public class ReusableHDFSPartition extends ReusablePartition {
 		} catch (IOException ex) {
 			throw new RuntimeException("failed to get hdfs filesystem");
 		}
-		client = CuratorUtils.createAndStartClient(conf.getZOOKEEPER_HOSTS());
+//		client = CuratorUtils.createAndStartClient(conf.getZOOKEEPER_HOSTS());
 	}
 
 	public ReusableHDFSPartition(FileSystem hdfs, String pathAndPartitionId,
@@ -69,6 +68,7 @@ public class ReusableHDFSPartition extends ReusablePartition {
 		this(hdfs, pathAndPartitionId, (short) 3, client, buffMgr);
 	}
 
+	@Override
 	public Partition clone() {
 		String clonePath = path
 				.replaceAll("partitions[0-9]*/$", "repartition/");
@@ -123,6 +123,7 @@ public class ReusableHDFSPartition extends ReusablePartition {
 		}
 	}
 
+	@Override
 	public boolean load() {
 		if (path == null || path.equals(""))
 			return false;
@@ -133,6 +134,7 @@ public class ReusableHDFSPartition extends ReusablePartition {
 		return true; // load the physical block for this partition
 	}
 
+	@Override
 	public ByteBuffer getNextBytes() {
 		if (readSize <= returnSize) {
 			boolean f = loadNext();
@@ -165,13 +167,14 @@ public class ReusableHDFSPartition extends ReusablePartition {
 	// locker.release(partitionId);
 	// }
 
+	@Override
 	public void store(boolean append) {
 		InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client,
 				"/partition-lock-" + path.hashCode() + "-" + partitionId);
 		// lock.acquire(partitionId);
 		System.out.println("LOCK: acquired lock,  " + "path=" + path
 				+ " , partition id=" + partitionId);
-		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
+//		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
 
 		try {
 			// String storePath = FilenameUtils.getFullPath(path) +
@@ -198,7 +201,7 @@ public class ReusableHDFSPartition extends ReusablePartition {
 			os.flush();
 			os.close();
 
-			c.addToBucketCount(this.getPartitionId(), this.getRecordCount());
+//			c.addToBucketCount(this.getPartitionId(), this.getRecordCount());
 			recordCount = 0;
 		} catch (IOException ex) {
 			System.out.println("exception: "
@@ -213,12 +216,13 @@ public class ReusableHDFSPartition extends ReusablePartition {
 		// append);
 	}
 
+	@Override
 	public void drop() {
 		// CuratorFramework client =
 		// CuratorUtils.createAndStartClient(zookeeperHosts);
-		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
+//		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
 		// HDFSUtils.deleteFile(hdfs, path + "/" + partitionId, false);
-		c.removeBucketCount(this.getPartitionId());
+//		c.removeBucketCount(this.getPartitionId());
 		// client.close();
 	}
 

@@ -24,7 +24,7 @@ import core.utils.TypeUtils.TYPE;
 
 /**
  * Finds the best index tree for a given workload
- * 
+ *
  * @author anil
  *
  */
@@ -123,7 +123,7 @@ public class WorkloadAnalyser {
 	public void buildOptTree(RNode n, CartilageIndexKeySet sample, int depth) {
 		n.bucket = new Bucket();
 		n.bucket.setSample(sample);
-		n.bucket.estimatedTuples = numEstimatedTuples(sample.size());
+		n.bucket.setEstimatedNumTuples(numEstimatedTuples(sample.size()));
 
 		if (depth == 0) {
 			return;
@@ -154,10 +154,10 @@ public class WorkloadAnalyser {
 			sample.sort(n.attribute);
 			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample
 					.splitAt(n.attribute, n.value);
-			n.leftChild.bucket.estimatedTuples = numEstimatedTuples(halves.first
-					.size());
-			n.rightChild.bucket.estimatedTuples = numEstimatedTuples(halves.second
-					.size());
+			n.leftChild.bucket.setEstimatedNumTuples(
+					numEstimatedTuples(halves.first.size()));
+			n.rightChild.bucket.setEstimatedNumTuples(
+					numEstimatedTuples(halves.second.size()));
 
 			double numAccessedNew = getNumTuplesAccessed(n);
 			double extraBenefit = numAccessedOld - numAccessedNew;
@@ -171,7 +171,7 @@ public class WorkloadAnalyser {
 		if (cChosen == null) {
 			n.bucket = new Bucket();
 			n.bucket.setSample(sample);
-			n.bucket.estimatedTuples = numEstimatedTuples(sample.size());
+			n.bucket.setEstimatedNumTuples(numEstimatedTuples(sample.size()));
 		} else {
 			n.attribute = cChosen.attribute;
 			n.type = cChosen.type;
@@ -190,7 +190,7 @@ public class WorkloadAnalyser {
 		float numTuples = 0;
 		for (int i = queryWindow.size() - 1; i >= 0; i--) {
 			Query q = queryWindow.get(i);
-			numTuples += Optimizer.getNumTuplesAccessed(changed, q, false);
+			numTuples += Optimizer.getNumTuplesAccessed(changed, q);
 		}
 
 		return numTuples;
@@ -200,7 +200,7 @@ public class WorkloadAnalyser {
 		List<Float> costs = new ArrayList<Float>();
 		for (int i = 0; i < queryWindow.size(); i++) {
 			Query q = queryWindow.get(i);
-			costs.add(Optimizer.getNumTuplesAccessed(root, q, false));
+			costs.add(Optimizer.getNumTuplesAccessed(root, q));
 		}
 
 		return costs;

@@ -121,7 +121,7 @@ public class RobustTreeHs implements MDIndex {
 		 * Do a level-order traversal
 		 */
 		LinkedList<Task> nodeQueue = new LinkedList<Task>();
-		// Intialize root with attribute 0
+		// Initialize root with attribute 0
 		Task initialTask = new Task();
 		initialTask.node = root;
 		initialTask.sample = this.sample;
@@ -162,9 +162,7 @@ public class RobustTreeHs implements MDIndex {
 				} else {
 					t.node.attribute = dim;
 					t.node.type = this.dimensionTypes[dim];
-					t.node.value = halves.first.getLast(dim); // Need to
-																// traverse up
-																// for range
+					t.node.value = halves.first.getLast(dim); // Need to traverse up for range.
 
 					t.node.leftChild = new RNode();
 					t.node.leftChild.parent = t.node;
@@ -199,7 +197,7 @@ public class RobustTreeHs implements MDIndex {
 
 	/**
 	 * Return the dimension which has the maximum allocation unfulfilled
-	 * 
+	 *
 	 * @return
 	 */
 	public static int getLeastAllocated(double[] allocations) {
@@ -244,12 +242,12 @@ public class RobustTreeHs implements MDIndex {
 		return results;
 	}
 
-	public int getNumTuples(Predicate[] predicates) {
-		int total = 0;
+	public double getNumTuples(Predicate[] predicates) {
+		double total = 0;
 		List<RNode> matchingBuckets = getMatchingBuckets(predicates);
 		// Note that the above list is a linked-list; don't use .get over it
 		for (RNode node : matchingBuckets) {
-			total += node.bucket.getNumTuples();
+			total += node.bucket.getEstimatedNumTuples();
 		}
 
 		return total;
@@ -330,9 +328,9 @@ public class RobustTreeHs implements MDIndex {
 			final long totalTuples) {
 		if (n.bucket != null) {
 			long sampleSize = sample.size();
-			int numTuples = (int) ((sampleSize * totalTuples) / totalSamples);
+			double numTuples = (sampleSize * totalTuples) / totalSamples;
 			n.bucket.setSample(sample);
-			Bucket.counters.setToBucketCount(n.bucket.getBucketId(), numTuples);
+			n.bucket.setEstimatedNumTuples(numTuples);
 		} else {
 			// By sorting we avoid memory allocation
 			// Will most probably be faster
@@ -354,11 +352,6 @@ public class RobustTreeHs implements MDIndex {
 		return nthroot(n, A, .001);
 	}
 
-	public static void main(String[] args) {
-		System.out.println(nthroot(4, 8));
-		System.out.println(nthroot(2, 16));
-	}
-
 	public static double nthroot(int n, double A, double p) {
 		if (A < 0) {
 			System.err.println("A < 0");// we handle only real positive numbers
@@ -366,12 +359,14 @@ public class RobustTreeHs implements MDIndex {
 		} else if (A == 0) {
 			return 0;
 		}
+
 		double x_prev = A;
 		double x = A / n; // starting "guessed" value...
 		while (Math.abs(x - x_prev) > p) {
 			x_prev = x;
 			x = ((n - 1.0) * x + A / Math.pow(x, n - 1.0)) / n;
 		}
+
 		return x;
 	}
 
@@ -437,21 +432,18 @@ public class RobustTreeHs implements MDIndex {
 				queue.add(filler);
 				continue;
 			}
+
 			lastNode = nodeNum;
 			if (!(allocs.containsKey(node.attribute))) {
 				allocs.put(node.attribute, 0.0);
 			}
-			allocs.put(
-					node.attribute,
-					allocs.get(node.attribute)
-							+ Math.pow(
-									2,
-									-1
-											* Math.floor(Math.log(nodeNum)
-													/ Math.log(2)) + 1));
+
+			double addedAlloc = Math.pow(2, -1 * Math.floor(Math.log(nodeNum) / Math.log(2)) + 1);
+			allocs.put(node.attribute, allocs.get(node.attribute) + addedAlloc);
 			queue.add(node.leftChild);
 			queue.add(node.rightChild);
 		}
+
 		double[] allocArray = new double[numAttributes];
 		for (int i = 0; i < numAttributes; i++) {
 			if (!(allocs.containsKey(i))) {

@@ -6,7 +6,6 @@ import java.io.OutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import core.index.MDIndex;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 
@@ -67,16 +66,16 @@ public class HDFSPartitionWriter extends PartitionWriter {
 
 	@Override
 	public void flush() {
-		MDIndex.BucketCounts c = new MDIndex.BucketCounts(
-				conf.getZOOKEEPER_HOSTS());
-		for (String k : buffer.keySet())
-			try {
-				c.setToBucketCount(Integer.parseInt(k), partitionRecordCount
-						.get(k).intValue());
-			} catch (NumberFormatException e) {
-
-			}
-		c.close();
+//		MDIndex.BucketCounts c = new MDIndex.BucketCounts(
+//				conf.getZOOKEEPER_HOSTS());
+//		for (String k : buffer.keySet())
+//			try {
+//				c.setToBucketCount(Integer.parseInt(k), partitionRecordCount
+//						.get(k).intValue());
+//			} catch (NumberFormatException e) {
+//				System.out.println("Error formatting the bucket id while writing to zookeeper");
+//			}
+//		c.close();
 		super.flush();
 	}
 }

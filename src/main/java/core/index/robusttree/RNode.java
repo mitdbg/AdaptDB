@@ -1,16 +1,22 @@
 package core.index.robusttree;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
 
 import core.access.Predicate;
-import core.index.MDIndex.*;
+import core.index.MDIndex.Bucket;
+import core.index.MDIndex.BucketInfo;
 import core.index.key.MDIndexKey;
 import core.utils.TypeUtils;
-import core.utils.TypeUtils.*;
+import core.utils.TypeUtils.SimpleDate;
+import core.utils.TypeUtils.TYPE;
 
 /**
  * Internal node in robust tree datastructure
- * 
+ *
  * @author anil
  */
 public class RNode {
@@ -183,14 +189,14 @@ public class RNode {
 		}
 	}
 
-	public int numTuplesInSubtree() {
+	public double numTuplesInSubtree() {
 		LinkedList<RNode> stack = new LinkedList<RNode>();
 		stack.add(this);
-		int total = 0;
+		double total = 0;
 		while (stack.size() > 0) {
 			RNode t = stack.removeLast();
 			if (t.bucket != null) {
-				total += t.bucket.getNumTuples();
+				total += t.bucket.getEstimatedNumTuples();
 			} else {
 				stack.add(t.rightChild);
 				stack.add(t.leftChild);
@@ -200,14 +206,14 @@ public class RNode {
 		return total;
 	}
 
-	public int getAll() {
+	public double getAll() {
 		LinkedList<RNode> stack = new LinkedList<RNode>();
 		stack.add(this);
-		int total = 0;
+		double total = 0;
 		while (stack.size() > 0) {
 			RNode t = stack.removeLast();
 			if (t.bucket != null) {
-				total += t.bucket.getNumTuples();
+				total += t.bucket.getEstimatedNumTuples();
 			} else {
 				stack.add(t.rightChild);
 				stack.add(t.leftChild);

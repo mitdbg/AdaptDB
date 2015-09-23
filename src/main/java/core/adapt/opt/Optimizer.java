@@ -19,7 +19,6 @@ import core.access.iterator.PartitionIterator;
 import core.access.iterator.PostFilterIterator;
 import core.access.iterator.RepartitionIterator;
 import core.access.spark.SparkQueryConf;
-import core.index.MDIndex;
 import core.index.MDIndex.Bucket;
 import core.index.key.CartilageIndexKeySet;
 import core.index.robusttree.RNode;
@@ -42,7 +41,7 @@ public class Optimizer {
 
 	static final long NODE_MEM_SIZE = 1024 * 1024 * 1024 * 2;
 	static final int TUPLE_SIZE = 128;
-	static final int NODE_TUPLE_LIMIT = 33554432; // NODE_MEM_SIZE / TUPLE_SIZE
+	static final double NODE_TUPLE_LIMIT = 33554432; // NODE_MEM_SIZE / TUPLE_SIZE
 
 	RobustTreeHs rt;
 	int rtDepth;
@@ -57,8 +56,8 @@ public class Optimizer {
 
 	public static class Plan {
 		public Action actions; // Tree of actions
-		public float cost;
-		public float benefit;
+		public double cost;
+		public double benefit;
 
 		public Plan() {
 			cost = 0;
@@ -107,7 +106,6 @@ public class Optimizer {
 	public void loadIndex() {
 		FileSystem fs = HDFSUtils.getFS(hadoopHome
 				+ "/etc/hadoop/core-site.xml");
-		Bucket.counters = new MDIndex.BucketCounts(zookeeperHosts);
 		String pathToIndex = this.workingDir + "/index";
 		String pathToSample = this.workingDir + "/sample";
 
@@ -197,10 +195,9 @@ public class Optimizer {
 			long totalCostOfQuery = 0;
 			for (int i = 0; i < psplits.length; i++) {
 				int[] bids = psplits[i].getPartitions();
-				long numTuplesAccessed = 0;
+				double numTuplesAccessed = 0;
 				for (int j = 0; j < bids.length; j++) {
-					numTuplesAccessed += Bucket.counters
-							.getBucketCount(bids[j]);
+					numTuplesAccessed += Bucket.getEstimatedNumTuples(bids[j]);
 				}
 
 				totalCostOfQuery += numTuplesAccessed;
@@ -456,7 +453,7 @@ public class Optimizer {
 
 	/**
 	 * Checks if it is valid to partition on attrId with value val at node
-	 * 
+	 *
 	 * @param node
 	 * @param attrId
 	 * @param t
@@ -484,7 +481,7 @@ public class Optimizer {
 	/**
 	 * Checks if it is valid to partition on attrId with value val at node's
 	 * parent
-	 * 
+	 *
 	 * @param node
 	 * @param attrId
 	 * @param t
@@ -515,12 +512,12 @@ public class Optimizer {
 
 	/**
 	 * Puts the new estimated number of tuples in each bucket after change
-	 * 
+	 *
 	 * @param changed
 	 */
 	public void populateBucketEstimates(RNode changed) {
 		CartilageIndexKeySet collector = null;
-		float numTuples = 0;
+		double numTuples = 0;
 		int numSamples = 0;
 
 		LinkedList<RNode> stack = new LinkedList<RNode>();
@@ -536,7 +533,7 @@ public class Optimizer {
 				}
 
 				numSamples += bucketSample.getValues().size();
-				numTuples += n.bucket.getNumTuples();
+				numTuples += n.bucket.getEstimatedNumTuples();
 				collector.addValues(bucketSample.getValues());
 			} else {
 				stack.add(n.rightChild);
@@ -548,9 +545,9 @@ public class Optimizer {
 	}
 
 	public void populateBucketEstimates(RNode n, CartilageIndexKeySet sample,
-			float scaleFactor) {
+			double scaleFactor) {
 		if (n.bucket != null) {
-			n.bucket.estimatedTuples = sample.size() * scaleFactor;
+			n.bucket.setEstimatedNumTuples(sample.size() * scaleFactor);
 		} else {
 			// By sorting we avoid memory allocation
 			// Will most probably be faster
@@ -564,11 +561,11 @@ public class Optimizer {
 
 	/**
 	 * Gives the number of tuples accessed
-	 * 
+	 *
 	 * @param changed
 	 * @return
 	 */
-	public double getNumTuplesAccessed(RNode changed, boolean real) {
+	public double getNumTuplesAccessed(RNode changed) {
 		// First traverse to parent to see if query accesses node
 		// If yes, find the number of tuples accessed.
 		double numTuples = 0;
@@ -579,15 +576,14 @@ public class Optimizer {
 			Query q = queryWindow.get(i);
 			double weight = Math.pow(Math.E, -lambda * counter);
 
-			numTuples += weight * getNumTuplesAccessed(changed, q, real);
+			numTuples += weight * getNumTuplesAccessed(changed, q);
 			counter++;
 		}
 
 		return numTuples;
 	}
 
-	public static float getNumTuplesAccessed(RNode changed, Query q,
-			boolean real) {
+	public static float getNumTuplesAccessed(RNode changed, Query q) {
 		// First traverse to parent to see if query accesses node
 		// If yes, find the number of tuples accessed.
 		Predicate[] ps = ((FilterQuery) q).getPredicates();
@@ -644,11 +640,7 @@ public class Optimizer {
 		List<RNode> nodesAccessed = changed.search(ps);
 		float tCount = 0;
 		for (RNode n : nodesAccessed) {
-			if (real) {
-				tCount += n.bucket.getNumTuples();
-			} else {
-				tCount += n.bucket.estimatedTuples;
-			}
+			tCount += n.bucket.getEstimatedNumTuples();
 		}
 
 		return tCount;
@@ -656,7 +648,7 @@ public class Optimizer {
 
 	/**
 	 * Replaces node old by node r in the tree
-	 * 
+	 *
 	 * @param old
 	 * @param r
 	 */
@@ -805,7 +797,7 @@ public class Optimizer {
 				// cutoff point less than
 				// that of predicate, we can do this
 				if (checkValidToRoot(node, p.attribute, p.type, testVal)) {
-					double numAccessedOld = getNumTuplesAccessed(node, true);
+					double numAccessedOld = getNumTuplesAccessed(node);
 
 					RNode r = node.clone();
 					r.attribute = p.attribute;
@@ -814,16 +806,16 @@ public class Optimizer {
 					replaceInTree(node, r);
 
 					populateBucketEstimates(r);
-					double numAcccessedNew = getNumTuplesAccessed(r, false);
+					double numAcccessedNew = getNumTuplesAccessed(r);
 					double benefit = numAccessedOld - numAcccessedNew;
 
 					if (benefit > 0) {
 						// TODO: Better cost model ?
-						float cost = this.computeCost(r); // Note that buckets
+						double cost = this.computeCost(r); // Note that buckets
 															// haven't changed
 						Plan pl = new Plan();
 						pl.cost = cost;
-						pl.benefit = (float) benefit;
+						pl.benefit = benefit;
 						Action ac = new Action();
 						ac.pid = pid;
 						ac.option = 1;
@@ -901,8 +893,7 @@ public class Optimizer {
 						}
 
 						if (allGood) {
-							double numAccessedOld = getNumTuplesAccessed(node,
-									true);
+							double numAccessedOld = getNumTuplesAccessed(node);
 
 							RNode r = node.clone();
 							r.attribute = p.attribute;
@@ -911,18 +902,17 @@ public class Optimizer {
 							replaceInTree(node, r);
 
 							populateBucketEstimates(r);
-							double numAcccessedNew = getNumTuplesAccessed(r,
-									false);
+							double numAcccessedNew = getNumTuplesAccessed(r);
 							double benefit = numAccessedOld - numAcccessedNew;
 
 							if (benefit > 0) {
-								float cost = this.computeCost(r); // Note that
+								double cost = this.computeCost(r); // Note that
 																	// buckets
 																	// haven't
 																	// changed
 								Plan pl = new Plan();
 								pl.cost = cost;
-								pl.benefit = (float) benefit;
+								pl.benefit = benefit;
 								Action ac = new Action();
 								ac.pid = pid;
 								ac.option = 1;
@@ -982,8 +972,8 @@ public class Optimizer {
 		}
 	}
 
-	public float computeCost(RNode r) {
-		int numTuples = r.numTuplesInSubtree();
+	public double computeCost(RNode r) {
+		double numTuples = r.numTuplesInSubtree();
 		if (numTuples > NODE_TUPLE_LIMIT) {
 			return (DISK_MULTIPLIER + NETWORK_MULTIPLIER) * numTuples;
 		} else {

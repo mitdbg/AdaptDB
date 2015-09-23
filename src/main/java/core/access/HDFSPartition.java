@@ -14,7 +14,6 @@ import org.apache.hadoop.fs.Path;
 
 import com.google.common.io.ByteStreams;
 
-import core.index.MDIndex;
 import core.utils.ConfUtils;
 import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
@@ -85,6 +84,7 @@ public class HDFSPartition extends Partition {
 	// this(hdfs, pathAndPartitionId, (short)3, locker, counter);
 	// }
 
+	@Override
 	public Partition clone() {
 		String clonePath = path
 				.replaceAll("partitions[0-9]*/$", "repartition/");
@@ -137,6 +137,7 @@ public class HDFSPartition extends Partition {
 		}
 	}
 
+	@Override
 	public boolean load() {
 		if (path == null || path.equals(""))
 			return false;
@@ -144,6 +145,7 @@ public class HDFSPartition extends Partition {
 		return true; // load the physical block for this partition
 	}
 
+	@Override
 	public byte[] getNextBytes() {
 		if (readSize <= returnSize) {
 			boolean f = loadNext();
@@ -176,13 +178,14 @@ public class HDFSPartition extends Partition {
 	// locker.release(partitionId);
 	// }
 
+	@Override
 	public void store(boolean append) {
 		InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client,
 				"/partition-lock-" + path.hashCode() + "-" + partitionId);
 		// lock.acquire(partitionId);
 		System.out.println("LOCK: acquired lock,  " + "path=" + path
 				+ " , partition id=" + partitionId);
-		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
+//		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
 
 		try {
 			// String storePath = FilenameUtils.getFullPath(path) +
@@ -209,7 +212,7 @@ public class HDFSPartition extends Partition {
 			os.flush();
 			os.close();
 
-			c.addToBucketCount(this.getPartitionId(), this.getRecordCount());
+//			c.addToBucketCount(this.getPartitionId(), this.getRecordCount());
 			recordCount = 0;
 		} catch (IOException ex) {
 			System.out.println("exception: "
@@ -224,12 +227,13 @@ public class HDFSPartition extends Partition {
 		// append);
 	}
 
+	@Override
 	public void drop() {
 		// CuratorFramework client =
 		// CuratorUtils.createAndStartClient(zookeeperHosts);
-		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
+//		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
 		// HDFSUtils.deleteFile(hdfs, path + "/" + partitionId, false);
-		c.removeBucketCount(this.getPartitionId());
+//		c.removeBucketCount(this.getPartitionId());
 		// client.close();
 	}
 

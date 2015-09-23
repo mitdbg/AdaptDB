@@ -104,7 +104,6 @@ public class CuratorUtils {
 	/*
 	 * Counter utils
 	 */
-
 	public static SharedCount createCounter(String hosts, String counterPath) {
 		CuratorFramework client = createClient(hosts);
 		return new SharedCount(client, counterPath, 0);
@@ -173,7 +172,6 @@ public class CuratorUtils {
 			int oldVal = c.getCount();
 			c.setCount(oldVal + increment);
 			c.close();
-
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("Failed to add the counter: "
@@ -188,7 +186,6 @@ public class CuratorUtils {
 			c.start();
 			c.setCount(value);
 			c.close();
-
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException("Failed to add the counter: "

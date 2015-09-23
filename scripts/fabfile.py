@@ -43,24 +43,24 @@ def untar():
 def configure_systems():
 	global hdfssite, coresite, sparkenv
 	with cd('/home/mdindex/hadoop-2.6.0/etc/hadoop'):
-		run('rm -f core-site.xml')
+		#run('rm -f core-site.xml')
 		run('rm -f hdfs-site.xml')
-		run('wget http://anilshanbhag.in/confs/hdfs-site.xml')
-		run('wget http://anilshanbhag.in/confs/core-site.xml')
+        put('hdfs-site.xml', '~/hadoop-2.6.0/etc/hadoop/hdfs-site.xml')
+		#run('wget http://anilshanbhag.in/confs/core-site.xml')
 
 	# with cd('/home/mdindex/spark-1.3.1-bin-hadoop2.6/conf'):
 	# 	run('rm -f spark-env.sh')
 	# 	run('wget http://anilshanbhag.in/confs/spark-env.sh')
 
-	with cd('/data/mdindex'):
-		run('rm -f -R dfs')
-		run('rm -f -R data')
-		run('mkdir dfs')
-		run('mkdir data')
+   # with cd('/data/mdindex'):
+		#run('rm -f -R dfs')
+		#run('rm -f -R data')
+		#run('mkdir dfs')
+		#run('mkdir data')
 
-	with cd('/home/mdindex'):
-		java_home = "export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64"
-		run('echo "%s" > .bashrc' % java_home)
+   # with cd('/home/mdindex'):
+		#java_home = "export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64"
+		#run('echo "%s" > .bashrc' % java_home)
 
 @roles('master')
 def copy_scripts():
@@ -341,4 +341,28 @@ def check_max_memory():
 @roles('master')
 def test_dtach():
     run('nohup sleep 100 >> /tmp/xxx 2>&1 < /dev/null &', pty=False)
+
+@roles('master')
+def sum_bucket_counts():
+    with cd('~/hadoop-2.6.0/bin/'):
+        cmd = './hadoop jar /data/mdindex/jars/mdindex-all.jar perf.benchmark.BucketCounterManager ' + \
+            ' --conf /home/mdindex/cartilage.properties' + \
+            ' --method 0 --start 0 --end 31'
+        run(cmd)
+
+@roles('master')
+def delete_bucket_counts():
+    with cd('~/hadoop-2.6.0/bin/'):
+        cmd = './hadoop jar /data/mdindex/jars/mdindex-all.jar perf.benchmark.BucketCounterManager ' + \
+            ' --conf /home/mdindex/cartilage.properties' + \
+            ' --method 1'
+        run(cmd)
+
+@serial
+def create_lineitem_100():
+    global counter
+    with cd('/data/mdindex/'):
+        run('mkdir lineitem100')
+        run('cp tpch-dbgen/lineitem.tbl.%d lineitem100/' % (counter + 1))
+        counter += 1
 

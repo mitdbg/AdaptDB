@@ -2,10 +2,8 @@ package core.index.build;
 
 import java.io.OutputStream;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
-import core.index.MDIndex;
 import core.utils.ConfUtils;
 
 /**
@@ -48,24 +46,24 @@ public class CountingPartitionWriter extends PartitionWriter {
 
 	@Override
 	public void flush() {
-		MDIndex.BucketCounts c = new MDIndex.BucketCounts(
-				conf.getZOOKEEPER_HOSTS());
+//		MDIndex.BucketCounts c = new MDIndex.BucketCounts(
+//				conf.getZOOKEEPER_HOSTS());
 		// CuratorFramework client = c.getClient();
 		// String lockPathBase = "/partition-lock-";
-		Iterator<Map.Entry<String, Integer>> entries = bucketCounts.entrySet()
-				.iterator();
-		while (entries.hasNext()) {
-			Map.Entry<String, Integer> e = entries.next();
-			try {
+//		Iterator<Map.Entry<String, Integer>> entries = bucketCounts.entrySet()
+//				.iterator();
+//		while (entries.hasNext()) {
+//			Map.Entry<String, Integer> e = entries.next();
+//			try {
 				// InterProcessSemaphoreMutex lock =
 				// CuratorUtils.acquireLock(client, lockPathBase + e.getKey());
-				c.addToBucketCount(Integer.parseInt(e.getKey()), e.getValue());
-				entries.remove();
+//				c.addToBucketCount(Integer.parseInt(e.getKey()), e.getValue());
+//				entries.remove();
 				// CuratorUtils.releaseLock(lock);
-			} catch (NumberFormatException ex) {
-
-			}
-		}
-		c.close();
+//			} catch (NumberFormatException ex) {
+//
+//			}
+//		}
+//		c.close();
 	}
 }

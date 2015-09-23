@@ -1,10 +1,11 @@
 package core.index;
 
-import org.apache.curator.framework.CuratorFramework;
+import java.util.HashMap;
+
+import org.junit.Assert;
 
 import core.index.key.CartilageIndexKeySet;
 import core.index.key.MDIndexKey;
-import core.utils.CuratorUtils;
 import core.utils.Range;
 import core.utils.TypeUtils;
 
@@ -26,29 +27,36 @@ public interface MDIndex {
 		CartilageIndexKeySet sample;
 
 		/* Estimates */
-		public float estimatedTuples;
+		private double estimatedTuples = 0;
 
 		public static int maxBucketId = 0;
-		public static BucketCounts counters;
 
-		private int bucketCount;
+		private static HashMap<Integer, Double> counter = new HashMap<Integer, Double>();
 
 		public Bucket() {
 			bucketId = maxBucketId;
-			bucketCount = -1;
 			maxBucketId += 1;
 		}
 
 		public Bucket(int id) {
 			bucketId = id;
 			maxBucketId = Math.max(bucketId + 1, maxBucketId);
-			bucketCount = -1;
 		}
 
-		public int getNumTuples() {
-			if (bucketCount == -1)
-				bucketCount = counters.getBucketCount(bucketId);
-			return bucketCount;
+		public double getEstimatedNumTuples() {
+			Assert.assertNotEquals(estimatedTuples, 0.0);
+			return estimatedTuples;
+		}
+
+		public static double getEstimatedNumTuples(int bucketId) {
+			Double val = counter.get(bucketId);
+			Assert.assertNotNull(val);
+			return val;
+		}
+
+		public void setEstimatedNumTuples(double num) {
+			estimatedTuples = num;
+			counter.put(bucketId, num);
 		}
 
 		public int getBucketId() {
@@ -58,7 +66,7 @@ public interface MDIndex {
 		public void updateId() {
 			this.bucketId = maxBucketId;
 			maxBucketId += 1;
-			bucketCount = -1;
+			estimatedTuples = 0;
 		}
 
 		public CartilageIndexKeySet getSample() {
@@ -70,48 +78,48 @@ public interface MDIndex {
 		}
 	}
 
-	public static class BucketCounts {
-
-		private CuratorFramework client;
-		private String counterPathBase = "/partition-count-";
-
-		public BucketCounts(String zookeeperHosts) {
-			client = CuratorUtils.createAndStartClient(zookeeperHosts);
-		}
-
-		public BucketCounts(CuratorFramework client) {
-			this.client = client;
-		}
-
-		public void addToBucketCount(int bucketId, int count) {
-			CuratorUtils.addCounter(client, counterPathBase + bucketId, count);
-		}
-
-		public int getBucketCount(int bucketId) {
-			return CuratorUtils.getCounter(client, counterPathBase + bucketId);
-		}
-
-		public void setToBucketCount(int bucketId, int count) {
-			CuratorUtils.setCounter(client, counterPathBase + bucketId, count);
-		}
-
-		public void removeBucketCount(int bucketId) {
-			CuratorUtils.setCounter(client, counterPathBase + bucketId, 0);
-		}
-
-		public void close() {
-			client.close();
-		}
-
-		public CuratorFramework getClient() {
-			return this.client;
-		}
-	}
+//	public static class BucketCounts {
+//
+//		private CuratorFramework client;
+//		private String counterPathBase = "/partition-count-";
+//
+//		public BucketCounts(String zookeeperHosts) {
+//			client = CuratorUtils.createAndStartClient(zookeeperHosts);
+//		}
+//
+//		public BucketCounts(CuratorFramework client) {
+//			this.client = client;
+//		}
+//
+//		public void addToBucketCount(int bucketId, int count) {
+//			CuratorUtils.addCounter(client, counterPathBase + bucketId, count);
+//		}
+//
+//		public int getBucketCount(int bucketId) {
+//			return CuratorUtils.getCounter(client, counterPathBase + bucketId);
+//		}
+//
+//		public void setToBucketCount(int bucketId, int count) {
+//			CuratorUtils.setCounter(client, counterPathBase + bucketId, count);
+//		}
+//
+//		public void removeBucketCount(int bucketId) {
+//			CuratorUtils.setCounter(client, counterPathBase + bucketId, 0);
+//		}
+//
+//		public void close() {
+//			client.close();
+//		}
+//
+//		public CuratorFramework getClient() {
+//			return this.client;
+//		}
+//	}
 
 	public MDIndex clone() throws CloneNotSupportedException;
 
 	/*
-	 * 
+	 *
 	 * The Build phase of the index
 	 */
 
@@ -124,7 +132,7 @@ public interface MDIndex {
 	public void initBuild(int numBuckets);
 
 	/*
-	 * 
+	 *
 	 * The Probe phase of the index
 	 */
 	public void initProbe();

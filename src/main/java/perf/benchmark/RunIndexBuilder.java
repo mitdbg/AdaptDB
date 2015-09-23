@@ -22,7 +22,7 @@ import core.utils.HDFSUtils;
  * Builds the index. Captures time taken by the different steps in index
  * building. TODO: Make it generalized by not depending on lineitem. TODO:
  * Compute sampling fraction instead of taking as an option.
- * 
+ *
  * @author anil
  *
  */
@@ -180,7 +180,7 @@ public class RunIndexBuilder {
 
 	/**
 	 * Creates one sample file sample.machineId and writes it out to HDFS.
-	 * 
+	 *
 	 * @param machineId
 	 *            descriptor for machine the code will run on.
 	 */
@@ -229,7 +229,7 @@ public class RunIndexBuilder {
 	/**
 	 * Creates num_replicas robust trees. As a side effect reads all the sample
 	 * files from the samples dir and writes it out WORKING_DIR/sample
-	 * 
+	 *
 	 * @param tpchSize
 	 */
 	public void buildReplicatedRobustTreeFromSamples() {
