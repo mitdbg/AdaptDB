@@ -85,26 +85,11 @@ public class TypeUtils {
 	public static int compareTo(Object x, Object y, TYPE t) {
 		switch (t) {
 		case INT:
-			if ((Integer) x > (Integer) y)
-				return 1;
-			else if ((Integer) x < (Integer) y)
-				return -1;
-			else
-				return 0;
+			return ((Integer) x).compareTo((Integer) y);
 		case DOUBLE:
-			if ((Float) x > (Float) y)
-				return 1;
-			else if ((Float) x < (Float) y)
-				return -1;
-			else
-				return 0;
+			return ((Float) x).compareTo((Float) y);
 		case LONG:
-			if ((Long) x > (Long) y)
-				return 1;
-			else if ((Long) x < (Long) y)
-				return -1;
-			else
-				return 0;
+			return ((Long) x).compareTo((Long) y);
 		case DATE:
 			return ((SimpleDate) x).compareTo((SimpleDate) y);
 		case STRING:
@@ -115,7 +100,6 @@ public class TypeUtils {
 		}
 	}
 
-	// TODO: Make this compatible with the one in TypeUtils
 	public static Comparator<Object> getComparatorForType(TYPE type) {
 		switch (type) {
 		case INT:

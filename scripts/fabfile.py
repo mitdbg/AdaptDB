@@ -15,8 +15,6 @@ env.roledefs = {
 
 conf = None
 
-lineitem_schema = "l_orderkey long, l_partkey int, l_suppkey int, l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, l_tax double, l_returnflag string,  l_linestatus string, l_shipdate date, l_commitdate date, l_receiptdate date, l_shipinstruct string, l_shipmode string, l_comment string"
-
 ######################
 ## Hadoop Setup
 ######################
@@ -106,6 +104,11 @@ def start_all():
 def stop_all():
     stop_zookeeper()
     stop_spark()
+
+@parallel
+def copy_ssh_key():
+    ssh_key = """ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDgIXPk37ALKlI3aYWeB2wQEVm+LHgJuH9rdZYdTG+YIzbaVamlS+MIVkP+9GJtM5uutyR20Ovk1fJa7Ofpt/KakodQiMxUC0S8AUh+il6t1C+VkUyX5Ejj1HEn2IiuBIHV78PL1Z2vhCRV2J3dRQVSEjVky7B4Uu2qn+DQ2FkXT2WSf8I7+Si0v/XWr/jjCQplNEfSQ2jgXVzKqFFTLIyqQ4Ak9mIcGPHCBwJLFvwcE0spG7RPtpcB6naCTHkYm6ppX5b7cBHU6hM4xU97H7JSswcTV4hmCBw3HMPsFRgYJwSyOzsB1MOpdtyoJXo2mMz1pDWzfNqDUnw0pwLVADVv anil@Anils-MacBook-Pro.local"""
+    run('echo "%s" >> ~/.ssh/authorized_keys' % ssh_key)
 
 #########################
 ## TPCH DataGen
@@ -261,8 +264,9 @@ def bulk_sample_gen():
             ' --method 1 ' + \
             ' --numReplicas 1' + \
             ' --samplingRate $SAMPLINGRATE' + \
-            (' --schema "%s"' % lineitem_schema) + \
-            ' --numFields 16' + \
+            ' --schema "$SCHEMA"'  + \
+            ' --numFields $NUMFIELDS' + \
+            ' --numTuples $NUMTUPLES' + \
             ' > ~/logs/sample_stats.log'
         cmd = fill_cmd(cmd)
         run(cmd)
@@ -278,8 +282,9 @@ def create_robust_tree(mode='server'):
             ' --method 2 ' + \
             ' --numReplicas 1' + \
             ' --numBuckets $NUMBUCKETS' + \
-            (' --schema "%s"' % lineitem_schema) + \
-            ' --numFields 16' + \
+            ' --schema "$SCHEMA"'  + \
+            ' --numFields $NUMFIELDS' + \
+            ' --numTuples $NUMTUPLES' + \
             ' > ~/logs/create_tree.log'
         cmd = fill_cmd(cmd)
         run(cmd)
@@ -295,8 +300,9 @@ def create_robust_tree_per_replica(mode='server'):
             ' --method 3 ' + \
             ' --numReplicas 3' + \
             ' --numBuckets $NUMBUCKETS' + \
-            (' --schema "%s"' % lineitem_schema) + \
-            ' --numFields 16' + \
+            ' --schema "$SCHEMA"'  + \
+            ' --numFields $NUMFIELDS' + \
+            ' --numTuples $NUMTUPLES' + \
             ' > ~/logs/create_replicated_tree.log'
         cmd = fill_cmd(cmd)
         run(cmd)
@@ -312,8 +318,9 @@ def write_partitions(mode='server'):
             ' --method 4 ' + \
             ' --numReplicas 1' + \
             ' --numBuckets $NUMBUCKETS' + \
-            (' --schema "%s"' % lineitem_schema) + \
-            ' --numFields 16' + \
+            ' --schema "$SCHEMA"'  + \
+            ' --numFields $NUMFIELDS' + \
+            ' --numTuples $NUMTUPLES' + \
             ' > ~/logs/write_partitions.log'
         cmd = fill_cmd(cmd)
         run(cmd)

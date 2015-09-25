@@ -10,7 +10,7 @@ import java.nio.file.Paths;
 
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
-import core.index.key.CartilageIndexKeySet;
+import core.index.key.ParsedTupleList;
 import core.utils.BinaryUtils;
 import core.utils.IOUtils;
 
@@ -127,7 +127,7 @@ public class InputReader {
 	 * @param samplingRate
 	 */
 	public void scanWithBlockSampling(String filename, double samplingRate,
-			CartilageIndexKeySet sample) {
+			ParsedTupleList sample) {
 		initScan(blockSampleSize);
 
 		FileChannel ch = IOUtils.openFileChannel(filename);
@@ -165,7 +165,7 @@ public class InputReader {
 	}
 
 	private void processByteBuffer(PartitionWriter writer,
-			CartilageIndexKeySet sample) {
+			ParsedTupleList sample) {
 		long startTime;
 		for (; byteArrayIdx < nRead; byteArrayIdx++) {
 			if (byteArray[byteArrayIdx] == newLine) {

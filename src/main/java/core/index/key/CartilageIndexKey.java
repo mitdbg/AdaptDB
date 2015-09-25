@@ -16,8 +16,6 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 
 	private SimpleDate dummyDate = new SimpleDate(0, 0, 0);
 
-	public static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-	// private CartilageBinaryRecord record;
 	protected byte[] bytes;
 	protected int offset, length;
 
@@ -203,17 +201,6 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 				continue;
 
 			types.add(Schema.schema.fields[numAttrs - 1].type);
-			// if (TypeUtils.isInt(t))
-			// types.add(TYPE.INT);
-			// else if (TypeUtils.isLong(t))
-			// types.add(TYPE.LONG);
-			// else if (TypeUtils.isFloat(t))
-			// types.add(TYPE.FLOAT);
-			// else if (TypeUtils.isDate(t,
-			// (SimpleDateFormat)DateUtils.sdf.clone()))
-			// types.add(TYPE.DATE);
-			// else
-			// types.add(TYPE.STRING);
 		}
 
 		if (keyAttrIdx == null) {

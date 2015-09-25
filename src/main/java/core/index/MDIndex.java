@@ -4,7 +4,7 @@ import java.util.HashMap;
 
 import org.junit.Assert;
 
-import core.index.key.CartilageIndexKeySet;
+import core.index.key.ParsedTupleList;
 import core.index.key.MDIndexKey;
 import core.utils.Range;
 import core.utils.TypeUtils;
@@ -14,17 +14,15 @@ import core.utils.TypeUtils;
  * An API for implementing multi-dimensional index, e.g. R-Tree, K-d Tree, etc.
  *
  */
-
 public interface MDIndex {
 
 	/*
 	 * Placeholder class for the index leaves.
 	 */
-
 	public final static class Bucket {
 		/* Actual Values */
 		int bucketId;
-		CartilageIndexKeySet sample;
+		ParsedTupleList sample;
 
 		/* Estimates */
 		private double estimatedTuples = 0;
@@ -69,11 +67,11 @@ public interface MDIndex {
 			estimatedTuples = 0;
 		}
 
-		public CartilageIndexKeySet getSample() {
+		public ParsedTupleList getSample() {
 			return sample;
 		}
 
-		public void setSample(CartilageIndexKeySet sample) {
+		public void setSample(ParsedTupleList sample) {
 			this.sample = sample;
 		}
 	}

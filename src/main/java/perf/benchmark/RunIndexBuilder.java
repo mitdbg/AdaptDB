@@ -12,8 +12,9 @@ import core.index.build.HDFSPartitionWriter;
 import core.index.build.IndexBuilder;
 import core.index.build.PartitionWriter;
 import core.index.key.CartilageIndexKey;
-import core.index.key.CartilageIndexKeySet;
+import core.index.key.ParsedTupleList;
 import core.index.key.Schema;
+import core.index.robusttree.Globals;
 import core.index.robusttree.RobustTreeHs;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
@@ -214,7 +215,7 @@ public class RunIndexBuilder {
 		assert samplesDir != null;
 		Schema.createSchema(schemaString, numFields);
 
-		CartilageIndexKeySet sample = readSampleFiles();
+		ParsedTupleList sample = readSampleFiles();
 		writeOutSample(sample);
 
 		RobustTreeHs index = new RobustTreeHs();
@@ -235,7 +236,7 @@ public class RunIndexBuilder {
 	public void buildReplicatedRobustTreeFromSamples() {
 		Schema.createSchema(schemaString, numFields);
 
-		CartilageIndexKeySet sample = readSampleFiles();
+		ParsedTupleList sample = readSampleFiles();
 		writeOutSample(sample);
 
 		builder.buildReplicatedWithSample(
@@ -303,6 +304,10 @@ public class RunIndexBuilder {
 				numBuckets = Integer.parseInt(args[counter + 1]);
 				counter += 2;
 				break;
+			case "--numTuples":
+				Globals.TOTAL_NUM_TUPLES = Double.parseDouble(args[counter + 1]);
+				counter += 2;
+				break;
 			default:
 				// Something we don't use
 				counter += 2;
@@ -313,12 +318,12 @@ public class RunIndexBuilder {
 
 	// Helper function, reads all the sample files and creates a combined
 	// sample.
-	public CartilageIndexKeySet readSampleFiles() {
+	public ParsedTupleList readSampleFiles() {
 		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
 				+ "/etc/hadoop/core-site.xml");
 
 		// read all the sample files and put them into the sample key set
-		CartilageIndexKeySet sample = new CartilageIndexKeySet();
+		ParsedTupleList sample = new ParsedTupleList();
 		try {
 			RemoteIterator<LocatedFileStatus> files = fs.listFiles(new Path(
 					samplesDir), false);
@@ -335,7 +340,7 @@ public class RunIndexBuilder {
 	}
 
 	// Helper function, writes out the combined sample file.
-	public void writeOutSample(CartilageIndexKeySet sample) {
+	public void writeOutSample(ParsedTupleList sample) {
 		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
 				+ "/etc/hadoop/core-site.xml");
 

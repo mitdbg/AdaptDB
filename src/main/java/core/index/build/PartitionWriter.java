@@ -11,7 +11,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import com.google.common.collect.Maps;
 
 public abstract class PartitionWriter implements Cloneable {
-	protected int bufferPartitionSize = 1024 * 1024;
+	protected int bufferPartitionSize = 2 * 1024 * 1024;  // 2 MB
 	protected String partitionDir;
 
 	protected Map<String, OutputStream> buffer;
@@ -50,13 +50,6 @@ public abstract class PartitionWriter implements Cloneable {
 		long start = System.nanoTime();
 		OutputStream b = buffer.get(partitionId);
 		if (b == null) {
-			// If there is a hard limit on the number of buffers, then close
-			// some of them before opening new ones!
-//			int maxBufferPartitions = 400;
-//			double flushFraction = 0.2;
-//			if(buffer.size() > maxBufferPartitions)
-//				flush((int)(flushFraction*maxBufferPartitions));
-
 			b = getOutputStream(partitionDir + "/" + partitionId);
 			buffer.put(partitionId, b);
 		}

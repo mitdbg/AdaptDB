@@ -13,7 +13,7 @@ import core.access.Predicate;
 import core.access.Query;
 import core.access.Query.FilterQuery;
 import core.index.MDIndex.Bucket;
-import core.index.key.CartilageIndexKeySet;
+import core.index.key.ParsedTupleList;
 import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTreeHs;
 import core.utils.ConfUtils;
@@ -120,7 +120,7 @@ public class WorkloadAnalyser {
 		return numSamples * totalNumTuples / totalNumSamples;
 	}
 
-	public void buildOptTree(RNode n, CartilageIndexKeySet sample, int depth) {
+	public void buildOptTree(RNode n, ParsedTupleList sample, int depth) {
 		n.bucket = new Bucket();
 		n.bucket.setSample(sample);
 		n.bucket.setEstimatedNumTuples(numEstimatedTuples(sample.size()));
@@ -152,7 +152,7 @@ public class WorkloadAnalyser {
 			n.value = c.value;
 
 			sample.sort(n.attribute);
-			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample
+			Pair<ParsedTupleList, ParsedTupleList> halves = sample
 					.splitAt(n.attribute, n.value);
 			n.leftChild.bucket.setEstimatedNumTuples(
 					numEstimatedTuples(halves.first.size()));
@@ -177,7 +177,7 @@ public class WorkloadAnalyser {
 			n.type = cChosen.type;
 			n.value = cChosen.value;
 
-			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample
+			Pair<ParsedTupleList, ParsedTupleList> halves = sample
 					.splitAt(n.attribute, n.value);
 			n.leftChild.bucket = null;
 			n.rightChild.bucket = null;

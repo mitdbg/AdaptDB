@@ -14,7 +14,7 @@ import com.google.common.primitives.Ints;
 
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
-import core.index.key.CartilageIndexKeySet;
+import core.index.key.ParsedTupleList;
 import core.index.robusttree.RobustTreeHs;
 import core.utils.HDFSUtils;
 
@@ -138,7 +138,7 @@ public class IndexBuilder {
 		InputReader r = new InputReader(null, key);
 		File[] files = new File(inputDirectory).listFiles();
 
-		CartilageIndexKeySet sample = new CartilageIndexKeySet();
+		ParsedTupleList sample = new ParsedTupleList();
 		long startTime = System.nanoTime();
 		for (File f : files) {
 			r.scanWithBlockSampling(f.getPath(), samplingRate, sample);
@@ -200,7 +200,7 @@ public class IndexBuilder {
 		ReplicatedInputReader r = new ReplicatedInputReader(indexes, keys);
 
 		// TODO: Parallelize the scan and probe
-		CartilageIndexKeySet sample = new CartilageIndexKeySet();
+		ParsedTupleList sample = new ParsedTupleList();
 		File[] files = new File(inputDirectory).listFiles();
 		for (File f : files) {
 			r.firstPass = true;
@@ -281,7 +281,7 @@ public class IndexBuilder {
 		build(samplingRate, numBuckets, indexes, keys, inputFilename, writers);
 	}
 
-	public void buildReplicatedWithSample(CartilageIndexKeySet sample,
+	public void buildReplicatedWithSample(ParsedTupleList sample,
 			int numBuckets, CartilageIndexKey key, PartitionWriter writer,
 			int attributes, int replication) {
 		int attrPerReplica = attributes / replication;
@@ -342,7 +342,7 @@ public class IndexBuilder {
 		System.out.println("Total time = " + (time2 + time4) + " sec");
 	}
 
-	public void buildIndexFromSample(CartilageIndexKeySet sample,
+	public void buildIndexFromSample(ParsedTupleList sample,
 			int numBuckets, MDIndex index, PartitionWriter writer) {
 		index.initBuild(numBuckets);
 		((RobustTreeHs) index).loadSample(sample);

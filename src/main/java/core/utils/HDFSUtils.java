@@ -359,7 +359,7 @@ public class HDFSUtils {
 			fout.close();
 		} catch (IOException e) {
 			e.printStackTrace();
-			throw new RuntimeException("could not append to file: " + filepath);
+			throw new RuntimeException("Could not append to file: " + filepath);
 		}
 	}
 

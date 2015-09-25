@@ -8,7 +8,7 @@ import junit.framework.TestCase;
 public class TestCartilageIndexKeySet extends TestCase {
 
 	private CartilageIndexKey key;
-	private CartilageIndexKeySet keyset;
+	private ParsedTupleList keyset;
 
 	int[] keyIds;
 	String tuple1, tuple2;
@@ -21,7 +21,7 @@ public class TestCartilageIndexKeySet extends TestCase {
 
 		keyIds = new int[] { 2, 3 };
 		key = new CartilageIndexKey('|', keyIds);
-		keyset = new CartilageIndexKeySet();
+		keyset = new ParsedTupleList();
 	}
 
 	private void doInsert() {

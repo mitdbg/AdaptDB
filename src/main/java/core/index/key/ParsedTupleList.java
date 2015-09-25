@@ -24,7 +24,7 @@ import core.utils.TypeUtils.TYPE;
  * @author alekh
  *
  */
-public class CartilageIndexKeySet {
+public class ParsedTupleList {
 
 	private List<Object[]> values;
 	private TYPE[] types;
@@ -33,17 +33,17 @@ public class CartilageIndexKeySet {
 	/**
 	 * Create an empty key set.
 	 */
-	public CartilageIndexKeySet() {
+	public ParsedTupleList() {
 		values = Lists.newArrayList();
 		sampleSize = 0;
 	}
 
 	/**
 	 * Instantiate a key set with a given set of keys.
-	 * 
+	 *
 	 * @param values
 	 */
-	public CartilageIndexKeySet(List<Object[]> values, TYPE[] types) {
+	public ParsedTupleList(List<Object[]> values, TYPE[] types) {
 		this.values = values;
 		this.types = types;
 		this.sampleSize = 0;
@@ -51,7 +51,7 @@ public class CartilageIndexKeySet {
 
 	/**
 	 * Insert into the key set.
-	 * 
+	 *
 	 * @param key
 	 */
 	public void insert(CartilageIndexKey key) {
@@ -207,38 +207,38 @@ public class CartilageIndexKeySet {
 	 *
 	 * @return
 	 */
-	public Pair<CartilageIndexKeySet, CartilageIndexKeySet> splitInTwo() {
-		CartilageIndexKeySet k1 = new CartilageIndexKeySet(values.subList(0,
+	public Pair<ParsedTupleList, ParsedTupleList> splitInTwo() {
+		ParsedTupleList k1 = new ParsedTupleList(values.subList(0,
 				values.size() / 2), types);
-		CartilageIndexKeySet k2 = new CartilageIndexKeySet(values.subList(
+		ParsedTupleList k2 = new ParsedTupleList(values.subList(
 				values.size() / 2, values.size()), types);
-		return new Pair<CartilageIndexKeySet, CartilageIndexKeySet>(k1, k2);
+		return new Pair<ParsedTupleList, ParsedTupleList>(k1, k2);
 	}
 
 	/**
 	 * Split this key set by the median on the specified attribute. All keys
 	 * with the specified attribute equal to the median go in the second set.
-	 * 
+	 *
 	 * @return
 	 */
-	public Pair<CartilageIndexKeySet, CartilageIndexKeySet> splitByMedian(
+	public Pair<ParsedTupleList, ParsedTupleList> splitByMedian(
 			int attributeIdx) {
 		Object medianVal = values.get(values.size() / 2)[attributeIdx];
 		int firstIndex = getFirstIndexOfAttributeVal(attributeIdx,
 				types[attributeIdx], medianVal, values, 0);
-		CartilageIndexKeySet k1 = new CartilageIndexKeySet(values.subList(0,
+		ParsedTupleList k1 = new ParsedTupleList(values.subList(0,
 				firstIndex), types);
-		CartilageIndexKeySet k2 = new CartilageIndexKeySet(values.subList(
+		ParsedTupleList k2 = new ParsedTupleList(values.subList(
 				firstIndex, values.size()), types);
-		return new Pair<CartilageIndexKeySet, CartilageIndexKeySet>(k1, k2);
+		return new Pair<ParsedTupleList, ParsedTupleList>(k1, k2);
 	}
 
 	/**
 	 * Split this key set by the value on the specified attribute.
-	 * 
+	 *
 	 * @return
 	 */
-	public Pair<CartilageIndexKeySet, CartilageIndexKeySet> splitAt(
+	public Pair<ParsedTupleList, ParsedTupleList> splitAt(
 			int attributeIdx, Object value) {
 		final TYPE sortType = types[attributeIdx];
 
@@ -257,11 +257,11 @@ public class CartilageIndexKeySet {
 				lo = mid + 1;
 		}
 
-		CartilageIndexKeySet k1 = new CartilageIndexKeySet(
+		ParsedTupleList k1 = new ParsedTupleList(
 				values.subList(0, lo), types);
-		CartilageIndexKeySet k2 = new CartilageIndexKeySet(values.subList(lo,
+		ParsedTupleList k2 = new ParsedTupleList(values.subList(lo,
 				values.size()), types);
-		return new Pair<CartilageIndexKeySet, CartilageIndexKeySet>(k1, k2);
+		return new Pair<ParsedTupleList, ParsedTupleList>(k1, k2);
 	}
 
 	private static int getFirstIndexOfAttributeVal(int attributeIdx, TYPE type,
@@ -316,11 +316,11 @@ public class CartilageIndexKeySet {
 
 	/**
 	 * Sort and then split the key set.
-	 * 
+	 *
 	 * @param attributeIdx
 	 * @return
 	 */
-	public Pair<CartilageIndexKeySet, CartilageIndexKeySet> sortAndSplit(
+	public Pair<ParsedTupleList, ParsedTupleList> sortAndSplit(
 			final int attributeIdx) {
 		sort(attributeIdx);
 		return splitByMedian(attributeIdx);
@@ -353,7 +353,7 @@ public class CartilageIndexKeySet {
 
 	/**
 	 * Iterate over the keys in the key set.
-	 * 
+	 *
 	 * @return
 	 */
 	public KeySetIterator iterator() {
@@ -437,13 +437,12 @@ public class CartilageIndexKeySet {
 					this.types = new TYPE[tokens.length];
 					for (int i = 0; i < tokens.length; i++)
 						types[i] = TYPE.valueOf(tokens[i]);
-					// types[0] = TYPE.LONG;
 				} else {
 					record.setBytes(lineBytes);
 					try {
 						insert(record);
 					} catch (ArrayIndexOutOfBoundsException e) {
-						System.out.println("sadfasd");
+						System.out.println("Exception in ParsedTupleList::unmarshall");
 					}
 				}
 				previous = ++offset;

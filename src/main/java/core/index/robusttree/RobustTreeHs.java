@@ -11,15 +11,15 @@ import java.util.Scanner;
 
 import core.access.Predicate;
 import core.index.MDIndex;
-import core.index.key.CartilageIndexKeySet;
 import core.index.key.MDIndexKey;
+import core.index.key.ParsedTupleList;
 import core.utils.Pair;
 import core.utils.TypeUtils.TYPE;
 
 public class RobustTreeHs implements MDIndex {
 	public int maxBuckets;
 	public int numAttributes;
-	public CartilageIndexKeySet sample;
+	public ParsedTupleList sample;
 
 	public TYPE[] dimensionTypes;
 	RNode root;
@@ -47,13 +47,13 @@ public class RobustTreeHs implements MDIndex {
 	public void initBuild(int buckets) {
 		this.maxBuckets = buckets;
 		root = new RNode();
-		this.sample = new CartilageIndexKeySet();
+		this.sample = new ParsedTupleList();
 	}
 
 	public void loadSampleAndBuild(int buckets, byte[] bytes) {
 		this.maxBuckets = buckets;
 		root = new RNode();
-		this.sample = new CartilageIndexKeySet();
+		this.sample = new ParsedTupleList();
 		this.sample.unmarshall(bytes);
 
 		this.dimensionTypes = this.sample.getTypes();
@@ -96,7 +96,7 @@ public class RobustTreeHs implements MDIndex {
 		RNode node;
 		float allocation;
 		int depth;
-		CartilageIndexKeySet sample;
+		ParsedTupleList sample;
 	}
 
 	/**
@@ -133,7 +133,7 @@ public class RobustTreeHs implements MDIndex {
 			if (t.depth < maxDepth) {
 				int dim = -1;
 				int round = 0;
-				Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = null;
+				Pair<ParsedTupleList, ParsedTupleList> halves = null;
 
 				while (dim == -1 && round < allocations.length) {
 					int testDim = getLeastAllocated(allocations);
@@ -297,35 +297,20 @@ public class RobustTreeHs implements MDIndex {
 	}
 
 	public void loadSample(byte[] bytes) {
-		this.sample = new CartilageIndexKeySet();
+		this.sample = new ParsedTupleList();
 		this.sample.unmarshall(bytes);
-		this.initializeBucketSamples(this.root, this.sample);
+		this.initializeBucketSamplesAndCounts(this.root, this.sample, this.sample.size(), Globals.TOTAL_NUM_TUPLES);
 	}
 
-	public void loadSample(CartilageIndexKeySet sample) {
+	public void loadSample(ParsedTupleList sample) {
 		this.sample = sample;
 		this.dimensionTypes = this.sample.getTypes();
 		this.numAttributes = this.dimensionTypes.length;
 	}
 
-	public void initializeBucketSamples(RNode n, CartilageIndexKeySet sample) {
-		if (n.bucket != null) {
-			n.bucket.setSample(sample);
-		} else {
-			// By sorting we avoid memory allocation
-			// Will most probably be faster
-			sample.sort(n.attribute);
-			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample
-					.splitAt(n.attribute, n.value);
-			initializeBucketSamples(n.leftChild, halves.first);
-			initializeBucketSamples(n.rightChild, halves.second);
-		}
-	}
-
-	/** Use only in the simulator **/
 	public void initializeBucketSamplesAndCounts(RNode n,
-			CartilageIndexKeySet sample, final long totalSamples,
-			final long totalTuples) {
+			ParsedTupleList sample, final double totalSamples,
+			final double totalTuples) {
 		if (n.bucket != null) {
 			long sampleSize = sample.size();
 			double numTuples = (sampleSize * totalTuples) / totalSamples;
@@ -335,7 +320,7 @@ public class RobustTreeHs implements MDIndex {
 			// By sorting we avoid memory allocation
 			// Will most probably be faster
 			sample.sort(n.attribute);
-			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample
+			Pair<ParsedTupleList, ParsedTupleList> halves = sample
 					.splitAt(n.attribute, n.value);
 			initializeBucketSamplesAndCounts(n.leftChild, halves.first,
 					totalSamples, totalTuples);

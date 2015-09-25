@@ -9,7 +9,7 @@ import org.apache.hadoop.fs.FileSystem;
  * Custom HDFS Output Stream implementation. Buffers the writes and writes out
  * the buffer once full. Differs from using OutputStream with connection to HDFS
  * in that it doesn't maintain a persistent connection.
- * 
+ *
  * @author anil
  *
  */
@@ -46,7 +46,7 @@ public class HDFSBufferedOutputStream extends OutputStream {
 
 	@Override
 	public void write(int b) throws IOException {
-		if (curPointer + 4 > buffer.length) {
+		if (curPointer + 4 + 1 > buffer.length) {
 			this.flush();
 		}
 
@@ -60,7 +60,7 @@ public class HDFSBufferedOutputStream extends OutputStream {
 
 	@Override
 	public void write(byte[] b) throws IOException {
-		if (curPointer + b.length > buffer.length) {
+		if (curPointer + b.length + 1 > buffer.length) {
 			this.flush();
 		}
 
@@ -70,7 +70,7 @@ public class HDFSBufferedOutputStream extends OutputStream {
 
 	@Override
 	public void write(byte[] b, int off, int len) throws IOException {
-		if (curPointer + len > buffer.length) {
+		if (curPointer + len + 1 > buffer.length) {
 			this.flush();
 		}
 

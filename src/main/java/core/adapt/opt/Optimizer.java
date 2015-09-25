@@ -20,7 +20,7 @@ import core.access.iterator.PostFilterIterator;
 import core.access.iterator.RepartitionIterator;
 import core.access.spark.SparkQueryConf;
 import core.index.MDIndex.Bucket;
-import core.index.key.CartilageIndexKeySet;
+import core.index.key.ParsedTupleList;
 import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTreeHs;
 import core.utils.ConfUtils;
@@ -516,7 +516,7 @@ public class Optimizer {
 	 * @param changed
 	 */
 	public void populateBucketEstimates(RNode changed) {
-		CartilageIndexKeySet collector = null;
+		ParsedTupleList collector = null;
 		double numTuples = 0;
 		int numSamples = 0;
 
@@ -526,9 +526,9 @@ public class Optimizer {
 		while (stack.size() > 0) {
 			RNode n = stack.removeLast();
 			if (n.bucket != null) {
-				CartilageIndexKeySet bucketSample = n.bucket.getSample();
+				ParsedTupleList bucketSample = n.bucket.getSample();
 				if (collector == null) {
-					collector = new CartilageIndexKeySet();
+					collector = new ParsedTupleList();
 					collector.setTypes(bucketSample.getTypes());
 				}
 
@@ -544,7 +544,7 @@ public class Optimizer {
 		populateBucketEstimates(changed, collector, numTuples / numSamples);
 	}
 
-	public void populateBucketEstimates(RNode n, CartilageIndexKeySet sample,
+	public void populateBucketEstimates(RNode n, ParsedTupleList sample,
 			double scaleFactor) {
 		if (n.bucket != null) {
 			n.bucket.setEstimatedNumTuples(sample.size() * scaleFactor);
@@ -552,7 +552,7 @@ public class Optimizer {
 			// By sorting we avoid memory allocation
 			// Will most probably be faster
 			sample.sort(n.attribute);
-			Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = sample
+			Pair<ParsedTupleList, ParsedTupleList> halves = sample
 					.splitAt(n.attribute, n.value);
 			populateBucketEstimates(n.leftChild, halves.first, scaleFactor);
 			populateBucketEstimates(n.rightChild, halves.second, scaleFactor);

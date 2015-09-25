@@ -60,22 +60,7 @@ public class HDFSPartitionWriter extends PartitionWriter {
 
 	@Override
 	protected OutputStream getOutputStream(String path) {
-		return HDFSUtils.getHDFSOutputStream(hdfs, path, replication,
+		return HDFSUtils.getBufferedHDFSOutputStream(hdfs, path, replication,
 				bufferPartitionSize);
-	}
-
-	@Override
-	public void flush() {
-//		MDIndex.BucketCounts c = new MDIndex.BucketCounts(
-//				conf.getZOOKEEPER_HOSTS());
-//		for (String k : buffer.keySet())
-//			try {
-//				c.setToBucketCount(Integer.parseInt(k), partitionRecordCount
-//						.get(k).intValue());
-//			} catch (NumberFormatException e) {
-//				System.out.println("Error formatting the bucket id while writing to zookeeper");
-//			}
-//		c.close();
-		super.flush();
 	}
 }

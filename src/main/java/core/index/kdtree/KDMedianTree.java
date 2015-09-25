@@ -2,7 +2,7 @@ package core.index.kdtree;
 
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
-import core.index.key.CartilageIndexKeySet;
+import core.index.key.ParsedTupleList;
 import core.index.key.MDIndexKey;
 import core.utils.Pair;
 
@@ -13,7 +13,7 @@ import java.util.*;
  */
 public class KDMedianTree extends KDDTree implements MDIndex {
 
-	private List<CartilageIndexKeySet> buckets;
+	private List<ParsedTupleList> buckets;
 	private double samplingRate;
 
 	public KDMedianTree(double samplingRate) {
@@ -35,8 +35,8 @@ public class KDMedianTree extends KDDTree implements MDIndex {
 		int numLevels = (int) Math.ceil(Math.log(numBuckets) / Math.log(2));
 		int numBucketsEven = (int) Math.pow(2, numLevels);
 		super.initBuild(numBucketsEven);
-		buckets = new ArrayList<CartilageIndexKeySet>();
-		buckets.add(new CartilageIndexKeySet());
+		buckets = new ArrayList<ParsedTupleList>();
+		buckets.add(new ParsedTupleList());
 	}
 
 	@Override
@@ -68,13 +68,13 @@ public class KDMedianTree extends KDDTree implements MDIndex {
 		System.out.println("Allocations: " + Arrays.toString(allocations));
 	}
 
-	private int splitTree(List<CartilageIndexKeySet> buckets, int dim) {
+	private int splitTree(List<ParsedTupleList> buckets, int dim) {
 		int n = buckets.size();
 		int numNodesAdded = 0;
 		for (int i = 0; i < n; i++) {
-			CartilageIndexKeySet keys = buckets.remove(0);
+			ParsedTupleList keys = buckets.remove(0);
 			if (keys.size() > 1) {
-				Pair<CartilageIndexKeySet, CartilageIndexKeySet> halves = keys
+				Pair<ParsedTupleList, ParsedTupleList> halves = keys
 						.sortAndSplit(dim);
 				buckets.add(halves.first);
 				buckets.add(halves.second);

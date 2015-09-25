@@ -6,7 +6,7 @@ import java.nio.channels.FileChannel;
 
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
-import core.index.key.CartilageIndexKeySet;
+import core.index.key.ParsedTupleList;
 import core.utils.BinaryUtils;
 import core.utils.IOUtils;
 
@@ -117,7 +117,7 @@ public class ReplicatedInputReader {
 	}
 
 	public void scanWithBlockSampling(String filename, double samplingRate,
-			CartilageIndexKeySet sample) {
+			ParsedTupleList sample) {
 		initScan(blockSampleSize);
 
 		FileChannel ch = IOUtils.openFileChannel(filename);
@@ -155,7 +155,7 @@ public class ReplicatedInputReader {
 	}
 
 	private void processByteBuffer(PartitionWriter[] writers,
-			CartilageIndexKeySet sample) {
+			ParsedTupleList sample) {
 		long startTime;
 		for (; byteArrayIdx < nRead; byteArrayIdx++) {
 			if (byteArray[byteArrayIdx] == newLine) {

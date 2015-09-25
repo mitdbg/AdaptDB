@@ -7,7 +7,7 @@ import java.util.Map;
 import core.access.PartitionRange;
 import core.access.Predicate;
 import core.index.MDIndex;
-import core.index.key.CartilageIndexKeySet;
+import core.index.key.ParsedTupleList;
 import core.utils.Range;
 import core.utils.TypeUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -65,7 +65,7 @@ public class HPJoinInput extends HPInput {
 	public List<Range> getRangeSplits(int fanout, boolean overlap) {
 		List<Range> partitions = new ArrayList<Range>();
 
-		CartilageIndexKeySet sample = am.getIndex().sample;
+		ParsedTupleList sample = am.getIndex().sample;
 		Object[] cutpoints = sample.getCutpoints(joinKey, fanout);
 		TypeUtils.TYPE type = sample.getTypes()[joinKey];
 
@@ -259,7 +259,7 @@ public class HPJoinInput extends HPInput {
 	// utility methods
 
 	public Range getFullRange() {
-		CartilageIndexKeySet sample = am.getIndex().sample;
+		ParsedTupleList sample = am.getIndex().sample;
 		Object[] cutpoints = sample.getCutpoints(joinKey, 1);
 		TypeUtils.TYPE type = sample.getTypes()[joinKey];
 
