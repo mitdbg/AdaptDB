@@ -198,7 +198,6 @@ public class RunIndexBuilder {
 				+ "/etc/hadoop/core-site.xml");
 		
 		// If the input sampingRate = 0.0 (unspecified), then calculate it automatically
-		System.out.println("####: " + samplingRate);
 		if (samplingRate == 0.0){
 			samplingRate = calculateSampingRate(inputsDir);
 			System.out.println("The input samplingRate = 0.0, we set it to " + samplingRate);
