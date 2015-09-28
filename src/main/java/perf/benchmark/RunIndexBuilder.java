@@ -51,7 +51,7 @@ public class RunIndexBuilder {
 	int method = -1;
 
 	// Sampling probability.
-	double samplingRate = 0;
+	double samplingRate = 0.0;
 
 	// Number of buckets in the index.
 	int numBuckets = -1;
@@ -191,7 +191,6 @@ public class RunIndexBuilder {
 		assert schemaString != null;
 		assert numFields != -1;
 		assert inputsDir != null;
-		assert samplingRate != 0;
 		Schema.createSchema(schemaString, numFields);
 
 		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
