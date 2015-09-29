@@ -137,30 +137,24 @@ public class IndexBuilder {
 			String inputDirectory, String outputSamplePath, FileSystem fs) {
 		InputReader r = new InputReader(null, key);
 		File[] files = new File(inputDirectory).listFiles();
-
-		ParsedTupleList sample = new ParsedTupleList();
-		long startTime = System.nanoTime();
-		for (File f : files) {
-			r.scanWithBlockSampling(f.getPath(), samplingRate, sample);
-			r.firstPass = true;
-		}
-		double time1 = (System.nanoTime() - startTime) / 1E9;
-		System.out.println("Scanning and sampling time: " + time1 + " sec");
-
-		startTime = System.nanoTime();
-		byte[] sampleBytes = sample.marshall();
-
+		
 		OutputStream out = HDFSUtils.getHDFSOutputStream(fs, outputSamplePath,
 				(short) 1, 50 << 20);
+		
+		long startTime = System.nanoTime();
+		
 		try {
-			out.write(sampleBytes);
-			out.flush();
+			for (File f : files) {
+				r.scanWithBlockSampling(f.getPath(), samplingRate,  out);
+				r.firstPass = true;
+			}
 			out.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		double time2 = (System.nanoTime() - startTime) / 1E9;
-		System.out.println("Sample write time: " + time2 + " sec");
+		
+		double timeScanAndWrite =  (System.nanoTime() - startTime) / 1e9;
+		System.out.println("Scanning, sampling and write time: " + timeScanAndWrite + " sec");
 	}
 
 	// Given an index that has already been constructed, and a directory of

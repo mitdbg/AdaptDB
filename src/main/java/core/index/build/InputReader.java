@@ -2,6 +2,7 @@ package core.index.build;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
@@ -121,42 +122,53 @@ public class InputReader {
 	}
 
 	/**
+	 * return true at the probability of samplingRate
+	 * 
+	 * @param samplingRate
+	 */
+	
+	private boolean sampleSucceed(double samplingRate) {
+		if (Math.random() > samplingRate) {
+			return false;
+		}
+		return true;
+	}
+	
+	/**
 	 * Picks a block with samplingRate probability
 	 * 
 	 * @param filename
 	 * @param samplingRate
 	 */
 	public void scanWithBlockSampling(String filename, double samplingRate,
-			ParsedTupleList sample) {
+			OutputStream out) {
 		initScan(blockSampleSize);
-
 		FileChannel ch = IOUtils.openFileChannel(filename);
+	
 		try {
-			long position = 0;
-			while (Math.random() > samplingRate) {
-				position += blockSampleSize;
-			}
-			ch.position(position);
-			while ((nRead = ch.read(bb)) != -1) {
-				if (nRead == 0)
-					continue;
-
+			
+			for(long position = 0; ;position += blockSampleSize)
+			{
+				while(sampleSucceed(samplingRate) == false){
+					position += blockSampleSize;
+				}
+				ch.position(position);
+				if ((nRead = ch.read(bb)) == -1){
+					break;
+				}
+				// skip the first tuple.
 				byteArrayIdx = previous = 0;
 				while (byteArrayIdx < nRead
 						&& byteArray[byteArrayIdx] != newLine) {
 					byteArrayIdx++;
 				}
 				previous = ++byteArrayIdx;
-				processByteBuffer(null, sample);
-
+				
+				processByteBuffer(null, out);
 				bb.clear();
-
-				while (Math.random() > samplingRate) {
-					position += blockSampleSize;
-				}
-				ch.position(position);
+				out.flush(); // It only helps get an exact profiling? 
 			}
-			;
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -165,50 +177,58 @@ public class InputReader {
 	}
 
 	private void processByteBuffer(PartitionWriter writer,
-			ParsedTupleList sample) {
+			OutputStream out) {
 		long startTime;
-		for (; byteArrayIdx < nRead; byteArrayIdx++) {
-			if (byteArray[byteArrayIdx] == newLine) {
-
-				totalLineSize += byteArrayIdx - previous;
-				if (hasLeftover) {
-					startTime = System.nanoTime();
-					byte[] a = new byte[brokenLine.length + byteArrayIdx
-							- previous];
-					System.arraycopy(brokenLine, 0, a, 0, brokenLine.length);
-					System.arraycopy(byteArray, previous, a, brokenLine.length,
-							byteArrayIdx - previous);
-					key.setBytes(a);
-					arrayCopyTime += System.nanoTime() - startTime;
-
-					totalLineSize += brokenLine.length;
-					hasLeftover = false;
-
-					if (writer != null) {
+		
+		try
+		{
+			for (; byteArrayIdx < nRead; byteArrayIdx++) {
+				if (byteArray[byteArrayIdx] == newLine) {
+	
+					totalLineSize += byteArrayIdx - previous;
+					if (hasLeftover) {
 						startTime = System.nanoTime();
-						String bucketId = index.getBucketId(key).toString();
-						bucketIdTime += System.nanoTime() - startTime;
-						writer.writeToPartition(bucketId, a, 0, a.length);
+						byte[] a = new byte[brokenLine.length + byteArrayIdx
+								- previous + 1];
+						System.arraycopy(brokenLine, 0, a, 0, brokenLine.length);
+						System.arraycopy(byteArray, previous, a, brokenLine.length,
+								byteArrayIdx - previous + 1); // + 1 newline
+						//key.setBytes(a);
+						out.write(a);
+						arrayCopyTime += System.nanoTime() - startTime;
+						totalLineSize += brokenLine.length;
+						hasLeftover = false;
+	
+						if (writer != null) {
+							startTime = System.nanoTime();
+							String bucketId = index.getBucketId(key).toString();
+							bucketIdTime += System.nanoTime() - startTime;
+							writer.writeToPartition(bucketId, a, 0, a.length);
+						}
+					} else {
+						//key.setBytes(byteArray, previous, byteArrayIdx - previous);
+						out.write(byteArray, previous, byteArrayIdx - previous + 1); // +1 newline
+						if (writer != null) {
+							startTime = System.nanoTime();
+							String bucketId = index.getBucketId(key).toString();
+							bucketIdTime += System.nanoTime() - startTime;
+							writer.writeToPartition(bucketId, byteArray, previous,
+									byteArrayIdx - previous);
+						}
 					}
-				} else {
-					key.setBytes(byteArray, previous, byteArrayIdx - previous);
-					if (writer != null) {
-						startTime = System.nanoTime();
-						String bucketId = index.getBucketId(key).toString();
-						bucketIdTime += System.nanoTime() - startTime;
-						writer.writeToPartition(bucketId, byteArray, previous,
-								byteArrayIdx - previous);
-					}
+	
+					previous = ++byteArrayIdx;
+					lineCount++;
+					/*
+					if (sample != null)
+						sample.insert(key);
+					*/
 				}
-
-				previous = ++byteArrayIdx;
-
-				lineCount++;
-
-				if (sample != null)
-					sample.insert(key);
 			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
+
 	}
 
 	public static void main(String[] args) {
