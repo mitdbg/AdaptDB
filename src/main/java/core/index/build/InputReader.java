@@ -18,7 +18,7 @@ import core.utils.IOUtils;
 public class InputReader {
 
 	int bufferSize = 5 * 1024 * 1024;
-	int blockSampleSize = 5 * 1024;
+	int blockSampleSize = 50 * 1024;
 	char newLine = '\n';
 
 	byte[] byteArray, brokenLine;
