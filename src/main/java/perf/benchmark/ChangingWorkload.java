@@ -1,63 +1,33 @@
 package perf.benchmark;
 
-import java.io.BufferedReader;
-import java.nio.charset.Charset;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Random;
-
-import org.apache.curator.framework.CuratorFramework;
 
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.spark.SparkQuery;
 import core.utils.ConfUtils;
-import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 
-public class TestChangingWorkload {
-	public final static String propertyFile = BenchmarkSettings.conf;
-	public final static ConfUtils cfg = new ConfUtils(propertyFile);
+public class ChangingWorkload {
+	ConfUtils cfg;
 	final static String[] shipModes = new String[] { "REG AIR", "AIR", "RAIL",
 			"SHIP", "TRUCK", "MAIL", "FOB" };
 
 	int scaleFactor = 1000;
 	double selectivity = 0.05;
+	public int method;
 
 	public void setUp() {
+		cfg = new ConfUtils(BenchmarkSettings.conf);
+
 		// delete query history
 		// Cleanup queries file - to remove past query workload
 		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
 				cfg.getHDFS_WORKING_DIR() + "/queries", false);
-
-		// reset all the bucket counts
-		CuratorFramework client = CuratorUtils.createAndStartClient(cfg
-				.getZOOKEEPER_HOSTS());
-		CuratorUtils.deleteAll(client, "/", "partition-");
-
-		Charset charset = Charset.forName("US-ASCII");
-		Path file = FileSystems.getDefault().getPath(
-				"/data/mdindex/tpch-dbgen/buckets");
-		// Path file =
-		// FileSystems.getDefault().getPath("/Users/qui/Documents/buckets.txt");
-		try {
-			BufferedReader reader = Files.newBufferedReader(file, charset);
-			String line = null;
-			while ((line = reader.readLine()) != null) {
-				String[] tokens = line.split("\t");
-				CuratorUtils.setCounter(client, tokens[0],
-						Integer.parseInt(tokens[1]));
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		CuratorUtils.stopClient(client);
 	}
 
 	public void runQuery(SparkQuery sq, int attr) {
@@ -68,7 +38,7 @@ public class TestChangingWorkload {
 		Predicate p2;
 		long result;
 		Calendar c = new GregorianCalendar();
-		;
+
 		switch (attr) {
 		case 4:
 			range = 50;
@@ -221,11 +191,37 @@ public class TestChangingWorkload {
 		}
 	}
 
+	public void loadSettings(String[] args) {
+		int counter = 0;
+		while (counter < args.length) {
+			switch (args[counter]) {
+			case "--method":
+				method = Integer.parseInt(args[counter + 1]);
+				counter += 2;
+				break;
+			default:
+				// Something we don't use
+				counter += 2;
+				break;
+			}
+		}
+	}
+
 	public static void main(String[] args) {
-		// need to reset the index and removePartitions.sh
-		TestChangingWorkload tcw = new TestChangingWorkload();
+		BenchmarkSettings.loadSettings(args);
+		BenchmarkSettings.printSettings();
+
+		ChangingWorkload tcw = new ChangingWorkload();
+		tcw.loadSettings(args);
 		tcw.setUp();
-		tcw.testChangingQueries();
-		// tcw.testSwitchingSets();
+
+		switch(tcw.method) {
+		case 0:
+			tcw.testChangingQueries();
+			break;
+		case 1:
+			tcw.testSwitchingSets();
+			break;
+		}
 	}
 }

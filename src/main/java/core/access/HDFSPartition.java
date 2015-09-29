@@ -33,13 +33,6 @@ public class HDFSPartition extends Partition {
 
 	CuratorFramework client;
 
-	// BucketCounts counter;
-	// PartitionLock locker;
-
-	public HDFSPartition(String path, String propertiesFile) {
-		this(path, propertiesFile, (short) 3);
-	}
-
 	public HDFSPartition(String pathAndPartitionId, String propertiesFile,
 			short replication) {
 		super(pathAndPartitionId);
@@ -69,20 +62,6 @@ public class HDFSPartition extends Partition {
 			CuratorFramework client) {
 		this(hdfs, pathAndPartitionId, (short) 3, client);
 	}
-
-	// public HDFSPartition(FileSystem hdfs, String pathAndPartitionId, short
-	// replication, PartitionLock locker, BucketCounts counter) {
-	// super(pathAndPartitionId);
-	// this.hdfs = hdfs;
-	// this.replication = replication;
-	// this.counter = counter;
-	// this.locker = locker;
-	// }
-	//
-	// public HDFSPartition(FileSystem hdfs, String pathAndPartitionId,
-	// PartitionLock locker, BucketCounts counter) {
-	// this(hdfs, pathAndPartitionId, (short)3, locker, counter);
-	// }
 
 	@Override
 	public Partition clone() {

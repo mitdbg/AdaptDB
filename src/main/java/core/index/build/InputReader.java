@@ -11,7 +11,6 @@ import java.nio.file.Paths;
 
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
-import core.index.key.ParsedTupleList;
 import core.utils.BinaryUtils;
 import core.utils.IOUtils;
 
@@ -120,7 +119,7 @@ public class InputReader {
 
 	/**
 	 * return true at the probability of samplingRate
-	 * 
+	 *
 	 * @param samplingRate
 	 */
 
@@ -133,7 +132,7 @@ public class InputReader {
 
 	/**
 	 * Picks a block with samplingRate probability
-	 * 
+	 *
 	 * @param filename
 	 * @param samplingRate
 	 */
@@ -219,6 +218,7 @@ public class InputReader {
 
 				String line;
 				long count = 0;
+
 				// read each line
 				while ((line = reader.readLine()) != null) {
 					count += line.length();

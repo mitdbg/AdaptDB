@@ -3,12 +3,6 @@ from env_setup import *
 
 counter = 0
 
-def fill_cmd(cmd):
-    print env.conf
-    for k in env.conf.keys():
-        cmd = cmd.replace('$' + k, env.conf[k])
-    return cmd
-
 @parallel
 def bulk_sample_gen():
     global conf

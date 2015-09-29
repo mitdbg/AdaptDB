@@ -1,60 +1,29 @@
 package perf.benchmark;
 
-import java.io.BufferedReader;
-import java.nio.charset.Charset;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Random;
-
-import org.apache.curator.framework.CuratorFramework;
 
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.spark.SparkQuery;
 import core.utils.ConfUtils;
-import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 
-public class TestConvergence {
-	public final static String propertyFile = BenchmarkSettings.conf;
-	public final static ConfUtils cfg = new ConfUtils(propertyFile);
+public class ConvergenceWorkload {
+	ConfUtils cfg;
+
+	int method;
 
 	public void setUp() {
-
-		// no cleanup needed to resume the runs
+		cfg = new ConfUtils(BenchmarkSettings.conf);
 
 		// delete query history
 		// Cleanup queries file - to remove past query workload
 		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
 				cfg.getHDFS_WORKING_DIR() + "/queries", false);
-
-		// reset all the bucket counts
-		CuratorFramework client = CuratorUtils.createAndStartClient(cfg
-				.getZOOKEEPER_HOSTS());
-		CuratorUtils.deleteAll(client, "/", "partition-");
-
-		Charset charset = Charset.forName("US-ASCII");
-		Path file = FileSystems.getDefault().getPath(
-				"/data/mdindex/tpch-dbgen/buckets");
-		try {
-			BufferedReader reader = Files.newBufferedReader(file, charset);
-			String line = null;
-			while ((line = reader.readLine()) != null) {
-				String[] tokens = line.split("\t");
-				CuratorUtils.setCounter(client, tokens[0],
-						Integer.parseInt(tokens[1]));
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		CuratorUtils.stopClient(client);
-
 	}
 
 	// access shipdate in cyclic pattern, selectivity constant
@@ -172,15 +141,40 @@ public class TestConvergence {
 		}
 	}
 
+	public void loadSettings(String[] args) {
+		int counter = 0;
+		while (counter < args.length) {
+			switch (args[counter]) {
+			case "--method":
+				method = Integer.parseInt(args[counter + 1]);
+				counter += 2;
+				break;
+			default:
+				// Something we don't use
+				counter += 2;
+				break;
+			}
+		}
+	}
+
 	public static void main(String[] args) {
-		// Before running, run the removePartitions script and move the oldest
-		// index from the last run back to /index
-		// There is also a copy of the index at /user/anil/sample/index
-		System.out.println("Started BAZOOKA");
-		TestConvergence tc = new TestConvergence();
+		BenchmarkSettings.loadSettings(args);
+		BenchmarkSettings.printSettings();
+
+		ConvergenceWorkload tc = new ConvergenceWorkload();
+		tc.loadSettings(args);
 		tc.setUp();
-		// tc.testConvergenceShipDateCyclic();
-		// tc.testConvergenceShipDateAdHoc();
-		tc.testConvergenceShipDateDrillDown();
+
+		switch(tc.method) {
+		case 0:
+			tc.testConvergenceShipDateCyclic();
+			break;
+		case 1:
+			tc.testConvergenceShipDateAdHoc();
+			break;
+		case 2:
+			tc.testConvergenceShipDateDrillDown();
+			break;
+		}
 	}
 }

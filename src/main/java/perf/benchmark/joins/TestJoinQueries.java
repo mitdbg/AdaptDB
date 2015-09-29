@@ -1,8 +1,9 @@
-package perf.benchmark;
+package perf.benchmark.joins;
 
 import org.apache.hadoop.io.LongWritable;
 import org.apache.spark.api.java.JavaPairRDD;
 
+import perf.benchmark.BenchmarkSettings;
 import core.access.Predicate;
 import core.access.iterator.IteratorRecord;
 import core.access.spark.MapToKeyFunction;

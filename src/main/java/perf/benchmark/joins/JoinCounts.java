@@ -1,4 +1,4 @@
-package perf.benchmark;
+package perf.benchmark.joins;
 
 import core.access.AccessMethod.PartitionSplit;
 import core.access.Predicate;
@@ -15,6 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+
+import perf.benchmark.BenchmarkSettings;
 
 /**
  * Created by qui on 7/6/15.

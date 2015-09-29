@@ -90,11 +90,9 @@ FROM
   JOIN customer ON o_custkey = c_custkey
 	""")
 
-
-
 lopsc.registerTempTable("lopsc")
 
-lopsc.save("/user/mdindex/tpch100/lopsc.csv", "com.databricks.spark.csv")
+lopsc.save("/user/mdindex/tpch100/lopsc", "com.databricks.spark.csv")
 
 // A quick set of ops that can be done on a Dataframe
 // df.show()
@@ -105,6 +103,22 @@ lopsc.save("/user/mdindex/tpch100/lopsc.csv", "com.databricks.spark.csv")
 // df.filter(df("name") > 21).show()
 // df.groupBy("age").count().show()
 
+var lopscSample = lopsc.takeSample(false, num)
+
+lopscSample.registerTempTable("lopscSample")
+
+// lopsc num tuples = 600037902 == num tuples in lineitem
+
 val p = sqlContext.sql(s"SELECT COUNT(*) AS T FROM lineItem")
 
 
+/* ######################################
+We shall have 8 TPC-H queries
+3: Tricky; atleast 50%
+5: 1/5 *
+6:
+8:
+10:
+12:
+14:
+19:

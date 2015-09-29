@@ -1,29 +1,21 @@
 package perf.benchmark;
 
-import java.io.BufferedReader;
-import java.nio.charset.Charset;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.curator.framework.CuratorFramework;
-
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.Query;
 import core.access.spark.SparkQuery;
 import core.utils.ConfUtils;
-import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 
-public class TPCHRunWorkload {
+public class TPCHWorkload {
 	public ConfUtils cfg;
 
 	public String schemaString;
@@ -42,28 +34,6 @@ public class TPCHRunWorkload {
 		// Cleanup queries file - to remove past query workload
 		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
 				cfg.getHDFS_WORKING_DIR() + "/queries", false);
-
-		// reset all the bucket counts
-		CuratorFramework client = CuratorUtils.createAndStartClient(cfg
-				.getZOOKEEPER_HOSTS());
-		CuratorUtils.deleteAll(client, "/", "partition-");
-
-		Charset charset = Charset.forName("US-ASCII");
-		Path file = FileSystems.getDefault().getPath(
-				"/data/mdindex/tpch-dbgen/buckets");
-		try {
-			BufferedReader reader = Files.newBufferedReader(file, charset);
-			String line = null;
-			while ((line = reader.readLine()) != null) {
-				String[] tokens = line.split("\t");
-				CuratorUtils.setCounter(client, tokens[0],
-						Integer.parseInt(tokens[1]));
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		CuratorUtils.stopClient(client);
 	}
 
 	// Given the TPC-H query number returns the query.
@@ -230,7 +200,7 @@ public class TPCHRunWorkload {
 		BenchmarkSettings.loadSettings(args);
 		BenchmarkSettings.printSettings();
 
-		TPCHRunWorkload t = new TPCHRunWorkload();
+		TPCHWorkload t = new TPCHWorkload();
 		t.loadSettings(args);
 		t.setUp();
 

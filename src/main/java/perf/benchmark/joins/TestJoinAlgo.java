@@ -1,15 +1,18 @@
-package perf.benchmark;
+package perf.benchmark.joins;
 
 import core.access.spark.SparkQueryConf;
 import core.access.spark.join.HPJoinInput;
 import core.access.spark.join.algo.*;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.lib.input.CombineFileSplit;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+
+import perf.benchmark.BenchmarkSettings;
 
 import java.util.ArrayList;
 import java.util.Arrays;
