@@ -133,27 +133,23 @@ public class IndexBuilder {
 
 	// Reads the files from inputDirectory and samples them using blockSampling.
 	// Writes out the samples to SAMPLES_DIR/sample.machineId.
-	public void blockSampleInput(double samplingRate, CartilageIndexKey key,
-			String inputDirectory, String outputSamplePath, FileSystem fs) {
+	public void blockSampleInput(double samplingRate, CartilageIndexKey key, String inputDirectory,
+			String outputSamplePath, FileSystem fs) {
 		InputReader r = new InputReader(null, key);
 		File[] files = new File(inputDirectory).listFiles();
-		
-		OutputStream out = HDFSUtils.getHDFSOutputStream(fs, outputSamplePath,
-				(short) 1, 50 << 20);
-		
+		OutputStream out = HDFSUtils.getHDFSOutputStream(fs, outputSamplePath, (short) 1, 50 << 20);
+
 		long startTime = System.nanoTime();
-		
 		try {
 			for (File f : files) {
-				r.scanWithBlockSampling(f.getPath(), samplingRate,  out);
+				r.scanWithBlockSampling(f.getPath(), samplingRate, out);
 				r.firstPass = true;
 			}
 			out.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
-		double timeScanAndWrite =  (System.nanoTime() - startTime) / 1e9;
+		double timeScanAndWrite = (System.nanoTime() - startTime) / 1e9;
 		System.out.println("Scanning, sampling and write time: " + timeScanAndWrite + " sec");
 	}
 
@@ -161,9 +157,8 @@ public class IndexBuilder {
 	// files to partition,
 	// writes out the appropriate partition files
 	// Multiple index version
-	public void buildDistributedReplicasFromIndex(MDIndex[] indexes,
-			CartilageIndexKey[] keys, String inputDirectory, String prefix,
-			PartitionWriter[] writers) {
+	public void buildDistributedReplicasFromIndex(MDIndex[] indexes, CartilageIndexKey[] keys, String inputDirectory,
+			String prefix, PartitionWriter[] writers) {
 		ReplicatedInputReader r = new ReplicatedInputReader(indexes, keys);
 		r.firstPass = false;
 		File[] files = new File(inputDirectory).listFiles();
@@ -185,9 +180,8 @@ public class IndexBuilder {
 	}
 
 	// Builds replicas with block sampling
-	public void build(double samplingRate, int numBuckets, MDIndex[] indexes,
-			CartilageIndexKey[] keys, String inputDirectory,
-			PartitionWriter[] writers) {
+	public void build(double samplingRate, int numBuckets, MDIndex[] indexes, CartilageIndexKey[] keys,
+			String inputDirectory, PartitionWriter[] writers) {
 		long startTime = System.nanoTime();
 		for (MDIndex index : indexes)
 			index.initBuild(numBuckets);
@@ -228,8 +222,7 @@ public class IndexBuilder {
 			byte[] indexBytes = index.marshall();
 			writer.writeToPartition("index", indexBytes, 0, indexBytes.length);
 			byte[] sampleBytes = index.serializeSample();
-			writer.writeToPartition("sample", sampleBytes, 0,
-					sampleBytes.length);
+			writer.writeToPartition("sample", sampleBytes, 0, sampleBytes.length);
 			byte[] infoBytes = keys[i].toString().getBytes();
 			writer.writeToPartition("info", infoBytes, 0, infoBytes.length);
 			writer.flush();
@@ -237,19 +230,16 @@ public class IndexBuilder {
 		double time4 = (System.nanoTime() - startTime) / 1E9;
 		System.out.println("Index+Sample Write Time = " + time4 + " sec");
 
-		System.out.println("Total time = " + (time1 + time2 + time3 + time4)
-				+ " sec");
+		System.out.println("Total time = " + (time1 + time2 + time3 + time4) + " sec");
 	}
 
-	public void build(double samplingRate, int numBuckets, MDIndex index,
-			CartilageIndexKey key, String inputFilename,
+	public void build(double samplingRate, int numBuckets, MDIndex index, CartilageIndexKey key, String inputFilename,
 			PartitionWriter writer, int attributes, int replication) {
 		int attrPerReplica = attributes / replication;
 
 		Map<Integer, List<Integer>> replicaAttrs = Maps.newHashMap();
 		for (int j = 0; j < attributes; j++) {
-			int r = j / attrPerReplica >= replication ? replication - 1 : j
-					/ attrPerReplica;
+			int r = j / attrPerReplica >= replication ? replication - 1 : j / attrPerReplica;
 			if (!replicaAttrs.containsKey(r))
 				replicaAttrs.put(r, new ArrayList<Integer>());
 			replicaAttrs.get(r).add(j);
@@ -275,15 +265,13 @@ public class IndexBuilder {
 		build(samplingRate, numBuckets, indexes, keys, inputFilename, writers);
 	}
 
-	public void buildReplicatedWithSample(ParsedTupleList sample,
-			int numBuckets, CartilageIndexKey key, PartitionWriter writer,
-			int attributes, int replication) {
+	public void buildReplicatedWithSample(ParsedTupleList sample, int numBuckets, CartilageIndexKey key,
+			PartitionWriter writer, int attributes, int replication) {
 		int attrPerReplica = attributes / replication;
 
 		Map<Integer, List<Integer>> replicaAttrs = Maps.newHashMap();
 		for (int j = 0; j < attributes; j++) {
-			int r = j / attrPerReplica >= replication ? replication - 1 : j
-					/ attrPerReplica;
+			int r = j / attrPerReplica >= replication ? replication - 1 : j / attrPerReplica;
 			if (!replicaAttrs.containsKey(r))
 				replicaAttrs.put(r, new ArrayList<Integer>());
 			replicaAttrs.get(r).add(j);
@@ -336,30 +324,27 @@ public class IndexBuilder {
 		System.out.println("Total time = " + (time2 + time4) + " sec");
 	}
 
-	public void buildIndexFromSample(ParsedTupleList sample,
-			int numBuckets, MDIndex index, PartitionWriter writer) {
+	public void buildIndexFromSample(ParsedTupleList sample, int numBuckets, MDIndex index, PartitionWriter writer) {
 		index.initBuild(numBuckets);
 		((RobustTreeHs) index).loadSample(sample);
 
 		long startTime = System.nanoTime();
 		index.initProbe();
-		System.out.println("BUILD: index building time = "
-				+ ((System.nanoTime() - startTime) / 1E9));
+		System.out.println("BUILD: index building time = " + ((System.nanoTime() - startTime) / 1E9));
 
 		startTime = System.nanoTime();
 		byte[] indexBytes = index.marshall();
 		System.out.println("Index Size: " + indexBytes.length);
 		writer.writeToPartition("index", indexBytes, 0, indexBytes.length);
 		writer.flush();
-		System.out.println("BUILD: index writing time = "
-				+ ((System.nanoTime() - startTime) / 1E9));
+		System.out.println("BUILD: index writing time = " + ((System.nanoTime() - startTime) / 1E9));
 	}
 
 	// Given an index that has already been constructed, and a directory of
 	// files to partition,
 	// writes out the appropriate partition files
-	public void buildDistributedFromIndex(MDIndex index, CartilageIndexKey key,
-			String inputDirectory, PartitionWriter writer) {
+	public void buildDistributedFromIndex(MDIndex index, CartilageIndexKey key, String inputDirectory,
+			PartitionWriter writer) {
 		InputReader r = new InputReader(index, key);
 		r.firstPass = false;
 		File[] files = new File(inputDirectory).listFiles();
