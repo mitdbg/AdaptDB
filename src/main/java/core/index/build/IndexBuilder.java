@@ -33,8 +33,8 @@ public class IndexBuilder {
 		long startTime = System.nanoTime();
 		try {
 			for (File f : files) {
+				System.out.println("Scanning " + f.getName());
 				r.scanWithBlockSampling(f.getPath(), samplingRate, out);
-				r.firstPass = true;
 			}
 			out.close();
 		} catch (IOException e) {

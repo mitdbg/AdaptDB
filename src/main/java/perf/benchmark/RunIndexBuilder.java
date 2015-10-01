@@ -11,7 +11,6 @@ import org.apache.hadoop.fs.RemoteIterator;
 
 import core.index.build.HDFSPartitionWriter;
 import core.index.build.IndexBuilder;
-import core.index.build.InputReader;
 import core.index.build.PartitionWriter;
 import core.index.key.CartilageIndexKey;
 import core.index.key.ParsedTupleList;
@@ -195,12 +194,13 @@ public class RunIndexBuilder {
 
 		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
 				+ "/etc/hadoop/core-site.xml");
-		
+
 		// If the input sampingRate = 0.0 (unspecified), then calculate it automatically
 		if (samplingRate == 0.0){
 			samplingRate = calculateSampingRate(inputsDir);
 			System.out.println("The input samplingRate = 0.0, we set it to " + samplingRate);
 		}
+
 		builder.blockSampleInput(
 				samplingRate,
 				key,
@@ -211,10 +211,10 @@ public class RunIndexBuilder {
 
 	/**
 	 * samplingRate = 1GB / sizeof (totalInputFileSize);
-	 * 
+	 *
 	 * @param inputDirectory
 	 */
-	
+
 	private double calculateSampingRate(String inputDirectory) {
 		File[] files = new File(inputDirectory).listFiles();
 		long totalFileSize = 0;

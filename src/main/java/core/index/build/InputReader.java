@@ -178,11 +178,13 @@ public class InputReader {
 						byte[] a = new byte[brokenLine.length + byteArrayIdx - previous + 1];
 						System.arraycopy(brokenLine, 0, a, 0, brokenLine.length);
 						System.arraycopy(byteArray, previous, a, brokenLine.length, byteArrayIdx - previous + 1); // +
-
-						out.write(a);
 						arrayCopyTime += System.nanoTime() - startTime;
 						totalLineSize += brokenLine.length;
 						hasLeftover = false;
+
+						if (out != null) {
+							out.write(a);
+						}
 
 						if (writer != null) {
 							startTime = System.nanoTime();
@@ -191,7 +193,10 @@ public class InputReader {
 							writer.writeToPartition(bucketId, a, 0, a.length);
 						}
 					} else {
-						out.write(byteArray, previous, byteArrayIdx - previous + 1); // +1														// newline
+						if (out != null) {
+							out.write(byteArray, previous, byteArrayIdx - previous + 1); // +1														// newline
+						}
+
 						if (writer != null) {
 							startTime = System.nanoTime();
 							String bucketId = index.getBucketId(key).toString();

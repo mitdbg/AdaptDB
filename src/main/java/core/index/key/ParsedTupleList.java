@@ -432,18 +432,12 @@ public class ParsedTupleList {
 		for (; offset < bytes.length; offset++) {
 			if (bytes[offset] == '\n') {
 				byte[] lineBytes = ArrayUtils.subarray(bytes, previous, offset);
-				if (previous == 0) {
-					String[] tokens = new String(lineBytes).split("\\|");
-					this.types = new TYPE[tokens.length];
-					for (int i = 0; i < tokens.length; i++)
-						types[i] = TYPE.valueOf(tokens[i]);
-				} else {
-					record.setBytes(lineBytes);
-					try {
-						insert(record);
-					} catch (ArrayIndexOutOfBoundsException e) {
-						System.out.println("Exception in ParsedTupleList::unmarshall");
-					}
+				record.setBytes(lineBytes);
+				try {
+					insert(record);
+				} catch (ArrayIndexOutOfBoundsException e) {
+					System.out.println("Exception in ParsedTupleList::unmarshall");
+					e.printStackTrace();
 				}
 				previous = ++offset;
 			}
