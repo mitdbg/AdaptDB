@@ -37,7 +37,10 @@ public class Schema {
 
 	public static void createSchema(String schemaString, int numFields) {
 		Field[] fieldList = new Field[numFields];
+		System.out.println(schemaString);
 		String[] columns = schemaString.split(",");
+		System.out.println("Columns length == " + numFields);
+		System.out.println("Columns length == " + columns.length);
 		assert columns.length == numFields;
 		assert schema == null;
 		for (int i = 0; i < columns.length; i++) {

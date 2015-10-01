@@ -306,6 +306,8 @@ public class RobustTreeHs implements MDIndex {
 		this.sample = sample;
 		this.dimensionTypes = this.sample.getTypes();
 		this.numAttributes = this.dimensionTypes.length;
+
+		System.out.println("DEBUG: NUM ATTRIBUTES " + this.numAttributes);
 	}
 
 	public void initializeBucketSamplesAndCounts(RNode n,

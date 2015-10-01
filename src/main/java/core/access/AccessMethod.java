@@ -1,14 +1,14 @@
 package core.access;
 
-import core.access.Predicate;
-import core.access.Query;
+import org.apache.hadoop.fs.FileSystem;
+
 import core.access.iterator.PartitionIterator;
 import core.access.spark.SparkQueryConf;
 import core.adapt.opt.Optimizer;
 import core.index.key.CartilageIndexKey;
+import core.index.robusttree.Globals;
 import core.index.robusttree.RobustTreeHs;
 import core.utils.HDFSUtils;
-import org.apache.hadoop.fs.FileSystem;
 
 /**
  * This access method class considers filter access method over the distributed
@@ -26,7 +26,7 @@ import org.apache.hadoop.fs.FileSystem;
 
 public class AccessMethod {
 	Optimizer opt;
-	CartilageIndexKey key = new CartilageIndexKey('|');
+	CartilageIndexKey key = new CartilageIndexKey(Globals.DELIMITER);
 
 	/**
 	 * Initialize hyper-partitioning data access.

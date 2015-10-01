@@ -17,3 +17,4 @@ lib/
 .settings/
 /build/
 *.out
+*.properties

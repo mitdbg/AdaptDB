@@ -5,12 +5,13 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 
-import core.index.key.CartilageIndexKey;
 import org.apache.hadoop.io.Text;
 
 import com.google.common.base.Joiner;
 
 import core.access.iterator.IteratorRecord;
+import core.index.key.CartilageIndexKey;
+import core.index.robusttree.Globals;
 
 public class Query implements Serializable {
 	private static final long serialVersionUID = 1L;
@@ -53,7 +54,7 @@ public class Query implements Serializable {
 
 		public FilterQuery() {
 			this.predicates = null;
-			key = new CartilageIndexKey();
+			key = new CartilageIndexKey(Globals.DELIMITER);
 		}
 
 		public FilterQuery(String predString) {
@@ -71,7 +72,7 @@ public class Query implements Serializable {
 		}
 
 		public FilterQuery(Predicate[] predicates) {
-			this(predicates, new CartilageIndexKey());
+			this(predicates, new CartilageIndexKey(Globals.DELIMITER));
 		}
 
 		public boolean qualifies(IteratorRecord record) {

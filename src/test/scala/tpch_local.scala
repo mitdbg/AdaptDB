@@ -7,6 +7,7 @@ val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 
 // this is used to implicitly convert an RDD to a DataFrame.
 import sqlContext.implicits._
+import org.apache.spark.sql.SaveMode
 
 val PATH = "/user/mdindex/tpch1"
 val DEST = "/user/mdindex/tpchd1"
@@ -95,7 +96,7 @@ FROM
 
 lopsc.registerTempTable("lopsc")
 
-lopsc.save(DEST, "com.databricks.spark.csv")
+lopsc.save("com.databricks.spark.csv", SaveMode.ErrorIfExists, Map("path" -> DEST, "delimiter" -> "|"))
 
 // A quick set of ops that can be done on a Dataframe
 // df.show()

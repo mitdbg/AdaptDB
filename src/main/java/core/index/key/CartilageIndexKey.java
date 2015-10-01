@@ -26,10 +26,6 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 	protected char delimiter;
 	protected int[] keyAttrIdx;
 
-	public CartilageIndexKey() {
-		this.delimiter = '|';
-	}
-
 	public CartilageIndexKey(char delimiter) {
 		this.delimiter = delimiter;
 	}
@@ -92,8 +88,13 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 			int attrIdx = 0;
 			for (int i = offset; i < length; i++) {
 				if (bytes[i] == delimiter) {
-					attributeOffsets[attrIdx++] = previous;
-					previous = i + 1;
+					try {
+						attributeOffsets[attrIdx++] = previous;
+						previous = i + 1;
+					} catch (Exception e) {
+						System.out.println(delimiter + " " + new String(bytes));
+						e.printStackTrace();
+					}
 				}
 			}
 			if (attrIdx < attributeOffsets.length)
@@ -115,8 +116,13 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 		int attrIdx = 0;
 		for (int i = offset; i < length; i++) {
 			if (bytes[i] == delimiter) {
-				attributeOffsets[attrIdx++] = previous;
-				previous = i + 1;
+				try {
+					attributeOffsets[attrIdx++] = previous;
+					previous = i + 1;
+				} catch (Exception e) {
+					System.out.println(delimiter + " " + new String(bytes));
+					e.printStackTrace();
+				}
 			}
 		}
 		if (attrIdx < attributeOffsets.length)

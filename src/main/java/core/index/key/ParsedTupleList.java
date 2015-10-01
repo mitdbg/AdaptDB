@@ -11,6 +11,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Bytes;
 
+import core.index.robusttree.Globals;
 import core.utils.BinaryUtils;
 import core.utils.Pair;
 import core.utils.TypeUtils;
@@ -426,7 +427,7 @@ public class ParsedTupleList {
 	}
 
 	public void unmarshall(byte[] bytes) {
-		CartilageIndexKey record = new CartilageIndexKey('|');
+		CartilageIndexKey record = new CartilageIndexKey(Globals.DELIMITER);
 		int offset = 0, previous = 0;
 
 		for (; offset < bytes.length; offset++) {
@@ -442,5 +443,10 @@ public class ParsedTupleList {
 				previous = ++offset;
 			}
 		}
+
+		// The key now has the right types. Use those types.
+		this.types = record.types;
+
+		System.out.println("DEBUG: Types length: " + this.types.length);
 	}
 }

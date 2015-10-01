@@ -26,7 +26,6 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 	protected byte[] brokenRecordBytes;
 
 	protected static char newLine = '\n';
-	static char delimiter = '|';
 
 	protected byte[] bytes;
 	protected int bytesLength, offset, previous;
@@ -52,6 +51,7 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 		brokenRecordBytes = null;
 	}
 
+	@Override
 	public boolean hasNext() {
 		for (; offset < bytesLength; offset++) {
 			if (bytes[offset] == newLine) {
@@ -99,10 +99,12 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 		return true;
 	}
 
+	@Override
 	public void remove() {
 		next();
 	}
 
+	@Override
 	public IteratorRecord next() {
 		return record;
 	}

@@ -175,29 +175,31 @@ public class InputReader {
 					totalLineSize += byteArrayIdx - previous;
 					if (hasLeftover) {
 						startTime = System.nanoTime();
-						byte[] a = new byte[brokenLine.length + byteArrayIdx - previous + 1];
-						System.arraycopy(brokenLine, 0, a, 0, brokenLine.length);
-						System.arraycopy(byteArray, previous, a, brokenLine.length, byteArrayIdx - previous + 1); // +
+						byte[] keyBytes = new byte[brokenLine.length + byteArrayIdx - previous + 1];
+						System.arraycopy(brokenLine, 0, keyBytes, 0, brokenLine.length);
+						System.arraycopy(byteArray, previous, keyBytes, brokenLine.length, byteArrayIdx - previous + 1); // +
 						arrayCopyTime += System.nanoTime() - startTime;
 						totalLineSize += brokenLine.length;
 						hasLeftover = false;
 
 						if (out != null) {
-							out.write(a);
+							out.write(keyBytes);
 						}
 
 						if (writer != null) {
+							key.setBytes(keyBytes);
 							startTime = System.nanoTime();
 							String bucketId = index.getBucketId(key).toString();
 							bucketIdTime += System.nanoTime() - startTime;
-							writer.writeToPartition(bucketId, a, 0, a.length);
+							writer.writeToPartition(bucketId, keyBytes, 0, keyBytes.length);
 						}
 					} else {
 						if (out != null) {
-							out.write(byteArray, previous, byteArrayIdx - previous + 1); // +1														// newline
+							out.write(byteArray, previous, byteArrayIdx - previous + 1); // + 1 newline
 						}
 
 						if (writer != null) {
+							key.setBytes(byteArray, previous, byteArrayIdx - previous);
 							startTime = System.nanoTime();
 							String bucketId = index.getBucketId(key).toString();
 							bucketIdTime += System.nanoTime() - startTime;

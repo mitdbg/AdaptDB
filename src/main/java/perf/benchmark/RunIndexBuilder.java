@@ -70,7 +70,10 @@ public class RunIndexBuilder {
 		cfg = new ConfUtils(BenchmarkSettings.conf);
 		hdfsPartitionDir = cfg.getHDFS_WORKING_DIR();
 
-		key = new CartilageIndexKey('|');
+		assert schemaString != null;
+		Schema.createSchema(schemaString, numFields);
+
+		key = new CartilageIndexKey(Globals.DELIMITER);
 		builder = new IndexBuilder();
 	}
 
@@ -187,10 +190,8 @@ public class RunIndexBuilder {
 	 *            descriptor for machine the code will run on.
 	 */
 	public void createSamples() {
-		assert schemaString != null;
 		assert numFields != -1;
 		assert inputsDir != null;
-		Schema.createSchema(schemaString, numFields);
 
 		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
 				+ "/etc/hadoop/core-site.xml");
@@ -236,11 +237,9 @@ public class RunIndexBuilder {
 	 * from the samples dir and writes it out WORKING_DIR/sample
 	 */
 	public void buildRobustTreeFromSamples() {
-		assert schemaString != null;
 		assert numFields != -1;
 		assert numBuckets != -1;
 		assert samplesDir != null;
-		Schema.createSchema(schemaString, numFields);
 
 		ParsedTupleList sample = readSampleFiles();
 		writeOutSample(sample);
@@ -297,6 +296,7 @@ public class RunIndexBuilder {
 
 	public void loadSettings(String[] args) {
 		int counter = 0;
+
 		while (counter < args.length) {
 			switch (args[counter]) {
 			case "--inputsDir":
@@ -334,6 +334,9 @@ public class RunIndexBuilder {
 			case "--numTuples":
 				Globals.TOTAL_NUM_TUPLES = Double.parseDouble(args[counter + 1]);
 				counter += 2;
+				break;
+			case "--delimiter":
+				Globals.DELIMITER = args[counter + 1].charAt(0);
 				break;
 			default:
 				// Something we don't use
