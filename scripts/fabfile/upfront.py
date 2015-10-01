@@ -6,7 +6,7 @@ counter = 0
 @parallel
 def bulk_sample_gen():
     global conf
-    run('mkdir -p %slogs' % conf['HOMEDIR'])
+    run('mkdir -p %slogs' % env.conf['HOMEDIR'])
 
     with cd(env.conf['HADOOPBIN']):
         run('./hadoop fs -mkdir -p %s' % env.conf['HDFSDIR'])

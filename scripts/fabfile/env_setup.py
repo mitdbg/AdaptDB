@@ -10,10 +10,12 @@ def setup(mode="server"):
     env.user = conf['USER']
     env.hosts = conf['HOSTS']
     env.roledefs = conf['ROLEDEFS']
+    print env.roledefs
 
 def fill_cmd(cmd):
     print env.conf
     for k in env.conf.keys():
-        cmd = cmd.replace('$' + k, env.conf[k])
+        if type(env.conf[k]) is str:
+            cmd = cmd.replace('$' + k, env.conf[k])
     return cmd
 
