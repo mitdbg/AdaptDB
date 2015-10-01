@@ -8,19 +8,20 @@ val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 // this is used to implicitly convert an RDD to a DataFrame.
 import sqlContext.implicits._
 
-val PATH = "/user/mdindex/tpch100"
+val PATH = "/user/mdindex/tpch1"
+val DEST = "/user/mdindex/tpchd1"
 
 // Create part table.
-sqlContext.sql(s"""CREATE TEMPORARY TABLE part (p_partkey int, p_name string, p_mfgr string, p_brand string,
-	p_type string, p_size int, p_container string, p_retailprice double, p_comment string)
+sqlContext.sql(s"""CREATE TEMPORARY TABLE part (p_partkey int, p_name string, p_mfgr string, 
+    p_brand string, p_type string, p_size int, p_container string, p_retailprice double, p_comment string)
 USING com.databricks.spark.csv
-OPTIONS (path "$PATH/part.tbl.1,$PATH/part.tbl.2,$PATH/part.tbl.3,$PATH/part.tbl.4,$PATH/part.tbl.5,$PATH/part.tbl.6,$PATH/part.tbl.7,$PATH/part.tbl.8,$PATH/part.tbl.9,$PATH/part.tbl.10", header "false", delimiter "|")""")
+OPTIONS (path "/user/mdindex/tpch1/part.tbl", header "false", delimiter "|")""")
 
 // Create raw supplier table.
 sqlContext.sql(s"""CREATE TEMPORARY TABLE rawsupplier (s_suppkey int, s_name string, s_address string,
 	s_nationkey int, s_phone string, s_acctbal double, s_comment string)
 USING com.databricks.spark.csv
-OPTIONS (path "$PATH/supplier.tbl.1,$PATH/supplier.tbl.2,$PATH/supplier.tbl.3,$PATH/supplier.tbl.4,$PATH/supplier.tbl.5,$PATH/supplier.tbl.6,$PATH/supplier.tbl.7,$PATH/supplier.tbl.8,$PATH/supplier.tbl.9,$PATH/supplier.tbl.10", header "false", delimiter "|")""")
+OPTIONS (path "$PATH/supplier.tbl", header "false", delimiter "|")""")
 
 // Create partSupplier table.
 // sqlContext.sql(s"""CREATE TEMPORARY TABLE partSupplier (ps_partkey int, ps_suppkey int,
@@ -32,14 +33,14 @@ OPTIONS (path "$PATH/supplier.tbl.1,$PATH/supplier.tbl.2,$PATH/supplier.tbl.3,$P
 sqlContext.sql(s"""CREATE TEMPORARY TABLE rawcustomer (c_custkey int, c_name string, c_address string,
 	c_nationkey int, c_phone string, c_acctbal double, c_mktsegment string , c_comment string)
 USING com.databricks.spark.csv
-OPTIONS (path "$PATH/customer.tbl.1,$PATH/customer.tbl.2,$PATH/customer.tbl.3,$PATH/customer.tbl.4,$PATH/customer.tbl.5,$PATH/customer.tbl.6,$PATH/customer.tbl.7,$PATH/customer.tbl.8,$PATH/customer.tbl.9,$PATH/customer.tbl.10", header "false", delimiter "|")""")
+OPTIONS (path "$PATH/customer.tbl", header "false", delimiter "|")""")
 
 // Create order table.
 sqlContext.sql(s"""CREATE TEMPORARY TABLE orders (o_orderkey int, o_custkey int,
   o_orderstatus string, o_totalprice double, o_orderdate string, o_orderpriority string, o_clerk string,
   o_shippriority int, o_comment string)
 USING com.databricks.spark.csv
-OPTIONS (path "$PATH/orders.tbl.1,$PATH/orders.tbl.2,$PATH/orders.tbl.3,$PATH/orders.tbl.4,$PATH/orders.tbl.5,$PATH/orders.tbl.6,$PATH/orders.tbl.7,$PATH/orders.tbl.8,$PATH/orders.tbl.9,$PATH/orders.tbl.10", header "false", delimiter "|")""")
+OPTIONS (path "$PATH/orders.tbl", header "false", delimiter "|")""")
 
 // Create lineitem table.
 sqlContext.sql(s"""CREATE TEMPORARY TABLE lineItem (l_orderkey int, l_partkey int, l_suppkey int,
@@ -47,7 +48,7 @@ sqlContext.sql(s"""CREATE TEMPORARY TABLE lineItem (l_orderkey int, l_partkey in
 	l_returnflag string,  l_linestatus string, l_shipdate string, l_commitdate string, l_receiptdate string,
 	l_shipinstruct string, l_shipmode string, l_comment string)
 USING com.databricks.spark.csv
-OPTIONS (path "$PATH/lineitem.tbl.1,$PATH/lineitem.tbl.2,$PATH/lineitem.tbl.3,$PATH/lineitem.tbl.4,$PATH/lineitem.tbl.5,$PATH/lineitem.tbl.6,$PATH/lineitem.tbl.7,$PATH/lineitem.tbl.8,$PATH/lineitem.tbl.9,$PATH/lineitem.tbl.10", header "false", delimiter "|")""")
+OPTIONS (path "$PATH/lineitem.tbl", header "false", delimiter "|")""")
 
 // Create nation table.
 sqlContext.sql(s"""CREATE TEMPORARY TABLE nation (n_nationkey int, n_name string, n_regionkey int,
@@ -80,8 +81,8 @@ customer.registerTempTable("customer")
 val lopsc = sqlContext.sql(s"""SELECT l_linenumber, l_quantity, l_extendedprice, l_discount,
 	l_tax, l_returnflag,  l_linestatus, l_shipdate, l_commitdate, l_receiptdate, l_shipinstruct,
 	l_shipmode,
-  o_orderstatus, o_totalprice, o_orderdate, o_orderpriority, o_clerk, o_shippriority,
-  p_name, p_mfgr, p_brand, p_type, p_size, p_container, p_retailprice,
+    o_orderstatus, o_totalprice, o_orderdate, o_orderpriority, o_clerk, o_shippriority,
+    p_name, p_mfgr, p_brand, p_type, p_size, p_container, p_retailprice,
 	s_name, s_address, s_phone, s_acctbal, s_nation, s_region,
 	c_name, c_address, c_phone, c_acctbal, c_mktsegment, c_nation, c_region
 FROM
@@ -94,7 +95,7 @@ FROM
 
 lopsc.registerTempTable("lopsc")
 
-lopsc.save("$PATH/lopsc", "com.databricks.spark.csv")
+lopsc.save(DEST, "com.databricks.spark.csv")
 
 // A quick set of ops that can be done on a Dataframe
 // df.show()
@@ -113,14 +114,3 @@ lopscSample.registerTempTable("lopscSample")
 
 val p = sqlContext.sql(s"SELECT COUNT(*) AS T FROM lineItem")
 
-
-/* ######################################
-We shall have 8 TPC-H queries
-3: Tricky; atleast 50%
-5: 1/5 *
-6:
-8:
-10:
-12:
-14:
-19:
