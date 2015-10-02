@@ -8,6 +8,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 
 import core.access.Predicate;
 import core.access.iterator.IteratorRecord;
+import core.index.key.Schema;
 import core.utils.ConfUtils;
 
 public class SparkQuery {
@@ -52,6 +53,7 @@ public class SparkQuery {
 												// parallel)
 		queryConf.setMinSplitSize(4294967296l); // 4gb
 		queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
+		queryConf.setSchema(Schema.schema.toString());
 
 		return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath + "/"
 				+ replicaId, SparkInputFormat.class, LongWritable.class,

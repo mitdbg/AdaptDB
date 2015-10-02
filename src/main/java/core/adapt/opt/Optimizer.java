@@ -90,7 +90,7 @@ public class Optimizer {
 	}
 
 	public Optimizer(SparkQueryConf cfg) {
-		this.workingDir = cfg.getWorkingDir() + "/" + cfg.getReplicaId();
+		this.workingDir = cfg.getWorkingDir() /* + "/" + cfg.getReplicaId() */;
 		this.hadoopHome = cfg.getHadoopHome();
 		this.fileReplicationFactor = cfg.getHDFSReplicationFactor();
 		this.zookeeperHosts = cfg.getZookeeperHosts();

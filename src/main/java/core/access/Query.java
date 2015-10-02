@@ -119,14 +119,7 @@ public class Query implements Serializable {
 
 		@Override
 		public String toString() {
-			return Joiner.on(";").join(predicates); // +
-			// ";" + key.toString(); // simpler impl
-			// String ret = "";
-			// for (int i=0; i<this.predicates.length; i++) {
-			// ret += this.predicates[i].toString() + ";";
-			// }
-			// ret += "\n";
-			// return ret;
+			return "FILTERQUERY: " + Joiner.on(";").join(predicates);
 		}
 
 		public static FilterQuery read(DataInput in) throws IOException {

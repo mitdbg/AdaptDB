@@ -29,19 +29,33 @@ public class Schema {
 
 			maxId += 1;
 		}
+
+		@Override
+		public String toString() {
+			return this.name + " " + this.type.toString();
+		}
 	}
 
 	public Schema(Field[] fields) {
 		this.fields = fields;
 	}
 
-	public static void createSchema(String schemaString, int numFields) {
-		Field[] fieldList = new Field[numFields];
-		System.out.println(schemaString);
+	@Override
+	public String toString() {
+		String ret = "";
+		for (int i = 0; i < this.fields.length; i++) {
+			ret += this.fields[i].toString();
+			if (i != this.fields.length - 1) {
+				ret += ",";
+			}
+		}
+		return ret;
+	}
+
+	public static void createSchema(String schemaString) {
 		String[] columns = schemaString.split(",");
-		System.out.println("Columns length == " + numFields);
-		System.out.println("Columns length == " + columns.length);
-		assert columns.length == numFields;
+		Field[] fieldList = new Field[columns.length];
+
 		assert schema == null;
 		for (int i = 0; i < columns.length; i++) {
 			String[] columnInfo = columns[i].trim().split(" ");
@@ -50,7 +64,9 @@ public class Schema {
 			TYPE fieldType = TYPE.valueOf(columnInfo[1].trim().toUpperCase());
 			fieldList[i] = new Field(fieldName, fieldType);
 		}
+
 		schema = new Schema(fieldList);
+		System.out.println("Created schema with " + fieldList.length + " fields");
 	}
 
 	public static int getAttributeId(String attrName) {

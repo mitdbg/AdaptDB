@@ -19,7 +19,7 @@ public class SparkQueryConf {
 	public final static String HADOOP_HOME = "HADOOP_HOME";
 	public final static String REPLICA_ID = "REPLICA_ID";
 	public final static String HDFS_REPLICATION_FACTOR = "HDFS_REPLICATION_FACTOR";
-
+	public final static String SCHEMA = "SCHEMA";
 	public final static String CARTILAGE_PROPERTIES = "CARTILAGE_PROPERTIES";
 
 	private Configuration conf;
@@ -122,6 +122,14 @@ public class SparkQueryConf {
 
 	public int getReplicaId() {
 		return Integer.parseInt(conf.get(REPLICA_ID));
+	}
+
+	public void setSchema(String schema) {
+		conf.set(SCHEMA, schema);
+	}
+
+	public String getSchema() {
+		return conf.get(SCHEMA);
 	}
 
 	public Configuration getConf() {

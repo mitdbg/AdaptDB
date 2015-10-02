@@ -25,8 +25,17 @@ public class Predicate {
 
 	public Predicate(String attr, TYPE t, Object val, PREDTYPE predtype) {
 		this.attribute = Schema.getAttributeId(attr);
-		Assert.assertNotEquals(this.attribute, -1);
-		Assert.assertEquals(t, Schema.getType(this.attribute));
+		try {
+			Assert.assertNotEquals(this.attribute, -1);
+			Assert.assertEquals(t, Schema.getType(this.attribute));
+		} catch (Exception e) {
+			System.out.println(attr + " " + this.attribute + " " + t.toString());
+			e.printStackTrace();
+		} catch (AssertionError e) {
+			System.out.println(attr + " " + this.attribute + " " + t.toString());
+			e.printStackTrace();
+		}
+
 		this.type = t;
 		this.value = val;
 		this.predtype = predtype;

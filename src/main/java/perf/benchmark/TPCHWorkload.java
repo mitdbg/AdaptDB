@@ -1,6 +1,7 @@
 package perf.benchmark;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -9,7 +10,9 @@ import java.util.Random;
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.Query;
+import core.access.Query.FilterQuery;
 import core.access.spark.SparkQuery;
+import core.index.key.Schema;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils.SimpleDate;
@@ -24,11 +27,16 @@ public class TPCHWorkload {
 
 	int method;
 
+	int numQueries;
+
 	Random rand;
 
 	public void setUp() {
 		cfg = new ConfUtils(BenchmarkSettings.conf);
 		rand = new Random();
+
+		assert schemaString != null;
+		Schema.createSchema(schemaString);
 
 		// delete query history
 		// Cleanup queries file - to remove past query workload
@@ -39,7 +47,7 @@ public class TPCHWorkload {
 	// Given the TPC-H query number returns the query.
 	// Note that only 8 queries are encoded at the moment.
 	// Query source: http://www.tpc.org/tpch/spec/tpch2.7.0.pdf p28.
-	public Query getQuery(int queryNo) {
+	public FilterQuery getQuery(int queryNo) {
 		String[] mktSegmentVals = new
 			String[]{"AUTOMOBILE","BUILDING","FURNITURE","MACHINERY","HOUSEHOLD"};
 		String[] regionNameVals = new
@@ -66,10 +74,11 @@ public class TPCHWorkload {
 			int year_5 = 1993 + rand.nextInt(5);
 			SimpleDate d5_1 = new SimpleDate(year_5, 1, 1);
 			SimpleDate d5_2 = new SimpleDate(year_5 + 1, 1, 1);
-			Predicate p1_5 = new Predicate("r_name", TYPE.STRING, r_name_5, PREDTYPE.EQ);
-			Predicate p2_5 = new Predicate("o_orderdate", TYPE.DATE, d5_1, PREDTYPE.GEQ);
-			Predicate p3_5 = new Predicate("o_orderdate", TYPE.DATE, d5_2, PREDTYPE.LT);
-			return new Query.FilterQuery(new Predicate[]{p1_5, p2_5, p3_5});
+			Predicate p1_5 = new Predicate("c_region", TYPE.STRING, r_name_5, PREDTYPE.EQ);
+			Predicate p2_5 = new Predicate("s_region", TYPE.STRING, r_name_5, PREDTYPE.EQ);
+			Predicate p3_5 = new Predicate("o_orderdate", TYPE.DATE, d5_1, PREDTYPE.GEQ);
+			Predicate p4_5 = new Predicate("o_orderdate", TYPE.DATE, d5_2, PREDTYPE.LT);
+			return new Query.FilterQuery(new Predicate[]{p1_5, p2_5, p3_5, p4_5});
 		case 6:
 			int year_6 = 1993 + rand.nextInt(5);
 			SimpleDate d6_1 = new SimpleDate(year_6, 1, 1);
@@ -83,11 +92,12 @@ public class TPCHWorkload {
 			Predicate p5_6 = new Predicate("l_quantity", TYPE.DOUBLE, quantity, PREDTYPE.LEQ);
 			return new Query.FilterQuery(new Predicate[]{p1_6, p2_6, p3_6, p4_6, p5_6});
 		case 8:
+			// Show that c_region gets introduced before s_region.
 			String r_name_8 = regionNameVals[rand.nextInt(regionNameVals.length)];
 			SimpleDate d8_1 = new SimpleDate(1995, 1, 1);
 			SimpleDate d8_2 = new SimpleDate(1996, 12, 31);
 			String p_type_8 = partTypeVals[rand.nextInt(partTypeVals.length)];
-			Predicate p1_8 = new Predicate("r_name", TYPE.STRING, r_name_8, PREDTYPE.EQ);
+			Predicate p1_8 = new Predicate("c_region", TYPE.STRING, r_name_8, PREDTYPE.EQ);
 			Predicate p2_8 = new Predicate("o_orderdate", TYPE.DATE, d8_1, PREDTYPE.GEQ);
 			Predicate p3_8 = new Predicate("o_orderdate", TYPE.DATE, d8_2, PREDTYPE.LT);
 			Predicate p4_8 = new Predicate("p_type", TYPE.STRING, p_type_8, PREDTYPE.EQ);
@@ -111,8 +121,8 @@ public class TPCHWorkload {
 			SimpleDate d12_1 = new SimpleDate(year_12, 1, 1);
 			SimpleDate d12_2 = new SimpleDate(year_12 + 1, 1, 1);
 			Predicate p1_12 = new Predicate("l_shipmode", TYPE.STRING, shipmode_12, PREDTYPE.EQ);
-			Predicate p2_12 = new Predicate("l_recieptdate", TYPE.DATE, d12_1, PREDTYPE.GEQ);
-			Predicate p3_12 = new Predicate("l_recieptdate", TYPE.DATE, d12_2, PREDTYPE.LT);
+			Predicate p2_12 = new Predicate("l_receiptdate", TYPE.DATE, d12_1, PREDTYPE.GEQ);
+			Predicate p3_12 = new Predicate("l_receiptdate", TYPE.DATE, d12_2, PREDTYPE.LT);
 			return new Query.FilterQuery(new Predicate[]{p1_12, p2_12, p3_12});
 		case 14:
 			int year_14 = 1993;
@@ -131,7 +141,7 @@ public class TPCHWorkload {
 			double quantity_19 = rand.nextInt(10) + 1;
 			Predicate p1_19 = new Predicate("l_shipinstruct", TYPE.STRING, shipInstruct_19, PREDTYPE.EQ);
 			Predicate p2_19 = new Predicate("p_brand", TYPE.STRING, brand_19, PREDTYPE.EQ);
-			Predicate p3_19 = new Predicate("p_countainer", TYPE.STRING, "SM CASE",PREDTYPE.EQ);
+			Predicate p3_19 = new Predicate("p_container", TYPE.STRING, "SM CASE",PREDTYPE.EQ);
 			Predicate p4_19 = new Predicate("l_quantity", TYPE.DOUBLE, quantity_19, PREDTYPE.GT);
 			quantity_19 += 10;
 			Predicate p5_19 = new Predicate("l_quantity", TYPE.DOUBLE, quantity_19, PREDTYPE.LEQ);
@@ -144,26 +154,25 @@ public class TPCHWorkload {
 		}
 	}
 
-	public List<Query> generateWorkload(int numQueries) {
-		ArrayList<Query> queries = new ArrayList<Query>();
+	public List<FilterQuery> generateWorkload(int numQueries) {
+		ArrayList<FilterQuery> queries = new ArrayList<FilterQuery>();
 		int[] queryNums = new int[] { 3, 5, 6, 8, 10, 12, 14, 19 };
 
 		Random r = new Random();
 		for (int i = 0; i < numQueries; i++) {
-			int qNo = queryNums[r.nextInt() % queryNums.length];
-			Query q = getQuery(qNo);
+			int qNo = queryNums[r.nextInt(queryNums.length)];
+			FilterQuery q = getQuery(qNo);
 			queries.add(q);
 		}
 
 		return queries;
 	}
 
-	public void runWorkload() {
-		int numQueries = 100;
+	public void runWorkload(int numQueries) {
 		long start, end;
 		SparkQuery sq = new SparkQuery(cfg);
-		List<Query> queries = generateWorkload(numQueries);
-		for (Query q : queries) {
+		List<FilterQuery> queries = generateWorkload(numQueries);
+		for (FilterQuery q : queries) {
 			start = System.currentTimeMillis();
 			long result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(),
 					q.getPredicates()).count();
@@ -188,6 +197,10 @@ public class TPCHWorkload {
 				method = Integer.parseInt(args[counter + 1]);
 				counter += 2;
 				break;
+			case "--numQueries":
+				numQueries = Integer.parseInt(args[counter+1]);
+				counter += 2;
+				break;
 			default:
 				// Something we don't use
 				counter += 2;
@@ -197,6 +210,8 @@ public class TPCHWorkload {
 	}
 
 	public static void main(String[] args) {
+		System.out.println(Arrays.toString(args));
+
 		BenchmarkSettings.loadSettings(args);
 		BenchmarkSettings.printSettings();
 
@@ -206,7 +221,8 @@ public class TPCHWorkload {
 
 		switch (t.method) {
 		case 1:
-			t.runWorkload();
+			System.out.println("Num Queries: " + t.numQueries);
+			t.runWorkload(t.numQueries);
 			break;
 		default:
 			break;

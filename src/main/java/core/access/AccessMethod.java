@@ -1,14 +1,12 @@
 package core.access;
 
-import org.apache.hadoop.fs.FileSystem;
-
 import core.access.iterator.PartitionIterator;
 import core.access.spark.SparkQueryConf;
 import core.adapt.opt.Optimizer;
 import core.index.key.CartilageIndexKey;
+import core.index.key.Schema;
 import core.index.robusttree.Globals;
 import core.index.robusttree.RobustTreeHs;
-import core.utils.HDFSUtils;
 
 /**
  * This access method class considers filter access method over the distributed
@@ -37,25 +35,29 @@ public class AccessMethod {
 	 * @param dataset
 	 */
 	public void init(SparkQueryConf conf) {
-		FileSystem fs = HDFSUtils.getFS(conf.getHadoopHome()
-				+ "/etc/hadoop/core-site.xml");
+//		FileSystem fs = HDFSUtils.getFS(conf.getHadoopHome()
+//				+ "/etc/hadoop/core-site.xml");
+		String schemaString = conf.getSchema();
+		Schema.createSchema(schemaString);
+
 		Predicate[] realPredicates = conf.getPredicates();
-		String keyInfo = new String(HDFSUtils.readFile(fs, conf.getWorkingDir()
-				+ "/" + conf.getReplicaId() + "/info"));
-		key = new CartilageIndexKey(keyInfo);
+//		String keyInfo = new String(HDFSUtils.readFile(fs, conf.getWorkingDir()
+//				+ "/" + conf.getReplicaId() + "/info"));
+//		key = new CartilageIndexKey(keyInfo);
 
 		opt = new Optimizer(conf);
 
-		// TODO(anil): Write a test for conversion of real
-		// to virtual predicate
-		Predicate[] virtualPredicates = new Predicate[realPredicates.length];
-		for (int j = 0; j < virtualPredicates.length; j++) {
-			Predicate old = realPredicates[j];
-			virtualPredicates[j] = new Predicate(
-					key.getVirtualAttrIndex(old.attribute), old.type,
-					old.value, old.predtype);
-		}
-		conf.setPredicates(virtualPredicates);
+//		// TODO(anil): Write a test for conversion of real
+//		// to virtual predicate.
+//		Predicate[] virtualPredicates = new Predicate[realPredicates.length];
+//		for (int j = 0; j < virtualPredicates.length; j++) {
+//			Predicate old = realPredicates[j];
+//			virtualPredicates[j] = new Predicate(
+//					key.getVirtualAttrIndex(old.attribute), old.type,
+//					old.value, old.predtype);
+//		}
+//		conf.setPredicates(virtualPredicates);
+		conf.setPredicates(realPredicates);
 
 		opt.loadIndex();
 		opt.loadQueries();

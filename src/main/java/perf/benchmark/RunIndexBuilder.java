@@ -71,7 +71,7 @@ public class RunIndexBuilder {
 		hdfsPartitionDir = cfg.getHDFS_WORKING_DIR();
 
 		assert schemaString != null;
-		Schema.createSchema(schemaString, numFields);
+		Schema.createSchema(schemaString);
 
 		key = new CartilageIndexKey(Globals.DELIMITER);
 		builder = new IndexBuilder();
@@ -82,40 +82,6 @@ public class RunIndexBuilder {
 				replication, this.cfg);
 	}
 
-	// public void testBuildKDMedianTreeBlockSamplingOnly(int scaleFactor) {
-	// int bucketSize = 64; // 64 mb
-	// int numBuckets = (scaleFactor * 759) / bucketSize + 1;
-	// System.out.println("Num buckets: "+numBuckets);
-	// builder.buildWithBlockSamplingDir(samplingRate,
-	// numBuckets,
-	// new KDMedianTree(1),
-	// key,
-	// BenchmarkSettings.pathToDataset + scaleFactor + "/");
-	// }
-	//
-	// public void testBuildRobustTreeBlockSampling() {
-	// ConfUtils cfg = new ConfUtils(BenchmarkSettings.conf);
-	// CuratorFramework client =
-	// CuratorUtils.createAndStartClient(cfg.getZOOKEEPER_HOSTS());
-	// CuratorUtils.deleteAll(client, "/", "partition-");
-	// client.close();
-	// builder.buildWithBlockSampling(samplingRate,
-	// new RobustTreeHs(),
-	// key,
-	// inputFilename,
-	// getHDFSWriter(hdfsPartitionDir, (short) replication));
-	// }
-
-	// public void testBuildRobustTreeBlockSamplingOnly(int scaleFactor) {
-	// int bucketSize = 64; // 64 mb
-	// int numBuckets = (scaleFactor * 759) / bucketSize + 1;
-	// builder.buildWithBlockSamplingDir(samplingRate,
-	// numBuckets,
-	// new RobustTreeHs(),
-	// key,
-	// BenchmarkSettings.pathToDataset + scaleFactor + "/");
-	// }
-	//
 	// public void testWritePartitionsFromRangeIndex(String partitionsId){
 	// AttributeRangeTree index = new AttributeRangeTree(1, TypeUtils.TYPE.INT);
 	// int start = 0;
@@ -215,7 +181,6 @@ public class RunIndexBuilder {
 	 *
 	 * @param inputDirectory
 	 */
-
 	private double calculateSampingRate(String inputDirectory) {
 		File[] files = new File(inputDirectory).listFiles();
 		long totalFileSize = 0;
@@ -260,8 +225,6 @@ public class RunIndexBuilder {
 	 * @param tpchSize
 	 */
 	public void buildReplicatedRobustTreeFromSamples() {
-		Schema.createSchema(schemaString, numFields);
-
 		ParsedTupleList sample = readSampleFiles();
 		writeOutSample(sample);
 
@@ -275,8 +238,6 @@ public class RunIndexBuilder {
 	}
 
 	public void writePartitionsFromIndex() {
-		Schema.createSchema(schemaString, numFields);
-
 		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
 				+ "/etc/hadoop/core-site.xml");
 		byte[] indexBytes = HDFSUtils.readFile(fs, hdfsPartitionDir + "/index");
@@ -331,13 +292,6 @@ public class RunIndexBuilder {
 				numBuckets = Integer.parseInt(args[counter + 1]);
 				counter += 2;
 				break;
-			case "--numTuples":
-				Globals.TOTAL_NUM_TUPLES = Double.parseDouble(args[counter + 1]);
-				counter += 2;
-				break;
-			case "--delimiter":
-				Globals.DELIMITER = args[counter + 1].charAt(0);
-				break;
 			default:
 				// Something we don't use
 				counter += 2;
@@ -389,7 +343,6 @@ public class RunIndexBuilder {
 
 	public static void main(String[] args) {
 		BenchmarkSettings.loadSettings(args);
-		BenchmarkSettings.printSettings();
 
 		RunIndexBuilder t = new RunIndexBuilder();
 		t.loadSettings(args);
