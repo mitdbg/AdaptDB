@@ -48,7 +48,7 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 		if (Globals.schema == null) {
 			String path = FilenameUtils.getPathNoEndSeparator(partition
 					.getPath());
-			System.out.println("PATH: " + path);
+
 			if (FilenameUtils.getBaseName(path).contains("partitions")
 					|| FilenameUtils.getBaseName(path).contains("repartition")) { // hack
 				path = FilenameUtils.getPathNoEndSeparator(FilenameUtils.getPath(path));

@@ -52,5 +52,4 @@ public class PostFilterIterator extends PartitionIterator implements
 		it.readFields(in);
 		return it;
 	}
-
 }

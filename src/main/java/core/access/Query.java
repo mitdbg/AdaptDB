@@ -36,9 +36,8 @@ public class Query implements Serializable {
 	}
 
 	public void readFields(DataInput in) throws IOException {
-		String queryString = Text.readString(in);
-		String[] parts = queryString.split(":");
-		String predicateStrings = parts[1].trim();
+		System.out.println("IN HERE !! !! Query:39");
+		String predicateStrings = Text.readString(in);
 		if (predicateStrings.equals(EMPTY)) {
 			predicates = new Predicate[0];
 		} else {
@@ -65,7 +64,6 @@ public class Query implements Serializable {
 			for (int i = 0; i < parts.length - 1; i++) {
 				this.predicates[i] = new Predicate(parts[i]);
 			}
-			// key = new CartilageIndexKey(parts[parts.length-1]);
 		}
 
 		public FilterQuery(Predicate[] predicates, CartilageIndexKey key) {
@@ -121,7 +119,7 @@ public class Query implements Serializable {
 
 		@Override
 		public String toString() {
-			return "FILTERQUERY:" + Joiner.on(";").join(predicates);
+			return Joiner.on(";").join(predicates);
 		}
 
 		public static FilterQuery read(DataInput in) throws IOException {

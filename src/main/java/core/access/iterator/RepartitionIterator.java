@@ -70,9 +70,10 @@ public class RepartitionIterator extends PartitionIterator {
 		if (newIndexTree == null) {
 			String path = FilenameUtils.getPathNoEndSeparator(partition
 					.getPath());
+
 			if (FilenameUtils.getBaseName(path).contains("partitions")
 					|| FilenameUtils.getBaseName(path).contains("repartition")) { // hack
-				path = FilenameUtils.getPath(path);
+				path = FilenameUtils.getPathNoEndSeparator(FilenameUtils.getPath(path));
 			}
 
 			if (FilenameUtils.getBaseName(path).contains("data")) { // hack
