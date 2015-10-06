@@ -1,6 +1,6 @@
 // Load TPC-H tables from the datafiles generated
 // Start the spark shell using
-// ./spark-shell --master spark://128.30.77.88:7077 --packages com.databricks:spark-csv_2.11:1.2.0
+// ./spark-shell --master spark://128.30.77.88:7077 --packages com.databricks:spark-csv_2.11:1.2.0 --driver-memory 4G --executor-memory 100G
 
 // sc is an existing SparkContext.
 val sqlContext = new org.apache.spark.sql.SQLContext(sc)
@@ -9,7 +9,7 @@ val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 import sqlContext.implicits._
 import org.apache.spark.sql.SaveMode
 
-val PATH = "/user/mdindex/tpch100"
+val PATH = "hdfs://istc2.csail.mit.edu:9000/user/mdindex/tpch100"
 
 // Create part table.
 sqlContext.sql(s"""CREATE TEMPORARY TABLE part (p_partkey int, p_name string, p_mfgr string, p_brand string,

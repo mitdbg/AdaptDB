@@ -1,4 +1,5 @@
 from fabric.api import *
+from fabric.contrib.files import exists
 
 counter = 0
 
@@ -9,7 +10,14 @@ def start_spark():
 @roles('master')
 def stop_spark():
     run('/home/mdindex/scripts/stopSystems.sh')
-    run('pkill java')
+
+@roles('master')
+def start_zookeeper():
+    run('/home/mdindex/scripts/startZookeeper.sh')
+
+@roles('master')
+def stop_zookeeper():
+    run('/home/mdindex/scripts/stopZookeeper.sh')
 
 def run_bg(cmd, before=None, sockname="dtach", use_sudo=False):
     """Run a command in the background using dtach
@@ -47,6 +55,6 @@ def update_jar():
 @serial
 def update_config():
     global counter
-    put('/Users/anil/Dev/repos/mdindex/conf/cartilage.properties.server', '/home/mdindex/cartilage.properties')
-    run('echo "MACHINE_ID = %d" >> /home/mdindex/cartilage.properties' % counter)
+    put('/Users/anil/Dev/repos/mdindex/conf/cartilage.properties.server', '/home/mdindex/tpch.properties')
+    run('echo "MACHINE_ID = %d" >> /home/mdindex/tpch.properties' % counter)
     counter += 1

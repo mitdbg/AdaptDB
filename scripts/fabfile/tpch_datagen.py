@@ -73,4 +73,24 @@ def tpch_script_gen():
 
 	counter += 1
 
+@serial
+def create_script_move_denormalized_data():
+    global counter
+    with cd('/data/mdindex/'):
+        script = "#!/bin/bash\n"
+        script += "mkdir -p /data/mdindex/tpchd100/\n"
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -copyToLocal " + \
+            "/user/mdindex/lopsc100/part-00%d%d* /data/mdindex/tpchd100/\n" % (counter / 10, counter % 10)
+        counter += 1
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -copyToLocal " + \
+            "/user/mdindex/lopsc100/part-00%d%d* /data/mdindex/tpchd100/\n" % (counter / 10, counter % 10)
+        run('echo "%s" > move_denormalized_data.sh' % script)
+        run('chmod +x move_denormalized_data.sh')
+
+    counter += 1
+
+@parallel
+def move_denormalized_data():
+    with cd('/data/mdindex/'):
+        run('./move_denormalized_data.sh')
 
