@@ -238,16 +238,7 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 		else
 			strSize = offset + length - off;
 
-		// TODO: Remove
-		String t = "";
-		try {
-			t = new String(bytes, off, Math.min(strSize, maxSize));
-		} catch (java.lang.StringIndexOutOfBoundsException e) {
-			System.out.println("IndexEx: " + bytes.length + " " + off + " " +  Math.min(strSize, maxSize));
-			e.printStackTrace();
-		}
-
-		return t;
+		return new String(bytes, off, Math.min(strSize, maxSize));
 	}
 
 	@Override
@@ -402,24 +393,17 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 	public SimpleDate getDateAttribute(int index) {
 		index = keyAttrIdx[index];
 		// parse date assuming the format: "yyyy-MM-dd"
-		try {
-			int off = attributeOffsets[index];
-			int year = 1000 * (bytes[off] - '0') + 100 * (bytes[off + 1] - '0')
-					+ 10 * (bytes[off + 2] - '0') + (bytes[off + 3] - '0');
-			int month = 10 * (bytes[off + 5] - '0') + (bytes[off + 6] - '0');
-			int day = 10 * (bytes[off + 8] - '0') + (bytes[off + 9] - '0');
+		int off = attributeOffsets[index];
+		int year = 1000 * (bytes[off] - '0') + 100 * (bytes[off + 1] - '0')
+				+ 10 * (bytes[off + 2] - '0') + (bytes[off + 3] - '0');
+		int month = 10 * (bytes[off + 5] - '0') + (bytes[off + 6] - '0');
+		int day = 10 * (bytes[off + 8] - '0') + (bytes[off + 9] - '0');
 
-			dummyDate.setYear(year);
-			dummyDate.setMonth(month);
-			dummyDate.setDay(day);
+		dummyDate.setYear(year);
+		dummyDate.setMonth(month);
+		dummyDate.setDay(day);
 
-			return dummyDate;
-		} catch (java.lang.ArrayIndexOutOfBoundsException e) {
-			System.out.println("Ex: " + attributeOffsets[index] + " " + bytes.length);
-			System.err.println("Ex: " + attributeOffsets[index] + " " + bytes.length);
-			e.printStackTrace();
-			return null;
-		}
+		return dummyDate;
 	}
 
 	public SimpleDate getDateAttribute(int index, SimpleDate date) {
