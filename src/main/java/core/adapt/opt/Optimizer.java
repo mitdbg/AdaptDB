@@ -22,7 +22,7 @@ import core.access.spark.SparkQueryConf;
 import core.index.MDIndex.Bucket;
 import core.index.key.ParsedTupleList;
 import core.index.robusttree.RNode;
-import core.index.robusttree.RobustTreeHs;
+import core.index.robusttree.RobustTree;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.Pair;
@@ -43,7 +43,7 @@ public class Optimizer {
 	static final int TUPLE_SIZE = 128;
 	static final double NODE_TUPLE_LIMIT = 33554432; // NODE_MEM_SIZE / TUPLE_SIZE
 
-	RobustTreeHs rt;
+	RobustTree rt;
 	int rtDepth;
 
 	// Properties extracted from ConfUtils
@@ -110,14 +110,14 @@ public class Optimizer {
 		String pathToSample = this.workingDir + "/sample";
 
 		byte[] indexBytes = HDFSUtils.readFile(fs, pathToIndex);
-		this.rt = new RobustTreeHs();
+		this.rt = new RobustTree();
 		this.rt.unmarshall(indexBytes);
 
 		byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
 		this.rt.loadSample(sampleBytes);
 	}
 
-	public RobustTreeHs getIndex() {
+	public RobustTree getIndex() {
 		return rt;
 	}
 
@@ -271,6 +271,10 @@ public class Optimizer {
 	public Plan getBestPlan(Predicate[] ps) {
 		// TODO: Multiple predicates seem to complicate the simple idea we had;
 		// think more :-/
+
+		// Make sure all the bucket counts are non zero.
+		this.rt.checkSane();
+
 		Plan plan = null;
 		for (int i = 0; i < ps.length; i++) {
 			Plan option = getBestPlanForPredicate(ps, i);
@@ -827,6 +831,7 @@ public class Optimizer {
 
 					// Restore
 					replaceInTree(r, node);
+					populateBucketEstimates(node);
 				}
 			}
 

@@ -4,8 +4,8 @@ import java.util.HashMap;
 
 import org.junit.Assert;
 
-import core.index.key.ParsedTupleList;
 import core.index.key.MDIndexKey;
+import core.index.key.ParsedTupleList;
 import core.utils.Range;
 import core.utils.TypeUtils;
 
@@ -42,7 +42,11 @@ public interface MDIndex {
 		}
 
 		public double getEstimatedNumTuples() {
-			Assert.assertNotEquals(estimatedTuples, 0.0);
+			if (estimatedTuples == 0.0) {
+				System.out.println("ERR " + bucketId);
+			}
+
+//			Assert.assertNotEquals(estimatedTuples, 0.0);
 			return estimatedTuples;
 		}
 

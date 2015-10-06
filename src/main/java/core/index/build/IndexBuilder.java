@@ -15,7 +15,7 @@ import com.google.common.primitives.Ints;
 import core.index.MDIndex;
 import core.index.key.CartilageIndexKey;
 import core.index.key.ParsedTupleList;
-import core.index.robusttree.RobustTreeHs;
+import core.index.robusttree.RobustTree;
 import core.utils.HDFSUtils;
 
 public class IndexBuilder {
@@ -47,7 +47,7 @@ public class IndexBuilder {
 	// Build index from the samples collected.
 	public void buildIndexFromSample(ParsedTupleList sample, int numBuckets, MDIndex index, PartitionWriter writer) {
 		index.initBuild(numBuckets);
-		((RobustTreeHs) index).loadSample(sample);
+		((RobustTree) index).loadSample(sample);
 
 		long startTime = System.nanoTime();
 		index.initProbe();
@@ -123,7 +123,7 @@ public class IndexBuilder {
 			try {
 				keys[i] = key.clone();
 				keys[i].setKeys(Ints.toArray(replicaAttrs.get(i)));
-				indexes[i] = new RobustTreeHs();
+				indexes[i] = new RobustTree();
 				writers[i] = writer.clone();
 				writers[i].setPartitionDir(writer.getPartitionDir() + "/" + i);
 				writers[i].createPartitionDir();
@@ -137,7 +137,7 @@ public class IndexBuilder {
 
 		long startTime = System.nanoTime();
 		for (MDIndex index : indexes) {
-			((RobustTreeHs) index).loadSample(sample);
+			((RobustTree) index).loadSample(sample);
 			index.initProbe();
 		}
 		double time2 = (System.nanoTime() - startTime) / 1E9;
@@ -146,7 +146,7 @@ public class IndexBuilder {
 		startTime = System.nanoTime();
 		for (int i = 0; i < indexes.length; i++) {
 			PartitionWriter w = writers[i];
-			RobustTreeHs id = (RobustTreeHs) indexes[i];
+			RobustTree id = (RobustTree) indexes[i];
 			byte[] indexBytes = id.marshall();
 			w.writeToPartition("index", indexBytes, 0, indexBytes.length);
 			byte[] sampleBytes = id.serializeSample();

@@ -12,7 +12,7 @@ import core.access.Predicate.PREDTYPE;
 import core.access.Query.FilterQuery;
 import core.adapt.opt.WorkloadAnalyser;
 import core.index.robusttree.RNode;
-import core.index.robusttree.RobustTreeHs;
+import core.index.robusttree.RobustTree;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils.SimpleDate;
@@ -153,7 +153,7 @@ public class RunWorkloadAnalyser {
 		rwa.generateShipDateDrillDown();
 
 		WorkloadAnalyser wa = new WorkloadAnalyser(cfg, 13, 1000);
-		RobustTreeHs rt = wa.getOptTree();
+		RobustTree rt = wa.getOptTree();
 
 		List<Float> qCosts = wa.getPerQueryCost(rt.getRoot());
 		String costString = "";

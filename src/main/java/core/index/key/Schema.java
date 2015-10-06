@@ -11,8 +11,6 @@ import core.utils.TypeUtils.TYPE;
  *
  */
 public class Schema {
-	public static Schema schema = null;
-
 	public Field[] fields;
 
 	public static class Field {
@@ -52,11 +50,10 @@ public class Schema {
 		return ret;
 	}
 
-	public static void createSchema(String schemaString) {
+	public static Schema createSchema(String schemaString) {
 		String[] columns = schemaString.split(",");
 		Field[] fieldList = new Field[columns.length];
 
-		assert schema == null;
 		for (int i = 0; i < columns.length; i++) {
 			String[] columnInfo = columns[i].trim().split(" ");
 			String fieldName = columnInfo[0].trim();
@@ -65,13 +62,12 @@ public class Schema {
 			fieldList[i] = new Field(fieldName, fieldType);
 		}
 
-		schema = new Schema(fieldList);
 		System.out.println("Created schema with " + fieldList.length + " fields");
+		return new Schema(fieldList);
 	}
 
-	public static int getAttributeId(String attrName) {
-		Assert.assertNotNull(schema);
-		for (Field f: schema.fields) {
+	public int getAttributeId(String attrName) {
+		for (Field f: fields) {
 			if (f.name.equals(attrName)) {
 				return f.id;
 			}
@@ -80,9 +76,8 @@ public class Schema {
 		return -1;
 	}
 
-	public static TYPE getType(int attrId) {
-		Assert.assertNotNull(schema);
-		Assert.assertEquals(schema.fields[attrId].id, attrId);
-		return schema.fields[attrId].type;
+	public TYPE getType(int attrId) {
+		Assert.assertEquals(fields[attrId].id, attrId);
+		return fields[attrId].type;
 	}
 }

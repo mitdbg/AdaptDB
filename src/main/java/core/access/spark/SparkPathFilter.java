@@ -20,7 +20,7 @@ public class SparkPathFilter implements PathFilter, Configurable {
 		SparkQueryConf queryConf = new SparkQueryConf(conf);
 		am = new AccessMethod();
 		am.init(queryConf);
-		predicates = queryConf.getPredicates();
+		predicates = queryConf.getQuery();
 	}
 
 	public boolean accept(Path arg0) {

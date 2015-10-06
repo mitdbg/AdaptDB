@@ -16,7 +16,7 @@ import core.index.key.ParsedTupleList;
 import core.utils.Pair;
 import core.utils.TypeUtils.TYPE;
 
-public class RobustTreeHs implements MDIndex {
+public class RobustTree implements MDIndex {
 	public int maxBuckets;
 	public int numAttributes;
 	public ParsedTupleList sample;
@@ -34,8 +34,24 @@ public class RobustTreeHs implements MDIndex {
 		}
 	}
 
-	public RobustTreeHs() {
+	public RobustTree() {
 
+	}
+
+	// TODO: Remove
+	public void checkSane() {
+		LinkedList<RNode> l = new LinkedList<RNode>();
+		l.add(root);
+
+		while(!(l.size() == 0)) {
+			RNode first = l.removeFirst();
+			if (first.bucket != null ){
+				System.out.println("Num Tuples: " + first.bucket.getBucketId() + " " + first.bucket.getEstimatedNumTuples());
+			} else {
+				l.add(first.leftChild);
+				l.add(first.rightChild);
+			}
+		}
 	}
 
 	@Override
@@ -71,8 +87,8 @@ public class RobustTreeHs implements MDIndex {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj instanceof RobustTreeHs) {
-			RobustTreeHs rhs = (RobustTreeHs) obj;
+		if (obj instanceof RobustTree) {
+			RobustTree rhs = (RobustTree) obj;
 			boolean allGood = true;
 			allGood &= rhs.numAttributes == this.numAttributes;
 			allGood &= rhs.maxBuckets == this.maxBuckets;
@@ -108,7 +124,7 @@ public class RobustTreeHs implements MDIndex {
 
 		// Computes log(this.maxBuckets)
 		int maxDepth = 31 - Integer.numberOfLeadingZeros(this.maxBuckets);
-		double allocationPerAttribute = RobustTreeHs.nthroot(
+		double allocationPerAttribute = RobustTree.nthroot(
 				this.numAttributes, this.maxBuckets);
 		System.out.println("Max allocation: " + allocationPerAttribute);
 
@@ -299,6 +315,8 @@ public class RobustTreeHs implements MDIndex {
 	public void loadSample(byte[] bytes) {
 		this.sample = new ParsedTupleList();
 		this.sample.unmarshall(bytes);
+
+		System.out.println("TOTAL NUM TUPLES: " + Globals.TOTAL_NUM_TUPLES);
 		this.initializeBucketSamplesAndCounts(this.root, this.sample, this.sample.size(), Globals.TOTAL_NUM_TUPLES);
 	}
 
@@ -306,8 +324,6 @@ public class RobustTreeHs implements MDIndex {
 		this.sample = sample;
 		this.dimensionTypes = this.sample.getTypes();
 		this.numAttributes = this.dimensionTypes.length;
-
-		System.out.println("DEBUG: NUM ATTRIBUTES " + this.numAttributes);
 	}
 
 	public void initializeBucketSamplesAndCounts(RNode n,
@@ -318,6 +334,7 @@ public class RobustTreeHs implements MDIndex {
 			double numTuples = (sampleSize * totalTuples) / totalSamples;
 			n.bucket.setSample(sample);
 			n.bucket.setEstimatedNumTuples(numTuples);
+			System.out.println("DEB: Bucket " + n.bucket.getBucketId() + " " + n.bucket.getEstimatedNumTuples());
 		} else {
 			// By sorting we avoid memory allocation
 			// Will most probably be faster

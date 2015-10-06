@@ -5,13 +5,16 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.ArrayUtils;
 
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 
+import core.access.HDFSPartition;
 import core.access.Partition;
 import core.access.Predicate;
+import core.index.robusttree.Globals;
 import core.utils.BinaryUtils;
 import core.utils.ReflectionUtils;
 
@@ -42,6 +45,23 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 
 	public void setPartition(Partition partition) {
 		this.partition = partition;
+		if (Globals.schema == null) {
+			String path = FilenameUtils.getPathNoEndSeparator(partition
+					.getPath());
+			System.out.println("PATH: " + path);
+			if (FilenameUtils.getBaseName(path).contains("partitions")
+					|| FilenameUtils.getBaseName(path).contains("repartition")) { // hack
+				path = FilenameUtils.getPathNoEndSeparator(FilenameUtils.getPath(path));
+			}
+
+			if (FilenameUtils.getBaseName(path).contains("data")) { // hack
+				path = FilenameUtils.getPathNoEndSeparator(FilenameUtils.getPath(path));
+			}
+
+			// Initialize Globals.
+			Globals.load(path + "/info", ((HDFSPartition) partition).getFS());
+		}
+
 		record = new IteratorRecord();
 		bytes = partition.getNextBytes();
 		// bytesLength = partition.getSize();
@@ -62,7 +82,21 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 							recordBytes);
 					brokenRecordBytes = null;
 				}
+
 				try {
+					if (recordBytes.length == 3) {
+						System.out.println(bytes.length + " " + previous + " " + offset);
+						System.out.println(new String(recordBytes));
+					}
+
+					// TODO: Hack. Observed that sometimes there are two \n between records.
+					// There is something wrong with the partition writer.
+					// This skips small records.
+					if (recordBytes.length < 10) {
+						previous = ++offset;
+						continue;
+					}
+
 					record.setBytes(recordBytes);
 				} catch (ArrayIndexOutOfBoundsException e) {
 					System.out
@@ -70,6 +104,7 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 									+ (new String(recordBytes)));
 					throw e;
 				}
+
 				previous = ++offset;
 				if (isRelevant(record)) {
 					// System.out.println("relevant record found ..");

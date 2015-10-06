@@ -10,7 +10,7 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 
 import core.access.iterator.DistributedPartitioningIterator;
 import core.index.robusttree.RNode;
-import core.index.robusttree.RobustTreeHs;
+import core.index.robusttree.RobustTree;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 
@@ -113,7 +113,7 @@ public class SparkUpfrontPartitioner {
 		FileSystem fs = HDFSUtils.getFS(conf.getHADOOP_HOME()
 				+ "/etc/hadoop/core-site.xml");
 		byte[] indexBytes = HDFSUtils.readFile(fs, hdfsDir + "/index");
-		RobustTreeHs index = new RobustTreeHs();
+		RobustTree index = new RobustTree();
 		index.unmarshall(indexBytes);
 
 		SparkUpfrontPartitioner p = new SparkUpfrontPartitioner(propertiesFile,

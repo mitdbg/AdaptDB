@@ -16,7 +16,7 @@ import core.index.key.CartilageIndexKey;
 import core.index.key.ParsedTupleList;
 import core.index.key.Schema;
 import core.index.robusttree.Globals;
-import core.index.robusttree.RobustTreeHs;
+import core.index.robusttree.RobustTree;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 
@@ -70,11 +70,8 @@ public class RunIndexBuilder {
 		cfg = new ConfUtils(BenchmarkSettings.conf);
 		hdfsPartitionDir = cfg.getHDFS_WORKING_DIR();
 
-		assert schemaString != null;
-		Schema.createSchema(schemaString);
-
-		key = new CartilageIndexKey(Globals.DELIMITER);
 		builder = new IndexBuilder();
+		key = new CartilageIndexKey(Globals.DELIMITER);
 	}
 
 	private PartitionWriter getHDFSWriter(String partitionDir, short replication) {
@@ -150,6 +147,15 @@ public class RunIndexBuilder {
 	// }
 
 	/**
+	 * Loads the globals from the /info file.
+	 * Available after the index has been written out to HDFS.
+	 */
+	public void loadGlobals() {
+		Globals.load(cfg.getHDFS_WORKING_DIR() + "/info",
+				HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()));
+	}
+
+	/**
 	 * Creates one sample file sample.machineId and writes it out to HDFS.
 	 *
 	 * @param machineId
@@ -206,10 +212,19 @@ public class RunIndexBuilder {
 		assert numBuckets != -1;
 		assert samplesDir != null;
 
-		ParsedTupleList sample = readSampleFiles();
-		writeOutSample(sample);
+		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
+				+ "/etc/hadoop/core-site.xml");
 
-		RobustTreeHs index = new RobustTreeHs();
+		// Write out the combined sample file.
+		ParsedTupleList sample = readSampleFiles();
+		writeOutSample(fs, sample);
+
+		// Write out global settings for this dataset.
+		Globals.save(cfg.getHDFS_WORKING_DIR() + "/info",
+				cfg.getHDFS_REPLICATION_FACTOR(), fs);
+
+		// Construct the index from the sample.
+		RobustTree index = new RobustTree();
 		builder.buildIndexFromSample(
 				sample,
 				numBuckets,
@@ -225,8 +240,16 @@ public class RunIndexBuilder {
 	 * @param tpchSize
 	 */
 	public void buildReplicatedRobustTreeFromSamples() {
+		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
+				+ "/etc/hadoop/core-site.xml");
+
+		// Write out the combined sample file.
 		ParsedTupleList sample = readSampleFiles();
-		writeOutSample(sample);
+		writeOutSample(fs, sample);
+
+		// Write out global settings for this dataset.
+		Globals.save(cfg.getHDFS_WORKING_DIR() + "/info",
+				cfg.getHDFS_REPLICATION_FACTOR(), fs);
 
 		builder.buildReplicatedWithSample(
 				sample,
@@ -243,15 +266,17 @@ public class RunIndexBuilder {
 		byte[] indexBytes = HDFSUtils.readFile(fs, hdfsPartitionDir + "/index");
 
 		// Just load the index. For this we don't need to load the samples.
-		RobustTreeHs index = new RobustTreeHs();
+		RobustTree index = new RobustTree();
 		index.unmarshall(indexBytes);
 
+		// TODO(anil): Make this the name of dataset.
+		String dataDir = "/data";
 		builder.buildDistributedFromIndex(
 				index,
 				key,
 				inputsDir,
 				getHDFSWriter(
-						hdfsPartitionDir + "/partitions" + cfg.getMACHINE_ID(),
+						hdfsPartitionDir + dataDir + "/partitions" + cfg.getMACHINE_ID(),
 						cfg.getHDFS_REPLICATION_FACTOR()));
 	}
 
@@ -270,6 +295,7 @@ public class RunIndexBuilder {
 				break;
 			case "--schema":
 				schemaString = args[counter + 1];
+				Globals.schema = Schema.createSchema(schemaString);
 				counter += 2;
 				break;
 			case "--numFields":
@@ -324,10 +350,7 @@ public class RunIndexBuilder {
 	}
 
 	// Helper function, writes out the combined sample file.
-	public void writeOutSample(ParsedTupleList sample) {
-		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
-				+ "/etc/hadoop/core-site.xml");
-
+	public void writeOutSample(FileSystem fs, ParsedTupleList sample) {
 		byte[] sampleBytes = sample.marshall();
 		OutputStream out = HDFSUtils.getHDFSOutputStream(fs,
 				cfg.getHDFS_WORKING_DIR() + "/sample",

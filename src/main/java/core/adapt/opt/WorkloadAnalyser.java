@@ -15,7 +15,7 @@ import core.access.Query.FilterQuery;
 import core.index.MDIndex.Bucket;
 import core.index.key.ParsedTupleList;
 import core.index.robusttree.RNode;
-import core.index.robusttree.RobustTreeHs;
+import core.index.robusttree.RobustTree;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.Pair;
@@ -51,7 +51,7 @@ public class WorkloadAnalyser {
 
 	List<Query> queryWindow = new ArrayList<Query>();
 	List<Candidate> candidates = new LinkedList<Candidate>();
-	RobustTreeHs rt;
+	RobustTree rt;
 
 	float totalNumTuples;
 	float totalNumSamples;
@@ -106,7 +106,7 @@ public class WorkloadAnalyser {
 			}
 		}
 
-		rt = new RobustTreeHs();
+		rt = new RobustTree();
 		rt.initBuild(16);
 		byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
 		rt.sample.unmarshall(sampleBytes);
@@ -210,7 +210,7 @@ public class WorkloadAnalyser {
 		return candidates.size();
 	}
 
-	public RobustTreeHs getOptTree() {
+	public RobustTree getOptTree() {
 		return rt;
 	}
 }

@@ -4,9 +4,9 @@ import core.access.iterator.PartitionIterator;
 import core.access.spark.SparkQueryConf;
 import core.adapt.opt.Optimizer;
 import core.index.key.CartilageIndexKey;
-import core.index.key.Schema;
 import core.index.robusttree.Globals;
-import core.index.robusttree.RobustTreeHs;
+import core.index.robusttree.RobustTree;
+import core.utils.HDFSUtils;
 
 /**
  * This access method class considers filter access method over the distributed
@@ -24,7 +24,7 @@ import core.index.robusttree.RobustTreeHs;
 
 public class AccessMethod {
 	Optimizer opt;
-	CartilageIndexKey key = new CartilageIndexKey(Globals.DELIMITER);
+	CartilageIndexKey key;
 
 	/**
 	 * Initialize hyper-partitioning data access.
@@ -35,35 +35,20 @@ public class AccessMethod {
 	 * @param dataset
 	 */
 	public void init(SparkQueryConf conf) {
-//		FileSystem fs = HDFSUtils.getFS(conf.getHadoopHome()
-//				+ "/etc/hadoop/core-site.xml");
-		String schemaString = conf.getSchema();
-		Schema.createSchema(schemaString);
+		Globals.load(conf.getWorkingDir() + "/info",
+				HDFSUtils.getFSByHadoopHome(conf.getHadoopHome()));
 
-		Predicate[] realPredicates = conf.getPredicates();
-//		String keyInfo = new String(HDFSUtils.readFile(fs, conf.getWorkingDir()
-//				+ "/" + conf.getReplicaId() + "/info"));
-//		key = new CartilageIndexKey(keyInfo);
+		key = new CartilageIndexKey(Globals.DELIMITER);
 
+		Predicate[] query = conf.getQuery();
 		opt = new Optimizer(conf);
-
-//		// TODO(anil): Write a test for conversion of real
-//		// to virtual predicate.
-//		Predicate[] virtualPredicates = new Predicate[realPredicates.length];
-//		for (int j = 0; j < virtualPredicates.length; j++) {
-//			Predicate old = realPredicates[j];
-//			virtualPredicates[j] = new Predicate(
-//					key.getVirtualAttrIndex(old.attribute), old.type,
-//					old.value, old.predtype);
-//		}
-//		conf.setPredicates(virtualPredicates);
-		conf.setPredicates(realPredicates);
+		conf.setQuery(query);
 
 		opt.loadIndex();
 		opt.loadQueries();
 	}
 
-	public RobustTreeHs getIndex() {
+	public RobustTree getIndex() {
 		return opt.getIndex();
 	}
 

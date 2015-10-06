@@ -251,11 +251,15 @@ public class ParsedTupleList {
 		while (lo < hi) {
 			int mid = lo + (hi - lo) / 2;
 			Object midVal = this.values.get(mid)[attributeIdx];
-
-			if (comp.compare(value, midVal) < 0)
-				hi = mid;
-			else
-				lo = mid + 1;
+			try {
+				if (comp.compare(value, midVal) < 0)
+					hi = mid;
+				else
+					lo = mid + 1;
+			} catch (Exception e) {
+				System.out.println(midVal.toString() + " " + value.toString() + " " + attributeIdx + " " + value.getClass().getSimpleName() + " " + midVal.getClass().getSimpleName());
+				e.printStackTrace();
+			}
 		}
 
 		ParsedTupleList k1 = new ParsedTupleList(

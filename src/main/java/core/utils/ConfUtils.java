@@ -22,7 +22,7 @@ public class ConfUtils {
 	/**
 	 * Choose whether to enable optimizer If false, just runs the query If true,
 	 * tries to optimize the storage layout
-	 * 
+	 *
 	 * @return
 	 */
 	public boolean getENABLE_OPTIMIZER() {
@@ -52,6 +52,18 @@ public class ConfUtils {
 		return p.getProperty("SPARK_APPLICATION_JAR").trim();
 	}
 
+	public String getSPARK_EXECUTOR_MEMORY() {
+		return p.getProperty("SPARK_EXECUTOR_MEMORY").trim();
+	}
+
+	public String getSPARK_DRIVER_MEMORY() {
+		return p.getProperty("SPARK_DRIVER_MEMORY").trim();
+	}
+
+	public String getSPARK_TASK_CPUS() {
+		return p.getProperty("SPARK_TASK_CPUS").trim();
+	}
+
 	/********** ZOOKEEPER CONFIG **************/
 	public String getZOOKEEPER_HOSTS() {
 		return p.getProperty("ZOOKEEPER_HOSTS").trim();
@@ -60,7 +72,7 @@ public class ConfUtils {
 	/********** HADOOP CONFIG **************/
 	/**
 	 * Path to hadoop installation
-	 * 
+	 *
 	 * @return
 	 */
 	public String getHADOOP_HOME() {
@@ -69,7 +81,7 @@ public class ConfUtils {
 
 	/**
 	 * Path to hadoop namenode, eg: hdfs://localhost:9000
-	 * 
+	 *
 	 * @return
 	 */
 	public String getHADOOP_NAMENODE() {
@@ -78,7 +90,7 @@ public class ConfUtils {
 
 	/**
 	 * Get working directory in HDFS.
-	 * 
+	 *
 	 * @return filepath to hdfs working dir
 	 */
 	public String getHDFS_WORKING_DIR() {
@@ -87,7 +99,7 @@ public class ConfUtils {
 
 	/**
 	 * Get HDFS Replication Factor
-	 * 
+	 *
 	 * @return
 	 */
 	public short getHDFS_REPLICATION_FACTOR() {

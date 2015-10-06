@@ -8,7 +8,6 @@ import org.apache.spark.api.java.JavaSparkContext;
 
 import core.access.Predicate;
 import core.access.iterator.IteratorRecord;
-import core.index.key.Schema;
 import core.utils.ConfUtils;
 
 public class SparkQuery {
@@ -23,8 +22,9 @@ public class SparkQuery {
 				.setSparkHome(cfg.getSPARK_HOME())
 				.setJars(new String[] { cfg.getSPARK_APPLICATION_JAR() })
 				.set("spark.hadoop.cloneConf", "false")
-				.set("spark.executor.memory", "150g")
-				.set("spark.driver.memory", "10g").set("spark.task.cpus", "64");
+				.set("spark.executor.memory", cfg.getSPARK_EXECUTOR_MEMORY())
+				.set("spark.driver.memory", cfg.getSPARK_DRIVER_MEMORY())
+				.set("spark.task.cpus", cfg.getSPARK_TASK_CPUS());
 
 		ctx = new JavaSparkContext(sconf);
 		ctx.hadoopConfiguration().setBoolean(
@@ -36,8 +36,6 @@ public class SparkQuery {
 
 	public JavaPairRDD<LongWritable, IteratorRecord> createRDD(String hdfsPath,
 			Predicate... ps) {
-		// TODO(anil): When no replica is specified; figure out which replica
-		// to run it off.
 		return this.createRDD(hdfsPath, 0, ps);
 	}
 
@@ -45,7 +43,7 @@ public class SparkQuery {
 			int replicaId, Predicate... ps) {
 		queryConf.setWorkingDir(hdfsPath);
 		queryConf.setReplicaId(replicaId);
-		queryConf.setPredicates(ps);
+		queryConf.setQuery(ps);
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
 		queryConf.setMaxSplitSize(8589934592l); // 8gb is the max size for each
@@ -53,10 +51,9 @@ public class SparkQuery {
 												// parallel)
 		queryConf.setMinSplitSize(4294967296l); // 4gb
 		queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
-		queryConf.setSchema(Schema.schema.toString());
 
-		return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath + "/"
-				+ replicaId, SparkInputFormat.class, LongWritable.class,
+		return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath + "/data",
+				SparkInputFormat.class, LongWritable.class,
 				IteratorRecord.class, ctx.hadoopConfiguration());
 	}
 

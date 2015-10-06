@@ -16,7 +16,7 @@ import core.access.HDFSPartition;
 import core.access.Partition;
 import core.access.Query.FilterQuery;
 import core.index.robusttree.RNode;
-import core.index.robusttree.RobustTreeHs;
+import core.index.robusttree.RobustTree;
 import core.utils.HDFSUtils;
 
 public class RepartitionIterator extends PartitionIterator {
@@ -74,9 +74,15 @@ public class RepartitionIterator extends PartitionIterator {
 					|| FilenameUtils.getBaseName(path).contains("repartition")) { // hack
 				path = FilenameUtils.getPath(path);
 			}
+
+			if (FilenameUtils.getBaseName(path).contains("data")) { // hack
+				path = FilenameUtils.getPathNoEndSeparator(FilenameUtils.getPath(path));
+			}
+
+			// Initialize RobustTree.
 			byte[] indexBytes = HDFSUtils.readFile(
 					((HDFSPartition) partition).getFS(), path + "/index");
-			RobustTreeHs tree = new RobustTreeHs();
+			RobustTree tree = new RobustTree();
 			tree.unmarshall(indexBytes);
 			newIndexTree = tree.getRoot();
 		}
@@ -94,32 +100,27 @@ public class RepartitionIterator extends PartitionIterator {
 			p.setPartitionId(id);
 			newPartitions.put(id, p);
 		}
-		// p.write(record.getBytes(), record.getOffset(), record.getLength());
-		p.write(record.getBytes(), 0, record.getBytes().length);
 
+		p.write(record.getBytes(), 0, record.getBytes().length);
 		return query.qualifies(record);
 	}
 
 	@Override
 	public void finish() {
 		if (zookeeperHosts != null) {
-			// BucketCounts c = new BucketCounts(zookeeperHosts);
 			System.out.println("number of new partitions written = "
 					+ newPartitions.size());
 			for (Partition p : newPartitions.values()) {
-
-				System.out
-						.println("storing partition id " + p.getPartitionId());
+				System.out.println("storing partition id " + p.getPartitionId());
 				p.store(true);
-				// c.setToBucketCount(p.getPartitionId(), p.getRecordCount());
 			}
+
 			for (Partition p : oldPartitions.values()) {
 				System.out.println("dropping old partition id "
 						+ p.getPartitionId());
 				p.drop();
-				// c.removeBucketCount(p.getPartitionId());
 			}
-			// c.close();
+
 			oldPartitions = Maps.newHashMap();
 			newPartitions = Maps.newHashMap();
 			System.out.println("done finalize()");
@@ -132,13 +133,6 @@ public class RepartitionIterator extends PartitionIterator {
 	@Override
 	public void write(DataOutput out) throws IOException {
 		query.write(out);
-		// String tree = newIndexTree.marshall();
-		// System.out.println(tree);
-		// System.out.println(tree.getBytes().length);
-		// byte[] indexBytes = newIndexTree.marshall().getBytes();
-		// out.writeInt(3);
-		// out.write(indexBytes);
-		// Text.writeString(indexPath);
 		Text.writeString(out, zookeeperHosts);
 	}
 
@@ -146,11 +140,6 @@ public class RepartitionIterator extends PartitionIterator {
 	public void readFields(DataInput in) throws IOException {
 		query = new FilterQuery();
 		query.readFields(in);
-		// newIndexTree = new RNode();
-		// byte[] indexBytes = HDFSUtils.readFile()
-		// byte[] indexBytes = new byte[in.readInt()];
-		// in.readFully(indexBytes);
-		// newIndexTree.unmarshall(indexBytes);
 		zookeeperHosts = Text.readString(in);
 		System.out.println("Initialized Tree" + zookeeperHosts);
 

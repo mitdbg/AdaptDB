@@ -93,7 +93,6 @@ public class SparkInputFormat extends
 
 	@Override
 	public List<InputSplit> getSplits(JobContext job) throws IOException {
-
 		List<InputSplit> finalSplits = new ArrayList<InputSplit>();
 		queryConf = new SparkQueryConf(job.getConfiguration());
 		AccessMethod am = new AccessMethod();
@@ -105,12 +104,12 @@ public class SparkInputFormat extends
 		// get the splits based on the query configuration
 		PartitionSplit[] splits;
 		if (queryConf.getFullScan())
-			splits = hpInput.getFullScan(queryConf.getPredicates());
+			splits = hpInput.getFullScan(queryConf.getQuery());
 		else if (queryConf.getRepartitionScan())
-			splits = hpInput.getRepartitionScan(queryConf.getPredicates());
+			splits = hpInput.getRepartitionScan(queryConf.getQuery());
 		else
 			splits = hpInput.getIndexScan(queryConf.getJustAccess(),
-					queryConf.getPredicates());
+					queryConf.getQuery());
 
 		System.out.println("Number of partition splits = " + splits.length);
 		// splits = resizeSplits(splits, partitionIdFileMap,
@@ -132,12 +131,9 @@ public class SparkInputFormat extends
 		// hyper partitioning object)
 		for (PartitionSplit split : splits) {
 			PartitionIterator itr = split.getIterator();
+			// hack to set the zookeeper hosts
 			if (itr instanceof RepartitionIterator
-					|| itr instanceof DistributedRepartitionIterator) // hack to
-																		// set
-																		// the
-																		// zookeeper
-																		// hosts
+					|| itr instanceof DistributedRepartitionIterator)
 				((RepartitionIterator) itr).setZookeeper(queryConf
 						.getZookeeperHosts());
 

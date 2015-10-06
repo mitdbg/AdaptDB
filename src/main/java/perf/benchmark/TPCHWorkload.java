@@ -12,7 +12,7 @@ import core.access.Predicate.PREDTYPE;
 import core.access.Query;
 import core.access.Query.FilterQuery;
 import core.access.spark.SparkQuery;
-import core.index.key.Schema;
+import core.index.robusttree.Globals;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils.SimpleDate;
@@ -35,8 +35,12 @@ public class TPCHWorkload {
 		cfg = new ConfUtils(BenchmarkSettings.conf);
 		rand = new Random();
 
-		assert schemaString != null;
-		Schema.createSchema(schemaString);
+		// Making things more deterministic.
+		rand.setSeed(0);
+
+		Globals.load(cfg.getHDFS_WORKING_DIR() + "/info",
+				HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()));
+		assert Globals.schema != null;
 
 		// delete query history
 		// Cleanup queries file - to remove past query workload

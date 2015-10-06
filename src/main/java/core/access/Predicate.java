@@ -2,7 +2,7 @@ package core.access;
 
 import org.junit.Assert;
 
-import core.index.key.Schema;
+import core.index.robusttree.Globals;
 import core.utils.TypeUtils;
 import core.utils.TypeUtils.TYPE;
 
@@ -24,10 +24,10 @@ public class Predicate {
 	}
 
 	public Predicate(String attr, TYPE t, Object val, PREDTYPE predtype) {
-		this.attribute = Schema.getAttributeId(attr);
+		this.attribute = Globals.schema.getAttributeId(attr);
 		try {
 			Assert.assertNotEquals(this.attribute, -1);
-			Assert.assertEquals(t, Schema.getType(this.attribute));
+			Assert.assertEquals(t, Globals.schema.getType(this.attribute));
 		} catch (Exception e) {
 			System.out.println(attr + " " + this.attribute + " " + t.toString());
 			e.printStackTrace();

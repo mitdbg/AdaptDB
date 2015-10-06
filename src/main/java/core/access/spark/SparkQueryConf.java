@@ -12,7 +12,7 @@ public class SparkQueryConf {
 	public final static String FULL_SCAN = "FULL_SCAN";
 	public final static String REPARTITION_SCAN = "REPARTITION_SCAN";
 	public final static String JUST_ACCESS = "JUST_ACCESS";
-	public final static String PREDICATES = "PREDICATES";
+	public final static String QUERY = "QUERY";
 	public final static String MAX_SPLIT_SIZE = "MAX_SPLIT_SIZE";
 	public final static String MIN_SPLIT_SIZE = "MIN_SPLIT_SIZE";
 	public final static String ZOOKEEPER_HOSTS = "ZOOKEEPER_HOSTS";
@@ -61,15 +61,16 @@ public class SparkQueryConf {
 													// i.e. just access
 	}
 
-	public void setPredicates(Predicate[] predicates) {
-		conf.set(PREDICATES, Joiner.on(",").join(predicates));
+	public void setQuery(Predicate[] predicates) {
+		conf.set(QUERY, Joiner.on(",").join(predicates));
 	}
 
-	public Predicate[] getPredicates() {
-		if (conf.get(PREDICATES) == null || conf.get(PREDICATES).equals("")) {
-			return new Predicate[0];
+	public Predicate[] getQuery() {
+		if (conf.get(QUERY) == null || conf.get(QUERY).equals("")) {
+			throw new RuntimeException("No query set in query conf.");
 		}
-		String[] tokens = conf.get(PREDICATES).split(",");
+
+		String[] tokens = conf.get(QUERY).split(",");
 		Predicate[] predicates = new Predicate[tokens.length];
 		for (int i = 0; i < predicates.length; i++)
 			predicates[i] = new Predicate(tokens[i]);
@@ -122,14 +123,6 @@ public class SparkQueryConf {
 
 	public int getReplicaId() {
 		return Integer.parseInt(conf.get(REPLICA_ID));
-	}
-
-	public void setSchema(String schema) {
-		conf.set(SCHEMA, schema);
-	}
-
-	public String getSchema() {
-		return conf.get(SCHEMA);
 	}
 
 	public Configuration getConf() {

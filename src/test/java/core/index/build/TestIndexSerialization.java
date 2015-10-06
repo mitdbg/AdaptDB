@@ -3,7 +3,7 @@ package core.index.build;
 import junit.framework.TestCase;
 import core.index.MDIndex.Bucket;
 import core.index.robusttree.RNode;
-import core.index.robusttree.RobustTreeHs;
+import core.index.robusttree.RobustTree;
 import core.utils.TypeUtils.TYPE;
 
 public class TestIndexSerialization extends TestCase {
@@ -44,7 +44,7 @@ public class TestIndexSerialization extends TestCase {
 		r.rightChild = new RNode();
 		r.rightChild.bucket = new Bucket();
 
-		RobustTreeHs t = new RobustTreeHs();
+		RobustTree t = new RobustTree();
 		t.setRoot(root);
 
 		t.maxBuckets = 4;
@@ -54,7 +54,7 @@ public class TestIndexSerialization extends TestCase {
 
 		byte[] treeBytes = t.marshall();
 
-		RobustTreeHs clone = new RobustTreeHs();
+		RobustTree clone = new RobustTree();
 		clone.unmarshall(treeBytes);
 
 		assert (t == clone);

@@ -29,6 +29,7 @@ public class HPInput {
 		this.am = am;
 		partitionIdFileMap = ArrayListMultimap.create();
 		partitionIdSizeMap = Maps.newHashMap();
+		System.out.println("FileStatus has " + files.size() + " files.");
 		for (FileStatus file : files) {
 			try {
 				int id = Integer.parseInt(FilenameUtils.getName(file.getPath()

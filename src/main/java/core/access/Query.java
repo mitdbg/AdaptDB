@@ -36,7 +36,9 @@ public class Query implements Serializable {
 	}
 
 	public void readFields(DataInput in) throws IOException {
-		String predicateStrings = Text.readString(in);
+		String queryString = Text.readString(in);
+		String[] parts = queryString.split(":");
+		String predicateStrings = parts[1].trim();
 		if (predicateStrings.equals(EMPTY)) {
 			predicates = new Predicate[0];
 		} else {
@@ -119,7 +121,7 @@ public class Query implements Serializable {
 
 		@Override
 		public String toString() {
-			return "FILTERQUERY: " + Joiner.on(";").join(predicates);
+			return "FILTERQUERY:" + Joiner.on(";").join(predicates);
 		}
 
 		public static FilterQuery read(DataInput in) throws IOException {

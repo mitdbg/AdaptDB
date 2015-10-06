@@ -18,7 +18,7 @@ import org.apache.spark.api.java.function.PairFunction;
 import scala.Tuple2;
 import core.access.iterator.IteratorRecord;
 import core.index.robusttree.RNode;
-import core.index.robusttree.RobustTreeHs;
+import core.index.robusttree.RobustTree;
 import core.utils.HDFSUtils;
 
 public class SparkMapReducePartitioner extends SparkUpfrontPartitioner {
@@ -109,7 +109,7 @@ public class SparkMapReducePartitioner extends SparkUpfrontPartitioner {
 		// read the index
 		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 		byte[] indexBytes = HDFSUtils.readFile(fs, hdfsPath + "/index");
-		RobustTreeHs index = new RobustTreeHs();
+		RobustTree index = new RobustTree();
 		index.unmarshall(indexBytes);
 		final RNode t = index.getRoot();
 

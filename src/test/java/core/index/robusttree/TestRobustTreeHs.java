@@ -29,7 +29,7 @@ public class TestRobustTreeHs extends TestCase {
 	}
 
 	public void testBucketRanges() {
-		RobustTreeHs index = new RobustTreeHs();
+		RobustTree index = new RobustTree();
 		index.unmarshall(testTree1.getBytes());
 		Map<Integer, MDIndex.BucketInfo> ranges1 = index.getBucketRanges(1);
 		System.out.println(ranges1);
@@ -52,14 +52,14 @@ public class TestRobustTreeHs extends TestCase {
 		FileSystem fs = HDFSUtils.getFSByHadoopHome((new ConfUtils(
 				BenchmarkSettings.conf)).getHADOOP_HOME());
 		byte[] indexBytes = HDFSUtils.readFile(fs, "/user/qui/orders/index");
-		RobustTreeHs index = new RobustTreeHs();
+		RobustTree index = new RobustTree();
 		index.unmarshall(indexBytes);
 		System.out.println(index.getBucketRanges(0));
 		System.out.println(Arrays.toString(index.getAllocations()));
 	}
 
 	public void testGetAllocations() {
-		RobustTreeHs index = new RobustTreeHs();
+		RobustTree index = new RobustTree();
 		index.unmarshall(testTree1.getBytes());
 		double[] expectedAllocations = new double[] { 2.0, 1.25, 1.5, 0.75 };
 		double[] allocations = index.getAllocations();
@@ -74,7 +74,7 @@ public class TestRobustTreeHs extends TestCase {
 		String indexString = "17 4\n" + "INT INT STRING INT\n" + "n 0 INT 10\n"
 				+ "n 1 INT 32\n" + "n 2 STRING hello\n" + "n 3 INT 100\n"
 				+ "b 1\n" + "b 2\n" + "b 3\n" + "b 4\n" + "b 5\n";
-		RobustTreeHs index = new RobustTreeHs();
+		RobustTree index = new RobustTree();
 		index.unmarshall(indexString.getBytes());
 		double[] expectedAllocations = new double[] { 2.0, 1.0, 0.5, 0.25 };
 		double[] allocations = index.getAllocations();

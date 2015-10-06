@@ -9,6 +9,7 @@ import java.util.List;
 
 import com.google.common.primitives.Ints;
 
+import core.index.robusttree.Globals;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 
@@ -206,7 +207,7 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 					&& !Ints.contains(keyAttrIdx, i))
 				continue;
 
-			types.add(Schema.schema.fields[numAttrs - 1].type);
+			types.add(Globals.schema.fields[numAttrs - 1].type);
 		}
 
 		if (keyAttrIdx == null) {
@@ -237,7 +238,16 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 		else
 			strSize = offset + length - off;
 
-		return new String(bytes, off, Math.min(strSize, maxSize));
+		// TODO: Remove
+		String t = "";
+		try {
+			t = new String(bytes, off, Math.min(strSize, maxSize));
+		} catch (java.lang.StringIndexOutOfBoundsException e) {
+			System.out.println("IndexEx: " + bytes.length + " " + off + " " +  Math.min(strSize, maxSize));
+			e.printStackTrace();
+		}
+
+		return t;
 	}
 
 	@Override
@@ -392,17 +402,24 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 	public SimpleDate getDateAttribute(int index) {
 		index = keyAttrIdx[index];
 		// parse date assuming the format: "yyyy-MM-dd"
-		int off = attributeOffsets[index];
-		int year = 1000 * (bytes[off] - '0') + 100 * (bytes[off + 1] - '0')
-				+ 10 * (bytes[off + 2] - '0') + (bytes[off + 3] - '0');
-		int month = 10 * (bytes[off + 5] - '0') + (bytes[off + 6] - '0');
-		int day = 10 * (bytes[off + 8] - '0') + (bytes[off + 9] - '0');
+		try {
+			int off = attributeOffsets[index];
+			int year = 1000 * (bytes[off] - '0') + 100 * (bytes[off + 1] - '0')
+					+ 10 * (bytes[off + 2] - '0') + (bytes[off + 3] - '0');
+			int month = 10 * (bytes[off + 5] - '0') + (bytes[off + 6] - '0');
+			int day = 10 * (bytes[off + 8] - '0') + (bytes[off + 9] - '0');
 
-		dummyDate.setYear(year);
-		dummyDate.setMonth(month);
-		dummyDate.setDay(day);
+			dummyDate.setYear(year);
+			dummyDate.setMonth(month);
+			dummyDate.setDay(day);
 
-		return dummyDate;
+			return dummyDate;
+		} catch (java.lang.ArrayIndexOutOfBoundsException e) {
+			System.out.println("Ex: " + attributeOffsets[index] + " " + bytes.length);
+			System.err.println("Ex: " + attributeOffsets[index] + " " + bytes.length);
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	public SimpleDate getDateAttribute(int index, SimpleDate date) {
