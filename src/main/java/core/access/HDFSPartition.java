@@ -19,7 +19,6 @@ import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
 
 public class HDFSPartition extends Partition {
-
 	private static final long serialVersionUID = 1L;
 
 	protected FileSystem hdfs;
@@ -58,16 +57,16 @@ public class HDFSPartition extends Partition {
 		this.client = client;
 	}
 
-	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId,
-			CuratorFramework client) {
-		this(hdfs, pathAndPartitionId, (short) 3, client);
-	}
+//	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId,
+//			CuratorFramework client) {
+//		this(hdfs, pathAndPartitionId, (short) 1, client);
+//	}
 
 	@Override
 	public Partition clone() {
 		String clonePath = path
 				.replaceAll("partitions[0-9]*/$", "repartition/");
-		Partition p = new HDFSPartition(hdfs, clonePath + partitionId, client);
+		Partition p = new HDFSPartition(hdfs, clonePath + partitionId, replication, client);
 		// p.bytes = new byte[bytes.length]; // heap space!
 		p.bytes = new byte[1024];
 		p.state = State.NEW;

@@ -38,22 +38,6 @@ public class RobustTree implements MDIndex {
 
 	}
 
-	// TODO: Remove
-	public void checkSane() {
-		LinkedList<RNode> l = new LinkedList<RNode>();
-		l.add(root);
-
-		while(!(l.size() == 0)) {
-			RNode first = l.removeFirst();
-			if (first.bucket != null ){
-				System.out.println("Num Tuples: " + first.bucket.getBucketId() + " " + first.bucket.getEstimatedNumTuples());
-			} else {
-				l.add(first.leftChild);
-				l.add(first.rightChild);
-			}
-		}
-	}
-
 	@Override
 	public MDIndex clone() throws CloneNotSupportedException {
 		throw new CloneNotSupportedException();
@@ -334,7 +318,6 @@ public class RobustTree implements MDIndex {
 			double numTuples = (sampleSize * totalTuples) / totalSamples;
 			n.bucket.setSample(sample);
 			n.bucket.setEstimatedNumTuples(numTuples);
-			System.out.println("DEB: Bucket " + n.bucket.getBucketId() + " " + n.bucket.getEstimatedNumTuples());
 		} else {
 			// By sorting we avoid memory allocation
 			// Will most probably be faster

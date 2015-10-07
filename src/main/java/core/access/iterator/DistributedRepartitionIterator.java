@@ -22,7 +22,6 @@ public class DistributedRepartitionIterator extends RepartitionIterator {
 
 	@Override
 	public void finish() {
-
 		// PartitionLock l = new PartitionLock(zookeeperHosts);
 
 		for (Partition p : newPartitions.values()) {

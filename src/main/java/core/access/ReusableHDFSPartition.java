@@ -63,16 +63,11 @@ public class ReusableHDFSPartition extends ReusablePartition {
 		this.client = client;
 	}
 
-	public ReusableHDFSPartition(FileSystem hdfs, String pathAndPartitionId,
-			CuratorFramework client, BufferManager buffMgr) {
-		this(hdfs, pathAndPartitionId, (short) 3, client, buffMgr);
-	}
-
 	@Override
 	public Partition clone() {
 		String clonePath = path
 				.replaceAll("partitions[0-9]*/$", "repartition/");
-		Partition p = new HDFSPartition(hdfs, clonePath + partitionId, client);
+		Partition p = new HDFSPartition(hdfs, clonePath + partitionId, replication, client);
 		// p.bytes = new byte[bytes.length]; // heap space!
 		p.bytes = new byte[1024];
 		p.state = Partition.State.NEW;

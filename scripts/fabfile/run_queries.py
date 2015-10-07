@@ -8,7 +8,7 @@ def run_tpch_queries():
         #cmd = './hadoop jar $JAR perf.benchmark.TPCHWorkload ' + \
         cmd = submit_script_path + ' --class perf.benchmark.TPCHWorkload --deploy-mode client --master spark://bits:7077 $JAR ' + \
             ' --conf $CONF' + \
-            ' --numQueries 3' + \
+            ' --numQueries 6' + \
             ' --schema "$SCHEMA"'  + \
             ' --numFields $NUMFIELDS' + \
             ' --numTuples $NUMTUPLES' + \

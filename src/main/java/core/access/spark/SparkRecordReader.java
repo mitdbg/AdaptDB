@@ -56,8 +56,9 @@ public class SparkRecordReader extends
 		else {
 			Path filePath = sparkSplit.getPath(currentFile);
 			final FileSystem fs = filePath.getFileSystem(conf);
-			HDFSPartition partition = new HDFSPartition(fs,
-					filePath.toString(), client);
+			HDFSPartition partition = new HDFSPartition(fs, filePath.toString(),
+					Short.parseShort(conf.get(SparkQueryConf.HDFS_REPLICATION_FACTOR)),
+					client);
 			System.out.println("INFO: Loading path: " + filePath.toString());
 			try {
 				partition.loadNext();

@@ -12,7 +12,6 @@ import org.apache.hadoop.fs.Path;
 
 import core.access.AccessMethod.PartitionSplit;
 import core.access.Predicate;
-import core.access.Predicate.PREDTYPE;
 import core.access.Query;
 import core.access.Query.FilterQuery;
 import core.access.iterator.PartitionIterator;
@@ -147,23 +146,6 @@ public class Optimizer {
 		}
 	}
 
-	// Just for debug
-	public PartitionSplit[] testRepartitionIteratorPlan(final Query q) {
-		Plan pl = new Plan();
-		pl.cost = 1;
-		pl.benefit = 1000;
-		Action ac = new Action();
-		ac.pid = 0;
-		ac.option = 1;
-		pl.actions = ac;
-
-		Predicate p1 = new Predicate(0, TYPE.INT, 283359707, PREDTYPE.GT);
-		FilterQuery dummy = new FilterQuery(new Predicate[] { p1 });
-
-		PartitionSplit[] psplits = this.getPartitionSplits(pl, dummy);
-		return psplits;
-	}
-
 	public PartitionSplit[] buildPlan(final Query q) {
 		if (q instanceof FilterQuery) {
 			FilterQuery fq = (FilterQuery) q;
@@ -230,10 +212,6 @@ public class Optimizer {
 	public Plan getBestPlan(Predicate[] ps) {
 		// TODO: Multiple predicates seem to complicate the simple idea we had;
 		// think more :-/
-
-		// Make sure all the bucket counts are non zero.
-		this.rt.checkSane();
-
 		Plan plan = null;
 		for (int i = 0; i < ps.length; i++) {
 			Plan option = getBestPlanForPredicate(ps, i);

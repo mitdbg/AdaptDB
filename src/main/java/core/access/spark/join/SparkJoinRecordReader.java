@@ -18,6 +18,7 @@ import core.access.ReusableHDFSPartition;
 import core.access.iterator.IteratorRecord;
 import core.access.iterator.ReusablePartitionIterator;
 import core.access.spark.SparkInputFormat.SparkFileSplit;
+import core.access.spark.SparkQueryConf;
 import core.access.spark.join.SparkJoinRecordReader.JoinTuplePair;
 import core.utils.BufferManager;
 import core.utils.Pair;
@@ -112,7 +113,9 @@ public class SparkJoinRecordReader extends
 			Path filePath = sparkSplit.getPath(currentFile);
 			final FileSystem fs = filePath.getFileSystem(conf);
 			ReusableHDFSPartition partition = new ReusableHDFSPartition(fs,
-					filePath.toString(), client, buffMgr);
+					filePath.toString(),
+					Short.parseShort(conf.get(SparkQueryConf.HDFS_REPLICATION_FACTOR)),
+					client, buffMgr);
 			System.out.println("loading path: " + filePath.toString());
 			try {
 				partition.loadNext();
@@ -142,6 +145,7 @@ public class SparkJoinRecordReader extends
 		return false;
 	}
 
+	@Override
 	public boolean nextKeyValue() throws IOException, InterruptedException {
 
 		if (firstRecords != null && firstRecords.hasNext())
