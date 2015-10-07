@@ -84,11 +84,6 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 				}
 
 				try {
-					if (recordBytes.length == 3) {
-						System.out.println(bytes.length + " " + previous + " " + offset);
-						System.out.println(new String(recordBytes));
-					}
-
 					// TODO: Hack. Observed that sometimes there are two \n between records.
 					// There is something wrong with the partition writer.
 					// This skips small records.

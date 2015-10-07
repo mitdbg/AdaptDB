@@ -227,47 +227,6 @@ public class Optimizer {
 		}
 	}
 
-	// public PartitionSplit[] buildMPPlan(final Query q) {
-	// if (q instanceof FilterQuery) {
-	// FilterQuery fq = (FilterQuery) q;
-	// Predicate[] ps = fq.getPredicates();
-	// int pLength = ps.length;
-	// // Find the initial set of buckets accessed
-	// List<RNode> nodes = this.rt.getRoot().search(ps);
-	// int[] initialBids = this.getBidFromRNodes(nodes);
-	//
-	// for (int i=0; i<pLength; i++) {
-	// Plan best = getBestPlan(ps);
-	// this.updateIndex(best, ps);
-	// ps[best.actions.pid] = null;
-	// }
-	//
-	// nodes = this.rt.getRoot().search(ps);
-	// int[] finalBids = this.getBidFromRNodes(nodes);
-	//
-	// float totalTuples = 0;
-	// for (int i=0; i<initialBids.length; i++) {
-	// int bid = initialBids[i];
-	// boolean found = false;
-	// for (int j=0; j<finalBids.length; j++) {
-	// if (finalBids[j] == bid) {
-	// found = true;
-	// break;
-	// }
-	// }
-	//
-	// if (!found) {
-	// totalTuples += Bucket.counters.getBucketCount(bid);
-	// }
-	// }
-	//
-	// return null;
-	// } else {
-	// System.err.println("Unimplemented query - Unable to build plan");
-	// return null;
-	// }
-	// }
-
 	public Plan getBestPlan(Predicate[] ps) {
 		// TODO: Multiple predicates seem to complicate the simple idea we had;
 		// think more :-/

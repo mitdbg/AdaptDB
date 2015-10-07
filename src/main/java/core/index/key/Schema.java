@@ -62,7 +62,7 @@ public class Schema {
 			fieldList[i] = new Field(fieldName, fieldType);
 		}
 
-		System.out.println("Created schema with " + fieldList.length + " fields");
+		System.out.println("INFO: Created schema with " + fieldList.length + " fields");
 		return new Schema(fieldList);
 	}
 

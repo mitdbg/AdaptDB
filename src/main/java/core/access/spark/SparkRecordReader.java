@@ -33,37 +33,23 @@ public class SparkRecordReader extends
 
 	CuratorFramework client;
 
-	// BucketCounts counter;
-	// PartitionLock locker;
-
 	@Override
 	public void initialize(InputSplit split, TaskAttemptContext context)
 			throws IOException, InterruptedException {
-
-		System.out.println("Initializing SparkRecordReader");
-
 		conf = context.getConfiguration();
 		client = CuratorUtils.createAndStartClient(conf
 				.get(SparkQueryConf.ZOOKEEPER_HOSTS));
 		sparkSplit = (SparkFileSplit) split;
-
 		iterator = sparkSplit.getIterator();
 		currentFile = 0;
-
-		// FileSystem fs = sparkSplit.getPath(currentFile).getFileSystem(conf);
-		// counter = new BucketCounts(fs,
-		// conf.get(SparkQueryConf.COUNTERS_FILE));
-		// locker = new PartitionLock(fs, conf.get(SparkQueryConf.LOCK_DIR));
-
 		hasNext = initializeNext();
 		key = new LongWritable();
 		recordId = 0;
 	}
 
 	protected boolean initializeNext() throws IOException {
-
-		if (currentFile > 0)
-			System.out.println("Records read = " + recordId);
+//		if (currentFile > 0)
+//			System.out.println("Records read = " + recordId);
 
 		if (currentFile >= sparkSplit.getStartOffsets().length)
 			return false;
@@ -72,15 +58,14 @@ public class SparkRecordReader extends
 			final FileSystem fs = filePath.getFileSystem(conf);
 			HDFSPartition partition = new HDFSPartition(fs,
 					filePath.toString(), client);
-			System.out.println("loading path: " + filePath.toString());
+			System.out.println("INFO: Loading path: " + filePath.toString());
 			try {
 				partition.loadNext();
 				iterator.setPartition(partition);
 				currentFile++;
 				return true;
 			} catch (java.lang.OutOfMemoryError e) {
-				System.out
-						.println("ERR: Failed to load " + filePath.toString());
+				System.out.println("ERR: Failed to load " + filePath.toString());
 				System.out.println(e.getMessage());
 				e.printStackTrace();
 				return false;
@@ -88,6 +73,7 @@ public class SparkRecordReader extends
 		}
 	}
 
+	@Override
 	public boolean nextKeyValue() throws IOException, InterruptedException {
 		while (hasNext) {
 			if (iterator.hasNext()) {

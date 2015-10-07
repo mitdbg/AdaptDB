@@ -32,11 +32,9 @@ public class Query implements Serializable {
 			Text.writeString(out, Joiner.on(";").join(predicates));
 		}
 		Text.writeString(out, key.toString());
-		// out.writeBytes(Joiner.on(",").join(predicates)+"\n");
 	}
 
 	public void readFields(DataInput in) throws IOException {
-		System.out.println("IN HERE !! !! Query:39");
 		String predicateStrings = Text.readString(in);
 		if (predicateStrings.equals(EMPTY)) {
 			predicates = new Predicate[0];
@@ -47,7 +45,6 @@ public class Query implements Serializable {
 				predicates[i] = new Predicate(tokens[i]);
 		}
 		key = new CartilageIndexKey(Text.readString(in));
-		// String[] tokens = in.readLine().split(",");
 	}
 
 	public static class FilterQuery extends Query implements Serializable {

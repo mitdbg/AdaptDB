@@ -42,11 +42,9 @@ public interface MDIndex {
 		}
 
 		public double getEstimatedNumTuples() {
-			if (estimatedTuples == 0.0) {
-				System.out.println("ERR " + bucketId);
-			}
-
-//			Assert.assertNotEquals(estimatedTuples, 0.0);
+			// TODO: This call used when restoring a replaced tree in Optimizer.
+			// Can't use the assert below.
+			// Assert.assertNotEquals(estimatedTuples, 0.0);
 			return estimatedTuples;
 		}
 

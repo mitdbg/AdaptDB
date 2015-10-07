@@ -162,9 +162,8 @@ public class TPCHWorkload {
 		ArrayList<FilterQuery> queries = new ArrayList<FilterQuery>();
 		int[] queryNums = new int[] { 3, 5, 6, 8, 10, 12, 14, 19 };
 
-		Random r = new Random();
 		for (int i = 0; i < numQueries; i++) {
-			int qNo = queryNums[r.nextInt(queryNums.length)];
+			int qNo = queryNums[rand.nextInt(queryNums.length)];
 			FilterQuery q = getQuery(qNo);
 			queries.add(q);
 		}
@@ -176,12 +175,17 @@ public class TPCHWorkload {
 		long start, end;
 		SparkQuery sq = new SparkQuery(cfg);
 		List<FilterQuery> queries = generateWorkload(numQueries);
+		System.out.println("INFO: Workload " + numQueries);
+		for (FilterQuery q: queries) {
+			System.out.println("INFO: Query:" + q.toString());
+		}
 		for (FilterQuery q : queries) {
 			start = System.currentTimeMillis();
 			long result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(),
 					q.getPredicates()).count();
 			end = System.currentTimeMillis();
-			System.out.println("Time Taken: " + (end - start) + " " + result);
+			System.out.println("RES: Result: " + result);
+			System.out.println("RES: Time Taken: " + (end - start) + " " + result);
 		}
 	}
 

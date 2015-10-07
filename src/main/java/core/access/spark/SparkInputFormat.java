@@ -114,6 +114,11 @@ public class SparkInputFormat extends
 		System.out.println("Number of partition splits = " + splits.length);
 		// splits = resizeSplits(splits, partitionIdFileMap,
 		// queryConf.getMaxSplitSize());
+		for (PartitionSplit split : splits) {
+			System.out.println("SPLIT: "
+					+ split.getIterator().getClass().getName() + " buckets: "
+					+ Arrays.toString(split.getPartitions()));
+		}
 		splits = resizeSplits(splits, hpInput.getPartitionIdSizeMap(),
 				queryConf.getMaxSplitSize(), queryConf.getMinSplitSize());
 		System.out.println("Number of partition splits after splitting= "

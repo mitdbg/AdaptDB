@@ -19,6 +19,13 @@ import core.index.robusttree.RNode;
 import core.index.robusttree.RobustTree;
 import core.utils.HDFSUtils;
 
+/**
+ * Repartitions the input partitions and writes it out.
+ * Does this by reading the new index. For each tuple, gets its new bucket id.
+ * Writes it out the corresponding bucket.
+ * @author anil
+ *
+ */
 public class RepartitionIterator extends PartitionIterator {
 
 	private FilterQuery query;
@@ -64,6 +71,10 @@ public class RepartitionIterator extends PartitionIterator {
 		return this.newIndexTree;
 	}
 
+	/**
+	 * Gets a HDFS Partition as input.
+	 * Loads the new index. PartitionWriter::setPartition does the rest.
+	 */
 	@Override
 	public void setPartition(Partition partition) {
 		super.setPartition(partition);
