@@ -29,18 +29,16 @@ import core.utils.TypeUtils;
 import core.utils.TypeUtils.TYPE;
 
 /**
- *
+ * Optimizer creates the execution plans for the queries.
+ * It uses the incoming query predicates as hints for what should be added
+ * into the partitioning tree. If we find a plan which has benefit >
+ * cost, we do the repartitioning. Else we just do a scan.
  * @author anil
  */
 
 public class Optimizer {
 	static final int BLOCK_SIZE = 64 * 1024;
-	static final float DISK_MULTIPLIER = 1;
-	static final float NETWORK_MULTIPLIER = 1;
-
-	static final long NODE_MEM_SIZE = 1024 * 1024 * 1024 * 2;
-	static final int TUPLE_SIZE = 128;
-	static final double NODE_TUPLE_LIMIT = 33554432; // NODE_MEM_SIZE / TUPLE_SIZE
+	static final float WRITE_MULTIPLIER = 2;
 
 	RobustTree rt;
 	int rtDepth;
@@ -916,11 +914,7 @@ public class Optimizer {
 
 	public double computeCost(RNode r) {
 		double numTuples = r.numTuplesInSubtree();
-		if (numTuples > NODE_TUPLE_LIMIT) {
-			return (DISK_MULTIPLIER + NETWORK_MULTIPLIER) * numTuples;
-		} else {
-			return DISK_MULTIPLIER * numTuples;
-		}
+		return WRITE_MULTIPLIER * numTuples;
 	}
 
 	public static int getDepthOfIndex(int numBlocks) {
