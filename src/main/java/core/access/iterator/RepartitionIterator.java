@@ -27,7 +27,6 @@ import core.utils.HDFSUtils;
  *
  */
 public class RepartitionIterator extends PartitionIterator {
-
 	private FilterQuery query;
 	private RNode newIndexTree;
 	protected String zookeeperHosts;
@@ -54,13 +53,6 @@ public class RepartitionIterator extends PartitionIterator {
 
 	public void setZookeeper(String zookeeperHosts) {
 		this.zookeeperHosts = zookeeperHosts;
-	}
-
-	public DistributedRepartitionIterator createDistributedIterator() {
-		DistributedRepartitionIterator itr = new DistributedRepartitionIterator(
-				query, newIndexTree);
-		itr.setZookeeper(zookeeperHosts);
-		return itr;
 	}
 
 	public FilterQuery getQuery() {
@@ -120,8 +112,6 @@ public class RepartitionIterator extends PartitionIterator {
 	@Override
 	public void finish() {
 		if (zookeeperHosts != null) {
-			System.out.println("number of new partitions written = "
-					+ newPartitions.size());
 			for (Partition p : newPartitions.values()) {
 				System.out.println("storing partition id " + p.getPartitionId());
 				p.store(true);
@@ -135,11 +125,9 @@ public class RepartitionIterator extends PartitionIterator {
 
 			oldPartitions = Maps.newHashMap();
 			newPartitions = Maps.newHashMap();
-			System.out.println("done finalize()");
 		} else {
 			System.out.println("INFO: Zookeeper Hosts NULL");
 		}
-		System.out.println("done finalize");
 	}
 
 	@Override
@@ -153,8 +141,6 @@ public class RepartitionIterator extends PartitionIterator {
 		query = new FilterQuery();
 		query.readFields(in);
 		zookeeperHosts = Text.readString(in);
-		System.out.println("Initialized Tree" + zookeeperHosts);
-
 	}
 
 	public static RepartitionIterator read(DataInput in) throws IOException {

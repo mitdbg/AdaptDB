@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +29,6 @@ import com.google.common.primitives.Ints;
 
 import core.access.AccessMethod;
 import core.access.AccessMethod.PartitionSplit;
-import core.access.iterator.DistributedRepartitionIterator;
 import core.access.iterator.IteratorRecord;
 import core.access.iterator.PartitionIterator;
 import core.access.iterator.RepartitionIterator;
@@ -111,21 +111,10 @@ public class SparkInputFormat extends
 			splits = hpInput.getIndexScan(queryConf.getJustAccess(),
 					queryConf.getQuery());
 
-		System.out.println("Number of partition splits = " + splits.length);
-		// splits = resizeSplits(splits, partitionIdFileMap,
-		// queryConf.getMaxSplitSize());
-		for (PartitionSplit split : splits) {
-			System.out.println("SPLIT: "
-					+ split.getIterator().getClass().getName() + " buckets: "
-					+ Arrays.toString(split.getPartitions()));
-		}
 		splits = resizeSplits(splits, hpInput.getPartitionIdSizeMap(),
 				queryConf.getMaxSplitSize(), queryConf.getMinSplitSize());
-		System.out.println("Number of partition splits after splitting= "
-				+ splits.length);
-		// splits = combineSplits(splits, queryConf.getMinSplitSize(),
-		// queryConf.getMaxSplitSize());
-		// System.out.println("Number of partition splits after combining= "+splits.length);
+		System.out.println("Number of splits= " + splits.length);
+
 		for (PartitionSplit split : splits) {
 			System.out.println("SPLIT: "
 					+ split.getIterator().getClass().getName() + " buckets: "
@@ -137,8 +126,7 @@ public class SparkInputFormat extends
 		for (PartitionSplit split : splits) {
 			PartitionIterator itr = split.getIterator();
 			// hack to set the zookeeper hosts
-			if (itr instanceof RepartitionIterator
-					|| itr instanceof DistributedRepartitionIterator)
+			if (itr instanceof RepartitionIterator)
 				((RepartitionIterator) itr).setZookeeper(queryConf
 						.getZookeeperHosts());
 
@@ -208,30 +196,40 @@ public class SparkInputFormat extends
 	public PartitionSplit[] resizeSplits(PartitionSplit[] initialSplits,
 			Map<Integer, Long> partitionSizes, long maxSplitSize,
 			long minSplitSize) {
-
 		List<PartitionSplit> resizedSplits = Lists.newArrayList();
 		ArrayListMultimap<String, PartitionSplit> smallSplits = ArrayListMultimap
 				.create();
 
+		// For statistics count the size of data per iterator.
+		Map<String, Long> accessSizes = new HashMap<String, Long>();
+
 		for (PartitionSplit split : initialSplits) {
 			long splitSize = getPartitionSplitSize(split, partitionSizes);
+
+			// Add to statistics.
+			String iterName = split.getIterator().getClass().getName();
+			Long existingCount = accessSizes.containsKey(iterName) ?
+					accessSizes.get(iterName) : 0;
+			accessSizes.put(iterName, existingCount + splitSize);
+
 			if (splitSize > maxSplitSize) {
 				// create smaller splits
 				resizedSplits.addAll(createSmaller(split, partitionSizes,
 						maxSplitSize));
 			} else if (splitSize < minSplitSize) {
 				// create larger splits
-				smallSplits
-						.put(split.getIterator().getClass().getName(), split);
+				smallSplits.put(split.getIterator().getClass().getName(), split);
 			} else {
 				// just accept as it is
 				PartitionIterator itr = split.getIterator();
-				if (itr instanceof RepartitionIterator)
-					itr = ((RepartitionIterator) itr)
-							.createDistributedIterator();
-				resizedSplits
-						.add(new PartitionSplit(split.getPartitions(), itr));
+				resizedSplits.add(new PartitionSplit(split.getPartitions(), itr));
 			}
+		}
+
+		// Print statistics.
+		System.out.println("INFO: Access Sizes");
+		for (Map.Entry<String, Long> entry : accessSizes.entrySet()) {
+			System.out.println(entry.getKey() + " : " + entry.getValue());
 		}
 
 		for (String key : smallSplits.keySet())
@@ -265,8 +263,6 @@ public class SparkInputFormat extends
 
 		for (Integer k : largerSplitPartitionIds.keySet()) {
 			PartitionIterator itr = splits.get(0).getIterator();
-			if (itr instanceof RepartitionIterator)
-				itr = ((RepartitionIterator) itr).createDistributedIterator();
 			largerSplits.add(new PartitionSplit(Ints
 					.toArray(largerSplitPartitionIds.get(k)), itr));
 		}
@@ -297,8 +293,6 @@ public class SparkInputFormat extends
 
 		for (Integer k : splitPartitionIds.keySet()) {
 			PartitionIterator itr = split.getIterator();
-			if (itr instanceof RepartitionIterator)
-				itr = ((RepartitionIterator) itr).createDistributedIterator();
 			smallerSplits.add(new PartitionSplit(Ints.toArray(splitPartitionIds
 					.get(k)), itr));
 		}
@@ -306,13 +300,8 @@ public class SparkInputFormat extends
 		return smallerSplits;
 	}
 
-	// private List<PartitionSplit>
-
 	public PartitionSplit[] resizeSplits(PartitionSplit[] initialSplits,
 			Map<Integer, Long> partitionSizes, int maxSplitSize) {
-
-		// Map<Integer,Long> partitionSizes = getPartitionIdMap(initialSplits,
-		// partitionIdFileMap);
 		List<PartitionSplit> resizedSplits = Lists.newArrayList();
 
 		for (PartitionSplit split : initialSplits) {
@@ -329,12 +318,7 @@ public class SparkInputFormat extends
 								from, i);
 
 						PartitionIterator itr = split.getIterator();
-						if (itr instanceof RepartitionIterator)
-							itr = ((RepartitionIterator) itr)
-									.createDistributedIterator();
-
-						resizedSplits
-								.add(new PartitionSplit(subPartitions, itr));
+						resizedSplits.add(new PartitionSplit(subPartitions, itr));
 
 						from = i;
 						currentSize = 0;
@@ -346,30 +330,11 @@ public class SparkInputFormat extends
 					int[] subPartitions = Arrays.copyOfRange(partitions, from,
 							partitions.length);
 					PartitionIterator itr = split.getIterator();
-					if (itr instanceof RepartitionIterator)
-						itr = ((RepartitionIterator) itr)
-								.createDistributedIterator();
 					resizedSplits.add(new PartitionSplit(subPartitions, itr));
 				}
-
-				// for(int i=0;i<partitions.length;i+=maxSplitSize){
-				// int to = i + maxSplitSize > partitions.length ?
-				// partitions.length : i + maxSplitSize;
-				// int[] subPartitions = Arrays.copyOfRange(partitions, i, to);
-				//
-				// PartitionIterator itr = split.getIterator();
-				// if(itr instanceof RepartitionIterator)
-				// itr = ((RepartitionIterator)itr).createDistributedIterator();
-				//
-				// resizedSplits.add(new PartitionSplit(subPartitions, itr));
-				// }
 			} else {
 				PartitionIterator itr = split.getIterator();
-				if (itr instanceof RepartitionIterator)
-					itr = ((RepartitionIterator) itr)
-							.createDistributedIterator();
-				resizedSplits
-						.add(new PartitionSplit(split.getPartitions(), itr));
+				resizedSplits.add(new PartitionSplit(split.getPartitions(), itr));
 				resizedSplits.add(split);
 			}
 		}

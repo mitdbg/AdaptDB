@@ -94,3 +94,25 @@ def move_denormalized_data():
     with cd('/data/mdindex/'):
         run('./move_denormalized_data.sh')
 
+@serial
+def create_script_move_cmt_data():
+    global counter
+    with cd('/data/mdindex/'):
+        script = "#!/bin/bash\n"
+        script += "rm -R /data/mdindex/cmt100\n"
+        script += "mkdir -p /data/mdindex/cmt100\n"
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -copyToLocal " + \
+            "/user/mdindex/cmt100/cmt_table/part-00%d%d* /data/mdindex/cmt100/\n" % (counter / 10, counter % 10)
+        counter += 1
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -copyToLocal " + \
+            "/user/mdindex/cmt100/cmt_table/part-00%d%d* /data/mdindex/cmt100/\n" % (counter / 10, counter % 10)
+        run('echo "%s" > move_cmt_data.sh' % script)
+        run('chmod +x move_cmt_data.sh')
+
+    counter += 1
+
+@parallel
+def move_cmt_data():
+    with cd('/data/mdindex/'):
+        run('./move_cmt_data.sh')
+

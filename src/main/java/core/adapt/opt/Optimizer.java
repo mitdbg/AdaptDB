@@ -38,7 +38,7 @@ import core.utils.TypeUtils.TYPE;
 
 public class Optimizer {
 	static final int BLOCK_SIZE = 64 * 1024;
-	static final float WRITE_MULTIPLIER = 2;
+	static final double WRITE_MULTIPLIER = 1.5;
 
 	RobustTree rt;
 	int rtDepth;
@@ -326,6 +326,8 @@ public class Optimizer {
 
 		List<Integer> unmodifiedBuckets = new ArrayList<Integer>();
 
+		boolean printed = false;
+
 		Predicate[] ps = fq.getPredicates();
 		while (nodeStack.size() > 0) {
 			RNode n = nodeStack.removeLast();
@@ -346,6 +348,11 @@ public class Optimizer {
 					r.type = p.type;
 					r.value = p.value;
 					replaceInTree(n, r);
+
+					if (!printed) {
+						System.out.println("Inserted pred: " + p.toString());
+						printed = true;
+					}
 
 					// Give new bucket ids to all nodes below this
 					updateBucketIds(bs);
@@ -509,14 +516,15 @@ public class Optimizer {
 		// If yes, find the number of tuples accessed.
 		double numTuples = 0;
 
-		double lambda = 0.2;
-		int counter = 0;
+//		double lambda = 0.2;
+//		int counter = 0;
 		for (int i = queryWindow.size() - 1; i >= 0; i--) {
 			Query q = queryWindow.get(i);
-			double weight = Math.pow(Math.E, -lambda * counter);
+//			double weight = Math.pow(Math.E, -lambda * counter);
+			double weight = 1.0;
 
 			numTuples += weight * getNumTuplesAccessed(changed, q);
-			counter++;
+//			counter++;
 		}
 
 		return numTuples;

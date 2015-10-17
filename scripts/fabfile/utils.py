@@ -55,6 +55,6 @@ def update_jar():
 @serial
 def update_config():
     global counter
-    put('/Users/anil/Dev/repos/mdindex/conf/cartilage.properties.server', '/home/mdindex/tpch.properties')
-    run('echo "MACHINE_ID = %d" >> /home/mdindex/tpch.properties' % counter)
+    put('/Users/anil/Dev/repos/mdindex/conf/cartilage.properties.server', '/home/mdindex/cmt.properties')
+    run('echo "MACHINE_ID = %d" >> /home/mdindex/cmt.properties' % counter)
     counter += 1

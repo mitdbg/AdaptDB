@@ -1,10 +1,7 @@
 package core.index.key;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 import com.google.common.primitives.Ints;
@@ -75,47 +72,22 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 		return -1;
 	}
 
-	public void setBytes(byte[] bytes, int[] offsets) {
-		this.bytes = bytes;
-		this.offset = 0;
-		this.length = bytes.length;
-		if (this.types == null) {
-			this.types = detectTypes(true);
-			attributeOffsets = new int[numAttrs];
-		}
-
-		if (offsets == null) {
-			int previous = 0;
-			int attrIdx = 0;
-			for (int i = offset; i < length; i++) {
-				if (bytes[i] == delimiter) {
-					try {
-						attributeOffsets[attrIdx++] = previous;
-						previous = i + 1;
-					} catch (Exception e) {
-						System.out.println(delimiter + " " + new String(bytes));
-						e.printStackTrace();
-					}
-				}
-			}
-			if (attrIdx < attributeOffsets.length)
-				attributeOffsets[attrIdx] = previous;
-		} else
-			this.attributeOffsets = offsets;
+	public void setBytes(byte[] bytes) {
+		setBytes(bytes, 0, bytes.length);
 	}
 
-	public void setBytes(byte[] bytes) {
+	public void setBytes(byte[] bytes, int offset, int length) {
 		this.bytes = bytes;
-		this.offset = 0;
-		this.length = bytes.length;
+		this.offset = offset;
+		this.length = length;
 		if (this.types == null) {
-			this.types = detectTypes(true);
+			this.types = getTypes(true);
 			attributeOffsets = new int[numAttrs];
 		}
 
-		int previous = 0;
+		int previous = offset;
 		int attrIdx = 0;
-		for (int i = offset; i < length; i++) {
+		for (int i = offset; i < offset + length; i++) {
 			if (bytes[i] == delimiter) {
 				try {
 					attributeOffsets[attrIdx++] = previous;
@@ -130,58 +102,11 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 			attributeOffsets[attrIdx] = previous;
 	}
 
-	public void setBytes(byte[] bytes, int offset, int length, int[] offsets) {
-		this.bytes = bytes;
-		this.offset = offset;
-		this.length = length;
-		if (this.types == null) {
-			this.types = detectTypes(true);
-			attributeOffsets = new int[numAttrs];
-		}
-
-		if (offsets == null) {
-			int previous = offset;
-			int attrIdx = 0;
-			for (int i = offset; i < offset + length; i++) {
-				if (bytes[i] == delimiter) {
-					attributeOffsets[attrIdx++] = previous;
-					previous = i + 1;
-				}
-			}
-			if (attrIdx < attributeOffsets.length)
-				attributeOffsets[attrIdx] = previous;
-		} else
-			this.attributeOffsets = offsets;
-	}
-
-	public void setBytes(byte[] bytes, int offset, int length) {
-		this.bytes = bytes;
-		this.offset = offset;
-		this.length = length;
-		if (this.types == null) {
-			this.types = detectTypes(true);
-			attributeOffsets = new int[numAttrs];
-		}
-
-		int previous = offset;
-		int attrIdx = 0;
-		for (int i = offset; i < offset + length; i++) {
-			if (bytes[i] == delimiter) {
-				attributeOffsets[attrIdx++] = previous;
-				previous = i + 1;
-			}
-		}
-		if (attrIdx < attributeOffsets.length)
-			attributeOffsets[attrIdx] = previous;
-	}
-
 	/**
-	 * Extract the types of the relevant attributes (which need to be used as
-	 * keys)
-	 *
+	 * Gets the type information from the Schema provided.
 	 * @return
 	 */
-	public TYPE[] detectTypes(boolean skipNonKey) {
+	public TYPE[] getTypes(boolean skipNonKey) {
 		if (this.types != null) {
 			if (keyAttrIdx == null) {
 				keyAttrIdx = new int[this.types.length];
@@ -190,16 +115,14 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 			}
 			return this.types;
 		}
+
 		List<TYPE> types = new ArrayList<TYPE>();
 
 		numAttrs = 0;
 		String[] tokens = new String(bytes, offset, length).split("\\"
 				+ delimiter);
-		for (int i = 0; i < tokens.length; i++) {
-			String t = tokens[i].trim();
-			if (t.equals(""))
-				continue;
 
+		for (int i = 0; i < tokens.length; i++) {
 			numAttrs++;
 
 			// TODO: Check if this should be i or numAttrs below.
@@ -216,11 +139,7 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 				keyAttrIdx[i] = i;
 		}
 
-		TYPE[] typeArr = new TYPE[types.size()];
-		for (int i = 0; i < types.size(); i++)
-			typeArr[i] = types.get(i);
-
-		return typeArr;
+		return types.toArray(new TYPE[types.size()]);
 	}
 
 	@Override
@@ -379,20 +298,14 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 		return ret;
 	}
 
-	public Date getGenericDateAttribute(int index, String format) {
-		index = keyAttrIdx[index];
-		SimpleDateFormat sdf = new SimpleDateFormat(format);
-		try {
-			return sdf.parse(getStringAttribute(index, 100));
-		} catch (ParseException e) {
-			throw new RuntimeException("could not parse date");
-		}
-	}
-
+	/*
+	 * Parse date assuming the format: "yyyy-MM-dd".
+	 * Skips anything after that.
+	 */
 	@Override
 	public SimpleDate getDateAttribute(int index) {
 		index = keyAttrIdx[index];
-		// parse date assuming the format: "yyyy-MM-dd"
+
 		int off = attributeOffsets[index];
 		int year = 1000 * (bytes[off] - '0') + 100 * (bytes[off + 1] - '0')
 				+ 10 * (bytes[off + 2] - '0') + (bytes[off + 3] - '0');

@@ -1,11 +1,10 @@
 package core.index.key;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import junit.framework.TestCase;
-import core.utils.TypeUtils.*;
+import core.utils.TypeUtils.SimpleDate;
+import core.utils.TypeUtils.TYPE;
 
 public class TestCartilageIndexKey extends TestCase {
 
@@ -16,6 +15,7 @@ public class TestCartilageIndexKey extends TestCase {
 
 	public static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
+	@Override
 	public void setUp() {
 		tuple1 = "1|1552|93|1|17|24710.35|0.04|0.02|N|O|1996-03-13|1996-02-12|1996-03-22|DELIVER IN PERSON|TRUCK|egular courts above the";
 		types = new TYPE[] { TYPE.INT, TYPE.INT, TYPE.INT, TYPE.INT, TYPE.INT,
@@ -97,16 +97,7 @@ public class TestCartilageIndexKey extends TestCase {
 		assertEquals(d, key.getDateAttribute(10));
 	}
 
-	public void testGetDateGenericAttribute() {
-		key.setBytes(tuple1.getBytes());
-		try {
-			Date d = sdf.parse(tuple1.split("\\|")[10]);
-			assertEquals(d, key.getGenericDateAttribute(10, "yyyy-MM-dd"));
-		} catch (ParseException e) {
-			throw new RuntimeException("could not parse date");
-		}
-	}
-
+	@Override
 	public void tearDown() {
 	}
 }

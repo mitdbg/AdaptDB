@@ -1,18 +1,18 @@
 from fabric.api import *
 from env_setup import *
 
-@parallel
+@roles('master')
 def run_tpch_queries():
     with cd(env.conf['HADOOPBIN']):
+        # submit_script_path = "/home/mdindex/spark-1.3.1-bin-hadoop2.6/bin/spark-submit"
         submit_script_path = "/Users/anil/Dev/tools/spark-1.3.1-bin-hadoop2.6/bin/spark-submit"
-        #cmd = './hadoop jar $JAR perf.benchmark.TPCHWorkload ' + \
-        cmd = submit_script_path + ' --class perf.benchmark.TPCHWorkload --deploy-mode client --master spark://bits:7077 $JAR ' + \
+        cmd = submit_script_path + ' --class perf.benchmark.TPCHWorkload --deploy-mode client --master spark://128.30.77.88:7077 $JAR ' + \
             ' --conf $CONF' + \
-            ' --numQueries 6' + \
+            ' --numQueries 100' + \
             ' --schema "$SCHEMA"'  + \
             ' --numFields $NUMFIELDS' + \
             ' --numTuples $NUMTUPLES' + \
-            ' --method 1 '
+            ' --method 1 > ~/logs/tpch_workload.log'
         cmd = fill_cmd(cmd)
         run(cmd)
 

@@ -54,7 +54,7 @@ public class KDDTree implements MDIndex {
 	}
 
 	void initializeDimensions(CartilageIndexKey key) {
-		dimensionTypes = key.detectTypes(true);
+		dimensionTypes = key.getTypes(true);
 		int numDimensions = dimensionTypes.length;
 		int[] keys = key.getKeys();
 

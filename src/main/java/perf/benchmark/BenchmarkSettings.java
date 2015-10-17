@@ -20,7 +20,8 @@ public class BenchmarkSettings {
 				counter += 2;
 				break;
 			case "--delimiter":
-				Globals.DELIMITER = args[counter + 1].charAt(0);
+				Globals.DELIMITER = args[counter + 1].trim().charAt(0);
+				counter += 2;
 				break;
 			default:
 				// Something we don't use

@@ -17,6 +17,7 @@ def bulk_sample_gen():
             ' --method 1 ' + \
             ' --numReplicas 1' + \
             ' --samplingRate $SAMPLINGRATE' + \
+            ' --delimiter $DELIMITER' + \
             ' --schema "$SCHEMA"'  + \
             ' --numFields $NUMFIELDS' + \
             ' --numTuples $NUMTUPLES' + \
@@ -35,6 +36,7 @@ def create_robust_tree():
             ' --method 2 ' + \
             ' --numReplicas 1' + \
             ' --numBuckets $NUMBUCKETS' + \
+            ' --delimiter $DELIMITER' + \
             ' --schema "$SCHEMA"'  + \
             ' --numFields $NUMFIELDS' + \
             ' --numTuples $NUMTUPLES' + \
@@ -52,6 +54,7 @@ def create_robust_tree_per_replica():
             ' --method 3 ' + \
             ' --numReplicas 3' + \
             ' --numBuckets $NUMBUCKETS' + \
+            ' --delimiter $DELIMITER' + \
             ' --schema "$SCHEMA"'  + \
             ' --numFields $NUMFIELDS' + \
             ' --numTuples $NUMTUPLES' + \
@@ -69,6 +72,7 @@ def write_partitions():
             ' --method 4 ' + \
             ' --numReplicas 1' + \
             ' --numBuckets $NUMBUCKETS' + \
+            ' --delimiter $DELIMITER' + \
             ' --schema "$SCHEMA"'  + \
             ' --numFields $NUMFIELDS' + \
             ' --numTuples $NUMTUPLES' + \

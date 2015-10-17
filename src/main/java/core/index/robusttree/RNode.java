@@ -181,6 +181,14 @@ public class RNode {
 				}
 			}
 
+			if (ret == null) {
+				String nStr = String.format("n %d %s %s\n", attribute,
+						type.toString(),
+						TypeUtils.serializeValue(value, type));
+				System.out.println("ERR:" + goLeft + " " + goRight);
+				System.out.println("ERR: " + nStr);
+			}
+
 			return ret;
 		} else {
 			List<RNode> ret = new LinkedList<RNode>();

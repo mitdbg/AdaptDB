@@ -16,8 +16,8 @@ import core.access.AccessMethod;
 import core.access.AccessMethod.PartitionSplit;
 import core.access.Predicate;
 import core.access.Query.FilterQuery;
-import core.access.iterator.DistributedRepartitionIterator;
 import core.access.iterator.PostFilterIterator;
+import core.access.iterator.RepartitionIterator;
 
 public class HPInput {
 
@@ -51,7 +51,7 @@ public class HPInput {
 	public PartitionSplit[] getRepartitionScan(Predicate... predicates) {
 		return new PartitionSplit[] { new PartitionSplit(
 				Ints.toArray(partitionIdFileMap.keySet()),
-				new DistributedRepartitionIterator(new FilterQuery(predicates,
+				new RepartitionIterator(new FilterQuery(predicates,
 						am.getKey()), am.getIndex().getRoot())) };
 	}
 
