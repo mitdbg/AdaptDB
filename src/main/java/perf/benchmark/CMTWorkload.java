@@ -103,14 +103,14 @@ public class CMTWorkload {
 			System.out.println("INFO: Query:" + q.toString());
 		}
 		
-//		for (FilterQuery q : queries) {
-//			start = System.currentTimeMillis();
-//			long result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(),
-//					q.getPredicates()).count();
-//			end = System.currentTimeMillis();
-//			System.out.println("RES: Time Taken: " + (end - start) + 
-//					"; Result: " + result);
-//		}
+		for (FilterQuery q : queries) {
+			start = System.currentTimeMillis();
+			long result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(),
+					q.getPredicates()).count();
+			end = System.currentTimeMillis();
+			System.out.println("RES: Time Taken: " + (end - start) + 
+					"; Result: " + result);
+		}
 	}
 	
 	public void loadSettings(String[] args) {

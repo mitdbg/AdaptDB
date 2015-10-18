@@ -84,14 +84,14 @@ sf_uploadtime >= '2015-04-01 00:00:00'
 sf_uploadtime >= '2015-04-01 00:00:00'
 sf_uploadtime >= '2015-04-01 00:00:00'
 sf_uploadtime >= '2015-04-01 00:00:00'
-sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_total > 5000
+sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_queue_wait > 500
 sf_uploadtime >= '2015-04-01 00:00:00'
-sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_total < 25000
-sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_total < 25000
-sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_total < 25000;mh_timing_total >= 0
-sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_total < 25000;mh_timing_total >= 0
-sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_total < 25000;mh_timing_total >= 0
-sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_total < 25000;mh_timing_total >= 0
+sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_queue_wait <= 250
+sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_queue_wait <= 250
+sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_queue_wait <= 250;mh_timing_queue_wait > 0
+sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_queue_wait <= 250;mh_timing_queue_wait > 0
+sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_queue_wait <= 250;mh_timing_queue_wait > 0
+sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_queue_wait <= 250;mh_timing_queue_wait > 0
 sf_uploadtime >= '2015-04-20 00:00:00'
 sf_uploadtime >= '2015-04-20 00:00:00'
 sf_uploadtime >= '2015-04-15 00:00:00'
@@ -104,4 +104,3 @@ sf_uploadtime > '2014-04-15 00:00:00'
 sf_uploadtime > '2014-04-15 00:00:00'
 sf_uploadtime > '2014-04-15 00:00:00'
 sf_uploadtime > '2014-04-15 00:00:00'
-
