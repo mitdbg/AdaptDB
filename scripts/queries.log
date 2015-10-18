@@ -1,0 +1,107 @@
+mh_trip_start > '2015-03-01'
+mh_trip_start > '2015-03-01';sf_companyid = 41
+mh_trip_start > '2015-03-01';sf_companyid = 40
+mh_trip_start > '2015-03-01';sf_companyid = 41
+mh_trip_start > '2015-03-01';sf_companyid = 45
+mh_trip_start > '2015-03-01';sf_companyid = 45
+mh_trip_start > '2015-03-01';sf_companyid = 41
+mh_trip_start > '2015-03-01';sf_companyid = 45
+mh_trip_start > '2015-03-01';sf_companyid = 45
+mh_trip_start > '2015-03-01';sf_companyid = 45
+mh_trip_start > '2015-03-01';sf_companyid = 45
+mh_trip_start > '2015-03-01';sf_companyid = 45
+sf_uploadtime > '2015-05-01';sf_companyid = 6
+sf_uploadtime > '2015-06-15';sf_companyid = 6
+sf_uploadtime > '2015-06-15';sf_companyid = 6
+sf_uploadtime > '2015-06-15';sf_companyid = 6;mh_hide <= 'f'
+sf_uploadtime > '2015-06-15';sf_companyid = 6;mh_hide <= 'f'
+sf_uploadtime > '2015-06-15';sf_companyid = 6;mh_hide <= 'f'
+sf_tag_mac_address = 'e4:8c:0f:00:0b:96'
+mh_build_version = 'v4.13.2';mh_trip_start > '2015-08-17';sf_companyid = 6
+sf_state = 4
+sf_state = 4;sf_uploadtime >= '2015-08-12';mh_uploadtime >= '2015-08-17'
+sf_companyid = 6;mh_trip_start > '2015-08-18';sf_id > 10000000
+sf_companyid = 28;mh_trip_start > '2015-08-01';mh_distance_gps_km > 1
+mh_trip_start > '2015-03-01'
+sf_companyid = 6;mh_trip_start >= '2015-06-30';mh_trip_start < '2015-07-31'
+mh_build_version = 'v4.12.4'
+mh_trip_start > '2015-07-01 00:00:00'
+mh_trip_start > '2015-07-01 00:00:00'
+sf_companyid = 30
+sf_companyid = 41;mh_hide <= 'f'
+sf_companyid = 41;mh_raw_sampling_mode <= 'f'
+sf_companyid = 41;mh_raw_sampling_mode <= 'f';mh_hide <= 'f'
+sf_companyid = 39;mh_hide <= 'f'
+sf_companyid = 1;sf_app_version = '3.1.5'
+sf_companyid = 6;sf_uploadtime > '2015-02-26';sf_uploadtime < '2015-05-27';mh_hide <= 'f'
+sf_companyid = 6;sf_uploadtime > '2015-02-26';sf_uploadtime < '2015-05-27';mh_hide <= 'f'
+sf_companyid = 6;sf_uploadtime > '2015-02-26';sf_uploadtime < '2015-05-27';mh_hide <= 'f'
+mh_recording_start > '2015-07-05'
+mh_recording_start > '2015-07-05'
+sf_hardware_manufacturer = 'samsung'
+sf_hardware_manufacturer = 'samsung'
+sf_hardware_manufacturer = 'samsung'
+mh_recording_start > '2015-04-20 00:00:00';mh_recording_start < '2015-05-21 00:00:00'
+mh_recording_start > '2015-04-20 00:00:00';mh_recording_start < '2015-05-21 00:00:00'
+mh_recording_start > '2015-04-20 00:00:00';mh_recording_start < '2015-05-21 00:00:00'
+mh_recording_start > '2015-04-20 17:00:00';mh_recording_start < '2015-05-20 19:00:00'
+mh_recording_start > '2015-04-20 17:00:00';mh_recording_start < '2015-05-20 19:00:00'
+mh_recording_start > '2015-04-20 00:00:00';mh_recording_start > '2015-05-21 00:00:00'
+mh_recording_start > '2015-04-20 00:00:00';mh_recording_start < '2015-05-21 00:00:00'
+mh_recording_start > '2015-04-20 17:00:00';mh_recording_start < '2015-05-20 19:00:00'
+mh_recording_start > '2015-04-20 17:00:00';mh_recording_start < '2015-05-20 19:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_total > 5000
+sf_uploadtime >= '2015-04-01 00:00:00'
+sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_total < 25000
+sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_total < 25000
+sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_total < 25000;mh_timing_total >= 0
+sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_total < 25000;mh_timing_total >= 0
+sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_total < 25000;mh_timing_total >= 0
+sf_uploadtime >= '2015-04-01 00:00:00';mh_timing_total < 25000;mh_timing_total >= 0
+sf_uploadtime >= '2015-04-20 00:00:00'
+sf_uploadtime >= '2015-04-20 00:00:00'
+sf_uploadtime >= '2015-04-15 00:00:00'
+sf_uploadtime > '2014-04-15 00:00:00'
+sf_uploadtime > '2014-04-15 00:00:00'
+sf_uploadtime > '2014-04-15 00:00:00'
+sf_uploadtime > '2014-04-15 00:00:00'
+sf_uploadtime > '2014-04-15 00:00:00'
+sf_uploadtime > '2014-04-15 00:00:00'
+sf_uploadtime > '2014-04-15 00:00:00'
+sf_uploadtime > '2014-04-15 00:00:00'
+sf_uploadtime > '2014-04-15 00:00:00'
+

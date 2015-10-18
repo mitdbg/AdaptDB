@@ -209,7 +209,7 @@ public class SparkInputFormat extends
 			// Add to statistics.
 			String iterName = split.getIterator().getClass().getName();
 			Long existingCount = accessSizes.containsKey(iterName) ?
-					accessSizes.get(iterName) : 0;
+					accessSizes.get(iterName) : (long)0;
 			accessSizes.put(iterName, existingCount + splitSize);
 
 			if (splitSize > maxSplitSize) {

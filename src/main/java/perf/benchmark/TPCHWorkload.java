@@ -215,8 +215,8 @@ public class TPCHWorkload {
 			long result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(),
 					q.getPredicates()).count();
 			end = System.currentTimeMillis();
-			System.out.println("RES: Result: " + result);
-			System.out.println("RES: Time Taken: " + (end - start) + " " + result);
+			System.out.println("RES: Time Taken: " + (end - start) + 
+					"; Result: " + result);
 		}
 	}
 
