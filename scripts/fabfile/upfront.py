@@ -44,6 +44,25 @@ def create_robust_tree():
         cmd = fill_cmd(cmd)
         run(cmd)
 
+@roles('master')
+def write_out_sample():
+    global conf
+    with cd(env.conf['HADOOPBIN']):
+        cmd = './hadoop jar $JAR perf.benchmark.RunIndexBuilder ' + \
+            ' --conf $CONF' + \
+            ' --inputsDir $INPUTSDIR' + \
+            ' --samplesDir $HDFSDIRsamples/' + \
+            ' --method 6 ' + \
+            ' --numReplicas 1' + \
+            ' --numBuckets $NUMBUCKETS' + \
+            ' --delimiter $DELIMITER' + \
+            ' --schema "$SCHEMA"'  + \
+            ' --numFields $NUMFIELDS' + \
+            ' --numTuples $NUMTUPLES' + \
+            ' > ~/logs/write_sample.log'
+        cmd = fill_cmd(cmd)
+        run(cmd)
+
 @parallel
 def create_robust_tree_per_replica():
     with cd(env.conf['HADOOPBIN']):

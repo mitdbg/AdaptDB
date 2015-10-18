@@ -401,16 +401,13 @@ public class ParsedTupleList {
 	public byte[] marshall() {
 		List<byte[]> byteArrays = Lists.newArrayList();
 
-		byteArrays.add(Joiner.on("|").join(types).getBytes());
-		byteArrays.add(new byte[] { '\n' });
-
 		int initialSize = sampleSize * 100; // assumption: each record could be
 											// of max size 100 bytes
 		byte[] recordBytes = new byte[initialSize];
 
 		int offset = 0;
 		for (Object[] v : values) {
-			byte[] vBytes = Joiner.on("|").join(v).getBytes();
+			byte[] vBytes = Joiner.on(Globals.DELIMITER).join(v).getBytes();
 			if (offset + vBytes.length + 1 > recordBytes.length) {
 				byteArrays.add(BinaryUtils.resize(recordBytes, offset));
 				recordBytes = new byte[initialSize];

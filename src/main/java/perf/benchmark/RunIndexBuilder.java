@@ -260,6 +260,21 @@ public class RunIndexBuilder {
 				numReplicas);
 	}
 
+	/**
+	 * Creates num_replicas robust trees. As a side effect reads all the sample
+	 * files from the samples dir and writes it out WORKING_DIR/sample
+	 *
+	 * @param tpchSize
+	 */
+	public void writeOutSampleFile() {
+		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
+				+ "/etc/hadoop/core-site.xml");
+
+		// Write out the combined sample file.
+		ParsedTupleList sample = readSampleFiles();
+		writeOutSample(fs, sample);
+	}	
+	
 	public void writePartitionsFromIndex() {
 		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
 				+ "/etc/hadoop/core-site.xml");
@@ -389,6 +404,9 @@ public class RunIndexBuilder {
 					+ Runtime.getRuntime().freeMemory() + " "
 					+ Runtime.getRuntime().totalMemory() + " "
 					+ Runtime.getRuntime().maxMemory());
+			break;
+		case 6:
+			t.writeOutSampleFile();
 			break;
 		default:
 			System.out.println("Unknown method " + t.method + " chosen");
