@@ -32,7 +32,7 @@ public class Partition implements Cloneable, Serializable {
 
 	/**
 	 * Create an existing partition object.
-	 * 
+	 *
 	 * @param pathAndPartitionId
 	 */
 	public Partition(String pathAndPartitionId) {
@@ -86,7 +86,7 @@ public class Partition implements Cloneable, Serializable {
 	}
 
 	public void write(byte[] source, int offset, int length) {
-		if (this.offset + length >= bytes.length) {
+		while (this.offset + length >= bytes.length) {
 			if (bytes.length >= V_MAX_INT) {
 				store(true);
 				this.offset = 0;

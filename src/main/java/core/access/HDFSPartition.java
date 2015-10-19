@@ -68,7 +68,7 @@ public class HDFSPartition extends Partition {
 				.replaceAll("partitions[0-9]*/$", "repartition/");
 		Partition p = new HDFSPartition(hdfs, clonePath + partitionId, replication, client);
 		// p.bytes = new byte[bytes.length]; // heap space!
-		p.bytes = new byte[1024];
+		p.bytes = new byte[8192];
 		p.state = State.NEW;
 		return p;
 	}

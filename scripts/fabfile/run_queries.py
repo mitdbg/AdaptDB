@@ -19,9 +19,9 @@ def run_tpch_queries():
 @roles('master')
 def run_cmt_queries():
     with cd(env.conf['HADOOPBIN']):
-        # submit_script_path = "/home/mdindex/spark-1.3.1-bin-hadoop2.6/bin/spark-submit"
-        submit_script_path = "/Users/anil/Dev/tools/spark-1.3.1-bin-hadoop2.6/bin/spark-submit"
-        cmd = submit_script_path + ' --class perf.benchmark.CMTWorkload --deploy-mode client --master spark://Anils-MacBook-Pro.local:7077 $JAR ' + \
+        submit_script_path = "/home/mdindex/spark-1.3.1-bin-hadoop2.6/bin/spark-submit"
+        # submit_script_path = "/Users/anil/Dev/tools/spark-1.3.1-bin-hadoop2.6/bin/spark-submit"
+        cmd = submit_script_path + ' --class perf.benchmark.CMTWorkload --deploy-mode client --master spark://128.30.77.88:7077 $JAR ' + \
             ' --conf $CONF' + \
             ' --schema "$SCHEMA"'  + \
             ' --numFields $NUMFIELDS' + \
