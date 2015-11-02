@@ -2,22 +2,37 @@ package core.globals;
 
 import org.apache.hadoop.fs.FileSystem;
 
+import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 
+/**
+ * Global configuration options. 
+ * Always needs to be initialized. 
+ * Either done by explicitly initializing the parameters or by using load.
+ * @author anil
+ *
+ */
 public class Globals {
 	// Total number of tuples in dataset.
 	public static double TOTAL_NUM_TUPLES = 0;
 
-	// TPC-H datagen generated files use '|'. CSV uses ','.
+	// TPC-H generated files use '|'. CSV uses ','.
 	public static char DELIMITER = '|';
 
-	// Schema of dataset.
+	// Schema of data set.
 	public static Schema schema = null;
+	
+	// Zookeeper hosts.
+	public static String zookeeperHosts = "";
 
+	// ConfUtils
+	public static ConfUtils conf = null;
+	
 	public static void save(String hdfsPath, short replication, FileSystem fs) {
 		String saveContent = "TOTAL_NUM_TUPLES: " + TOTAL_NUM_TUPLES + "\n" +
 				"DELIMITER: "  + DELIMITER + "\n" +
-				"SCHEMA: " + schema.toString();
+				"SCHEMA: " + schema.toString() + "\n" + 
+				"ZOOKEEPERHOSTS: " + zookeeperHosts;
 		byte[] saveContentBytes = saveContent.getBytes();
 		HDFSUtils.writeFile(fs, hdfsPath, replication,
 				saveContentBytes, 0, saveContentBytes.length, false);
@@ -43,9 +58,16 @@ public class Globals {
 			case "SCHEMA":
 				schema = Schema.createSchema(parts[1].trim());
 				break;
+			case "ZOOKEEPERHOSTS":
+				zookeeperHosts = parts[1].trim();
+				break;
 			default:
 				System.out.println("Unknown setting found: " + parts[0].trim());
 			}
 		}
+	}
+	
+	public static void loadConf(String propertiesFile) {
+		conf = new ConfUtils(propertiesFile);
 	}
 }

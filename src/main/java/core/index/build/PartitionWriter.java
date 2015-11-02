@@ -57,15 +57,7 @@ public abstract class PartitionWriter implements Cloneable {
 		try {
 			b.write(bytes, b_offset, b_length);
 			b.write('\n');
-
-			// update the counters
-			MutableInt count = partitionRecordCount.get(partitionId);
-			if (count == null)
-				partitionRecordCount.put(partitionId, new MutableInt());
-			else
-				count.increment();
 			writingTime += System.nanoTime() - start;
-
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

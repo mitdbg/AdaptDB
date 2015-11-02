@@ -2,9 +2,10 @@ confs = {
     # Local lineitem
     "local_lineitem" : {
         'JAR' : '/Users/anil/Dev/repos/mdindex/build/libs/mdindex-all.jar',
-        'CONF' : '/Users/anil/Dev/repos/mdindex/conf/lineitem.properties',
+        'CONF' : '/Users/anil/Dev/repos/mdindex/conf/main.properties',
         'INPUTSDIR' : '/Users/anil/Dev/repos/tpch-dbgen/lineitem1/',
-        'HDFSDIR' : '/user/mdindex/lineitem1/',
+        'HDFSDIR' : '/user/mdindex/lineitem/',
+        'TABLENAME': 'lineitem',
         'HOMEDIR' : '/Users/anil/',
         'HADOOPBIN' : '/Users/anil/Dev/tools/hadoop-2.6.0/bin/',
         'SAMPLINGRATE' : '0.1',
@@ -15,7 +16,7 @@ confs = {
         'SCHEMA': 'l_orderkey long, l_partkey int, l_suppkey int, l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, l_tax double, l_returnflag string,  l_linestatus string, l_shipdate date, l_commitdate date, l_receiptdate date, l_shipinstruct string, l_shipmode string, l_comment string',
         'USER': 'anil',
         'HOSTS': ['localhost'],
-        'ROLEDEFS': { 'master': 'localhost' }
+        'ROLEDEFS': { 'master': ['localhost'] }
     },
     "lineitem": {
         'JAR' : '/data/mdindex/jars/mdindex-all.jar',
@@ -23,6 +24,7 @@ confs = {
         'INPUTSDIR' : '/data/mdindex/lineitem1000/',
         'HDFSDIR' : '/user/mdindex/lineitem1000/',
         'HOMEDIR' : '/home/mdindex/',
+        'TABLENAME' : 'lineitem',
         'HADOOPBIN' : '~/hadoop-2.6.0/bin/',
         'SAMPLINGRATE' : '0.0002',
         'DELIMITER': '|',
@@ -38,7 +40,8 @@ confs = {
         'JAR' : '/Users/anil/Dev/repos/mdindex/build/libs/mdindex-all.jar',
         'CONF' : '/Users/anil/Dev/repos/mdindex/conf/tpch.properties',
         'INPUTSDIR' : '/Users/anil/Dev/repos/tpch-dbgen/tpchd1/',
-        'HDFSDIR' : '/user/mdindex/tpchd1/',
+        'TABLENAME' : 'tpch',
+        'HDFSDIR' : '/user/mdindex/tpch/',
         'HOMEDIR' : '/Users/anil/',
         'HADOOPBIN' : '/Users/anil/Dev/tools/hadoop-2.6.0/bin/',
         'SAMPLINGRATE' : '0.1',
@@ -54,8 +57,9 @@ confs = {
     "tpch": {
         'JAR' : '/data/mdindex/jars/mdindex-all.jar',
         'CONF' : '/home/mdindex/tpch.properties',
-        'INPUTSDIR' : '/data/mdindex/tpchd100/',
-        'HDFSDIR' : '/user/mdindex/tpchd100/',
+        'TABLENAME' : 'tpch',
+        'INPUTSDIR' : '/data/mdindex/tpch/',
+        'HDFSDIR' : '/user/mdindex/tpch/',
         'HOMEDIR' : '/home/mdindex/',
         'HADOOPBIN' : '~/hadoop-2.6.0/bin/',
         'SAMPLINGRATE' : '0.002',

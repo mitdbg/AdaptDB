@@ -22,8 +22,9 @@ import core.utils.HDFSUtils;
 
 /**
  * Builds the index. Captures time taken by the different steps in index
- * building. TODO: Make it generalized by not depending on lineitem. TODO:
- * Compute sampling fraction instead of taking as an option.
+ * building. 
+ * TODO: Make it generalized by not depending on lineitem. 
+ * TODO: Compute sampling fraction instead of taking as an option.
  *
  * @author anil
  *
@@ -34,16 +35,13 @@ public class RunIndexBuilder {
 
 	int partitionBufferSize;
 
-	String localPartitionDir;
-	String hdfsPartitionDir;
-
 	ConfUtils cfg;
 
+	// Table name.
+	String tableName;
+	
 	// Directory on local file system containing the inputs.
 	String inputsDir;
-
-	// Directory in HDFS containing the samples.
-	String samplesDir;
 
 	// Specifies which method should be run.
 	// See 'main' for method numbers.
@@ -63,15 +61,19 @@ public class RunIndexBuilder {
 
 	// Number of fields in the input file.
 	int numFields = -1;
+	
+	// Directory corresponding to table on HDFS.
+	String tableHDFSDir;
 
 	public void setUp() {
 		partitionBufferSize = 2 * 1024 * 1024;
 
 		cfg = new ConfUtils(BenchmarkSettings.conf);
-		hdfsPartitionDir = cfg.getHDFS_WORKING_DIR();
 
 		builder = new IndexBuilder();
 		key = new RawIndexKey(Globals.DELIMITER);
+		
+		tableHDFSDir = cfg.getHDFS_WORKING_DIR() + "/" + tableName;
 	}
 
 	private PartitionWriter getHDFSWriter(String partitionDir, short replication) {
@@ -79,79 +81,12 @@ public class RunIndexBuilder {
 				replication, this.cfg);
 	}
 
-	// public void testWritePartitionsFromRangeIndex(String partitionsId){
-	// AttributeRangeTree index = new AttributeRangeTree(1, TypeUtils.TYPE.INT);
-	// int start = 0;
-	// int range = 200000000;
-	// int numBuckets = 100;
-	// Object[] buckets = new Integer[numBuckets+1];
-	// for (int i = 0; i <= numBuckets; i++) {
-	// buckets[i] = start + (range / numBuckets) * i;
-	// }
-	// index.setBoundaries(buckets);
-	// builder.buildDistributedFromIndex(index,
-	// key,
-	// BenchmarkSettings.pathToDataset,
-	// getHDFSWriter(hdfsPartitionDir + "/partitions" + partitionsId, (short)
-	// replication));
-	// }
-	//
-	// public void testWritePartitionsFromIndexReplicated(String partitionsId){
-	// ConfUtils conf = new ConfUtils(propertiesFile);
-	// FileSystem fs = HDFSUtils.getFS(conf.getHADOOP_HOME() +
-	// "/etc/hadoop/core-site.xml");
-	// MDIndex[] indexes = new MDIndex[replication];
-	// CartilageIndexKey[] keys = new CartilageIndexKey[replication];
-	// PartitionWriter[] writers = new PartitionWriter[replication];
-	// long start = System.nanoTime();
-	// for (int i = 0; i < replication; i++) {
-	// byte[] indexBytes = HDFSUtils.readFile(fs, hdfsPartitionDir + "/" + i +
-	// "/index");
-	// RobustTreeHs index = new RobustTreeHs();
-	// index.unmarshall(indexBytes);
-	// indexes[i] = index;
-	//
-	// String keyString = new String(HDFSUtils.readFile(fs, hdfsPartitionDir +
-	// "/" + i + "/info"));
-	// keys[i] = new CartilageIndexKey(keyString);
-	//
-	// writers[i] = getHDFSWriter(hdfsPartitionDir + "/" + i + "/partitions"+
-	// partitionsId, (short)1);
-	// }
-	// builder.buildDistributedReplicasFromIndex(indexes,
-	// keys,
-	// BenchmarkSettings.pathToDataset,
-	// "orders.tbl.",
-	// writers);
-	// System.out.println("PARTITIONING TOTAL for replica: " +
-	// (System.nanoTime() - start) / 1E9);
-	// }
-	//
-	// public void testBuildReplicatedRobustTree(int scaleFactor, int
-	// numReplicas){
-	// int bucketSize = 64; // 64 mb
-	// int numBuckets = (scaleFactor * 759) / bucketSize + 1;
-	// CuratorFramework client =
-	// CuratorUtils.createAndStartClient(cfg.getZOOKEEPER_HOSTS());
-	// CuratorUtils.deleteAll(client, "/", "partition-");
-	// client.close();
-	// builder.build(samplingRate,
-	// numBuckets,
-	// new RobustTreeHs(),
-	// key,
-	// BenchmarkSettings.pathToDataset,
-	// getHDFSWriter(hdfsPartitionDir, (short) replication),
-	// attributes,
-	// numReplicas
-	// );
-	// }
-
 	/**
 	 * Loads the globals from the /info file.
 	 * Available after the index has been written out to HDFS.
 	 */
 	public void loadGlobals() {
-		Globals.load(cfg.getHDFS_WORKING_DIR() + "/info",
+		Globals.load(tableHDFSDir + "/info",
 				HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()));
 	}
 
@@ -178,8 +113,8 @@ public class RunIndexBuilder {
 				samplingRate,
 				key,
 				inputsDir,
-				cfg.getHDFS_WORKING_DIR() + "/samples/sample."
-						+ cfg.getMACHINE_ID(), fs);
+				tableHDFSDir + "/samples/sample." + cfg.getMACHINE_ID(), 
+				fs);
 	}
 
 	/**
@@ -210,7 +145,6 @@ public class RunIndexBuilder {
 	public void buildRobustTreeFromSamples() {
 		assert numFields != -1;
 		assert numBuckets != -1;
-		assert samplesDir != null;
 
 		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
 				+ "/etc/hadoop/core-site.xml");
@@ -220,7 +154,7 @@ public class RunIndexBuilder {
 		writeOutSample(fs, sample);
 
 		// Write out global settings for this dataset.
-		Globals.save(cfg.getHDFS_WORKING_DIR() + "/info",
+		Globals.save(tableHDFSDir + "/info",
 				cfg.getHDFS_REPLICATION_FACTOR(), fs);
 
 		// Construct the index from the sample.
@@ -229,35 +163,8 @@ public class RunIndexBuilder {
 				sample,
 				numBuckets,
 				index,
-				getHDFSWriter(hdfsPartitionDir,
+				getHDFSWriter(tableHDFSDir,
 						cfg.getHDFS_REPLICATION_FACTOR()));
-	}
-
-	/**
-	 * Creates num_replicas robust trees. As a side effect reads all the sample
-	 * files from the samples dir and writes it out WORKING_DIR/sample
-	 *
-	 * @param tpchSize
-	 */
-	public void buildReplicatedRobustTreeFromSamples() {
-		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
-				+ "/etc/hadoop/core-site.xml");
-
-		// Write out the combined sample file.
-		ParsedTupleList sample = readSampleFiles();
-		writeOutSample(fs, sample);
-
-		// Write out global settings for this dataset.
-		Globals.save(cfg.getHDFS_WORKING_DIR() + "/info",
-				cfg.getHDFS_REPLICATION_FACTOR(), fs);
-
-		builder.buildReplicatedWithSample(
-				sample,
-				numBuckets,
-				key,
-				getHDFSWriter(hdfsPartitionDir,
-						cfg.getHDFS_REPLICATION_FACTOR()), numFields,
-				numReplicas);
 	}
 
 	/**
@@ -278,7 +185,7 @@ public class RunIndexBuilder {
 	public void writePartitionsFromIndex() {
 		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
 				+ "/etc/hadoop/core-site.xml");
-		byte[] indexBytes = HDFSUtils.readFile(fs, hdfsPartitionDir + "/index");
+		byte[] indexBytes = HDFSUtils.readFile(fs, tableHDFSDir + "/index");
 
 		// Just load the index. For this we don't need to load the samples.
 		RobustTree index = new RobustTree();
@@ -291,8 +198,8 @@ public class RunIndexBuilder {
 				key,
 				inputsDir,
 				getHDFSWriter(
-						hdfsPartitionDir + dataDir + "/partitions" + cfg.getMACHINE_ID(),
-						cfg.getHDFS_REPLICATION_FACTOR()));
+					cfg.getHDFS_WORKING_DIR() + "/" + tableName + dataDir,
+					cfg.getHDFS_REPLICATION_FACTOR()));
 	}
 
 	public void loadSettings(String[] args) {
@@ -304,8 +211,8 @@ public class RunIndexBuilder {
 				inputsDir = args[counter + 1];
 				counter += 2;
 				break;
-			case "--samplesDir":
-				samplesDir = args[counter + 1];
+			case "--tableName":
+				tableName = args[counter+1];
 				counter += 2;
 				break;
 			case "--schema":
@@ -351,7 +258,7 @@ public class RunIndexBuilder {
 		ParsedTupleList sample = new ParsedTupleList();
 		try {
 			RemoteIterator<LocatedFileStatus> files = fs.listFiles(new Path(
-					samplesDir), false);
+					tableHDFSDir + "/samples/"), false);
 			while (files.hasNext()) {
 				String path = files.next().getPath().toString();
 				byte[] bytes = HDFSUtils.readFile(fs, path);
@@ -368,8 +275,9 @@ public class RunIndexBuilder {
 	public void writeOutSample(FileSystem fs, ParsedTupleList sample) {
 		byte[] sampleBytes = sample.marshall();
 		OutputStream out = HDFSUtils.getHDFSOutputStream(fs,
-				cfg.getHDFS_WORKING_DIR() + "/sample",
+				tableHDFSDir + "/sample",
 				cfg.getHDFS_REPLICATION_FACTOR(), 50 << 20);
+		
 		try {
 			out.write(sampleBytes);
 			out.flush();
@@ -392,9 +300,6 @@ public class RunIndexBuilder {
 			break;
 		case 2:
 			t.buildRobustTreeFromSamples();
-			break;
-		case 3:
-			t.buildReplicatedRobustTreeFromSamples();
 			break;
 		case 4:
 			t.writePartitionsFromIndex();

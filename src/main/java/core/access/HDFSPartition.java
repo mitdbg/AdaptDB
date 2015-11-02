@@ -14,7 +14,7 @@ import org.apache.hadoop.fs.Path;
 
 import com.google.common.io.ByteStreams;
 
-import core.utils.ConfUtils;
+import core.globals.Globals;
 import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
 
@@ -35,8 +35,7 @@ public class HDFSPartition extends Partition {
 	public HDFSPartition(String pathAndPartitionId, String propertiesFile,
 			short replication) {
 		super(pathAndPartitionId);
-		ConfUtils conf = new ConfUtils(propertiesFile);
-		String coreSitePath = conf.getHADOOP_HOME()
+		String coreSitePath = Globals.conf.getHADOOP_HOME()
 				+ "/etc/hadoop/core-site.xml";
 		Configuration e = new Configuration();
 		e.addResource(new Path(coreSitePath));
@@ -46,7 +45,8 @@ public class HDFSPartition extends Partition {
 		} catch (IOException ex) {
 			throw new RuntimeException("failed to get hdfs filesystem");
 		}
-		client = CuratorUtils.createAndStartClient(conf.getZOOKEEPER_HOSTS());
+		client = CuratorUtils.createAndStartClient(
+				Globals.conf.getZOOKEEPER_HOSTS());
 	}
 
 	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId,
@@ -57,16 +57,9 @@ public class HDFSPartition extends Partition {
 		this.client = client;
 	}
 
-//	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId,
-//			CuratorFramework client) {
-//		this(hdfs, pathAndPartitionId, (short) 1, client);
-//	}
-
 	@Override
 	public Partition clone() {
-		String clonePath = path
-				.replaceAll("partitions[0-9]*/$", "repartition/");
-		Partition p = new HDFSPartition(hdfs, clonePath + partitionId, replication, client);
+		Partition p = new HDFSPartition(hdfs, path + partitionId, replication, client);
 		// p.bytes = new byte[bytes.length]; // heap space!
 		p.bytes = new byte[8192];
 		p.state = State.NEW;
@@ -76,17 +69,6 @@ public class HDFSPartition extends Partition {
 	public FileSystem getFS() {
 		return hdfs;
 	}
-
-	// public Partition createChild(int childId){
-	// Partition p = new HDFSPartition(path+"_"+childId, propertiesFile,
-	// replication);
-	// p.bytes = new byte[bytes.length]; // child cannot have more bytes than
-	// parent
-	// //p.bytes = new byte[8*1024*1024]; // child cannot have more than 8m
-	// bytes
-	// p.state = State.NEW;
-	// return p;
-	// }
 
 	public boolean loadNext() {
 		try {
@@ -160,10 +142,8 @@ public class HDFSPartition extends Partition {
 	public void store(boolean append) {
 		InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client,
 				"/partition-lock-" + path.hashCode() + "-" + partitionId);
-		// lock.acquire(partitionId);
 		System.out.println("LOCK: acquired lock,  " + "path=" + path
 				+ " , partition id=" + partitionId);
-//		MDIndex.BucketCounts c = new MDIndex.BucketCounts(client);
 
 		try {
 			// String storePath = FilenameUtils.getFullPath(path) +
