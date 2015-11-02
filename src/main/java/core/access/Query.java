@@ -10,8 +10,8 @@ import org.apache.hadoop.io.Text;
 import com.google.common.base.Joiner;
 
 import core.access.iterator.IteratorRecord;
-import core.index.key.CartilageIndexKey;
-import core.index.robusttree.Globals;
+import core.globals.Globals;
+import core.key.RawIndexKey;
 
 public class Query implements Serializable {
 	private static final long serialVersionUID = 1L;
@@ -19,7 +19,7 @@ public class Query implements Serializable {
 	private static final String EMPTY = "empty";
 
 	protected Predicate[] predicates;
-	protected CartilageIndexKey key;
+	protected RawIndexKey key;
 
 	public Predicate[] getPredicates() {
 		return this.predicates;
@@ -44,7 +44,7 @@ public class Query implements Serializable {
 			for (int i = 0; i < predicates.length; i++)
 				predicates[i] = new Predicate(tokens[i]);
 		}
-		key = new CartilageIndexKey(Text.readString(in));
+		key = new RawIndexKey(Text.readString(in));
 	}
 
 	public static class FilterQuery extends Query implements Serializable {
@@ -52,7 +52,7 @@ public class Query implements Serializable {
 
 		public FilterQuery() {
 			this.predicates = null;
-			key = new CartilageIndexKey(Globals.DELIMITER);
+			key = new RawIndexKey(Globals.DELIMITER);
 		}
 
 		public FilterQuery(String predString) {
@@ -63,13 +63,13 @@ public class Query implements Serializable {
 			}
 		}
 
-		public FilterQuery(Predicate[] predicates, CartilageIndexKey key) {
+		public FilterQuery(Predicate[] predicates, RawIndexKey key) {
 			this.predicates = predicates;
 			this.key = key;
 		}
 
 		public FilterQuery(Predicate[] predicates) {
-			this(predicates, new CartilageIndexKey(Globals.DELIMITER));
+			this(predicates, new RawIndexKey(Globals.DELIMITER));
 		}
 
 		public boolean qualifies(IteratorRecord record) {

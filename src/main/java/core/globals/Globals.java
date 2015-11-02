@@ -1,8 +1,7 @@
-package core.index.robusttree;
+package core.globals;
 
 import org.apache.hadoop.fs.FileSystem;
 
-import core.index.key.Schema;
 import core.utils.HDFSUtils;
 
 public class Globals {

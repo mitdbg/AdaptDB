@@ -1,4 +1,4 @@
-package core.index.key;
+package core.key;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -6,11 +6,11 @@ import java.util.List;
 
 import com.google.common.primitives.Ints;
 
-import core.index.robusttree.Globals;
+import core.globals.Globals;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 
-public class CartilageIndexKey implements MDIndexKey, Cloneable {
+public class RawIndexKey implements Cloneable {
 
 	private SimpleDate dummyDate = new SimpleDate(0, 0, 0);
 
@@ -24,17 +24,17 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 	protected char delimiter;
 	protected int[] keyAttrIdx;
 
-	public CartilageIndexKey(char delimiter) {
+	public RawIndexKey(char delimiter) {
 		this.delimiter = delimiter;
 	}
 
-	public CartilageIndexKey(char delimiter, int[] keyAttrIdx) {
+	public RawIndexKey(char delimiter, int[] keyAttrIdx) {
 		this.delimiter = delimiter;
 		this.keyAttrIdx = Arrays.copyOf(keyAttrIdx, keyAttrIdx.length);
 		Arrays.sort(this.keyAttrIdx);
 	}
 
-	public CartilageIndexKey(String keyString) {
+	public RawIndexKey(String keyString) {
 		String[] tokens = keyString.trim().split(",");
 		this.delimiter = tokens[0].charAt(0);
 		if (tokens.length > 1) {
@@ -46,8 +46,8 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 	}
 
 	@Override
-	public CartilageIndexKey clone() throws CloneNotSupportedException {
-		CartilageIndexKey k = (CartilageIndexKey) super.clone();
+	public RawIndexKey clone() throws CloneNotSupportedException {
+		RawIndexKey k = (RawIndexKey) super.clone();
 		k.dummyDate = new SimpleDate(0, 0, 0);
 		return k;
 	}
@@ -142,12 +142,10 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 		return types.toArray(new TYPE[types.size()]);
 	}
 
-	@Override
 	public String getKeyString() {
 		return new String(bytes, offset, length);
 	}
 
-	@Override
 	public String getStringAttribute(int index, int maxSize) {
 		index = keyAttrIdx[index];
 		int off = attributeOffsets[index];
@@ -160,7 +158,6 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 		return new String(bytes, off, Math.min(strSize, maxSize));
 	}
 
-	@Override
 	public int getIntAttribute(int index) {
 		index = keyAttrIdx[index];
 		int off = attributeOffsets[index];
@@ -187,7 +184,6 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 		return sign * num;
 	}
 
-	@Override
 	public long getLongAttribute(int index) {
 		index = keyAttrIdx[index];
 		int off = attributeOffsets[index];
@@ -214,7 +210,6 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 		return sign * num;
 	}
 
-	@Override
 	public float getFloatAttribute(int index) {
 		index = keyAttrIdx[index];
 		int off = attributeOffsets[index];
@@ -256,7 +251,6 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 		return ret;
 	}
 
-	@Override
 	public double getDoubleAttribute(int index) {
 		index = keyAttrIdx[index];
 		int off = attributeOffsets[index];
@@ -302,7 +296,6 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 	 * Parse date assuming the format: "yyyy-MM-dd".
 	 * Skips anything after that.
 	 */
-	@Override
 	public SimpleDate getDateAttribute(int index) {
 		index = keyAttrIdx[index];
 
@@ -353,12 +346,6 @@ public class CartilageIndexKey implements MDIndexKey, Cloneable {
 		else
 			throw new RuntimeException("Cannot parse the boolean attribute: "
 					+ bytes[off]);
-	}
-
-	@Override
-	public void setTuple(Object tuple) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override

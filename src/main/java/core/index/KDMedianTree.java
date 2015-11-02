@@ -1,27 +1,31 @@
-package core.index.kdtree;
+package core.index;
 
-import core.index.MDIndex;
-import core.index.key.CartilageIndexKey;
-import core.index.key.ParsedTupleList;
-import core.index.key.MDIndexKey;
+import core.key.RawIndexKey;
+import core.key.ParsedTupleList;
 import core.utils.Pair;
+import core.utils.TypeUtils.TYPE;
 
 import java.util.*;
 
 /**
  * Created by qui on 2/19/15.
  */
-public class KDMedianTree extends KDDTree implements MDIndex {
+public class KDMedianTree implements MDIndex {
 
 	private List<ParsedTupleList> buckets;
 	private double samplingRate;
+	TYPE[] dimensionTypes;
+	int[] attrOrder;
+	Map<Integer, Integer> nextAttrIdx = new HashMap<Integer, Integer>();
+	int maxBuckets;
+	KDNode root;
 
 	public KDMedianTree(double samplingRate) {
 		this(samplingRate, null);
 	}
 
 	public KDMedianTree(double samplingRate, int[] attrs) {
-		super(attrs);
+		this.attrOrder = attrs;
 		this.samplingRate = samplingRate;
 	}
 
@@ -34,14 +38,14 @@ public class KDMedianTree extends KDDTree implements MDIndex {
 	public void initBuild(int numBuckets) {
 		int numLevels = (int) Math.ceil(Math.log(numBuckets) / Math.log(2));
 		int numBucketsEven = (int) Math.pow(2, numLevels);
-		super.initBuild(numBucketsEven);
+		this.maxBuckets = numBucketsEven;
+		this.root = new KDNode();
 		buckets = new ArrayList<ParsedTupleList>();
 		buckets.add(new ParsedTupleList());
 	}
 
-	@Override
-	public void insert(MDIndexKey key) {
-		CartilageIndexKey k = (CartilageIndexKey) key;
+	public void insert(RawIndexKey key) {
+		RawIndexKey k = (RawIndexKey) key;
 		if (dimensionTypes == null) {
 			initializeDimensions(k);
 		}
@@ -78,11 +82,48 @@ public class KDMedianTree extends KDDTree implements MDIndex {
 						.sortAndSplit(dim);
 				buckets.add(halves.first);
 				buckets.add(halves.second);
-				CartilageIndexKey key = halves.second.iterator().next();
-				super.insert(key);
+				RawIndexKey key = halves.second.iterator().next();
+				this.insert(key);
 				numNodesAdded++;
 			}
 		}
 		return numNodesAdded;
+	}
+
+	void initializeDimensions(RawIndexKey key) {
+		dimensionTypes = key.getTypes(true);
+		int numDimensions = dimensionTypes.length;
+		int[] keys = key.getKeys();
+
+		if (attrOrder == null) {
+			nextAttrIdx.put(-1, 0);
+			for (int i = 0; i < keys.length; i++) {
+				nextAttrIdx.put(i, (i + 1) % numDimensions);
+			}
+		} else {
+			Map<Integer, Integer> keyToIndex = new HashMap<Integer, Integer>();
+			for (int i = 0; i < keys.length; i++) {
+				keyToIndex.put(keys[i], i);
+			}
+			nextAttrIdx.put(-1, keyToIndex.get(attrOrder[0]));
+			for (int i = 0; i < attrOrder.length; i++) {
+				nextAttrIdx.put(keyToIndex.get(attrOrder[i]),
+						keyToIndex.get(attrOrder[(i + 1) % numDimensions]));
+			}
+		}
+	}
+	
+	public Object getBucketId(RawIndexKey key) {
+		return Integer.toString(this.root.getBucketId(key, 1));
+	}
+
+	public byte[] marshall() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public void unmarshall(byte[] bytes) {
+		// TODO Auto-generated method stub
+
 	}
 }

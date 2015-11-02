@@ -9,7 +9,7 @@ import core.access.Partition;
 import core.access.Predicate;
 import core.access.Predicate.PREDTYPE;
 import core.access.Query.FilterQuery;
-import core.index.robusttree.RNode;
+import core.index.RNode;
 import core.utils.TypeUtils.TYPE;
 import junit.framework.TestCase;
 

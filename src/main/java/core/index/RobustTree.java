@@ -1,4 +1,4 @@
-package core.index.robusttree;
+package core.index;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,9 +10,9 @@ import java.util.Random;
 import java.util.Scanner;
 
 import core.access.Predicate;
-import core.index.MDIndex;
-import core.index.key.MDIndexKey;
-import core.index.key.ParsedTupleList;
+import core.globals.Globals;
+import core.key.RawIndexKey;
+import core.key.ParsedTupleList;
 import core.utils.Pair;
 import core.utils.TypeUtils.TYPE;
 
@@ -229,7 +229,7 @@ public class RobustTree implements MDIndex {
 	 * Used in the 2nd phase of upfront to assign each tuple to the right
 	 */
 	@Override
-	public Object getBucketId(MDIndexKey key) {
+	public Object getBucketId(RawIndexKey key) {
 		return root.getBucketId(key);
 	}
 

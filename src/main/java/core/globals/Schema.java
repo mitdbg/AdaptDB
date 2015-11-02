@@ -1,4 +1,4 @@
-package core.index.key;
+package core.globals;
 
 import org.junit.Assert;
 
@@ -14,8 +14,8 @@ public class Schema {
 	public Field[] fields;
 
 	public static class Field {
-		String name;
-		TYPE type;
+		public String name;
+		public TYPE type;
 		int id;
 
 		public static int maxId = 0;

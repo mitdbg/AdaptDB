@@ -17,8 +17,8 @@ import org.apache.spark.api.java.function.PairFunction;
 
 import scala.Tuple2;
 import core.access.iterator.IteratorRecord;
-import core.index.robusttree.RNode;
-import core.index.robusttree.RobustTree;
+import core.index.RNode;
+import core.index.RobustTree;
 import core.utils.HDFSUtils;
 
 public class SparkMapReducePartitioner extends SparkUpfrontPartitioner {

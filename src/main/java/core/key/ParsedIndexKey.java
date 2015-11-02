@@ -1,12 +1,12 @@
-package core.index.key;
+package core.key;
 
 import com.google.common.base.Joiner;
 
-import core.index.robusttree.Globals;
+import core.globals.Globals;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 
-public class ParsedIndexKey extends CartilageIndexKey {
+public class ParsedIndexKey extends RawIndexKey {
 
 	private Object[] values;
 

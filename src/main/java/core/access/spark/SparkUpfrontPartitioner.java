@@ -9,8 +9,8 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 
 import core.access.iterator.DistributedPartitioningIterator;
-import core.index.robusttree.RNode;
-import core.index.robusttree.RobustTree;
+import core.index.RNode;
+import core.index.RobustTree;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 

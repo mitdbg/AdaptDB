@@ -2,7 +2,7 @@ package core.access;
 
 import org.junit.Assert;
 
-import core.index.robusttree.Globals;
+import core.globals.Globals;
 import core.utils.TypeUtils;
 import core.utils.TypeUtils.TYPE;
 

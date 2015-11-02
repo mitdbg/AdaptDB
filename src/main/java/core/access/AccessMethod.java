@@ -3,9 +3,9 @@ package core.access;
 import core.access.iterator.PartitionIterator;
 import core.access.spark.SparkQueryConf;
 import core.adapt.opt.Optimizer;
-import core.index.key.CartilageIndexKey;
-import core.index.robusttree.Globals;
-import core.index.robusttree.RobustTree;
+import core.globals.Globals;
+import core.index.RobustTree;
+import core.key.RawIndexKey;
 import core.utils.HDFSUtils;
 
 /**
@@ -24,7 +24,7 @@ import core.utils.HDFSUtils;
 
 public class AccessMethod {
 	Optimizer opt;
-	CartilageIndexKey key;
+	RawIndexKey key;
 
 	/**
 	 * Initialize hyper-partitioning data access.
@@ -38,7 +38,7 @@ public class AccessMethod {
 		Globals.load(conf.getWorkingDir() + "/info",
 				HDFSUtils.getFSByHadoopHome(conf.getHadoopHome()));
 
-		key = new CartilageIndexKey(Globals.DELIMITER);
+		key = new RawIndexKey(Globals.DELIMITER);
 
 		Predicate[] query = conf.getQuery();
 		opt = new Optimizer(conf);
@@ -52,7 +52,7 @@ public class AccessMethod {
 		return opt.getIndex();
 	}
 
-	public CartilageIndexKey getKey() {
+	public RawIndexKey getKey() {
 		return key;
 	}
 

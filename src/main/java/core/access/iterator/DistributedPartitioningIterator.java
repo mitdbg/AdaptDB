@@ -13,7 +13,7 @@ import org.apache.hadoop.io.Text;
 
 import core.access.HDFSPartition;
 import core.access.Partition;
-import core.index.robusttree.RNode;
+import core.index.RNode;
 
 public class DistributedPartitioningIterator implements Serializable {
 

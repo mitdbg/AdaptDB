@@ -13,9 +13,9 @@ import com.google.common.collect.Maps;
 import com.google.common.primitives.Ints;
 
 import core.index.MDIndex;
-import core.index.key.CartilageIndexKey;
-import core.index.key.ParsedTupleList;
-import core.index.robusttree.RobustTree;
+import core.index.RobustTree;
+import core.key.RawIndexKey;
+import core.key.ParsedTupleList;
 import core.utils.HDFSUtils;
 
 public class IndexBuilder {
@@ -24,7 +24,7 @@ public class IndexBuilder {
 
 	// Reads the files from inputDirectory and samples them using blockSampling.
 	// Writes out the samples to SAMPLES_DIR/sample.machineId.
-	public void blockSampleInput(double samplingRate, CartilageIndexKey key, String inputDirectory,
+	public void blockSampleInput(double samplingRate, RawIndexKey key, String inputDirectory,
 			String outputSamplePath, FileSystem fs) {
 		InputReader r = new InputReader(null, key);
 		File[] files = new File(inputDirectory).listFiles();
@@ -63,7 +63,7 @@ public class IndexBuilder {
 
 	// Given an index that has already been constructed, and a directory of
 	// files to partition, writes out the appropriate partition files.
-	public void buildDistributedFromIndex(MDIndex index, CartilageIndexKey key, String inputDirectory,
+	public void buildDistributedFromIndex(MDIndex index, RawIndexKey key, String inputDirectory,
 			PartitionWriter writer) {
 		InputReader r = new InputReader(index, key);
 		r.firstPass = false;
@@ -81,7 +81,7 @@ public class IndexBuilder {
 	// Given an index that has already been constructed, and a directory of
 	// files to partition, writes out the appropriate partition files.
 	// Multiple index version.
-	public void buildDistributedReplicasFromIndex(MDIndex[] indexes, CartilageIndexKey[] keys, String inputDirectory,
+	public void buildDistributedReplicasFromIndex(MDIndex[] indexes, RawIndexKey[] keys, String inputDirectory,
 			String prefix, PartitionWriter[] writers) {
 		ReplicatedInputReader r = new ReplicatedInputReader(indexes, keys);
 		r.firstPass = false;
@@ -103,7 +103,7 @@ public class IndexBuilder {
 		System.out.println("Index Probe Time = " + time3 + " sec");
 	}
 
-	public void buildReplicatedWithSample(ParsedTupleList sample, int numBuckets, CartilageIndexKey key,
+	public void buildReplicatedWithSample(ParsedTupleList sample, int numBuckets, RawIndexKey key,
 			PartitionWriter writer, int attributes, int replication) {
 		int attrPerReplica = attributes / replication;
 
@@ -116,7 +116,7 @@ public class IndexBuilder {
 		}
 
 		MDIndex[] indexes = new MDIndex[replication];
-		CartilageIndexKey[] keys = new CartilageIndexKey[replication];
+		RawIndexKey[] keys = new RawIndexKey[replication];
 		PartitionWriter[] writers = new PartitionWriter[replication];
 
 		for (int i = 0; i < replication; i++) {

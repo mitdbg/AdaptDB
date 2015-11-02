@@ -1,4 +1,4 @@
-package core.index.robusttree;
+package core.index;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -9,7 +9,7 @@ import java.util.Scanner;
 import core.access.Predicate;
 import core.index.MDIndex.Bucket;
 import core.index.MDIndex.BucketInfo;
-import core.index.key.MDIndexKey;
+import core.key.RawIndexKey;
 import core.utils.TypeUtils;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
@@ -79,13 +79,13 @@ public class RNode {
 		return false;
 	}
 
-	public void setValues(int dimension, TYPE type, MDIndexKey key) {
+	public void setValues(int dimension, TYPE type, RawIndexKey key) {
 		this.attribute = dimension;
 		this.type = type;
 		this.value = getValue(dimension, type, key);
 	}
 
-	private Object getValue(int dimension, TYPE type, MDIndexKey key) {
+	private Object getValue(int dimension, TYPE type, RawIndexKey key) {
 		switch (type) {
 		case INT:
 			return key.getIntAttribute(dimension);
@@ -103,7 +103,7 @@ public class RNode {
 	}
 
 	private int compareKey(Object value, int dimension, TYPE type,
-			MDIndexKey key) {
+			RawIndexKey key) {
 		switch (type) {
 		case INT:
 			return ((Integer) value).compareTo(key.getIntAttribute(dimension));
@@ -122,7 +122,7 @@ public class RNode {
 		}
 	}
 
-	public int getBucketId(MDIndexKey key) {
+	public int getBucketId(RawIndexKey key) {
 		if (this.bucket != null) {
 			return bucket.getBucketId();
 		} else {

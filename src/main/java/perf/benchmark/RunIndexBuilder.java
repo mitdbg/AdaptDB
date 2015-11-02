@@ -9,14 +9,14 @@ import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
 
+import core.globals.Globals;
+import core.globals.Schema;
+import core.index.RobustTree;
 import core.index.build.HDFSPartitionWriter;
 import core.index.build.IndexBuilder;
 import core.index.build.PartitionWriter;
-import core.index.key.CartilageIndexKey;
-import core.index.key.ParsedTupleList;
-import core.index.key.Schema;
-import core.index.robusttree.Globals;
-import core.index.robusttree.RobustTree;
+import core.key.RawIndexKey;
+import core.key.ParsedTupleList;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 
@@ -29,7 +29,7 @@ import core.utils.HDFSUtils;
  *
  */
 public class RunIndexBuilder {
-	CartilageIndexKey key;
+	RawIndexKey key;
 	IndexBuilder builder;
 
 	int partitionBufferSize;
@@ -71,7 +71,7 @@ public class RunIndexBuilder {
 		hdfsPartitionDir = cfg.getHDFS_WORKING_DIR();
 
 		builder = new IndexBuilder();
-		key = new CartilageIndexKey(Globals.DELIMITER);
+		key = new RawIndexKey(Globals.DELIMITER);
 	}
 
 	private PartitionWriter getHDFSWriter(String partitionDir, short replication) {
