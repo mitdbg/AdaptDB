@@ -9,14 +9,14 @@ import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
 
-import core.globals.Globals;
-import core.globals.Schema;
-import core.index.RobustTree;
-import core.index.build.HDFSPartitionWriter;
-import core.index.build.IndexBuilder;
-import core.index.build.PartitionWriter;
-import core.key.RawIndexKey;
-import core.key.ParsedTupleList;
+import core.common.globals.Globals;
+import core.common.globals.Schema;
+import core.common.index.RobustTree;
+import core.common.key.ParsedTupleList;
+import core.common.key.RawIndexKey;
+import core.upfront.build.HDFSPartitionWriter;
+import core.upfront.build.IndexBuilder;
+import core.upfront.build.PartitionWriter;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 

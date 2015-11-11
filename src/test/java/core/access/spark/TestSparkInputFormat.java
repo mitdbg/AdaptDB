@@ -12,9 +12,11 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 
-import core.access.Predicate;
-import core.access.Predicate.PREDTYPE;
-import core.access.iterator.PartitionIterator;
+import core.adapt.Predicate;
+import core.adapt.Predicate.PREDTYPE;
+import core.adapt.iterator.PartitionIterator;
+import core.adapt.spark.SparkInputFormat;
+import core.adapt.spark.SparkQueryConf;
 import core.utils.ConfUtils;
 import core.utils.TypeUtils.*;
 

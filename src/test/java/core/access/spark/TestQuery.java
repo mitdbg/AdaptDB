@@ -2,11 +2,12 @@ package core.access.spark;
 
 import junit.framework.TestCase;
 import perf.benchmark.BenchmarkSettings;
-import core.access.Predicate;
-import core.access.Predicate.PREDTYPE;
-import core.access.Query.FilterQuery;
-import core.access.iterator.PartitionIterator;
-import core.access.iterator.PostFilterIterator;
+import core.adapt.Predicate;
+import core.adapt.Predicate.PREDTYPE;
+import core.adapt.Query.FilterQuery;
+import core.adapt.iterator.PartitionIterator;
+import core.adapt.iterator.PostFilterIterator;
+import core.adapt.spark.SparkQuery;
 import core.utils.ConfUtils;
 import core.utils.TypeUtils.*;
 

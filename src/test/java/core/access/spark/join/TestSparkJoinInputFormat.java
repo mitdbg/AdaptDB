@@ -1,6 +1,7 @@
 package core.access.spark.join;
 
-import core.access.spark.SparkQueryConf;
+import core.adapt.spark.SparkQueryConf;
+import core.join.SparkJoinInputFormat;
 import core.utils.ConfUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputSplit;

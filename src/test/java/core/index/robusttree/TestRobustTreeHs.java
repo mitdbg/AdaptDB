@@ -8,8 +8,8 @@ import junit.framework.TestCase;
 import org.apache.hadoop.fs.FileSystem;
 
 import perf.benchmark.BenchmarkSettings;
-import core.index.MDIndex;
-import core.index.RobustTree;
+import core.common.index.MDIndex;
+import core.common.index.RobustTree;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.Range;

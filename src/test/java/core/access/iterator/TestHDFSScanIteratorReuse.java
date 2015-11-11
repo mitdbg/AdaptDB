@@ -11,10 +11,12 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
-import core.access.Predicate;
-import core.access.Predicate.PREDTYPE;
-import core.access.Query.FilterQuery;
-import core.access.ReusableHDFSPartition;
+import core.adapt.Predicate;
+import core.adapt.ReusableHDFSPartition;
+import core.adapt.Predicate.PREDTYPE;
+import core.adapt.Query.FilterQuery;
+import core.adapt.iterator.IteratorRecord;
+import core.adapt.iterator.ReusablePartitionIterator;
 import core.utils.BufferManager;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;

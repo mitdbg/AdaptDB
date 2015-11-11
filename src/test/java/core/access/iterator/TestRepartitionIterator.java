@@ -5,11 +5,14 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 
-import core.access.Partition;
-import core.access.Predicate;
-import core.access.Predicate.PREDTYPE;
-import core.access.Query.FilterQuery;
-import core.index.RNode;
+import core.adapt.Partition;
+import core.adapt.Predicate;
+import core.adapt.Predicate.PREDTYPE;
+import core.adapt.Query.FilterQuery;
+import core.adapt.iterator.PartitionIterator;
+import core.adapt.iterator.PostFilterIterator;
+import core.adapt.iterator.RepartitionIterator;
+import core.common.index.RNode;
 import core.utils.TypeUtils.TYPE;
 import junit.framework.TestCase;
 

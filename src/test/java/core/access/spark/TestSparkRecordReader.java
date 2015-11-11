@@ -15,9 +15,11 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 
-import core.access.Predicate;
-import core.access.Predicate.PREDTYPE;
-import core.access.iterator.IteratorRecord;
+import core.adapt.Predicate;
+import core.adapt.Predicate.PREDTYPE;
+import core.adapt.iterator.IteratorRecord;
+import core.adapt.spark.SparkInputFormat;
+import core.adapt.spark.SparkQueryConf;
 import core.utils.ConfUtils;
 import core.utils.TypeUtils.*;
 

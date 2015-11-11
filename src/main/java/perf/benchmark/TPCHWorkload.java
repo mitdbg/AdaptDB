@@ -6,12 +6,12 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Random;
 
-import core.access.Predicate;
-import core.access.Predicate.PREDTYPE;
-import core.access.Query;
-import core.access.Query.FilterQuery;
-import core.access.spark.SparkQuery;
-import core.globals.Globals;
+import core.adapt.Predicate;
+import core.adapt.Query;
+import core.adapt.Predicate.PREDTYPE;
+import core.adapt.Query.FilterQuery;
+import core.adapt.spark.SparkQuery;
+import core.common.globals.Globals;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils.SimpleDate;

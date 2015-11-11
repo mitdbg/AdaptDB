@@ -3,8 +3,8 @@ package core.index.key;
 import java.util.Iterator;
 import java.util.List;
 
-import core.key.RawIndexKey;
-import core.key.ParsedTupleList;
+import core.common.key.ParsedTupleList;
+import core.common.key.RawIndexKey;
 import junit.framework.TestCase;
 
 public class TestCartilageIndexKeySet extends TestCase {

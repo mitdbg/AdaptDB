@@ -7,11 +7,11 @@ import java.util.Random;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.mapreduce.Job;
 
-import core.access.AccessMethod.PartitionSplit;
-import core.access.Predicate;
-import core.access.Predicate.PREDTYPE;
-import core.access.Query.FilterQuery;
-import core.access.iterator.RepartitionIterator;
+import core.adapt.Predicate;
+import core.adapt.AccessMethod.PartitionSplit;
+import core.adapt.Predicate.PREDTYPE;
+import core.adapt.Query.FilterQuery;
+import core.adapt.iterator.RepartitionIterator;
 import core.adapt.opt.Optimizer;
 import core.utils.ConfUtils;
 import core.utils.CuratorUtils;
@@ -60,7 +60,6 @@ public class Simulator {
 					year - 1, 12, 31), PREDTYPE.GT);
 			// Predicate p2 = new Predicate(10, TYPE.DATE, new
 			// SimpleDate(year+1,1,1), PREDTYPE.LT);
-			opt.updateCountsBasedOnSample(sf * TUPLES_PER_SF);
 			System.out.println("Updated Bucket Counts");
 			opt.buildPlan(new FilterQuery(new Predicate[] { p1 }));
 			System.out.println("Completed Query " + i);
@@ -77,7 +76,6 @@ public class Simulator {
 			Predicate p2 = new Predicate(10, TYPE.DATE, new SimpleDate(year,
 					12, 31), PREDTYPE.LEQ);
 			if (doUpdate) {
-				opt.updateCountsBasedOnSample(sf * TUPLES_PER_SF);
 				System.out.println("Updated Bucket Counts");
 				doUpdate = false;
 			}
@@ -114,7 +112,6 @@ public class Simulator {
 			Predicate p1 = new Predicate(10, TYPE.DATE, startDate, PREDTYPE.GT);
 			Predicate p2 = new Predicate(10, TYPE.DATE, endDate, PREDTYPE.LEQ);
 			if (doUpdate) {
-				opt.updateCountsBasedOnSample(sf * TUPLES_PER_SF);
 				System.out.println("Updated Bucket Counts");
 				doUpdate = false;
 			}
@@ -152,7 +149,6 @@ public class Simulator {
 			Predicate p1 = new Predicate(10, TYPE.DATE, startDate, PREDTYPE.GT);
 			Predicate p2 = new Predicate(10, TYPE.DATE, endDate, PREDTYPE.LEQ);
 			if (doUpdate) {
-				opt.updateCountsBasedOnSample(sf * TUPLES_PER_SF);
 				System.out.println("Updated Bucket Counts");
 				doUpdate = false;
 			}

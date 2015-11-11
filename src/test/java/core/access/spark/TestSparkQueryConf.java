@@ -4,8 +4,9 @@ import junit.framework.TestCase;
 
 import org.apache.hadoop.conf.Configuration;
 
-import core.access.Predicate;
-import core.access.Predicate.PREDTYPE;
+import core.adapt.Predicate;
+import core.adapt.Predicate.PREDTYPE;
+import core.adapt.spark.SparkQueryConf;
 import core.utils.TypeUtils.*;
 
 public class TestSparkQueryConf extends TestCase {

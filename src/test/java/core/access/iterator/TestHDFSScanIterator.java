@@ -8,11 +8,11 @@ import org.apache.hadoop.fs.Path;
 
 import com.google.common.collect.Lists;
 
-import core.access.HDFSPartition;
-import core.access.Partition;
-import core.access.Predicate;
-import core.access.Predicate.PREDTYPE;
-import core.access.Query.FilterQuery;
+import core.adapt.HDFSPartition;
+import core.adapt.Partition;
+import core.adapt.Predicate;
+import core.adapt.Predicate.PREDTYPE;
+import core.adapt.Query.FilterQuery;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils.*;

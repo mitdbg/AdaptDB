@@ -10,18 +10,18 @@ import java.util.Scanner;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import core.access.AccessMethod.PartitionSplit;
-import core.access.Predicate;
-import core.access.Query;
-import core.access.Query.FilterQuery;
-import core.access.iterator.PartitionIterator;
-import core.access.iterator.PostFilterIterator;
-import core.access.iterator.RepartitionIterator;
-import core.access.spark.SparkQueryConf;
-import core.index.RNode;
-import core.index.RobustTree;
-import core.index.MDIndex.Bucket;
-import core.key.ParsedTupleList;
+import core.adapt.Predicate;
+import core.adapt.Query;
+import core.adapt.AccessMethod.PartitionSplit;
+import core.adapt.Query.FilterQuery;
+import core.adapt.iterator.PartitionIterator;
+import core.adapt.iterator.PostFilterIterator;
+import core.adapt.iterator.RepartitionIterator;
+import core.adapt.spark.SparkQueryConf;
+import core.common.index.RNode;
+import core.common.index.RobustTree;
+import core.common.index.MDIndex.Bucket;
+import core.common.key.ParsedTupleList;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.Pair;
@@ -37,21 +37,18 @@ import core.utils.TypeUtils.TYPE;
  */
 
 public class Optimizer {
-	static final int BLOCK_SIZE = 64 * 1024;
-	static final double WRITE_MULTIPLIER = 1.5;
+	private static final double WRITE_MULTIPLIER = 1.5;
 
-	RobustTree rt;
-	int rtDepth;
+	private RobustTree rt;
 
 	// Properties extracted from ConfUtils
-	String workingDir;
-	String hadoopHome;
-	short fileReplicationFactor;
-	String zookeeperHosts;
+	private String workingDir;
+	private String hadoopHome;
+	private short fileReplicationFactor;
 
-	List<Query> queryWindow = new ArrayList<Query>();
+	private List<Query> queryWindow = new ArrayList<Query>();
 
-	public static class Plan {
+	private static class Plan {
 		public Action actions; // Tree of actions
 		public double cost;
 		public double benefit;
@@ -90,14 +87,12 @@ public class Optimizer {
 		this.workingDir = cfg.getWorkingDir() /* + "/" + cfg.getReplicaId() */;
 		this.hadoopHome = cfg.getHadoopHome();
 		this.fileReplicationFactor = cfg.getHDFSReplicationFactor();
-		this.zookeeperHosts = cfg.getZookeeperHosts();
 	}
 
 	public Optimizer(ConfUtils cfg) {
 		this.workingDir = cfg.getHDFS_WORKING_DIR();
 		this.hadoopHome = cfg.getHADOOP_HOME();
 		this.fileReplicationFactor = cfg.getHDFS_REPLICATION_FACTOR();
-		this.zookeeperHosts = cfg.getZOOKEEPER_HOSTS();
 	}
 
 	public void loadIndex() {
@@ -207,7 +202,7 @@ public class Optimizer {
 		}
 	}
 
-	public Plan getBestPlan(Predicate[] ps) {
+	private Plan getBestPlan(Predicate[] ps) {
 		// TODO: Multiple predicates seem to complicate the simple idea we had;
 		// think more :-/
 		Plan plan = null;
@@ -223,11 +218,11 @@ public class Optimizer {
 		return plan;
 	}
 
-	public void updateIndex(Plan best, Predicate[] ps) {
+	private void updateIndex(Plan best, Predicate[] ps) {
 		this.applyActions(this.rt.getRoot(), best.actions, ps);
 	}
 
-	public void applyActions(RNode n, Action a, Predicate[] ps) {
+	private void applyActions(RNode n, Action a, Predicate[] ps) {
 		boolean isRoot = false;
 		if (n.parent == null)
 			isRoot = true;
@@ -313,7 +308,7 @@ public class Optimizer {
 		}
 	}
 
-	public PartitionSplit[] getPartitionSplits(Plan best, FilterQuery fq) {
+	private PartitionSplit[] getPartitionSplits(Plan best, FilterQuery fq) {
 		List<PartitionSplit> lps = new ArrayList<PartitionSplit>();
 		final int[] modifyingOptions = new int[] { 1 };
 		Action acTree = best.actions;
@@ -436,7 +431,7 @@ public class Optimizer {
 	 *            - indicates if node is to the left(1) or right(-1) of parent
 	 * @return
 	 */
-	public boolean checkValidForSubtree(RNode node, int attrId, TYPE t,
+	private boolean checkValidForSubtree(RNode node, int attrId, TYPE t,
 			Object val, int isLeft) {
 		LinkedList<RNode> stack = new LinkedList<RNode>();
 		stack.add(node);
@@ -461,7 +456,7 @@ public class Optimizer {
 	 *
 	 * @param changed
 	 */
-	public void populateBucketEstimates(RNode changed) {
+	private void populateBucketEstimates(RNode changed) {
 		ParsedTupleList collector = null;
 		double numTuples = 0;
 		int numSamples = 0;
@@ -490,7 +485,7 @@ public class Optimizer {
 		populateBucketEstimates(changed, collector, numTuples / numSamples);
 	}
 
-	public void populateBucketEstimates(RNode n, ParsedTupleList sample,
+	private void populateBucketEstimates(RNode n, ParsedTupleList sample,
 			double scaleFactor) {
 		if (n.bucket != null) {
 			n.bucket.setEstimatedNumTuples(sample.size() * scaleFactor);
@@ -511,26 +506,20 @@ public class Optimizer {
 	 * @param changed
 	 * @return
 	 */
-	public double getNumTuplesAccessed(RNode changed) {
+	private double getNumTuplesAccessed(RNode changed) {
 		// First traverse to parent to see if query accesses node
 		// If yes, find the number of tuples accessed.
 		double numTuples = 0;
 
-//		double lambda = 0.2;
-//		int counter = 0;
 		for (int i = queryWindow.size() - 1; i >= 0; i--) {
 			Query q = queryWindow.get(i);
-//			double weight = Math.pow(Math.E, -lambda * counter);
-			double weight = 1.0;
-
-			numTuples += weight * getNumTuplesAccessed(changed, q);
-//			counter++;
+			numTuples += getNumTuplesAccessed(changed, q);
 		}
 
 		return numTuples;
 	}
 
-	public static float getNumTuplesAccessed(RNode changed, Query q) {
+	static float getNumTuplesAccessed(RNode changed, Query q) {
 		// First traverse to parent to see if query accesses node
 		// If yes, find the number of tuples accessed.
 		Predicate[] ps = ((FilterQuery) q).getPredicates();
@@ -599,7 +588,7 @@ public class Optimizer {
 	 * @param old
 	 * @param r
 	 */
-	public void replaceInTree(RNode old, RNode r) {
+	private void replaceInTree(RNode old, RNode r) {
 		old.leftChild.parent = r;
 		old.rightChild.parent = r;
 		if (old.parent != null) {
@@ -615,20 +604,20 @@ public class Optimizer {
 		r.parent = old.parent;
 	}
 
-	public Plan getBestPlanForPredicate(Predicate[] ps, int i) {
+	private Plan getBestPlanForPredicate(Predicate[] ps, int i) {
 		RNode root = rt.getRoot();
 		Plans plans = getBestPlanForSubtree(root, ps, i);
 		return plans.Best;
 	}
 
-	public void updateBucketIds(List<RNode> r) {
+	private void updateBucketIds(List<RNode> r) {
 		for (RNode n : r) {
 			n.bucket.updateId();
 		}
 	}
 
 	// Update the dest with source if source is a better plan
-	public void updatePlan(Plan dest, Plan source) {
+	private void updatePlan(Plan dest, Plan source) {
 		boolean copy = false;
 		if (dest.benefit == -1) {
 			copy = true;
@@ -647,7 +636,7 @@ public class Optimizer {
 		}
 	}
 
-	public Plans getBestPlanForSubtree(RNode node, Predicate[] ps, int pid) {
+	private Plans getBestPlanForSubtree(RNode node, Predicate[] ps, int pid) {
 		// Option Index
 		// 1 => Replace
 		// 2 => Swap down X
@@ -920,18 +909,9 @@ public class Optimizer {
 		}
 	}
 
-	public double computeCost(RNode r) {
+	private double computeCost(RNode r) {
 		double numTuples = r.numTuplesInSubtree();
 		return WRITE_MULTIPLIER * numTuples;
-	}
-
-	public static int getDepthOfIndex(int numBlocks) {
-		int k = 31 - Integer.numberOfLeadingZeros(numBlocks);
-		if (numBlocks == (int) Math.pow(2, k)) {
-			return k;
-		} else {
-			return k + 1;
-		}
 	}
 
 	public void loadQueries() {
@@ -955,14 +935,14 @@ public class Optimizer {
 		}
 	}
 
-	public void persistQueryToDisk(FilterQuery fq) {
+	private void persistQueryToDisk(FilterQuery fq) {
 		String pathToQueries = this.workingDir + "/queries";
 		HDFSUtils.safeCreateFile(hadoopHome, pathToQueries,
 				this.fileReplicationFactor);
 		HDFSUtils.appendLine(hadoopHome, pathToQueries, fq.toString());
 	}
 
-	public void persistIndexToDisk() {
+	private void persistIndexToDisk() {
 		String pathToIndex = this.workingDir + "/index";
 		FileSystem fs = HDFSUtils.getFSByHadoopHome(hadoopHome);
 		try {
@@ -988,11 +968,5 @@ public class Optimizer {
 		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome),
 				pathToIndex, this.fileReplicationFactor, this.rt.marshall(), 0,
 				indexBytes.length, false);
-	}
-
-	/** Used only in simulator **/
-	public void updateCountsBasedOnSample(long totalTuples) {
-		this.rt.initializeBucketSamplesAndCounts(this.rt.getRoot(),
-				this.rt.sample, this.rt.sample.size(), totalTuples);
 	}
 }

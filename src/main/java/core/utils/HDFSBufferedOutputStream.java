@@ -7,7 +7,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.hadoop.fs.FileSystem;
 
-import core.globals.Globals;
+import core.common.globals.Globals;
 
 /**
  * Custom HDFS Output Stream implementation. Buffers the writes and writes out

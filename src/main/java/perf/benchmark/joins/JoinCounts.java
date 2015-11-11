@@ -1,9 +1,9 @@
 package perf.benchmark.joins;
 
-import core.access.AccessMethod.PartitionSplit;
-import core.access.Predicate;
-import core.access.Predicate.PREDTYPE;
-import core.access.Query;
+import core.adapt.Predicate;
+import core.adapt.Query;
+import core.adapt.AccessMethod.PartitionSplit;
+import core.adapt.Predicate.PREDTYPE;
 import core.adapt.opt.Optimizer;
 import core.utils.ConfUtils;
 import core.utils.TypeUtils.TYPE;

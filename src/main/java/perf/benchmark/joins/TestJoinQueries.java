@@ -4,10 +4,10 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.spark.api.java.JavaPairRDD;
 
 import perf.benchmark.BenchmarkSettings;
-import core.access.Predicate;
-import core.access.iterator.IteratorRecord;
-import core.access.spark.MapToKeyFunction;
-import core.access.spark.join.SparkJoinQuery;
+import core.adapt.Predicate;
+import core.adapt.iterator.IteratorRecord;
+import core.join.MapToKeyFunction;
+import core.join.SparkJoinQuery;
 import core.utils.ConfUtils;
 import core.utils.TypeUtils.TYPE;
 

@@ -1,9 +1,9 @@
 package core.index.build;
 
 import junit.framework.TestCase;
-import core.index.RNode;
-import core.index.RobustTree;
-import core.index.MDIndex.Bucket;
+import core.common.index.RNode;
+import core.common.index.RobustTree;
+import core.common.index.MDIndex.Bucket;
 import core.utils.TypeUtils.TYPE;
 
 public class TestIndexSerialization extends TestCase {

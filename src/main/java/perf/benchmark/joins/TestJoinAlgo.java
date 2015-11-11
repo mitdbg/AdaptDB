@@ -1,8 +1,8 @@
 package perf.benchmark.joins;
 
-import core.access.spark.SparkQueryConf;
-import core.access.spark.join.HPJoinInput;
-import core.access.spark.join.algo.*;
+import core.adapt.spark.SparkQueryConf;
+import core.join.HPJoinInput;
+import core.join.algo.*;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 

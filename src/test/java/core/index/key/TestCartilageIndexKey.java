@@ -3,7 +3,7 @@ package core.index.key;
 import java.text.SimpleDateFormat;
 
 import junit.framework.TestCase;
-import core.key.RawIndexKey;
+import core.common.key.RawIndexKey;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 
