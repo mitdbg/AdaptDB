@@ -14,7 +14,7 @@ import com.google.common.io.ByteStreams;
 
 import core.adapt.HDFSPartition;
 import core.adapt.Partition;
-import core.adapt.Query.FilterQuery;
+import core.adapt.Query;
 import core.common.index.RNode;
 import core.common.index.RobustTree;
 import core.utils.HDFSUtils;
@@ -27,7 +27,7 @@ import core.utils.HDFSUtils;
  *
  */
 public class RepartitionIterator extends PartitionIterator {
-	private FilterQuery query;
+	private Query query;
 	private RNode newIndexTree;
 	protected String zookeeperHosts;
 
@@ -46,7 +46,7 @@ public class RepartitionIterator extends PartitionIterator {
 		}
 	}
 
-	public RepartitionIterator(FilterQuery query, RNode newIndexTree) {
+	public RepartitionIterator(Query query, RNode newIndexTree) {
 		this.query = query;
 		this.newIndexTree = newIndexTree;
 	}
@@ -55,7 +55,7 @@ public class RepartitionIterator extends PartitionIterator {
 		this.zookeeperHosts = zookeeperHosts;
 	}
 
-	public FilterQuery getQuery() {
+	public Query getQuery() {
 		return this.query;
 	}
 
@@ -138,7 +138,7 @@ public class RepartitionIterator extends PartitionIterator {
 
 	@Override
 	public void readFields(DataInput in) throws IOException {
-		query = new FilterQuery();
+		query = new Query();
 		query.readFields(in);
 		zookeeperHosts = Text.readString(in);
 	}

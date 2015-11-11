@@ -4,7 +4,7 @@ import junit.framework.TestCase;
 import perf.benchmark.BenchmarkSettings;
 import core.adapt.Predicate;
 import core.adapt.Predicate.PREDTYPE;
-import core.adapt.Query.FilterQuery;
+import core.adapt.Query;
 import core.adapt.iterator.PartitionIterator;
 import core.adapt.iterator.PostFilterIterator;
 import core.adapt.spark.SparkQuery;
@@ -48,7 +48,7 @@ public class TestQuery extends TestCase {
 	}
 
 	public void testSerialize() {
-		PostFilterIterator it = new PostFilterIterator(new FilterQuery(
+		PostFilterIterator it = new PostFilterIterator(new Query(
 				new Predicate[] { p }));
 		String s = PartitionIterator.iteratorToString(it);
 		assertNotNull(s);

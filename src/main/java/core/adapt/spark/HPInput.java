@@ -15,7 +15,7 @@ import com.google.common.primitives.Ints;
 import core.adapt.AccessMethod;
 import core.adapt.Predicate;
 import core.adapt.AccessMethod.PartitionSplit;
-import core.adapt.Query.FilterQuery;
+import core.adapt.Query;
 import core.adapt.iterator.PostFilterIterator;
 import core.adapt.iterator.RepartitionIterator;
 
@@ -45,19 +45,19 @@ public class HPInput {
 	public PartitionSplit[] getFullScan(Predicate... predicates) {
 		return new PartitionSplit[] { new PartitionSplit(
 				Ints.toArray(partitionIdFileMap.keySet()),
-				new PostFilterIterator(new FilterQuery(predicates, am.getKey()))) };
+				new PostFilterIterator(new Query(predicates, am.getKey()))) };
 	}
 
 	public PartitionSplit[] getRepartitionScan(Predicate... predicates) {
 		return new PartitionSplit[] { new PartitionSplit(
 				Ints.toArray(partitionIdFileMap.keySet()),
-				new RepartitionIterator(new FilterQuery(predicates,
+				new RepartitionIterator(new Query(predicates,
 						am.getKey()), am.getIndex().getRoot())) };
 	}
 
 	public PartitionSplit[] getIndexScan(boolean justAccess,
 			Predicate... predicates) {
-		return am.getPartitionSplits(new FilterQuery(predicates, am.getKey()),
+		return am.getPartitionSplits(new Query(predicates, am.getKey()),
 				justAccess);
 	}
 

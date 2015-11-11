@@ -73,7 +73,7 @@ public class JoinCounts {
 				Optimizer partOpt = new Optimizer(conf);
 				partOpt.loadIndex();
 				PartitionSplit[] partSplits = partOpt
-						.buildAccessPlan(new Query.FilterQuery(new Predicate[] {
+						.buildAccessPlan(new Query(new Predicate[] {
 								part1, part2 }));
 
 				Predicate lineitem1 = new Predicate(1, TYPE.INT, (int) start,
@@ -84,7 +84,7 @@ public class JoinCounts {
 				Optimizer lineOpt = new Optimizer(conf);
 				lineOpt.loadIndex();
 				PartitionSplit[] lineSplits = lineOpt
-						.buildAccessPlan(new Query.FilterQuery(new Predicate[] {
+						.buildAccessPlan(new Query(new Predicate[] {
 								lineitem1, lineitem2 }));
 
 				for (PartitionSplit split : lineSplits) {
@@ -133,7 +133,7 @@ public class JoinCounts {
 						Long.parseLong(tokens[2]), PREDTYPE.LEQ);
 
 				PartitionSplit[] partSplits = partOpt
-						.buildAccessPlan(new Query.FilterQuery(new Predicate[] {
+						.buildAccessPlan(new Query(new Predicate[] {
 								part1, part2 }));
 
 				if (tokens[0].equals("")) {

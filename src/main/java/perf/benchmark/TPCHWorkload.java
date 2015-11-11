@@ -9,7 +9,6 @@ import java.util.Random;
 import core.adapt.Predicate;
 import core.adapt.Query;
 import core.adapt.Predicate.PREDTYPE;
-import core.adapt.Query.FilterQuery;
 import core.adapt.spark.SparkQuery;
 import core.common.globals.Globals;
 import core.utils.ConfUtils;
@@ -50,7 +49,7 @@ public class TPCHWorkload {
 	// Given the TPC-H query number returns the query.
 	// Note that only 8 queries are encoded at the moment.
 	// Query source: http://www.tpc.org/tpch/spec/tpch2.7.0.pdf p28.
-	public FilterQuery getQuery(int queryNo) {
+	public Query getQuery(int queryNo) {
 		String[] mktSegmentVals = new
 			String[]{"AUTOMOBILE","BUILDING","FURNITURE","HOUSEHOLD","MACHINERY"};
 		String[] regionNameVals = new
@@ -75,9 +74,9 @@ public class TPCHWorkload {
 			if (rand_3 > 0) {
 				String c_mktsegment_prev = mktSegmentVals[rand_3 - 1];
 				Predicate p4_3 = new Predicate("c_mktsegment", TYPE.STRING, c_mktsegment_prev, PREDTYPE.GT);
-				return new Query.FilterQuery(new Predicate[]{p1_3,p2_3,p3_3,p4_3});
+				return new Query(new Predicate[]{p1_3,p2_3,p3_3,p4_3});
 			} else {
-				return new Query.FilterQuery(new Predicate[]{p1_3,p2_3,p3_3});
+				return new Query(new Predicate[]{p1_3,p2_3,p3_3});
 			}
 		case 5:
 			int rand_5 = rand.nextInt(regionNameVals.length);
@@ -93,9 +92,9 @@ public class TPCHWorkload {
 				String r_name_prev_5 = regionNameVals[rand_5 - 1];
 				Predicate p5_5 = new Predicate("c_region", TYPE.STRING, r_name_prev_5, PREDTYPE.GT);
 				Predicate p6_5 = new Predicate("s_region", TYPE.STRING, r_name_prev_5, PREDTYPE.GT);
-				return new Query.FilterQuery(new Predicate[]{p1_5, p2_5, p3_5, p4_5, p5_5, p6_5});
+				return new Query(new Predicate[]{p1_5, p2_5, p3_5, p4_5, p5_5, p6_5});
 			} else {
-				return new Query.FilterQuery(new Predicate[]{p1_5, p2_5, p3_5, p4_5});
+				return new Query(new Predicate[]{p1_5, p2_5, p3_5, p4_5});
 			}
 		case 6:
 			int year_6 = 1993 + rand.nextInt(5);
@@ -108,7 +107,7 @@ public class TPCHWorkload {
 			Predicate p3_6 = new Predicate("l_discount", TYPE.DOUBLE, discount - 0.01, PREDTYPE.GT);
 			Predicate p4_6 = new Predicate("l_discount", TYPE.DOUBLE, discount + 0.01, PREDTYPE.LEQ);
 			Predicate p5_6 = new Predicate("l_quantity", TYPE.DOUBLE, quantity, PREDTYPE.LEQ);
-			return new Query.FilterQuery(new Predicate[]{p1_6, p2_6, p3_6, p4_6, p5_6});
+			return new Query(new Predicate[]{p1_6, p2_6, p3_6, p4_6, p5_6});
 		case 8:
 			// Show that c_region gets introduced before s_region.
 			int rand_8_1 = rand.nextInt(regionNameVals.length);
@@ -123,9 +122,9 @@ public class TPCHWorkload {
 			if (rand_8_1 > 0) {
 				String r_name_prev_8 = regionNameVals[rand_8_1 - 1];
 				Predicate p5_8 = new Predicate("c_region", TYPE.STRING, r_name_prev_8, PREDTYPE.GT);
-				return new Query.FilterQuery(new Predicate[]{p1_8, p2_8, p3_8, p4_8, p5_8});
+				return new Query(new Predicate[]{p1_8, p2_8, p3_8, p4_8, p5_8});
 			} else {
-				return new Query.FilterQuery(new Predicate[]{p1_8, p2_8, p3_8, p4_8});
+				return new Query(new Predicate[]{p1_8, p2_8, p3_8, p4_8});
 			}
 		case 10:
 			String l_returnflag_10 = "R";
@@ -139,7 +138,7 @@ public class TPCHWorkload {
 			Predicate p4_10 = new Predicate("l_returnflag", TYPE.STRING, l_returnflag_prev_10, PREDTYPE.GT);
 			Predicate p2_10 = new Predicate("o_orderdate", TYPE.DATE, d10_1, PREDTYPE.GEQ);
 			Predicate p3_10 = new Predicate("o_orderdate", TYPE.DATE, d10_2, PREDTYPE.LT);
-			return new Query.FilterQuery(new Predicate[]{p1_10, p2_10, p3_10, p4_10});
+			return new Query(new Predicate[]{p1_10, p2_10, p3_10, p4_10});
 		case 12:
 			// TODO: We don't handle attrA < attrB style predicate.
 			// TODO: We also don't handle IN queries directly.
@@ -154,9 +153,9 @@ public class TPCHWorkload {
 			if (rand_12 > 0) {
 				String shipmode_prev_12 = shipModeVals[rand_12 - 1];
 				Predicate p4_12 = new Predicate("l_shipmode", TYPE.STRING, shipmode_prev_12, PREDTYPE.GT);
-				return new Query.FilterQuery(new Predicate[]{p1_12, p2_12, p3_12, p4_12});
+				return new Query(new Predicate[]{p1_12, p2_12, p3_12, p4_12});
 			} else {
-				return new Query.FilterQuery(new Predicate[]{p1_12, p2_12, p3_12});
+				return new Query(new Predicate[]{p1_12, p2_12, p3_12});
 			}
 		case 14:
 			int year_14 = 1993;
@@ -166,7 +165,7 @@ public class TPCHWorkload {
 			SimpleDate d14_2 = new SimpleDate(year_14 + monthOffset_14/12, monthOffset_14%12 + 1, 1);
 			Predicate p1_14 = new Predicate("o_orderdate", TYPE.DATE, d14_1, PREDTYPE.GEQ);
 			Predicate p2_14 = new Predicate("o_orderdate", TYPE.DATE, d14_2, PREDTYPE.LT);
-			return new Query.FilterQuery(new Predicate[]{p1_14, p2_14});
+			return new Query(new Predicate[]{p1_14, p2_14});
 		case 19:
 			// TODO: Add to paper how to handle OR. We can treat it as separate set of filters.
 			// TODO: Consider adding choices for p_container and l_shipmode.
@@ -182,19 +181,19 @@ public class TPCHWorkload {
 			Predicate p6_19 = new Predicate("p_size", TYPE.INT, 1, PREDTYPE.GEQ);
 			Predicate p7_19 = new Predicate("p_size", TYPE.INT, 5, PREDTYPE.LEQ);
 			Predicate p8_19 = new Predicate("l_shipmode", TYPE.STRING, "AIR", PREDTYPE.LEQ);
-			return new Query.FilterQuery(new Predicate[]{p1_19, p2_19, p3_19, p4_19, p5_19, p6_19, p7_19, p8_19});
+			return new Query(new Predicate[]{p1_19, p2_19, p3_19, p4_19, p5_19, p6_19, p7_19, p8_19});
 		default:
 			return null;
 		}
 	}
 
-	public List<FilterQuery> generateWorkload(int numQueries) {
-		ArrayList<FilterQuery> queries = new ArrayList<FilterQuery>();
+	public List<Query> generateWorkload(int numQueries) {
+		ArrayList<Query> queries = new ArrayList<Query>();
 		int[] queryNums = new int[] { 3, 5, 6, 8, 10, 12, 14, 19 };
 
 		for (int i = 0; i < numQueries; i++) {
 			int qNo = queryNums[rand.nextInt(queryNums.length)];
-			FilterQuery q = getQuery(qNo);
+			Query q = getQuery(qNo);
 			queries.add(q);
 		}
 
@@ -204,13 +203,13 @@ public class TPCHWorkload {
 	public void runWorkload(int numQueries) {
 		long start, end;
 		SparkQuery sq = new SparkQuery(cfg);
-		List<FilterQuery> queries = generateWorkload(numQueries);
+		List<Query> queries = generateWorkload(numQueries);
 		System.out.println("INFO: Workload " + numQueries);
-		for (FilterQuery q: queries) {
+		for (Query q: queries) {
 			System.out.println("INFO: Query:" + q.toString());
 		}
 
-		for (FilterQuery q : queries) {
+		for (Query q : queries) {
 			start = System.currentTimeMillis();
 			long result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(),
 					q.getPredicates()).count();

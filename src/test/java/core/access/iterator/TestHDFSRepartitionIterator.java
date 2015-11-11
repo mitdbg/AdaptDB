@@ -12,7 +12,7 @@ import core.adapt.HDFSPartition;
 import core.adapt.Partition;
 import core.adapt.Predicate;
 import core.adapt.Predicate.PREDTYPE;
-import core.adapt.Query.FilterQuery;
+import core.adapt.Query;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils.*;
@@ -31,7 +31,7 @@ public class TestHDFSRepartitionIterator extends TestRepartitionIterator {
 		Predicate p2 = new Predicate(attributeIdx, TYPE.INT, 6000000,
 				PREDTYPE.LEQ);
 
-		query = new FilterQuery(new Predicate[] { p1, p2 });
+		query = new Query(new Predicate[] { p1, p2 });
 
 		partitionPaths = Lists.newArrayList();
 		FileSystem hdfs = HDFSUtils.getFS(cfg.getHADOOP_HOME()

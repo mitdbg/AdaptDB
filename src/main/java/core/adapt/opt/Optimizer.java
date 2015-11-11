@@ -13,7 +13,6 @@ import org.apache.hadoop.fs.Path;
 import core.adapt.Predicate;
 import core.adapt.Query;
 import core.adapt.AccessMethod.PartitionSplit;
-import core.adapt.Query.FilterQuery;
 import core.adapt.iterator.PartitionIterator;
 import core.adapt.iterator.PostFilterIterator;
 import core.adapt.iterator.RepartitionIterator;
@@ -35,7 +34,6 @@ import core.utils.TypeUtils.TYPE;
  * cost, we do the repartitioning. Else we just do a scan.
  * @author anil
  */
-
 public class Optimizer {
 	private static final double WRITE_MULTIPLIER = 1.5;
 
@@ -122,84 +120,81 @@ public class Optimizer {
 		return bids;
 	}
 
-	public PartitionSplit[] buildAccessPlan(final Query q) {
-		if (q instanceof FilterQuery) {
-			FilterQuery fq = (FilterQuery) q;
-			List<RNode> nodes = this.rt.getRoot().search(fq.getPredicates());
-			PartitionIterator pi = new PostFilterIterator(fq);
-			int[] bids = this.getBidFromRNodes(nodes);
+	public PartitionSplit[] buildAccessPlan(final Query fq) {
+		List<RNode> nodes = this.rt.getRoot().search(fq.getPredicates());
+		PartitionIterator pi = new PostFilterIterator(fq);
+		int[] bids = this.getBidFromRNodes(nodes);
 
-			PartitionSplit psplit = new PartitionSplit(bids, pi);
-			PartitionSplit[] ps = new PartitionSplit[1];
-			ps[0] = psplit;
-			return ps;
-		} else {
-			System.err.println("Unimplemented query - Unable to build plan");
-			return null;
-		}
+		PartitionSplit psplit = new PartitionSplit(bids, pi);
+		PartitionSplit[] ps = new PartitionSplit[1];
+		ps[0] = psplit;
+		return ps;
+	}
+	
+	/**
+	 * Build a plan that incorporates multiple predicates.
+	 * @param q
+	 * @return
+	 */
+	public PartitionSplit[] buildMultiPredicatePlan(final Query q) {
+		return null;
 	}
 
-	public PartitionSplit[] buildPlan(final Query q) {
-		if (q instanceof FilterQuery) {
-			FilterQuery fq = (FilterQuery) q;
-			this.queryWindow.add(fq);
-			Plan best = getBestPlan(fq.getPredicates());
+	public PartitionSplit[] buildPlan(final Query fq) {
+		this.queryWindow.add(fq);
+		Plan best = getBestPlan(fq.getPredicates());
 
-			System.out.println("plan.cost: " + best.cost + " plan.benefit: "
-					+ best.benefit);
-			if (best.cost > best.benefit) {
-				best = null;
-			}
-
-			PartitionSplit[] psplits;
-			if (best != null) {
-				psplits = this.getPartitionSplits(best, fq);
-			} else {
-				psplits = this.buildAccessPlan(fq);
-			}
-
-			// Check if we are updating the index ?
-			boolean updated = true;
-			if (psplits.length == 1) {
-				if (psplits[0].getIterator().getClass() == PostFilterIterator.class) {
-					updated = false;
-				}
-			}
-
-			// Debug
-			long totalCostOfQuery = 0;
-			for (int i = 0; i < psplits.length; i++) {
-				int[] bids = psplits[i].getPartitions();
-				double numTuplesAccessed = 0;
-				for (int j = 0; j < bids.length; j++) {
-					numTuplesAccessed += Bucket.getEstimatedNumTuples(bids[j]);
-				}
-
-				totalCostOfQuery += numTuplesAccessed;
-			}
-			System.out.println("Query Cost: " + totalCostOfQuery);
-
-			this.persistQueryToDisk(fq);
-			if (updated) {
-				System.out.println("INFO: Index being updated");
-				this.updateIndex(best, fq.getPredicates());
-				this.persistIndexToDisk();
-				for (int i = 0; i < psplits.length; i++) {
-					if (psplits[i].getIterator().getClass() == RepartitionIterator.class) {
-						psplits[i] = new PartitionSplit(
-								psplits[i].getPartitions(),
-								new RepartitionIterator(fq, this.rt.getRoot()));
-					}
-				}
-			} else {
-				System.out.println("INFO: No index update");
-			}
-
-			return psplits;
-		} else {
-			System.err.println("Unimplemented query - Unable to build plan");
-			return null;
+		System.out.println("plan.cost: " + best.cost + " plan.benefit: "
+				+ best.benefit);
+		if (best.cost > best.benefit) {
+			best = null;
 		}
+
+		PartitionSplit[] psplits;
+		if (best != null) {
+			psplits = this.getPartitionSplits(best, fq);
+		} else {
+			psplits = this.buildAccessPlan(fq);
+		}
+
+		// Check if we are updating the index ?
+		boolean updated = true;
+		if (psplits.length == 1) {
+			if (psplits[0].getIterator().getClass() == PostFilterIterator.class) {
+				updated = false;
+			}
+		}
+
+		// Debug
+		long totalCostOfQuery = 0;
+		for (int i = 0; i < psplits.length; i++) {
+			int[] bids = psplits[i].getPartitions();
+			double numTuplesAccessed = 0;
+			for (int j = 0; j < bids.length; j++) {
+				numTuplesAccessed += Bucket.getEstimatedNumTuples(bids[j]);
+			}
+
+			totalCostOfQuery += numTuplesAccessed;
+		}
+		System.out.println("Query Cost: " + totalCostOfQuery);
+
+		this.persistQueryToDisk(fq);
+		if (updated) {
+			System.out.println("INFO: Index being updated");
+			this.updateIndex(best, fq.getPredicates());
+			this.persistIndexToDisk();
+			for (int i = 0; i < psplits.length; i++) {
+				if (psplits[i].getIterator().getClass() == RepartitionIterator.class) {
+					psplits[i] = new PartitionSplit(
+							psplits[i].getPartitions(),
+							new RepartitionIterator(fq, this.rt.getRoot()));
+				}
+			}
+		} else {
+			System.out.println("INFO: No index update");
+		}
+
+		return psplits;
 	}
 
 	private Plan getBestPlan(Predicate[] ps) {
@@ -308,7 +303,7 @@ public class Optimizer {
 		}
 	}
 
-	private PartitionSplit[] getPartitionSplits(Plan best, FilterQuery fq) {
+	private PartitionSplit[] getPartitionSplits(Plan best, Query fq) {
 		List<PartitionSplit> lps = new ArrayList<PartitionSplit>();
 		final int[] modifyingOptions = new int[] { 1 };
 		Action acTree = best.actions;
@@ -522,7 +517,7 @@ public class Optimizer {
 	static float getNumTuplesAccessed(RNode changed, Query q) {
 		// First traverse to parent to see if query accesses node
 		// If yes, find the number of tuples accessed.
-		Predicate[] ps = ((FilterQuery) q).getPredicates();
+		Predicate[] ps = ((Query) q).getPredicates();
 
 		RNode node = changed;
 		boolean accessed = true;
@@ -925,7 +920,7 @@ public class Optimizer {
 				Scanner sc = new Scanner(queries);
 				while (sc.hasNextLine()) {
 					String query = sc.nextLine();
-					FilterQuery f = new FilterQuery(query);
+					Query f = new Query(query);
 					queryWindow.add(f);
 				}
 				sc.close();
@@ -935,7 +930,7 @@ public class Optimizer {
 		}
 	}
 
-	private void persistQueryToDisk(FilterQuery fq) {
+	private void persistQueryToDisk(Query fq) {
 		String pathToQueries = this.workingDir + "/queries";
 		HDFSUtils.safeCreateFile(hadoopHome, pathToQueries,
 				this.fileReplicationFactor);

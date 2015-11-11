@@ -21,6 +21,28 @@ public class Query implements Serializable {
 	protected Predicate[] predicates;
 	protected RawIndexKey key;
 
+	public Query() {
+		this.predicates = null;
+		key = new RawIndexKey(Globals.DELIMITER);
+	}
+
+	public Query(String predString) {
+		String[] parts = predString.split(";");
+		this.predicates = new Predicate[parts.length - 1];
+		for (int i = 0; i < parts.length - 1; i++) {
+			this.predicates[i] = new Predicate(parts[i]);
+		}
+	}	
+	
+	public Query(Predicate[] predicates, RawIndexKey key) {
+		this.predicates = predicates;
+		this.key = key;
+	}
+
+	public Query(Predicate[] predicates) {
+		this(predicates, new RawIndexKey(Globals.DELIMITER));
+	}	
+	
 	public Predicate[] getPredicates() {
 		return this.predicates;
 	}
@@ -47,76 +69,50 @@ public class Query implements Serializable {
 		key = new RawIndexKey(Text.readString(in));
 	}
 
-	public static class FilterQuery extends Query implements Serializable {
-		private static final long serialVersionUID = 1L;
-
-		public FilterQuery() {
-			this.predicates = null;
-			key = new RawIndexKey(Globals.DELIMITER);
-		}
-
-		public FilterQuery(String predString) {
-			String[] parts = predString.split(";");
-			this.predicates = new Predicate[parts.length - 1];
-			for (int i = 0; i < parts.length - 1; i++) {
-				this.predicates[i] = new Predicate(parts[i]);
+	public boolean qualifies(IteratorRecord record) {
+		boolean qualify = true;
+		for (Predicate p : predicates) {
+			int[] keyAttrs = key.getKeys();
+			int attrIdx;
+			if (keyAttrs == null) {
+				attrIdx = p.attribute;
+			} else {
+				attrIdx = keyAttrs[p.attribute];
+			}
+			switch (p.type) {
+			case BOOLEAN:
+				qualify &= p
+						.isRelevant(record.getBooleanAttribute(attrIdx));
+				break;
+			case INT:
+				qualify &= p.isRelevant(record.getIntAttribute(attrIdx));
+				break;
+			case LONG:
+				qualify &= p.isRelevant(record.getLongAttribute(attrIdx));
+				break;
+			case DOUBLE:
+				qualify &= p.isRelevant(record.getFloatAttribute(attrIdx));
+				break;
+			case DATE:
+				qualify &= p.isRelevant(record.getDateAttribute(attrIdx));
+				break;
+			case STRING:
+				qualify &= p.isRelevant(record.getStringAttribute(attrIdx,
+						20));
+				break;
+			case VARCHAR:
+				qualify &= p.isRelevant(record.getStringAttribute(attrIdx,
+						100));
+				break;
+			default:
+				throw new RuntimeException("Invalid data type!");
 			}
 		}
+		return qualify;
+	}
 
-		public FilterQuery(Predicate[] predicates, RawIndexKey key) {
-			this.predicates = predicates;
-			this.key = key;
-		}
-
-		public FilterQuery(Predicate[] predicates) {
-			this(predicates, new RawIndexKey(Globals.DELIMITER));
-		}
-
-		public boolean qualifies(IteratorRecord record) {
-			boolean qualify = true;
-			for (Predicate p : predicates) {
-				int[] keyAttrs = key.getKeys();
-				int attrIdx;
-				if (keyAttrs == null) {
-					attrIdx = p.attribute;
-				} else {
-					attrIdx = keyAttrs[p.attribute];
-				}
-				switch (p.type) {
-				case BOOLEAN:
-					qualify &= p
-							.isRelevant(record.getBooleanAttribute(attrIdx));
-					break;
-				case INT:
-					qualify &= p.isRelevant(record.getIntAttribute(attrIdx));
-					break;
-				case LONG:
-					qualify &= p.isRelevant(record.getLongAttribute(attrIdx));
-					break;
-				case DOUBLE:
-					qualify &= p.isRelevant(record.getFloatAttribute(attrIdx));
-					break;
-				case DATE:
-					qualify &= p.isRelevant(record.getDateAttribute(attrIdx));
-					break;
-				case STRING:
-					qualify &= p.isRelevant(record.getStringAttribute(attrIdx,
-							20));
-					break;
-				case VARCHAR:
-					qualify &= p.isRelevant(record.getStringAttribute(attrIdx,
-							100));
-					break;
-				default:
-					throw new RuntimeException("Invalid data type!");
-				}
-			}
-			return qualify;
-		}
-
-		@Override
-		public String toString() {
-			return Joiner.on(";").join(predicates);
-		}
+	@Override
+	public String toString() {
+		return Joiner.on(";").join(predicates);
 	}
 }

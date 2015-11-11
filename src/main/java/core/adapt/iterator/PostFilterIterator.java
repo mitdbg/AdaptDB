@@ -7,13 +7,13 @@ import java.io.Serializable;
 
 import com.google.common.io.ByteStreams;
 
-import core.adapt.Query.FilterQuery;
+import core.adapt.Query;
 
 public class PostFilterIterator extends PartitionIterator implements
 		Serializable {
 	private static final long serialVersionUID = 1L;
 
-	protected FilterQuery query;
+	protected Query query;
 
 	public PostFilterIterator() {
 	}
@@ -27,7 +27,7 @@ public class PostFilterIterator extends PartitionIterator implements
 		}
 	}
 
-	public PostFilterIterator(FilterQuery query) {
+	public PostFilterIterator(Query query) {
 		this.query = query;
 	}
 
@@ -43,7 +43,7 @@ public class PostFilterIterator extends PartitionIterator implements
 
 	@Override
 	public void readFields(DataInput in) throws IOException {
-		query = new FilterQuery(); // hard coded
+		query = new Query(); // hard coded
 		query.readFields(in);
 	}
 

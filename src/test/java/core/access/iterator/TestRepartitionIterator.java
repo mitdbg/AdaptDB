@@ -8,7 +8,7 @@ import com.google.common.collect.Lists;
 import core.adapt.Partition;
 import core.adapt.Predicate;
 import core.adapt.Predicate.PREDTYPE;
-import core.adapt.Query.FilterQuery;
+import core.adapt.Query;
 import core.adapt.iterator.PartitionIterator;
 import core.adapt.iterator.PostFilterIterator;
 import core.adapt.iterator.RepartitionIterator;
@@ -21,7 +21,7 @@ public class TestRepartitionIterator extends TestCase {
 	protected String partitionDir;
 	protected List<String> partitionPaths;
 
-	protected FilterQuery query;
+	protected Query query;
 	protected RNode newIndexTree;
 
 	@Override
@@ -32,7 +32,7 @@ public class TestRepartitionIterator extends TestCase {
 				PREDTYPE.GEQ);
 		Predicate p2 = new Predicate(attributeIdx, TYPE.INT, 6000000,
 				PREDTYPE.LEQ);
-		query = new FilterQuery(new Predicate[] { p1, p2 });
+		query = new Query(new Predicate[] { p1, p2 });
 
 		partitionPaths = Lists.newArrayList();
 

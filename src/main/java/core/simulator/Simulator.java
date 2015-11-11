@@ -10,7 +10,7 @@ import org.apache.hadoop.mapreduce.Job;
 import core.adapt.Predicate;
 import core.adapt.AccessMethod.PartitionSplit;
 import core.adapt.Predicate.PREDTYPE;
-import core.adapt.Query.FilterQuery;
+import core.adapt.Query;
 import core.adapt.iterator.RepartitionIterator;
 import core.adapt.opt.Optimizer;
 import core.utils.ConfUtils;
@@ -49,7 +49,7 @@ public class Simulator {
 	public void testRunQuery() {
 		Predicate[] predicates = new Predicate[] { new Predicate(0, TYPE.LONG,
 				3002147L, PREDTYPE.LEQ) };
-		opt.buildPlan(new FilterQuery(predicates));
+		opt.buildPlan(new Query(predicates));
 	}
 
 	public void testSinglePredicateRun() {
@@ -61,7 +61,7 @@ public class Simulator {
 			// Predicate p2 = new Predicate(10, TYPE.DATE, new
 			// SimpleDate(year+1,1,1), PREDTYPE.LT);
 			System.out.println("Updated Bucket Counts");
-			opt.buildPlan(new FilterQuery(new Predicate[] { p1 }));
+			opt.buildPlan(new Query(new Predicate[] { p1 }));
 			System.out.println("Completed Query " + i);
 		}
 	}
@@ -80,7 +80,7 @@ public class Simulator {
 				doUpdate = false;
 			}
 
-			PartitionSplit[] splits = opt.buildPlan(new FilterQuery(
+			PartitionSplit[] splits = opt.buildPlan(new Query(
 					new Predicate[] { p1, p2 }));
 			for (PartitionSplit ps : splits) {
 				if (ps.getIterator() instanceof RepartitionIterator) {
@@ -116,7 +116,7 @@ public class Simulator {
 				doUpdate = false;
 			}
 
-			PartitionSplit[] splits = opt.buildPlan(new FilterQuery(
+			PartitionSplit[] splits = opt.buildPlan(new Query(
 					new Predicate[] { p1, p2 }));
 			for (PartitionSplit ps : splits) {
 				if (ps.getIterator() instanceof RepartitionIterator) {
@@ -153,7 +153,7 @@ public class Simulator {
 				doUpdate = false;
 			}
 
-			PartitionSplit[] splits = opt.buildPlan(new FilterQuery(
+			PartitionSplit[] splits = opt.buildPlan(new Query(
 					new Predicate[] { p1, p2 }));
 			for (PartitionSplit ps : splits) {
 				if (ps.getIterator() instanceof RepartitionIterator) {

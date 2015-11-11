@@ -6,7 +6,6 @@ import java.util.List;
 import core.adapt.Predicate;
 import core.adapt.Query;
 import core.adapt.Predicate.PREDTYPE;
-import core.adapt.Query.FilterQuery;
 import core.adapt.spark.SparkQuery;
 import core.common.globals.Globals;
 import core.utils.ConfUtils;
@@ -72,13 +71,13 @@ public class CMTWorkload {
 		return p;
 	}
 	
-	public List<FilterQuery> generateWorkload() {
+	public List<Query> generateWorkload() {
 		byte[] stringBytes = HDFSUtils.readFile(
 				HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()), 
 				"/user/mdindex/cmt_queries.log");
 		String queriesString = new String(stringBytes);
 		String[] queries = queriesString.split("\n");
-		List<FilterQuery> ret = new ArrayList<FilterQuery>();
+		List<Query> ret = new ArrayList<Query>();
 		for (int i=0; i<queries.length; i++) {
 			String query = queries[i];
 			String[] predicates = query.split(";");
@@ -88,7 +87,7 @@ public class CMTWorkload {
 				queryPreds.add(p);
 			}
 			Predicate[] predArray = queryPreds.toArray(new Predicate[queryPreds.size()]);
-			ret.add(new Query.FilterQuery(predArray));
+			ret.add(new Query(predArray));
 		}
 		
 		return ret;
@@ -97,12 +96,12 @@ public class CMTWorkload {
 	public void runWorkload() {
 		long start, end;
 		SparkQuery sq = new SparkQuery(cfg);
-		List<FilterQuery> queries = generateWorkload();
-		for (FilterQuery q: queries) {
+		List<Query> queries = generateWorkload();
+		for (Query q: queries) {
 			System.out.println("INFO: Query:" + q.toString());
 		}
 		
-		for (FilterQuery q : queries) {
+		for (Query q : queries) {
 			start = System.currentTimeMillis();
 			long result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(),
 					q.getPredicates()).count();
