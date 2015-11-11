@@ -33,18 +33,18 @@ public class CMTWorkload {
 
 		// delete query history
 		// Cleanup queries file - to remove past query workload
-		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
-				cfg.getHDFS_WORKING_DIR() + "/queries", false);
+		//HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
+		//		cfg.getHDFS_WORKING_DIR() + "/queries", false);
 	}
-	
+
 	public Predicate getPredicate(String pred) {
 		String[] parts = pred.split(" ");
 		int attrId = Globals.schema.getAttributeId(parts[0].trim());
-		
+
 		if (attrId == -1) {
 			throw new RuntimeException("Unknown attr: " + parts[0].trim());
 		}
-		
+
 		TYPE attrType = Globals.schema.getType(attrId);
 		Object value = TypeUtils.deserializeValue(attrType, parts[2].trim().replaceAll("'", ""));
 		String predTypeStr = parts[1].trim();
@@ -68,14 +68,14 @@ public class CMTWorkload {
 		default:
 			throw new RuntimeException("Unknown predType " + predTypeStr);
 		}
-		
+
 		Predicate p = new Predicate(parts[0].trim(), attrType, value, predType);
 		return p;
 	}
-	
+
 	public List<FilterQuery> generateWorkload() {
 		byte[] stringBytes = HDFSUtils.readFile(
-				HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()), 
+				HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
 				"/user/mdindex/cmt_queries.log");
 		String queriesString = new String(stringBytes);
 		String[] queries = queriesString.split("\n");
@@ -91,10 +91,10 @@ public class CMTWorkload {
 			Predicate[] predArray = queryPreds.toArray(new Predicate[queryPreds.size()]);
 			ret.add(new Query.FilterQuery(predArray));
 		}
-		
+
 		return ret;
 	}
-	
+
 	public void runWorkload() {
 		long start, end;
 		SparkQuery sq = new SparkQuery(cfg);
@@ -102,17 +102,17 @@ public class CMTWorkload {
 		for (FilterQuery q: queries) {
 			System.out.println("INFO: Query:" + q.toString());
 		}
-		
+
 		for (FilterQuery q : queries) {
 			start = System.currentTimeMillis();
 			long result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(),
 					q.getPredicates()).count();
 			end = System.currentTimeMillis();
-			System.out.println("RES: Time Taken: " + (end - start) + 
+			System.out.println("RES: Time Taken: " + (end - start) +
 					"; Result: " + result);
 		}
 	}
-	
+
 	public void loadSettings(String[] args) {
 		int counter = 0;
 		while (counter < args.length) {
