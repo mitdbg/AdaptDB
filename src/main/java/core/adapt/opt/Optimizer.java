@@ -58,7 +58,7 @@ public class Optimizer {
 	}
 
 	public static class Action {
-		public int pid; // Predicate
+		public Predicate pid; // Predicate
 		public int option; // Says which if I used to create this plan
 		public Action left;
 		public Action right;
@@ -137,12 +137,135 @@ public class Optimizer {
 	 * @return
 	 */
 	public PartitionSplit[] buildMultiPredicatePlan(final Query q) {
-		return null;
+		this.queryWindow.add(q);
+		
+		Predicate[] ps = q.getPredicates();
+		LinkedList<Predicate> choices = new LinkedList<Predicate>();
+		
+		// Initialize the set of choices for predicates.
+		for (int i=0; i<ps.length; i++) {
+			choices.add(ps[i]);
+		}
+		
+		double benefit = 0;
+		List<RNode> buckets = rt.getMatchingBuckets(ps);
+		
+		// Till we get no better plan, try to add a predicate into the tree.
+		while(true) {
+			Plan best = getBestPlan(choices, ps);	
+			Predicate inserted = getPredicateInserted(best);
+			if (inserted == null) {
+				break;
+			} else {
+				benefit += best.benefit;
+				this.updateIndex(best, q.getPredicates());	
+				choices.remove(inserted);
+			}
+		}
+		
+		List<RNode> newBuckets = rt.getMatchingBuckets(ps);
+		double cost = 0;
+		List<Integer> modifiedBuckets = new ArrayList<Integer>();
+		List<Integer> unmodifiedBuckets = new ArrayList<Integer>();
+		
+		for (RNode r: buckets) {
+			boolean found = false;
+			for (RNode s: newBuckets) {
+				if (s.bucket.getBucketId() == r.bucket.getBucketId()) {
+					found = true;
+					break;
+				}
+			}
+			
+			if (found) {
+				unmodifiedBuckets.add(r.bucket.getBucketId());
+			} else {
+				modifiedBuckets.add(r.bucket.getBucketId());
+				// TODO: Multiplier.
+				cost += r.bucket.getEstimatedNumTuples();
+			}
+		}
+		
+		this.persistQueryToDisk(q);
+		List<PartitionSplit> lps = new ArrayList<PartitionSplit>();
+		if (benefit > cost) {
+			if (unmodifiedBuckets.size() > 0) {
+				PartitionIterator pi = new PostFilterIterator(q);
+				int[] bids = new int[unmodifiedBuckets.size()];
+				int counter = 0;
+				for (Integer i: unmodifiedBuckets) {
+					bids[counter] = i;
+					counter++;
+				}
+				PartitionSplit psplit = new PartitionSplit(bids, pi);
+				lps.add(psplit);
+			}
+			
+			if (modifiedBuckets.size() > 0) {
+				PartitionIterator pi = new RepartitionIterator(q);
+				int[] bids = new int[modifiedBuckets.size()];
+				int counter = 0;
+				for (Integer i: modifiedBuckets) {
+					bids[counter] = i;
+					counter++;
+				}
+				PartitionSplit psplit = new PartitionSplit(bids, pi);
+				lps.add(psplit);
+			}
+		} else {
+			PartitionIterator pi = new PostFilterIterator(q);
+			int[] bids = new int[unmodifiedBuckets.size() + modifiedBuckets.size()];
+			int counter = 0;
+			for (Integer i: unmodifiedBuckets) {
+				bids[counter] = i;
+				counter++;
+			}
+			for (Integer i: modifiedBuckets) {
+				bids[counter] = i;
+				counter++;
+			}
+			PartitionSplit psplit = new PartitionSplit(bids, pi);
+			lps.add(psplit);
+		}
+		
+		PartitionSplit[] splits = lps.toArray(new PartitionSplit[lps.size()]);
+		return splits;
 	}
 
-	public PartitionSplit[] buildPlan(final Query fq) {
-		this.queryWindow.add(fq);
-		Plan best = getBestPlan(fq.getPredicates());
+	private Predicate getPredicateInserted(Plan plan) {
+		LinkedList<Action> queue = new LinkedList<Action>();
+		queue.add(plan.actions);
+		Predicate pred = null;
+		while (!queue.isEmpty()) {
+			Action top = queue.removeFirst();
+			if (top.option == 1) {
+				pred = top.pid;
+				break;
+			}
+			
+			if (top.left != null) {
+				queue.add(top.left);
+			}
+			
+			if (top.right != null) {
+				queue.add(top.right);
+			}
+		}
+		return pred;
+	}
+	
+	public PartitionSplit[] buildPlan(final Query q) {
+		this.queryWindow.add(q);
+		
+		Predicate[] ps = q.getPredicates();
+		LinkedList<Predicate> choices = new LinkedList<Predicate>();
+		
+		// Initialize the set of choices for predicates.
+		for (int i=0; i<ps.length; i++) {
+			choices.add(ps[i]);
+		}
+		
+		Plan best = getBestPlan(choices, ps);
 
 		System.out.println("plan.cost: " + best.cost + " plan.benefit: "
 				+ best.benefit);
@@ -152,9 +275,9 @@ public class Optimizer {
 
 		PartitionSplit[] psplits;
 		if (best != null) {
-			psplits = this.getPartitionSplits(best, fq);
+			psplits = this.getPartitionSplits(best, q);
 		} else {
-			psplits = this.buildAccessPlan(fq);
+			psplits = this.buildAccessPlan(q);
 		}
 
 		// Check if we are updating the index ?
@@ -178,16 +301,16 @@ public class Optimizer {
 		}
 		System.out.println("Query Cost: " + totalCostOfQuery);
 
-		this.persistQueryToDisk(fq);
+		this.persistQueryToDisk(q);
 		if (updated) {
 			System.out.println("INFO: Index being updated");
-			this.updateIndex(best, fq.getPredicates());
+			this.updateIndex(best, q.getPredicates());
 			this.persistIndexToDisk();
 			for (int i = 0; i < psplits.length; i++) {
 				if (psplits[i].getIterator().getClass() == RepartitionIterator.class) {
 					psplits[i] = new PartitionSplit(
 							psplits[i].getPartitions(),
-							new RepartitionIterator(fq, this.rt.getRoot()));
+							new RepartitionIterator(q));
 				}
 			}
 		} else {
@@ -197,12 +320,12 @@ public class Optimizer {
 		return psplits;
 	}
 
-	private Plan getBestPlan(Predicate[] ps) {
+	private Plan getBestPlan(List<Predicate> choices, Predicate[] ps) {
 		// TODO: Multiple predicates seem to complicate the simple idea we had;
 		// think more :-/
 		Plan plan = null;
-		for (int i = 0; i < ps.length; i++) {
-			Plan option = getBestPlanForPredicate(ps, i);
+		for (Predicate p: ps) {
+			Plan option = getBestPlanForPredicate(p, ps);
 			if (plan == null) {
 				plan = option;
 			} else {
@@ -234,7 +357,7 @@ public class Optimizer {
 		case 0:
 			break;
 		case 1:
-			Predicate p = ps[a.pid];
+			Predicate p = a.pid;
 			RNode r = n.clone();
 			r.attribute = p.attribute;
 			r.type = p.type;
@@ -247,7 +370,7 @@ public class Optimizer {
 
 			break;
 		case 2:
-			Predicate p2 = ps[a.pid];
+			Predicate p2 = a.pid;
 			assert p2.attribute == n.leftChild.attribute;
 			assert p2.attribute == n.rightChild.attribute;
 			RNode n2 = n.clone();
@@ -332,7 +455,7 @@ public class Optimizer {
 						bucketIds[i] = bs.get(i).bucket.getBucketId();
 					}
 
-					Predicate p = ps[a.pid];
+					Predicate p = a.pid;
 					RNode r = n.clone();
 					r.attribute = p.attribute;
 					r.type = p.type;
@@ -347,7 +470,7 @@ public class Optimizer {
 					// Give new bucket ids to all nodes below this
 					updateBucketIds(bs);
 
-					PartitionIterator pi = new RepartitionIterator(fq, r);
+					PartitionIterator pi = new RepartitionIterator(fq);
 					PartitionSplit psplit = new PartitionSplit(bucketIds, pi);
 					lps.add(psplit);
 					isModifying = true;
@@ -599,9 +722,9 @@ public class Optimizer {
 		r.parent = old.parent;
 	}
 
-	private Plan getBestPlanForPredicate(Predicate[] ps, int i) {
+	private Plan getBestPlanForPredicate(Predicate choice, Predicate[] ps) {
 		RNode root = rt.getRoot();
-		Plans plans = getBestPlanForSubtree(root, ps, i);
+		Plans plans = getBestPlanForSubtree(root, choice, ps);
 		return plans.Best;
 	}
 
@@ -631,7 +754,7 @@ public class Optimizer {
 		}
 	}
 
-	private Plans getBestPlanForSubtree(RNode node, Predicate[] ps, int pid) {
+	private Plans getBestPlanForSubtree(RNode node, Predicate choice, Predicate[] ps) {
 		// Option Index
 		// 1 => Replace
 		// 2 => Swap down X
@@ -651,7 +774,7 @@ public class Optimizer {
 			pl.Best = p1;
 			return pl;
 		} else {
-			Predicate p = ps[pid];
+			Predicate p = choice;
 			Plan pTop = new Plan();
 
 			Plan best = new Plan();
@@ -698,7 +821,7 @@ public class Optimizer {
 
 			Plans leftPlan;
 			if (goLeft) {
-				leftPlan = getBestPlanForSubtree(node.leftChild, ps, pid);
+				leftPlan = getBestPlanForSubtree(node.leftChild, choice, ps);
 			} else {
 				leftPlan = new Plans();
 				leftPlan.Best = null;
@@ -708,7 +831,7 @@ public class Optimizer {
 
 			Plans rightPlan;
 			if (goRight) {
-				rightPlan = getBestPlanForSubtree(node.rightChild, ps, pid);
+				rightPlan = getBestPlanForSubtree(node.rightChild, choice, ps);
 			} else {
 				rightPlan = new Plans();
 				rightPlan.Best = null;
@@ -748,7 +871,7 @@ public class Optimizer {
 						pl.cost = cost;
 						pl.benefit = benefit;
 						Action ac = new Action();
-						ac.pid = pid;
+						ac.pid = choice;
 						ac.option = 1;
 						pl.actions = ac;
 
@@ -768,7 +891,7 @@ public class Optimizer {
 				pl.cost = leftPlan.PTop.cost + rightPlan.PTop.cost;
 				pl.benefit = leftPlan.PTop.benefit + rightPlan.PTop.benefit;
 				Action ac = new Action();
-				ac.pid = pid;
+				ac.pid = choice;
 				ac.option = 2;
 				ac.left = leftPlan.PTop.actions;
 				ac.right = rightPlan.PTop.actions;
@@ -788,7 +911,7 @@ public class Optimizer {
 						pl.cost = rightPlan.PTop.cost;
 						pl.benefit = rightPlan.PTop.benefit;
 						Action ac = new Action();
-						ac.pid = pid;
+						ac.pid = choice;
 						ac.option = 3;
 						ac.right = rightPlan.PTop.actions;
 						pl.actions = ac;
@@ -802,7 +925,7 @@ public class Optimizer {
 						pl.cost = leftPlan.PTop.cost;
 						pl.benefit = leftPlan.PTop.benefit;
 						Action ac = new Action();
-						ac.pid = pid;
+						ac.pid = choice;
 						ac.option = 3;
 						ac.left = leftPlan.PTop.actions;
 						pl.actions = ac;
@@ -846,7 +969,7 @@ public class Optimizer {
 								pl.cost = cost;
 								pl.benefit = benefit;
 								Action ac = new Action();
-								ac.pid = pid;
+								ac.pid = choice;
 								ac.option = 1;
 								pl.actions = ac;
 
@@ -867,7 +990,7 @@ public class Optimizer {
 				pl.cost = leftPlan.Best.cost + rightPlan.Best.cost;
 				pl.benefit = leftPlan.Best.benefit + rightPlan.Best.benefit;
 				Action ac = new Action();
-				ac.pid = pid;
+				ac.pid = choice;
 				ac.option = 5;
 				ac.left = leftPlan.Best.actions;
 				ac.right = rightPlan.Best.actions;
@@ -878,7 +1001,7 @@ public class Optimizer {
 				pl.cost = rightPlan.Best.cost;
 				pl.benefit = rightPlan.Best.benefit;
 				Action ac = new Action();
-				ac.pid = pid;
+				ac.pid = choice;
 				ac.option = 5;
 				ac.right = rightPlan.Best.actions;
 				pl.actions = ac;
@@ -888,7 +1011,7 @@ public class Optimizer {
 				pl.cost = leftPlan.Best.cost;
 				pl.benefit = leftPlan.Best.benefit;
 				Action ac = new Action();
-				ac.pid = pid;
+				ac.pid = choice;
 				ac.option = 5;
 				ac.left = leftPlan.Best.actions;
 				pl.actions = ac;

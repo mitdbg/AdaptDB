@@ -52,7 +52,7 @@ public class HPInput {
 		return new PartitionSplit[] { new PartitionSplit(
 				Ints.toArray(partitionIdFileMap.keySet()),
 				new RepartitionIterator(new Query(predicates,
-						am.getKey()), am.getIndex().getRoot())) };
+						am.getKey()))) };
 	}
 
 	public PartitionSplit[] getIndexScan(boolean justAccess,
