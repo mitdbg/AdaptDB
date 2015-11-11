@@ -1,9 +1,8 @@
-package core.index.kdtree;
+package core.index;
 
 import java.util.List;
 
-import core.index.MDIndex;
-import core.index.key.MDIndexKey;
+import core.key.RawIndexKey;
 import core.utils.TypeUtils.*;
 
 /**
@@ -35,13 +34,13 @@ public class KDNode {
 		return numBuckets;
 	}
 
-	public void setValues(int dimension, TYPE type, MDIndexKey key) {
+	public void setValues(int dimension, TYPE type, RawIndexKey key) {
 		this.dimension = dimension;
 		this.type = type;
 		this.value = getValue(dimension, type, key);
 	}
 
-	private Object getValue(int dimension, TYPE type, MDIndexKey key) {
+	private Object getValue(int dimension, TYPE type, RawIndexKey key) {
 		switch (type) {
 		case INT:
 			return key.getIntAttribute(dimension);
@@ -59,7 +58,7 @@ public class KDNode {
 	}
 
 	private int compareKey(Object value, int dimension, TYPE type,
-			MDIndexKey key) {
+			RawIndexKey key) {
 		switch (type) {
 		case INT:
 			return ((Integer) value).compareTo(key.getIntAttribute(dimension));
@@ -85,7 +84,7 @@ public class KDNode {
 		}
 	}
 
-	public KDNode insert(MDIndexKey key) {
+	public KDNode insert(RawIndexKey key) {
 		if (value == null) {
 			return this;
 		} else if (compareKey(value, dimension, type, key) > 0) {
@@ -119,7 +118,7 @@ public class KDNode {
 		}
 	}
 
-	public int getBucketId(MDIndexKey key, int start) {
+	public int getBucketId(RawIndexKey key, int start) {
 		if (value == null) {
 			return start;
 		}
@@ -136,7 +135,7 @@ public class KDNode {
 		}
 	}
 
-	public List<MDIndex.Bucket> rangeSearch(MDIndexKey low, MDIndexKey high) {
+	public List<MDIndex.Bucket> rangeSearch(RawIndexKey low, RawIndexKey high) {
 		return null;
 	}
 }

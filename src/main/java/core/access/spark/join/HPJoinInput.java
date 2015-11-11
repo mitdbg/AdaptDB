@@ -7,7 +7,7 @@ import java.util.Map;
 import core.access.PartitionRange;
 import core.access.Predicate;
 import core.index.MDIndex;
-import core.index.key.ParsedTupleList;
+import core.key.ParsedTupleList;
 import core.utils.Range;
 import core.utils.TypeUtils;
 import org.apache.hadoop.conf.Configuration;

@@ -10,7 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import core.index.MDIndex;
-import core.index.key.CartilageIndexKey;
+import core.key.RawIndexKey;
 import core.utils.BinaryUtils;
 import core.utils.IOUtils;
 
@@ -29,11 +29,11 @@ public class InputReader {
 	long arrayCopyTime, bucketIdTime, brokenTime, clearTime;
 
 	MDIndex index;
-	CartilageIndexKey key;
+	RawIndexKey key;
 
 	public boolean firstPass;
 
-	public InputReader(MDIndex index, CartilageIndexKey key) {
+	public InputReader(MDIndex index, RawIndexKey key) {
 		this.index = index;
 		this.key = key;
 		this.firstPass = true;

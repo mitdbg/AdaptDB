@@ -15,8 +15,8 @@ import com.google.common.io.ByteStreams;
 import core.access.HDFSPartition;
 import core.access.Partition;
 import core.access.Query.FilterQuery;
-import core.index.robusttree.RNode;
-import core.index.robusttree.RobustTree;
+import core.index.RNode;
+import core.index.RobustTree;
 import core.utils.HDFSUtils;
 
 /**

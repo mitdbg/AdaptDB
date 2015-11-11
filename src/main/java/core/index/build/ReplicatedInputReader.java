@@ -5,8 +5,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 import core.index.MDIndex;
-import core.index.key.CartilageIndexKey;
-import core.index.key.ParsedTupleList;
+import core.key.RawIndexKey;
+import core.key.ParsedTupleList;
 import core.utils.BinaryUtils;
 import core.utils.IOUtils;
 
@@ -25,11 +25,11 @@ public class ReplicatedInputReader {
 	long arrayCopyTime, bucketIdTime, brokenTime, clearTime;
 
 	MDIndex[] indexes;
-	CartilageIndexKey[] keys;
+	RawIndexKey[] keys;
 
 	boolean firstPass;
 
-	public ReplicatedInputReader(MDIndex[] indexes, CartilageIndexKey[] keys) {
+	public ReplicatedInputReader(MDIndex[] indexes, RawIndexKey[] keys) {
 		this.indexes = indexes;
 		this.keys = keys;
 		this.firstPass = true;

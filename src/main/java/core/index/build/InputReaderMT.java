@@ -7,7 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import core.index.MDIndex;
-import core.index.key.CartilageIndexKey;
+import core.key.RawIndexKey;
 import core.utils.IOUtils;
 
 public class InputReaderMT {
@@ -21,11 +21,11 @@ public class InputReaderMT {
 	int lineCount;
 
 	MDIndex index;
-	CartilageIndexKey[] keys;
+	RawIndexKey[] keys;
 
 	boolean firstPass;
 
-	public InputReaderMT(MDIndex index, CartilageIndexKey[] keys) {
+	public InputReaderMT(MDIndex index, RawIndexKey[] keys) {
 		this.index = index;
 		this.keys = keys;
 		this.firstPass = true;
@@ -107,7 +107,7 @@ public class InputReaderMT {
 	}
 
 	public class BufferProcessor implements Runnable {
-		private CartilageIndexKey key;
+		private RawIndexKey key;
 		private int curr, previous, end;
 		private int lineCount;
 		private byte[] firstBroken, lastBroken;
@@ -119,7 +119,7 @@ public class InputReaderMT {
 		 * @param end
 		 *            -- excluding
 		 */
-		public BufferProcessor(CartilageIndexKey key, PartitionWriter writer) {
+		public BufferProcessor(RawIndexKey key, PartitionWriter writer) {
 			this.key = key;
 			this.writer = writer;
 		}

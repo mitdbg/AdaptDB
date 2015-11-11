@@ -3,7 +3,11 @@ package core.utils;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.hadoop.fs.FileSystem;
+
+import core.globals.Globals;
 
 /**
  * Custom HDFS Output Stream implementation. Buffers the writes and writes out
@@ -24,9 +28,11 @@ public class HDFSBufferedOutputStream extends OutputStream {
 	// Path to HDFS file.
 	String filePath;
 
-	// HDFS Filesystem.
+	// HDFS File System.
 	FileSystem fs;
 
+	CuratorFramework client;
+	
 	public HDFSBufferedOutputStream(FileSystem fs, String filePath,
 			short replication, int bufferSize) {
 		this.buffer = new byte[bufferSize];
@@ -35,13 +41,23 @@ public class HDFSBufferedOutputStream extends OutputStream {
 
 		// Create the file if it does not exist.
 		HDFSUtils.safeCreateFile(this.fs, filePath, replication);
+		
+		client = CuratorUtils.createAndStartClient(
+				Globals.zookeeperHosts);
 	}
 
 	@Override
 	public void flush() {
-		HDFSUtils.appendBytes(this.fs, this.filePath, this.buffer, 0,
-				curPointer);
-		this.curPointer = 0;
+		InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client,
+				"/partition-lock-" + this.filePath.hashCode());
+
+		try {
+			HDFSUtils.appendBytes(this.fs, this.filePath, this.buffer, 0,
+					curPointer);
+			this.curPointer = 0;			
+		} finally {
+			CuratorUtils.releaseLock(l);
+		}
 	}
 
 	@Override

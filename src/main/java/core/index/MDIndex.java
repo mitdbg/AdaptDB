@@ -4,8 +4,8 @@ import java.util.HashMap;
 
 import org.junit.Assert;
 
-import core.index.key.MDIndexKey;
-import core.index.key.ParsedTupleList;
+import core.key.RawIndexKey;
+import core.key.ParsedTupleList;
 import core.utils.Range;
 import core.utils.TypeUtils;
 
@@ -143,7 +143,7 @@ public interface MDIndex {
 	 * @param key
 	 * @return
 	 */
-	public Object getBucketId(MDIndexKey key);
+	public Object getBucketId(RawIndexKey key);
 
 	/**
 	 * Serialize the index into a byte array.

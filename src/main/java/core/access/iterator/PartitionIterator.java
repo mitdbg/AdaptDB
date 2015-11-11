@@ -14,7 +14,7 @@ import com.google.common.io.ByteStreams;
 import core.access.HDFSPartition;
 import core.access.Partition;
 import core.access.Predicate;
-import core.index.robusttree.Globals;
+import core.globals.Globals;
 import core.utils.BinaryUtils;
 import core.utils.ReflectionUtils;
 

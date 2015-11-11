@@ -6,8 +6,8 @@ package core.access.iterator;
 
 import java.io.Serializable;
 
-import core.index.key.CartilageIndexKey;
-import core.index.robusttree.Globals;
+import core.globals.Globals;
+import core.key.RawIndexKey;
 
 /**
  * An wrapper class over CartilageIndexKey (to reuse much of the functionality)
@@ -15,7 +15,7 @@ import core.index.robusttree.Globals;
  * @author alekh
  *
  */
-public class IteratorRecord extends CartilageIndexKey implements Serializable {
+public class IteratorRecord extends RawIndexKey implements Serializable {
 
 	/**
      *

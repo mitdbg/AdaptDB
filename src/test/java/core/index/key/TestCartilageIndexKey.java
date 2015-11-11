@@ -3,6 +3,7 @@ package core.index.key;
 import java.text.SimpleDateFormat;
 
 import junit.framework.TestCase;
+import core.key.RawIndexKey;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 
@@ -11,7 +12,7 @@ public class TestCartilageIndexKey extends TestCase {
 	private TYPE[] types;
 	private String tuple1;
 	// private CartilageBinaryRecord r1;
-	private CartilageIndexKey key;
+	private RawIndexKey key;
 
 	public static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -26,7 +27,7 @@ public class TestCartilageIndexKey extends TestCase {
 		// r1 = new CartilageBinaryRecord('|');
 		// r1.setBytes(tuple1.getBytes());
 
-		key = new CartilageIndexKey('|');
+		key = new RawIndexKey('|');
 	}
 
 	public void testSetTuple() {

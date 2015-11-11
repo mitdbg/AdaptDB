@@ -1,4 +1,4 @@
-package core.index.key;
+package core.key;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -11,7 +11,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Bytes;
 
-import core.index.robusttree.Globals;
+import core.globals.Globals;
 import core.utils.BinaryUtils;
 import core.utils.Pair;
 import core.utils.TypeUtils;
@@ -55,7 +55,7 @@ public class ParsedTupleList {
 	 *
 	 * @param key
 	 */
-	public void insert(CartilageIndexKey key) {
+	public void insert(RawIndexKey key) {
 		if (types == null)
 			this.types = key.types;
 
@@ -372,7 +372,7 @@ public class ParsedTupleList {
 	 * @author alekh
 	 *
 	 */
-	public static class KeySetIterator implements Iterator<CartilageIndexKey> {
+	public static class KeySetIterator implements Iterator<RawIndexKey> {
 		private Iterator<Object[]> valueItr;
 		private ParsedIndexKey key;
 
@@ -387,7 +387,7 @@ public class ParsedTupleList {
 		}
 
 		@Override
-		public CartilageIndexKey next() {
+		public RawIndexKey next() {
 			key.setValues(valueItr.next());
 			return key;
 		}
@@ -428,7 +428,7 @@ public class ParsedTupleList {
 	}
 
 	public void unmarshall(byte[] bytes) {
-		CartilageIndexKey record = new CartilageIndexKey(Globals.DELIMITER);
+		RawIndexKey record = new RawIndexKey(Globals.DELIMITER);
 		int offset = 0, previous = 0;
 
 		for (; offset < bytes.length; offset++) {

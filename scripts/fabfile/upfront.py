@@ -12,12 +12,12 @@ def bulk_sample_gen():
         run('./hadoop fs -mkdir -p %s' % env.conf['HDFSDIR'])
         cmd = './hadoop jar $JAR perf.benchmark.RunIndexBuilder' + \
             ' --conf $CONF' + \
+            ' --tableName $TABLENAME' + \
             ' --inputsDir $INPUTSDIR' + \
-            ' --samplesDir $HDFSDIRsamples/' + \
             ' --method 1 ' + \
             ' --numReplicas 1' + \
             ' --samplingRate $SAMPLINGRATE' + \
-            ' --delimiter $DELIMITER' + \
+            ' --delimiter "$DELIMITER"' + \
             ' --schema "$SCHEMA"'  + \
             ' --numFields $NUMFIELDS' + \
             ' --numTuples $NUMTUPLES' + \
@@ -28,15 +28,17 @@ def bulk_sample_gen():
 @roles('master')
 def create_robust_tree():
     global conf
+    print env.roledefs
     with cd(env.conf['HADOOPBIN']):
         cmd = './hadoop jar $JAR perf.benchmark.RunIndexBuilder ' + \
             ' --conf $CONF' + \
+            ' --tableName $TABLENAME' + \
             ' --inputsDir $INPUTSDIR' + \
             ' --samplesDir $HDFSDIRsamples/' + \
             ' --method 2 ' + \
             ' --numReplicas 1' + \
             ' --numBuckets $NUMBUCKETS' + \
-            ' --delimiter $DELIMITER' + \
+            ' --delimiter "$DELIMITER"' + \
             ' --schema "$SCHEMA"'  + \
             ' --numFields $NUMFIELDS' + \
             ' --numTuples $NUMTUPLES' + \
@@ -50,12 +52,12 @@ def write_out_sample():
     with cd(env.conf['HADOOPBIN']):
         cmd = './hadoop jar $JAR perf.benchmark.RunIndexBuilder ' + \
             ' --conf $CONF' + \
+            ' --tableName $TABLENAME' + \
             ' --inputsDir $INPUTSDIR' + \
-            ' --samplesDir $HDFSDIRsamples/' + \
             ' --method 6 ' + \
             ' --numReplicas 1' + \
             ' --numBuckets $NUMBUCKETS' + \
-            ' --delimiter $DELIMITER' + \
+            ' --delimiter "$DELIMITER"' + \
             ' --schema "$SCHEMA"'  + \
             ' --numFields $NUMFIELDS' + \
             ' --numTuples $NUMTUPLES' + \
@@ -64,34 +66,16 @@ def write_out_sample():
         run(cmd)
 
 @parallel
-def create_robust_tree_per_replica():
-    with cd(env.conf['HADOOPBIN']):
-        cmd = './hadoop jar $JAR perf.benchmark.RunIndexBuilder ' + \
-            ' --conf $CONF' + \
-            ' --inputsDir $INPUTSDIR' + \
-            ' --samplesDir $HDFSDIRsamples/' + \
-            ' --method 3 ' + \
-            ' --numReplicas 3' + \
-            ' --numBuckets $NUMBUCKETS' + \
-            ' --delimiter $DELIMITER' + \
-            ' --schema "$SCHEMA"'  + \
-            ' --numFields $NUMFIELDS' + \
-            ' --numTuples $NUMTUPLES' + \
-            ' > ~/logs/create_replicated_tree.log'
-        cmd = fill_cmd(cmd)
-        run(cmd)
-
-@parallel
 def write_partitions():
     with cd(env.conf['HADOOPBIN']):
         cmd = './hadoop jar $JAR perf.benchmark.RunIndexBuilder ' + \
             ' --conf $CONF' + \
+            ' --tableName $TABLENAME' + \
             ' --inputsDir $INPUTSDIR' + \
-            ' --samplesDir $HDFSDIRsamples/' + \
             ' --method 4 ' + \
             ' --numReplicas 1' + \
             ' --numBuckets $NUMBUCKETS' + \
-            ' --delimiter $DELIMITER' + \
+            ' --delimiter "$DELIMITER"' + \
             ' --schema "$SCHEMA"'  + \
             ' --numFields $NUMFIELDS' + \
             ' --numTuples $NUMTUPLES' + \
@@ -102,11 +86,7 @@ def write_partitions():
 @roles('master')
 def delete_partitions():
     with cd(env.conf['HADOOPBIN']):
-        bp = '%spartitions' % env.conf['HDFSDIR']
-        paths = ''
-        for i in xrange(0,10):
-            paths += bp + str(i) + ' '
-        cmd = './hadoop fs -rm -R ' + paths
+        cmd = './hadoop fs -rm -R $HDFSDIR'
         cmd = fill_cmd(cmd)
         run(cmd)
 

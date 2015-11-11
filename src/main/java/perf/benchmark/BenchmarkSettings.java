@@ -1,6 +1,6 @@
 package perf.benchmark;
 
-import core.index.robusttree.Globals;
+import core.globals.Globals;
 
 public class BenchmarkSettings {
 	public static String conf = "/Users/anil/Dev/repos/mdindex/conf/cartilage.properties";

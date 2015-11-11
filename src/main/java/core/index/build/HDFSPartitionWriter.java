@@ -13,7 +13,7 @@ public class HDFSPartitionWriter extends PartitionWriter {
 
 	private ConfUtils conf;
 
-	private short replication = 3;
+	private short replication;
 	private FileSystem hdfs;
 
 	public HDFSPartitionWriter(String partitionDir, int bufferPartitionSize,
