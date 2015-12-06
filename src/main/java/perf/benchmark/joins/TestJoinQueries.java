@@ -20,6 +20,8 @@ public class TestJoinQueries {
 	double selectivity = 0.05;
 	SparkJoinQuery sq;
 
+	int method;
+
 	public void setUp() {
 		sq = new SparkJoinQuery(cfg);
 	}
@@ -27,8 +29,8 @@ public class TestJoinQueries {
 	public void testOrderLineitemJoin() {
 		System.out.println("INFO: Running ORDERS, LINEITEM join Query");
 		long start = System.currentTimeMillis();
-		long result = sq.createJoinRDD(true, "/user/anil/orders", 0, 0,
-				"/user/anil/repl", 1, 0).count();
+		long result = sq.createJoinRDD(true, "/user/ylu/orders", 0, 0,
+				"/user/ylu/lineitem", 1, 0).count();
 		long end = System.currentTimeMillis();
 		System.out.println("RES: ORDER-LINEITEM JOIN " + (end - start) + " "
 				+ result);
@@ -37,8 +39,8 @@ public class TestJoinQueries {
 	public void testPartLineitemJoin() {
 		System.out.println("INFO: Running PART, LINEITEM join Query");
 		long start = System.currentTimeMillis();
-		long result = sq.createJoinRDD(true, "/user/anil/part", 0, 0,
-				"/user/anil/repl", 1, 1).count();
+		long result = sq.createJoinRDD(true, "/user/ylu/part", 0, 0,
+				"/user/ylu/lineitem", 1, 1).count();
 		long end = System.currentTimeMillis();
 		System.out.println("RES: PART-LINEITEM JOIN " + (end - start) + " "
 				+ result);
@@ -48,8 +50,8 @@ public class TestJoinQueries {
 		System.out.println("INFO: Running ORDERS scan");
 		long start = System.currentTimeMillis();
 		long result = sq.createScanRDD(
-				"/user/anil/orders",
-				new Predicate[] { new Predicate(0, TYPE.LONG, -1L,
+				"/user/ylu/orders",
+				new Predicate[] { new Predicate(0, TYPE.INT, -1,
 						Predicate.PREDTYPE.GT) }).count();
 		long end = System.currentTimeMillis();
 		System.out.println("RES: ORDERS scan " + (end - start) + " " + result);
@@ -57,8 +59,8 @@ public class TestJoinQueries {
 		System.out.println("INFO: Running PART scan");
 		long start2 = System.currentTimeMillis();
 		long result2 = sq.createScanRDD(
-				"/user/anil/part",
-				new Predicate[] { new Predicate(0, TYPE.LONG, -1L,
+				"/user/ylu/part",
+				new Predicate[] { new Predicate(0, TYPE.INT, -1,
 						Predicate.PREDTYPE.GT) }).count();
 		long end2 = System.currentTimeMillis();
 		System.out.println("RES: PART scan " + (end2 - start2) + " " + result2);
@@ -68,9 +70,11 @@ public class TestJoinQueries {
 		// JavaPairRDD<LongWritable, IteratorRecord> part =
 		// sq.createScanRDD("/user/anil/original/part");
 		JavaPairRDD<LongWritable, IteratorRecord> orders = sq
-				.createScanRDD("/user/anil/orders/");
+				.createScanRDD("/user/ylu/orders/",new Predicate[] { new Predicate(0, TYPE.INT, -1,
+						Predicate.PREDTYPE.GT) });
 		JavaPairRDD<LongWritable, IteratorRecord> lineitem = sq
-				.createScanRDD("/user/anil/repl/");
+				.createScanRDD("/user/ylu/lineitem/",new Predicate[] { new Predicate(0, TYPE.INT, -1,
+						Predicate.PREDTYPE.GT) });
 
 		long start = System.currentTimeMillis();
 		JavaPairRDD<String, String> ordersKey = orders
@@ -83,8 +87,8 @@ public class TestJoinQueries {
 	}
 
 	public void testSmallJoins() {
-		String input1 = "/user/anil/part";
-		String input2 = "/user/anil/repl";
+		String input1 = "/user/ylu/part";
+		String input2 = "/user/ylu/lineitem";
 		int numChunks = 10;
 		int range = 200000 * 1000;
 		int chunkSize = range / numChunks;
@@ -102,9 +106,9 @@ public class TestJoinQueries {
 			JavaPairRDD<String, String> partRDD = sq
 					.createRDD(
 							input1,
-							new Predicate(0, TYPE.LONG, lowVal,
+							new Predicate(0, TYPE.INT, lowVal,
 									Predicate.PREDTYPE.GT),
-							new Predicate(0, TYPE.LONG, highVal,
+							new Predicate(0, TYPE.INT, highVal,
 									Predicate.PREDTYPE.LEQ)).mapToPair(
 							new MapToKeyFunction(0));
 
@@ -126,12 +130,49 @@ public class TestJoinQueries {
 				+ " " + total);
 	}
 
+
+	public void loadSettings(String[] args) {
+		int counter = 0;
+		while (counter < args.length) {
+			switch (args[counter]) {
+				case "--method":
+					method = Integer.parseInt(args[counter + 1]);
+					counter += 2;
+					break;
+				default:
+					// Something we don't use
+					counter += 2;
+					break;
+			}
+		}
+	}
+
 	public static void main(String[] args) {
 		TestJoinQueries tjq = new TestJoinQueries();
+		tjq.loadSettings(args);
 		tjq.setUp();
-		// tjq.testOrderLineitemJoin();
-		tjq.testPartLineitemJoin();
-		// tjq.testBaseline();
-		// tjq.testSmallJoins();
+
+
+		switch (tjq.method) {
+			case 1:
+				tjq.testOrderLineitemJoin();
+				break;
+			case 2:
+				tjq.testPartLineitemJoin();
+				break;
+			case 3:
+				tjq.testScans();
+				break;
+			case 4:
+				tjq.testBaseline();
+				break;
+			case 5:
+				tjq.testSmallJoins();
+				break;
+			default:
+				System.out.println("Unknown method " + tjq.method + " chosen");
+				break;
+		}
+
 	}
 }

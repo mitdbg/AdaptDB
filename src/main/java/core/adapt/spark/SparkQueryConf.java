@@ -67,7 +67,8 @@ public class SparkQueryConf {
 
 	public Predicate[] getQuery() {
 		if (conf.get(QUERY) == null || conf.get(QUERY).equals("")) {
-			throw new RuntimeException("No query set in query conf.");
+			//throw new RuntimeException("No query set in query conf.");
+			return new Predicate[0];
 		}
 
 		String[] tokens = conf.get(QUERY).split(",");

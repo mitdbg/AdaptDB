@@ -30,6 +30,7 @@ public class SparkJoinQuery extends SparkQuery {
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
 		queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
 
+		System.out.println(cfg.getHADOOP_NAMENODE());
 		System.out.println(hdfsPath1 + ";" + hdfsPath2);
 
 		return ctx.newAPIHadoopFile(hdfsPath1 + ";" + hdfsPath2,

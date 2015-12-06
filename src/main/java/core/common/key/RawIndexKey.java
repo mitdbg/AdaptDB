@@ -12,351 +12,360 @@ import core.utils.TypeUtils.TYPE;
 
 public class RawIndexKey implements Cloneable {
 
-	private SimpleDate dummyDate = new SimpleDate(0, 0, 0);
+    private SimpleDate dummyDate = new SimpleDate(0, 0, 0);
 
-	protected byte[] bytes;
-	protected int offset, length;
+    protected byte[] bytes;
+    protected int offset, length;
 
-	protected int numAttrs;
-	public TYPE[] types;
-	protected int[] attributeOffsets;
+    //protected String keyString;
 
-	protected char delimiter;
-	protected int[] keyAttrIdx;
+    protected int numAttrs;
+    public TYPE[] types;
+    protected int[] attributeOffsets;
 
-	public RawIndexKey(char delimiter) {
-		this.delimiter = delimiter;
-	}
+    protected char delimiter;
+    protected int[] keyAttrIdx;
 
-	public RawIndexKey(char delimiter, int[] keyAttrIdx) {
-		this.delimiter = delimiter;
-		this.keyAttrIdx = Arrays.copyOf(keyAttrIdx, keyAttrIdx.length);
-		Arrays.sort(this.keyAttrIdx);
-	}
+    public RawIndexKey(char delimiter) {
+        this.delimiter = delimiter;
+    }
 
-	public RawIndexKey(String keyString) {
-		String[] tokens = keyString.trim().split(",");
-		this.delimiter = tokens[0].charAt(0);
-		if (tokens.length > 1) {
-			keyAttrIdx = new int[tokens.length - 1];
-			for (int i = 0; i < keyAttrIdx.length; i++) {
-				keyAttrIdx[i] = Integer.parseInt(tokens[i + 1]);
-			}
-		}
-	}
+    public RawIndexKey(char delimiter, int[] keyAttrIdx) {
+        this.delimiter = delimiter;
+        this.keyAttrIdx = Arrays.copyOf(keyAttrIdx, keyAttrIdx.length);
+        Arrays.sort(this.keyAttrIdx);
+    }
 
-	@Override
-	public RawIndexKey clone() throws CloneNotSupportedException {
-		RawIndexKey k = (RawIndexKey) super.clone();
-		k.dummyDate = new SimpleDate(0, 0, 0);
-		return k;
-	}
+    public RawIndexKey(String keyString) {
+        //this.keyString = keyString;
 
-	public void setKeys(int[] keyAttrIdx) {
-		this.keyAttrIdx = keyAttrIdx;
-	}
+        String[] tokens = keyString.trim().split(",");
 
-	public int[] getKeys() {
-		return keyAttrIdx;
-	}
+        this.delimiter = tokens[0].charAt(0);
 
-	public int getVirtualAttrIndex(int attr) {
-		if (keyAttrIdx == null) {
-			return attr;
-		}
-		for (int i = 0; i < keyAttrIdx.length; i++) {
-			if (keyAttrIdx[i] == attr) {
-				return i;
-			}
-		}
-		return -1;
-	}
+        if (tokens.length > 1) {
+            keyAttrIdx = new int[tokens.length - 1];
+            for (int i = 0; i < keyAttrIdx.length; i++) {
+                keyAttrIdx[i] = Integer.parseInt(tokens[i + 1]);
+            }
+        }
+    }
 
-	public void setBytes(byte[] bytes) {
-		setBytes(bytes, 0, bytes.length);
-	}
+    @Override
+    public RawIndexKey clone() throws CloneNotSupportedException {
+        RawIndexKey k = (RawIndexKey) super.clone();
+        k.dummyDate = new SimpleDate(0, 0, 0);
+        return k;
+    }
 
-	public void setBytes(byte[] bytes, int offset, int length) {
-		this.bytes = bytes;
-		this.offset = offset;
-		this.length = length;
-		if (this.types == null) {
-			this.types = getTypes(true);
-			attributeOffsets = new int[numAttrs];
-		}
+    public void setKeys(int[] keyAttrIdx) {
+        this.keyAttrIdx = keyAttrIdx;
+    }
 
-		int previous = offset;
-		int attrIdx = 0;
-		for (int i = offset; i < offset + length; i++) {
-			if (bytes[i] == delimiter) {
-				try {
-					attributeOffsets[attrIdx++] = previous;
-					previous = i + 1;
-				} catch (Exception e) {
-					System.out.println(delimiter + " " + new String(bytes));
-					e.printStackTrace();
-				}
-			}
-		}
-		if (attrIdx < attributeOffsets.length)
-			attributeOffsets[attrIdx] = previous;
-	}
+    public int[] getKeys() {
+        return keyAttrIdx;
+    }
 
-	/**
-	 * Gets the type information from the Schema provided.
-	 * @return
-	 */
-	public TYPE[] getTypes(boolean skipNonKey) {
-		if (this.types != null) {
-			if (keyAttrIdx == null) {
-				keyAttrIdx = new int[this.types.length];
-				for (int i = 0; i < keyAttrIdx.length; i++)
-					keyAttrIdx[i] = i;
-			}
-			return this.types;
-		}
+    public int getVirtualAttrIndex(int attr) {
+        if (keyAttrIdx == null) {
+            return attr;
+        }
+        for (int i = 0; i < keyAttrIdx.length; i++) {
+            if (keyAttrIdx[i] == attr) {
+                return i;
+            }
+        }
+        return -1;
+    }
 
-		List<TYPE> types = new ArrayList<TYPE>();
+    public void setBytes(byte[] bytes) {
+        setBytes(bytes, 0, bytes.length);
+    }
 
-		numAttrs = 0;
-		String[] tokens = new String(bytes, offset, length).split("\\"
-				+ delimiter);
+    public void setBytes(byte[] bytes, int offset, int length) {
+        this.bytes = bytes;
+        this.offset = offset;
+        this.length = length;
+        if (this.types == null) {
+            this.types = getTypes(true);
+            attributeOffsets = new int[numAttrs];
+        }
 
-		for (int i = 0; i < tokens.length; i++) {
-			numAttrs++;
+        int previous = offset;
+        int attrIdx = 0;
+        for (int i = offset; i < offset + length; i++) {
+            if (bytes[i] == delimiter) {
+                try {
+                    attributeOffsets[attrIdx++] = previous;
+                    previous = i + 1;
+                } catch (Exception e) {
+                    System.out.println(delimiter + " " + new String(bytes));
+                    e.printStackTrace();
+                }
+            }
+        }
+        if (attrIdx < attributeOffsets.length)
+            attributeOffsets[attrIdx] = previous;
+    }
 
-			// TODO: Check if this should be i or numAttrs below.
-			if (skipNonKey && keyAttrIdx != null
-					&& !Ints.contains(keyAttrIdx, i))
-				continue;
+    /**
+     * Gets the type information from the Schema provided.
+     *
+     * @return
+     */
+    public TYPE[] getTypes(boolean skipNonKey) {
+        if (this.types != null) {
+            if (keyAttrIdx == null) {
+                keyAttrIdx = new int[this.types.length];
+                for (int i = 0; i < keyAttrIdx.length; i++)
+                    keyAttrIdx[i] = i;
+            }
+            return this.types;
+        }
 
-			types.add(Globals.schema.fields[numAttrs - 1].type);
-		}
+        List<TYPE> types = new ArrayList<TYPE>();
 
-		if (keyAttrIdx == null) {
-			keyAttrIdx = new int[types.size()];
-			for (int i = 0; i < keyAttrIdx.length; i++)
-				keyAttrIdx[i] = i;
-		}
+        numAttrs = 0;
+        String[] tokens = new String(bytes, offset, length).split("\\"
+                + delimiter);
 
-		return types.toArray(new TYPE[types.size()]);
-	}
+        for (int i = 0; i < tokens.length; i++) {
+            numAttrs++;
 
-	public String getKeyString() {
-		return new String(bytes, offset, length);
-	}
+            // TODO: Check if this should be i or numAttrs below.
+            if (skipNonKey && keyAttrIdx != null
+                    && !Ints.contains(keyAttrIdx, i))
+                continue;
 
-	public String getStringAttribute(int index, int maxSize) {
-		index = keyAttrIdx[index];
-		int off = attributeOffsets[index];
-		int strSize;
-		if (index < attributeOffsets.length - 1)
-			strSize = attributeOffsets[index + 1] - off - 1;
-		else
-			strSize = offset + length - off;
+            types.add(Globals.schema.fields[numAttrs - 1].type);
+        }
 
-		return new String(bytes, off, Math.min(strSize, maxSize));
-	}
+        if (keyAttrIdx == null) {
+            keyAttrIdx = new int[types.size()];
+            for (int i = 0; i < keyAttrIdx.length; i++)
+                keyAttrIdx[i] = i;
+        }
 
-	public int getIntAttribute(int index) {
-		index = keyAttrIdx[index];
-		int off = attributeOffsets[index];
-		int len;
-		if (index < attributeOffsets.length - 1)
-			len = attributeOffsets[index + 1] - off - 1;
-		else
-			len = offset + length - off;
+        return types.toArray(new TYPE[types.size()]);
+    }
 
-		// Check for a sign.
-		int num = 0;
-		int sign = -1;
-		final char ch = (char) bytes[off];
-		if (ch == '-')
-			sign = 1;
-		else
-			num = '0' - ch;
+    public String getKeyString() {
+        return new String(bytes, offset, length);
+    }
 
-		// Build the number.
-		int i = off + 1;
-		while (i < off + len)
-			num = num * 10 + '0' - (char) bytes[i++];
+    public String getStringAttribute(int index, int maxSize) {
+        index = keyAttrIdx[index];
+        int off = attributeOffsets[index];
+        int strSize;
+        if (index < attributeOffsets.length - 1)
+            strSize = attributeOffsets[index + 1] - off - 1;
+        else
+            strSize = offset + length - off;
 
-		return sign * num;
-	}
+        return new String(bytes, off, Math.min(strSize, maxSize));
+    }
 
-	public long getLongAttribute(int index) {
-		index = keyAttrIdx[index];
-		int off = attributeOffsets[index];
-		int len;
-		if (index < attributeOffsets.length - 1)
-			len = attributeOffsets[index + 1] - off - 1;
-		else
-			len = offset + length - off;
+    public int getIntAttribute(int index) {
+        index = keyAttrIdx[index];
+        int off = attributeOffsets[index];
+        int len;
+        if (index < attributeOffsets.length - 1)
+            len = attributeOffsets[index + 1] - off - 1;
+        else
+            len = offset + length - off;
 
-		// Check for a sign.
-		long num = 0;
-		int sign = -1;
-		final char ch = (char) bytes[off];
-		if (ch == '-')
-			sign = 1;
-		else
-			num = '0' - ch;
+        // Check for a sign.
+        int num = 0;
+        int sign = -1;
+        final char ch = (char) bytes[off];
+        if (ch == '-')
+            sign = 1;
+        else
+            num = '0' - ch;
 
-		// Build the number.
-		int i = off + 1;
-		while (i < off + len)
-			num = num * 10 + '0' - (char) bytes[i++];
+        // Build the number.
+        int i = off + 1;
+        while (i < off + len)
+            num = num * 10 + '0' - (char) bytes[i++];
 
-		return sign * num;
-	}
+        return sign * num;
+    }
 
-	public float getFloatAttribute(int index) {
-		index = keyAttrIdx[index];
-		int off = attributeOffsets[index];
-		int len;
-		if (index < attributeOffsets.length - 1)
-			len = attributeOffsets[index + 1] - 1;
-		else
-			len = offset + length;
+    public long getLongAttribute(int index) {
+        index = keyAttrIdx[index];
+        int off = attributeOffsets[index];
+        int len;
+        if (index < attributeOffsets.length - 1)
+            len = attributeOffsets[index + 1] - off - 1;
+        else
+            len = offset + length - off;
 
-		float ret = 0f; // return value
-		int part = 0; // the current part (int, float and sci parts of the
-						// number)
-		boolean neg = false; // true if part is a negative number
+        // Check for a sign.
+        long num = 0;
+        int sign = -1;
+        final char ch = (char) bytes[off];
+        if (ch == '-')
+            sign = 1;
+        else
+            num = '0' - ch;
 
-		// sign
-		if ((char) bytes[off] == '-') {
-			neg = true;
-			off++;
-		}
+        // Build the number.
+        int i = off + 1;
+        while (i < off + len)
+            num = num * 10 + '0' - (char) bytes[i++];
 
-		// integer part
-		while (off < len && (char) bytes[off] != '.')
-			part = part * 10 + ((char) bytes[off++] - '0');
-		ret = neg ? (float) (part * -1) : (float) part;
+        return sign * num;
+    }
 
-		// float part
-		if (off < len) {
-			off++;
-			int mul = 1;
-			part = 0;
-			while (off < len) {
-				part = part * 10 + ((char) bytes[off++] - '0');
-				mul *= 10;
-			}
-			ret = neg ? ret - (float) part / (float) mul : ret + (float) part
-					/ (float) mul;
-		}
+    public float getFloatAttribute(int index) {
+        index = keyAttrIdx[index];
+        int off = attributeOffsets[index];
+        int len;
+        if (index < attributeOffsets.length - 1)
+            len = attributeOffsets[index + 1] - 1;
+        else
+            len = offset + length;
 
-		return ret;
-	}
+        float ret = 0f; // return value
+        int part = 0; // the current part (int, float and sci parts of the
+        // number)
+        boolean neg = false; // true if part is a negative number
 
-	public double getDoubleAttribute(int index) {
-		index = keyAttrIdx[index];
-		int off = attributeOffsets[index];
-		int len;
-		if (index < attributeOffsets.length - 1)
-			len = attributeOffsets[index + 1] - 1;
-		else
-			len = offset + length;
+        // sign
+        if ((char) bytes[off] == '-') {
+            neg = true;
+            off++;
+        }
 
-		double ret = 0d; // return value
-		int part = 0; // the current part (int, float and sci parts of the
-						// number)
-		boolean neg = false; // true if part is a negative number
+        // integer part
+        while (off < len && (char) bytes[off] != '.')
+            part = part * 10 + ((char) bytes[off++] - '0');
+        ret = neg ? (float) (part * -1) : (float) part;
 
-		// sign
-		if ((char) bytes[off] == '-') {
-			neg = true;
-			off++;
-		}
+        // float part
+        if (off < len) {
+            off++;
+            int mul = 1;
+            part = 0;
+            while (off < len) {
+                part = part * 10 + ((char) bytes[off++] - '0');
+                mul *= 10;
+            }
+            ret = neg ? ret - (float) part / (float) mul : ret + (float) part
+                    / (float) mul;
+        }
 
-		// integer part
-		while (off < len && (char) bytes[off] != '.')
-			part = part * 10 + ((char) bytes[off++] - '0');
-		ret = neg ? (float) (part * -1) : (float) part;
+        return ret;
+    }
 
-		// float part
-		if (off < len) {
-			off++;
-			int mul = 1;
-			part = 0;
-			while (off < len) {
-				part = part * 10 + ((char) bytes[off++] - '0');
-				mul *= 10;
-			}
-			ret = neg ? ret - (float) part / (float) mul : ret + (float) part
-					/ (float) mul;
-		}
+    public double getDoubleAttribute(int index) {
+        index = keyAttrIdx[index];
+        int off = attributeOffsets[index];
+        int len;
+        if (index < attributeOffsets.length - 1)
+            len = attributeOffsets[index + 1] - 1;
+        else
+            len = offset + length;
 
-		return ret;
-	}
+        double ret = 0d; // return value
+        int part = 0; // the current part (int, float and sci parts of the
+        // number)
+        boolean neg = false; // true if part is a negative number
 
-	/*
-	 * Parse date assuming the format: "yyyy-MM-dd".
-	 * Skips anything after that.
-	 */
-	public SimpleDate getDateAttribute(int index) {
-		index = keyAttrIdx[index];
+        // sign
+        if ((char) bytes[off] == '-') {
+            neg = true;
+            off++;
+        }
 
-		int off = attributeOffsets[index];
-		int year = 1000 * (bytes[off] - '0') + 100 * (bytes[off + 1] - '0')
-				+ 10 * (bytes[off + 2] - '0') + (bytes[off + 3] - '0');
-		int month = 10 * (bytes[off + 5] - '0') + (bytes[off + 6] - '0');
-		int day = 10 * (bytes[off + 8] - '0') + (bytes[off + 9] - '0');
+        // integer part
+        while (off < len && (char) bytes[off] != '.')
+            part = part * 10 + ((char) bytes[off++] - '0');
+        ret = neg ? (float) (part * -1) : (float) part;
 
-		dummyDate.setYear(year);
-		dummyDate.setMonth(month);
-		dummyDate.setDay(day);
+        // float part
+        if (off < len) {
+            off++;
+            int mul = 1;
+            part = 0;
+            while (off < len) {
+                part = part * 10 + ((char) bytes[off++] - '0');
+                mul *= 10;
+            }
+            ret = neg ? ret - (float) part / (float) mul : ret + (float) part
+                    / (float) mul;
+        }
 
-		return dummyDate;
-	}
+        return ret;
+    }
 
-	public SimpleDate getDateAttribute(int index, SimpleDate date) {
-		index = keyAttrIdx[index];
-		// parse date assuming the format: "yyyy-MM-dd"
-		int off = attributeOffsets[index];
-		int year = 1000 * (bytes[off] - '0') + 100 * (bytes[off + 1] - '0')
-				+ 10 * (bytes[off + 2] - '0') + (bytes[off + 3] - '0');
-		int month = 10 * (bytes[off + 5] - '0') + (bytes[off + 6] - '0');
-		int day = 10 * (bytes[off + 8] - '0') + (bytes[off + 9] - '0');
+    /*
+     * Parse date assuming the format: "yyyy-MM-dd".
+     * Skips anything after that.
+     */
+    public SimpleDate getDateAttribute(int index) {
+        index = keyAttrIdx[index];
 
-		date.setYear(year);
-		date.setMonth(month);
-		date.setDay(day);
+        int off = attributeOffsets[index];
+        int year = 1000 * (bytes[off] - '0') + 100 * (bytes[off + 1] - '0')
+                + 10 * (bytes[off + 2] - '0') + (bytes[off + 3] - '0');
+        int month = 10 * (bytes[off + 5] - '0') + (bytes[off + 6] - '0');
+        int day = 10 * (bytes[off + 8] - '0') + (bytes[off + 9] - '0');
 
-		return date;
-	}
+        dummyDate.setYear(year);
+        dummyDate.setMonth(month);
+        dummyDate.setDay(day);
 
-	/**
-	 * Assumes that the boolean data is represented as a single character in the
-	 * ascii file.
-	 *
-	 * @param index
-	 * @return
-	 */
-	public boolean getBooleanAttribute(int index) {
-		index = keyAttrIdx[index];
-		int off = attributeOffsets[index];
+        return dummyDate;
+    }
 
-		if (bytes[off] == '1' || bytes[off] == 't')
-			return true;
-		else if (bytes[off] == '0' || bytes[off] == 'f')
-			return false;
-		else
-			throw new RuntimeException("Cannot parse the boolean attribute: "
-					+ bytes[off]);
-	}
+    public SimpleDate getDateAttribute(int index, SimpleDate date) {
+        index = keyAttrIdx[index];
+        // parse date assuming the format: "yyyy-MM-dd"
+        int off = attributeOffsets[index];
+        int year = 1000 * (bytes[off] - '0') + 100 * (bytes[off + 1] - '0')
+                + 10 * (bytes[off + 2] - '0') + (bytes[off + 3] - '0');
+        int month = 10 * (bytes[off + 5] - '0') + (bytes[off + 6] - '0');
+        int day = 10 * (bytes[off + 8] - '0') + (bytes[off + 9] - '0');
 
-	@Override
-	public String toString() {
-		String result = String.valueOf(delimiter);
-		if (keyAttrIdx != null) {
-			for (int i = 0; i < keyAttrIdx.length; i++) {
-				result += "," + keyAttrIdx[i];
-			}
-		}
+        date.setYear(year);
+        date.setMonth(month);
+        date.setDay(day);
 
-		return result;
-	}
+        return date;
+    }
+
+    /**
+     * Assumes that the boolean data is represented as a single character in the
+     * ascii file.
+     *
+     * @param index
+     * @return
+     */
+    public boolean getBooleanAttribute(int index) {
+        index = keyAttrIdx[index];
+        int off = attributeOffsets[index];
+
+        if (bytes[off] == '1' || bytes[off] == 't')
+            return true;
+        else if (bytes[off] == '0' || bytes[off] == 'f')
+            return false;
+        else
+            throw new RuntimeException("Cannot parse the boolean attribute: "
+                    + bytes[off]);
+    }
+
+    @Override
+    public String toString() {
+        String result = String.valueOf(delimiter);
+
+        if (keyAttrIdx != null) {
+            for (int i = 0; i < keyAttrIdx.length; i++) {
+                result += "," + keyAttrIdx[i];
+            }
+        }
+
+
+        return result;
+    }
 }

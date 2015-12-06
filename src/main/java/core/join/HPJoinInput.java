@@ -40,12 +40,15 @@ public class HPJoinInput extends HPInput {
 		String joinCond = conf.get("JOIN_CONDITION");
 		String hadoopNamenode = conf.get("HADOOP_NAMENODE");
 		String tokens[] = joinCond.split("=");
+
+		System.out.println(joinCond);
+
 		rid = Integer.parseInt(tokens[idx].split("\\.")[0]);
 		joinKey = Integer.parseInt(tokens[idx].split("\\.")[1]);
 		idx++; // increment the idx for the next instantiation of HPJoinInput
 
-		conf.set(FileInputFormat.INPUT_DIR, hadoopNamenode + joinInput + "/"
-				+ joinReplica);
+		conf.set(FileInputFormat.INPUT_DIR, hadoopNamenode + joinInput + "/data");
+
 	}
 
 	public void initialize(List<FileStatus> files, SparkQueryConf queryConf) {

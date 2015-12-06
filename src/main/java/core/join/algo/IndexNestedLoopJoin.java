@@ -41,6 +41,16 @@ public class IndexNestedLoopJoin extends JoinAlgo {
 			long[] input1Lengths = joinInput1.getLengths(splits1);
 			long[] input2Lengths = joinInput2.getLengths(splits2);
 
+			System.out.println("Range: " + r.toString());
+
+			for(int i = 0 ;i < input1Paths.length; i ++){
+				System.out.println(">>>" + input1Paths[i]);
+			}
+
+			for(int i = 0 ;i < input2Paths.length; i ++){
+				System.out.println("<<<" + input2Paths[i]);
+			}
+
 			InputSplit thissplit = formSplit(input1Paths, input2Paths,
 					input1Lengths, input2Lengths);
 			finalSplits.add(thissplit);

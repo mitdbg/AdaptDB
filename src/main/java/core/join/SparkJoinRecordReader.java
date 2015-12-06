@@ -3,6 +3,7 @@ package core.join;
 import java.io.IOException;
 import java.util.Iterator;
 
+import core.common.globals.Globals;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -39,6 +40,7 @@ public class SparkJoinRecordReader extends
 	boolean hasNext;
 
 	CuratorFramework client;
+
 	long relationId;
 
 	ArrayListMultimap<Long, byte[]> hashTable;
@@ -61,6 +63,12 @@ public class SparkJoinRecordReader extends
 		// CuratorUtils.createAndStartClient(conf.get(SparkQueryConf.ZOOKEEPER_HOSTS));
 		client = null;
 		sparkSplit = (SparkFileSplit) split;
+
+		Path[] paths = sparkSplit.getPaths();
+		for(int i = 0 ;i < paths.length; i ++){
+			System.out.println(paths[i].toString());
+		}
+
 
 		iterator = (ReusablePartitionIterator) sparkSplit.getIterator();
 		currentFile = 0;
@@ -122,7 +130,7 @@ public class SparkJoinRecordReader extends
 				iterator.setPartition(partition);
 				currentFile++;
 				relationId = sparkSplit.getPath(currentFile - 1).toString()
-						.contains("repl") ? 1 : 0; // CHECK
+						.contains("lineitem") ? 1 : 0; // CHECK
 				return true;
 			} catch (java.lang.OutOfMemoryError e) {
 				System.out

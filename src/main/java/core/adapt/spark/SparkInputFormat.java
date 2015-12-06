@@ -95,6 +95,8 @@ public class SparkInputFormat extends
 	public List<InputSplit> getSplits(JobContext job) throws IOException {
 		List<InputSplit> finalSplits = new ArrayList<InputSplit>();
 		queryConf = new SparkQueryConf(job.getConfiguration());
+
+
 		AccessMethod am = new AccessMethod();
 		am.init(queryConf);
 

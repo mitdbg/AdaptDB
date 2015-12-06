@@ -21,6 +21,8 @@ public class Predicate {
 		this.type = t;
 		this.value = val;
 		this.predtype = predtype;
+
+		Assert.assertNotEquals(this.attribute, -1);
 	}
 
 	public Predicate(String attr, TYPE t, Object val, PREDTYPE predtype) {

@@ -28,10 +28,11 @@ public class Query implements Serializable {
 
 	public Query(String predString) {
 		String[] parts = predString.split(";");
-		this.predicates = new Predicate[parts.length - 1];
-		for (int i = 0; i < parts.length - 1; i++) {
+		this.predicates = new Predicate[parts.length];
+		for (int i = 0; i < parts.length; i++) {
 			this.predicates[i] = new Predicate(parts[i]);
 		}
+		this.key = new RawIndexKey(Globals.DELIMITER);
 	}	
 	
 	public Query(Predicate[] predicates, RawIndexKey key) {

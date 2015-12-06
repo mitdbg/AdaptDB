@@ -1,0 +1,128 @@
+package core.adapt.spark;
+
+
+import core.adapt.AccessMethod;
+import core.common.index.MDIndex;
+import core.common.index.RobustTree;
+import core.utils.HDFSUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.hadoop.util.Options;
+import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+
+import core.adapt.Predicate;
+import core.adapt.Query;
+import core.adapt.iterator.IteratorRecord;
+import core.utils.ConfUtils;
+
+import java.util.Map;
+
+
+/**
+ * Created by ylu on 12/2/15.
+ */
+
+public class SparkJoinQuery {
+    protected SparkQueryConf queryConf;
+    protected JavaSparkContext ctx;
+    protected ConfUtils cfg;
+
+    public SparkJoinQuery(ConfUtils config) {
+        this.cfg = config;
+        SparkConf sconf = new SparkConf().setMaster(cfg.getSPARK_MASTER())
+                .setAppName(this.getClass().getName())
+                .setSparkHome(cfg.getSPARK_HOME())
+                .setJars(new String[]{cfg.getSPARK_APPLICATION_JAR()})
+                .set("spark.hadoop.cloneConf", "false")
+                .set("spark.executor.memory", cfg.getSPARK_EXECUTOR_MEMORY())
+                .set("spark.driver.memory", cfg.getSPARK_DRIVER_MEMORY())
+                .set("spark.task.cpus", cfg.getSPARK_TASK_CPUS());
+
+        ctx = new JavaSparkContext(sconf);
+        ctx.hadoopConfiguration().setBoolean(
+                FileInputFormat.INPUT_DIR_RECURSIVE, true);
+        ctx.hadoopConfiguration().set("fs.hdfs.impl",
+                org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+        queryConf = new SparkQueryConf(ctx.hadoopConfiguration());
+    }
+
+    public JavaPairRDD<LongWritable, IteratorRecord> createRDD(String hdfsPath) {
+        return this.createRDD(hdfsPath, 0);
+    }
+
+    public JavaPairRDD<LongWritable, IteratorRecord> createRDD(String hdfsPath,
+                                                               int replicaId) {
+        queryConf.setWorkingDir(hdfsPath);
+        queryConf.setReplicaId(replicaId);
+
+        queryConf.setHadoopHome(cfg.getHADOOP_HOME());
+        queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
+        queryConf.setMaxSplitSize(8589934592l); // 8gb is the max size for each
+        // split (with 8 threads in
+        // parallel)
+        queryConf.setMinSplitSize(4294967296l); // 4gb
+        queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
+
+
+        System.out.println("PAHT: " + cfg.getHADOOP_NAMENODE() + hdfsPath);
+
+        return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath,
+                SparkJoinInputFormat.class, LongWritable.class,
+                IteratorRecord.class, ctx.hadoopConfiguration());
+    }
+
+    public JavaPairRDD<LongWritable, IteratorRecord> createJoinScanRDD(
+            String dataset1, int dataset1_type, int join_attr1, String dataset1_schema, Query dataset1_query, String dataset2, int dataset2_type, int join_attr2,String dataset2_schema, Query dataset2_query, int budget) {
+        // type == 0, mdindex, == 1 raw files
+
+        Configuration conf = ctx.hadoopConfiguration();
+
+        conf.set("DATASET1", dataset1);
+        conf.set("DATASET2", dataset2);
+
+        conf.set("DATASET1_TYPE", Integer.toString(dataset1_type));
+        conf.set("DATASET2_TYPE", Integer.toString(dataset2_type));
+
+        conf.set("DATASET1_SCHEMA", dataset1_schema);
+        conf.set("DATASET2_SCHEMA", dataset2_schema);
+
+        conf.set("DATASET1_QUERY", dataset1_query.toString());
+        conf.set("DATASET2_QUERY", dataset2_query.toString());
+
+        conf.set("JOIN_ATTR1", Integer.toString(join_attr1));
+        conf.set("JOIN_ATTR2", Integer.toString(join_attr2));
+
+        conf.set("BUDGET", Integer.toString(budget));
+
+
+        String hdfsPath = cfg.getHDFS_WORKING_DIR();
+
+        queryConf.setFullScan(true);
+        return createRDD(hdfsPath);
+    }
+
+
+
+    public JavaPairRDD<LongWritable, IteratorRecord> createScanRDD(
+            String hdfsPath) {
+        queryConf.setFullScan(true);
+        return createRDD(hdfsPath);
+    }
+
+    public JavaPairRDD<LongWritable, IteratorRecord> createAdaptRDD(
+            String hdfsPath) {
+        queryConf.setJustAccess(false);
+        return createRDD(hdfsPath);
+    }
+
+    public JavaPairRDD<LongWritable, IteratorRecord> createRepartitionRDD(
+            String hdfsPath) {
+        queryConf.setRepartitionScan(true);
+        return createRDD(hdfsPath);
+    }
+
+}

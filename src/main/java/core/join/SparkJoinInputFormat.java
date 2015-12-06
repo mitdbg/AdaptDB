@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
@@ -51,6 +52,8 @@ public class SparkJoinInputFormat extends
 				+ input2.getNumPartitions());
 
 		JoinAlgo joinAlgo;
+		assignBuckets = false;
+		System.out.println("Value of assignBuckets:" + assignBuckets);
 		if (assignBuckets) { // assign bucket ids from larger tables to ranges
 			joinAlgo = new HyperJoinOverlappingRanges(input1, input2);
 		} else {

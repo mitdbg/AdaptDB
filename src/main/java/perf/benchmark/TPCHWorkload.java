@@ -9,12 +9,15 @@ import java.util.Random;
 import core.adapt.Predicate;
 import core.adapt.Query;
 import core.adapt.Predicate.PREDTYPE;
+import core.adapt.iterator.IteratorRecord;
 import core.adapt.spark.SparkQuery;
 import core.common.globals.Globals;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.spark.api.java.JavaPairRDD;
 
 public class TPCHWorkload {
 	public ConfUtils cfg;
@@ -211,8 +214,9 @@ public class TPCHWorkload {
 
 		for (Query q : queries) {
 			start = System.currentTimeMillis();
-			long result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(),
-					q.getPredicates()).count();
+			JavaPairRDD<LongWritable, IteratorRecord> rdd = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(), q.getPredicates());
+			long result = rdd.count();
+			rdd.saveAsTextFile(cfg.getHDFS_WORKING_DIR() + "/save_result");
 			end = System.currentTimeMillis();
 			System.out.println("RES: Time Taken: " + (end - start) + 
 					"; Result: " + result);
@@ -250,6 +254,11 @@ public class TPCHWorkload {
 	public static void main(String[] args) {
 		BenchmarkSettings.loadSettings(args);
 		BenchmarkSettings.printSettings();
+
+		System.out.println("Memory Stats (F/T/M): "
+				+ Runtime.getRuntime().freeMemory() + " "
+				+ Runtime.getRuntime().totalMemory() + " "
+				+ Runtime.getRuntime().maxMemory());
 
 		TPCHWorkload t = new TPCHWorkload();
 		t.loadSettings(args);

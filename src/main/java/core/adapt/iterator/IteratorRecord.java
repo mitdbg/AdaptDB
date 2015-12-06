@@ -41,4 +41,6 @@ public class IteratorRecord extends RawIndexKey implements Serializable {
 	public int getLength() {
 		return this.length;
 	}
+
+
 }
