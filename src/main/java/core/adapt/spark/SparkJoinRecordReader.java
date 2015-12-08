@@ -49,7 +49,7 @@ public class SparkJoinRecordReader extends
     protected PartitionIterator iter1;
     protected PartitionIterator iter2;
 
-    ArrayListMultimap<Long, byte[]> hashTable;
+    ArrayListMultimap<Integer, byte[]> hashTable;
 
     Iterator<byte[]> firstRecords;
     byte[] secondRecord;
@@ -153,7 +153,7 @@ public class SparkJoinRecordReader extends
 
                 IteratorRecord r = iter1.next();
                 byte[] rawBytes = r.getBytes();
-                long key = r.getLongAttribute(join_attr1);
+                int key = r.getIntAttribute(join_attr1);
                 hashTable.put(key, rawBytes);
             }
         }
@@ -168,7 +168,7 @@ public class SparkJoinRecordReader extends
             while (true) {
                 if (iter2.hasNext()) {
                     IteratorRecord r = iter2.next();
-                    long key = r.getLongAttribute(join_attr2);
+                    int key = r.getIntAttribute(join_attr2);
 
                     tupleCountInTable2 ++;
 

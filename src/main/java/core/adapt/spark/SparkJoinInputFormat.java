@@ -14,6 +14,7 @@ import core.common.index.MDIndex;
 import core.common.index.RobustTree;
 import core.utils.HDFSUtils;
 
+import core.utils.TypeUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -122,19 +123,20 @@ public class SparkJoinInputFormat extends
         RobustTree rt = new RobustTree();
         rt.unmarshall(indexBytes);
 
-        byte[] sampleBytes = HDFSUtils.readFile(fs, sample);
-        rt.loadSample(sampleBytes);
+        //byte[] sampleBytes = HDFSUtils.readFile(fs, sample);
+        //rt.loadSample(sampleBytes);
 
-        // TODO: getBucketRanges is wrong!
+        // If a particular bucket is not in the following map, then the range is (-oo,+oo).
 
         Map<Integer, MDIndex.BucketInfo> bucketRanges = rt.getBucketRanges(attr);
 
-        System.out.println("There are " + bucketRanges.size() + " buckets!");
-
-        for(Integer id : bucketRanges.keySet()){
-            MDIndex.BucketInfo bi = bucketRanges.get(id);
-            System.out.println("Put " + id + " range " + bi);
-            info.put(id, bi);
+        for(int i = 0 ;i < rt.maxBuckets; i ++){
+            if (bucketRanges.containsKey(i) == false){
+                // hard code, the join key can only be int.
+                info.put(i, new MDIndex.BucketInfo(TypeUtils.TYPE.INT, null, null));
+            } else {
+                info.put(i, bucketRanges.get(i));
+            }
         }
     }
 
@@ -224,7 +226,10 @@ public class SparkJoinInputFormat extends
                 if(splits2.contains(j) == false) continue;
 
                 MDIndex.BucketInfo info_j = dataset2_bucketInfo.get(j);
-                if(info_i.intersectionFraction(info_j) > 0) { // ? is this right?
+
+                //System.out.println(i + " from " + dataset1 + " intersects with " + j +  " from "+  dataset2 + " result: " + info_i.overlap(info_j));
+
+                if(info_i.overlap(info_j)) {
                     if (overlap_chunks.containsKey(i) == false){
                         overlap_chunks.put(i, new ArrayList<Integer>());
                     }
@@ -366,7 +371,7 @@ public class SparkJoinInputFormat extends
 
         System.out.println("In SparkJoinInputFormat: " +dataset1_query + " ## " + dataset2_query);
 
-        /*
+
         for (ArrayList<Integer> split : splits) {
 
             ArrayList<Integer> dep_split = getOverlappedSplits(split);
@@ -404,28 +409,6 @@ public class SparkJoinInputFormat extends
             SparkJoinFileSplit thissplit = formSplits(paths1, lens1, paths2, lens2, iter1, iter2);
             finalSplits.add(thissplit);
         }
-        */
-
-        // Only for testing
-
-        ArrayList<Integer> l1 = new ArrayList<Integer>(), l2 = new ArrayList<Integer>();
-        for(int i = 0 ;i < dataset1_splits.length; i ++){
-            l1.add(dataset1_splits[i]);
-        }
-        for(int i = 0 ;i < dataset2_splits.length; i ++){
-            l2.add(dataset2_splits[i]);
-        }
-
-        Path[] paths1 = dataset1_hpinput.getPaths(l1);
-        long[] lens1 = dataset1_hpinput.getLengths(l1);
-        Path[] paths2 = dataset2_hpinput.getPaths(l2);
-        long[] lens2 = dataset2_hpinput.getLengths(l2);
-
-
-        SparkJoinFileSplit thissplit = formSplits(paths1, lens1, paths2, lens2, iter1, iter2);
-        finalSplits.add(thissplit);
-
-        // test finishes here!!!
 
         job.getConfiguration().setLong(NUM_INPUT_FILES, dataset1_splits.length);
         LOG.debug("Total # of splits: " + finalSplits.size());
