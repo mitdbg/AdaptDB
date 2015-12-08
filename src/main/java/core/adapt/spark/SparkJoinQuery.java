@@ -8,6 +8,7 @@ import core.utils.HDFSUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.util.Options;
 import org.apache.spark.SparkConf;
@@ -50,11 +51,11 @@ public class SparkJoinQuery {
         queryConf = new SparkQueryConf(ctx.hadoopConfiguration());
     }
 
-    public JavaPairRDD<LongWritable, IteratorRecord> createRDD(String hdfsPath) {
+    public JavaPairRDD<LongWritable, Text> createRDD(String hdfsPath) {
         return this.createRDD(hdfsPath, 0);
     }
 
-    public JavaPairRDD<LongWritable, IteratorRecord> createRDD(String hdfsPath,
+    public JavaPairRDD<LongWritable, Text> createRDD(String hdfsPath,
                                                                int replicaId) {
         queryConf.setWorkingDir(hdfsPath);
         queryConf.setReplicaId(replicaId);
@@ -72,10 +73,10 @@ public class SparkJoinQuery {
 
         return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath,
                 SparkJoinInputFormat.class, LongWritable.class,
-                IteratorRecord.class, ctx.hadoopConfiguration());
+                Text.class, ctx.hadoopConfiguration());
     }
 
-    public JavaPairRDD<LongWritable, IteratorRecord> createJoinScanRDD(
+    public JavaPairRDD<LongWritable, Text> createJoinScanRDD(
             String dataset1, int dataset1_type, int join_attr1, String dataset1_schema, Query dataset1_query, String dataset2, int dataset2_type, int join_attr2,String dataset2_schema, Query dataset2_query, int budget) {
         // type == 0, mdindex, == 1 raw files
 
@@ -107,19 +108,19 @@ public class SparkJoinQuery {
 
 
 
-    public JavaPairRDD<LongWritable, IteratorRecord> createScanRDD(
+    public JavaPairRDD<LongWritable, Text> createScanRDD(
             String hdfsPath) {
         queryConf.setFullScan(true);
         return createRDD(hdfsPath);
     }
 
-    public JavaPairRDD<LongWritable, IteratorRecord> createAdaptRDD(
+    public JavaPairRDD<LongWritable, Text> createAdaptRDD(
             String hdfsPath) {
         queryConf.setJustAccess(false);
         return createRDD(hdfsPath);
     }
 
-    public JavaPairRDD<LongWritable, IteratorRecord> createRepartitionRDD(
+    public JavaPairRDD<LongWritable, Text> createRepartitionRDD(
             String hdfsPath) {
         queryConf.setRepartitionScan(true);
         return createRDD(hdfsPath);

@@ -99,6 +99,8 @@ public class Optimizer {
 		String pathToIndex = this.workingDir + "/index";
 		String pathToSample = this.workingDir + "/sample";
 
+		System.out.println("Load index: " + pathToIndex);
+
 		byte[] indexBytes = HDFSUtils.readFile(fs, pathToIndex);
 		this.rt = new RobustTree();
 		this.rt.unmarshall(indexBytes);

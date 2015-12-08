@@ -5,6 +5,7 @@ import core.adapt.AccessMethod;
 import core.common.globals.Schema;
 import org.apache.hadoop.io.LongWritable;
 
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.spark.api.java.JavaPairRDD;
 
@@ -154,6 +155,7 @@ public class TPCHJoin {
         Predicate p4_10 = new Predicate(schemaLineitem.getAttributeId("l_returnflag"), TYPE.STRING, l_returnflag_prev_10, PREDTYPE.GT);
         Predicate p2_10 = new Predicate(schemaOrders.getAttributeId("o_orderdate"), TYPE.DATE, d10_1, PREDTYPE.GEQ);
         Predicate p3_10 = new Predicate(schemaOrders.getAttributeId("o_orderdate"), TYPE.DATE, d10_2, PREDTYPE.LT);
+
         Query q_l = new Query(new Predicate[]{p1_10, p4_10});
         Query q_o = new Query(new Predicate[]{p2_10, p3_10});
 
@@ -168,10 +170,10 @@ public class TPCHJoin {
         start = System.currentTimeMillis();
 
 
-        JavaPairRDD<LongWritable, IteratorRecord> rdd = sq.createJoinScanRDD(dataset1, 0, 0, stringLineitem,  q_l, dataset2, 0, 0, stringOrders, q_o, memoryBudget);
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(dataset1, 0, 0, stringLineitem,  q_l, dataset2, 0, 0, stringOrders, q_o, memoryBudget);
 
         long result = rdd.count();
-        //rdd.saveAsTextFile(cfg.getHDFS_WORKING_DIR() + "/" + dataset1 + "_filtered");
+        rdd.saveAsTextFile(cfg.getHDFS_WORKING_DIR() + "/" + dataset1 + "_join_" + dataset2);
         end = System.currentTimeMillis();
         System.out.println("RES: Time Taken: " + (end - start) + "; Result: " + result);
 

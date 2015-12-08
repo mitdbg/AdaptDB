@@ -73,7 +73,7 @@ public class Predicate {
 				return true;
 			break;
 		case LT:
-			if (TypeUtils.compareTo(this.value, value, this.type) < 0)
+			if (TypeUtils.compareTo(this.value, value, this.type) > 0)
 				return true;
 			break;
 		case EQ:

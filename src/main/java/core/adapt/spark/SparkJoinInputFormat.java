@@ -44,7 +44,7 @@ import scala.Int;
 
 
 public class SparkJoinInputFormat extends
-        FileInputFormat<LongWritable, IteratorRecord> implements Serializable {
+        FileInputFormat<LongWritable, Text> implements Serializable {
 
     public static String SPLIT_ITERATOR = "SPLIT_ITERATOR";
     private static final long serialVersionUID = 1L;
@@ -64,48 +64,49 @@ public class SparkJoinInputFormat extends
 
     SparkQueryConf queryConf;
 
-    public static class SparkFileSplit extends CombineFileSplit implements
+    public static class SparkJoinFileSplit extends CombineFileSplit implements
             Serializable {
         private static final long serialVersionUID = 1L;
 
-        private PartitionIterator iterator;
+        private PartitionIterator iter1, iter2;
 
-        public SparkFileSplit() {
+        public SparkJoinFileSplit() {
         }
 
-        public SparkFileSplit(Path[] files, long[] lengths,
-                              PartitionIterator iterator) {
+        public SparkJoinFileSplit(Path[] files, long[] lengths,
+                              PartitionIterator iter1, PartitionIterator iter2) {
             super(files, lengths);
-            this.iterator = iterator;
+            this.iter1 = iter1;
+            this.iter2 = iter2;
         }
 
-        public SparkFileSplit(Path[] files, long[] start, long[] lengths,
-                              String[] locations, PartitionIterator iterator) {
-            super(files, start, lengths, locations);
-            this.iterator = iterator;
+        public PartitionIterator getFirstIterator() {
+            return this.iter1;
         }
-
-        public PartitionIterator getIterator() {
-            return this.iterator;
+        public PartitionIterator getSecondIterator() {
+            return this.iter2;
         }
 
         @Override
         public void write(DataOutput out) throws IOException {
             super.write(out);
-            Text.writeString(out, iterator.getClass().getName());
-            iterator.write(out);
+            Text.writeString(out, iter1.getClass().getName());
+            iter1.write(out);
+            iter2.write(out);
         }
 
         @Override
         public void readFields(DataInput in) throws IOException {
             super.readFields(in);
-            iterator = (PartitionIterator) ReflectionUtils.getInstance(Text
-                    .readString(in));
-            iterator.readFields(in);
+            String type = Text.readString(in);
+            iter1 = (PartitionIterator) ReflectionUtils.getInstance(type);
+            iter1.readFields(in);
+            iter2 = (PartitionIterator) ReflectionUtils.getInstance(type);
+            iter2.readFields(in);
         }
 
-        public static SparkFileSplit read(DataInput in) throws IOException {
-            SparkFileSplit s = new SparkFileSplit();
+        public static SparkJoinFileSplit read(DataInput in) throws IOException {
+            SparkJoinFileSplit s = new SparkJoinFileSplit();
             s.readFields(in);
             return s;
         }
@@ -124,10 +125,15 @@ public class SparkJoinInputFormat extends
         byte[] sampleBytes = HDFSUtils.readFile(fs, sample);
         rt.loadSample(sampleBytes);
 
+        // TODO: getBucketRanges is wrong!
+
         Map<Integer, MDIndex.BucketInfo> bucketRanges = rt.getBucketRanges(attr);
+
+        System.out.println("There are " + bucketRanges.size() + " buckets!");
 
         for(Integer id : bucketRanges.keySet()){
             MDIndex.BucketInfo bi = bucketRanges.get(id);
+            System.out.println("Put " + id + " range " + bi);
             info.put(id, bi);
         }
     }
@@ -161,6 +167,8 @@ public class SparkJoinInputFormat extends
 
         Globals.schema =  Schema.createSchema(dataset1_schema);
 
+        System.out.println("Populate dataset1_bucketInfo");
+
         if(dataset1_type == 0){
             read_index(dataset1_bucketInfo, queryConf.getWorkingDir() + "/" + dataset1,join_attr1);
         } else {
@@ -168,6 +176,8 @@ public class SparkJoinInputFormat extends
         }
 
         Globals.schema =  Schema.createSchema(dataset2_schema);
+
+        System.out.println("Populate dataset2_bucketInfo");
 
         if(dataset2_type == 0){
             read_index(dataset2_bucketInfo, queryConf.getWorkingDir() + "/" + dataset2,join_attr2);
@@ -254,7 +264,7 @@ public class SparkJoinInputFormat extends
         return final_split;
     }
 
-    public SparkFileSplit formSplits(Path[] paths1, long[] lengths1, Path[] paths2, long[] lengths2, PartitionIterator itr) {
+    public SparkJoinFileSplit formSplits(Path[] paths1, long[] lengths1, Path[] paths2, long[] lengths2, PartitionIterator iter1,PartitionIterator iter2 ) {
         int totalLength = paths1.length + paths2.length;
         Path[] paths = new Path[totalLength];
         long[] lengths = new long[totalLength];
@@ -267,7 +277,7 @@ public class SparkJoinInputFormat extends
                 lengths[i] = lengths2[i - paths1.length];
             }
         }
-        return new SparkFileSplit(paths, lengths, itr);
+        return new SparkJoinFileSplit(paths, lengths, iter1, iter2);
     }
 
     @Override
@@ -335,10 +345,30 @@ public class SparkJoinInputFormat extends
 
         //System.out.println("Barrier 5");
 
+
+        System.out.println("Bucket range info " + dataset1 + ", " + dataset1_splits.length + " files in total");
+
+        for(int i = 0 ;i  < dataset1_splits.length ; i ++){
+            System.out.println(dataset1_splits[i] + " " + dataset1_bucketInfo.get(dataset1_splits[i]));
+        }
+
+
+        System.out.println("Bucket range info " + dataset2 + ", " + dataset2_splits.length + " files in total");
+
+        for(int i = 0 ;i  < dataset2_splits.length ; i ++){
+            System.out.println(dataset2_splits[i] + " " + dataset2_bucketInfo.get(dataset2_splits[i]));
+        }
+
         int it = 0;
 
+        PartitionIterator iter1 = new PostFilterIterator(dataset1_query);
+        PartitionIterator iter2 = new PostFilterIterator(dataset2_query);
+
+        System.out.println("In SparkJoinInputFormat: " +dataset1_query + " ## " + dataset2_query);
+
+        /*
         for (ArrayList<Integer> split : splits) {
-            PartitionIterator itr = new PostFilterIterator(dataset1_query);
+
             ArrayList<Integer> dep_split = getOverlappedSplits(split);
 
             System.out.println(">>> split");
@@ -371,9 +401,31 @@ public class SparkJoinInputFormat extends
                 System.out.println(paths2[i]);
             }
 
-            SparkFileSplit thissplit = formSplits(paths1, lens1, paths2, lens2, itr);
+            SparkJoinFileSplit thissplit = formSplits(paths1, lens1, paths2, lens2, iter1, iter2);
             finalSplits.add(thissplit);
         }
+        */
+
+        // Only for testing
+
+        ArrayList<Integer> l1 = new ArrayList<Integer>(), l2 = new ArrayList<Integer>();
+        for(int i = 0 ;i < dataset1_splits.length; i ++){
+            l1.add(dataset1_splits[i]);
+        }
+        for(int i = 0 ;i < dataset2_splits.length; i ++){
+            l2.add(dataset2_splits[i]);
+        }
+
+        Path[] paths1 = dataset1_hpinput.getPaths(l1);
+        long[] lens1 = dataset1_hpinput.getLengths(l1);
+        Path[] paths2 = dataset2_hpinput.getPaths(l2);
+        long[] lens2 = dataset2_hpinput.getLengths(l2);
+
+
+        SparkJoinFileSplit thissplit = formSplits(paths1, lens1, paths2, lens2, iter1, iter2);
+        finalSplits.add(thissplit);
+
+        // test finishes here!!!
 
         job.getConfiguration().setLong(NUM_INPUT_FILES, dataset1_splits.length);
         LOG.debug("Total # of splits: " + finalSplits.size());
@@ -383,7 +435,7 @@ public class SparkJoinInputFormat extends
     }
 
     @Override
-    public RecordReader<LongWritable, IteratorRecord> createRecordReader(
+    public RecordReader<LongWritable, Text> createRecordReader(
             InputSplit arg0, TaskAttemptContext arg1) throws IOException,
             InterruptedException {
         return new SparkJoinRecordReader();

@@ -18,14 +18,11 @@ public class Schema {
 		public TYPE type;
 		int id;
 
-		private static int maxId = 0;
-
-		public Field(String name, TYPE type) {
+		public Field(String name, TYPE type, int id) {
 			this.name = name;
 			this.type = type;
-			this.id = maxId;
+			this.id = id;
 
-			maxId += 1;
 		}
 
 		@Override
@@ -59,7 +56,7 @@ public class Schema {
 			String fieldName = columnInfo[0].trim();
 			// enum valueOf is case sensitive, make everything uppercase.
 			TYPE fieldType = TYPE.valueOf(columnInfo[1].trim().toUpperCase());
-			fieldList[i] = new Field(fieldName, fieldType);
+			fieldList[i] = new Field(fieldName, fieldType, i);
 		}
 
 		System.out.println("INFO: Created schema with " + fieldList.length + " fields");

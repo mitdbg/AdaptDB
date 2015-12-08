@@ -2,14 +2,20 @@ package core.adapt.spark;
 
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import com.google.common.collect.ArrayListMultimap;
+import core.adapt.Query;
+import core.adapt.iterator.PostFilterIterator;
 import core.common.globals.Globals;
+import core.common.globals.Schema;
+import core.utils.TypeUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
@@ -17,7 +23,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import core.adapt.HDFSPartition;
 import core.adapt.iterator.IteratorRecord;
 import core.adapt.iterator.PartitionIterator;
-import core.adapt.spark.SparkJoinInputFormat.SparkFileSplit;
+import core.adapt.spark.SparkJoinInputFormat.SparkJoinFileSplit;
 import core.utils.CuratorUtils;
 
 /**
@@ -26,20 +32,33 @@ import core.utils.CuratorUtils;
 
 
 public class SparkJoinRecordReader extends
-        RecordReader<LongWritable, IteratorRecord> {
+        RecordReader<LongWritable, Text> {
 
     protected Configuration conf;
 
-    protected SparkFileSplit sparkSplit;
-    int currentFile;
+    protected SparkJoinFileSplit sparkSplit;
 
-    protected PartitionIterator iterator;
+    private int currentFile;
+
+    private int tupleCountInTable1, tupleCountInTable2; // test only
+
+    private String dataset1, dataset2;
+    private int join_attr1, join_attr2;
+    private String dataset1_schema, dataset2_schema, join_schema;
+
+    protected PartitionIterator iter1;
+    protected PartitionIterator iter2;
 
     ArrayListMultimap<Long, byte[]> hashTable;
 
+    Iterator<byte[]> firstRecords;
+    byte[] secondRecord;
+
     LongWritable key;
+    Text value;
     long recordId;
     boolean hasNext;
+
 
     CuratorFramework client;
 
@@ -50,104 +69,156 @@ public class SparkJoinRecordReader extends
         client = CuratorUtils.createAndStartClient(conf
                 .get(SparkQueryConf.ZOOKEEPER_HOSTS));
 
-        sparkSplit = (SparkFileSplit) split;
+        sparkSplit = (SparkJoinFileSplit) split;
         Path[] paths = sparkSplit.getPaths();
 
-        System.out.println(">>> build hashtable from the following files: ");
+        join_attr1 = Integer.parseInt(conf.get("JOIN_ATTR1"));
+        join_attr2 = Integer.parseInt(conf.get("JOIN_ATTR2"));
 
-        for(Path p : paths){
+        dataset1 = conf.get("DATASET1");
+        dataset2 = conf.get("DATASET2");
+
+        tupleCountInTable1 = 0;
+        tupleCountInTable2 = 0;
+
+        dataset1_schema = conf.get("DATASET1_SCHEMA");
+        dataset2_schema = conf.get("DATASET2_SCHEMA");
+
+        join_schema = dataset1_schema + ", " + dataset2_schema;
+
+        hashTable = ArrayListMultimap.create();
+        iter1 = sparkSplit.getFirstIterator();
+        iter2 = sparkSplit.getSecondIterator();
+
+        System.out.println(">>> get join resultsfrom the following files: ");
+
+        for (Path p : paths) {
             System.out.println(p);
         }
 
-        String joinCond = conf.get("JOIN_CONDITION");
-        String tokens[] = joinCond.split("=");
-        int join_attr1 = Integer.parseInt(tokens[0]);
-        int join_attr2  = Integer.parseInt(tokens[1]);
-
-        hashTable = ArrayListMultimap.create();
-
-        iterator = sparkSplit.getIterator();
-
-
-
-        currentFile = 0;
-        hasNext = initializeNext();
-        key = new LongWritable();
         recordId = 0;
 
-        System.out.println("In SparkJoinRecordReader:" + Globals.schema);
+        key = new LongWritable();
+        value = new Text();
 
-        int count = 0;
 
-        while(nextKeyValue()){
-            IteratorRecord r = getCurrentValue();
-            hashTable.put(r.getLongAttribute(join_attr1), r.getBytes());
-            count ++;
-        }
+        // build hashtable
 
-        System.out.println("There are " + count + " records!");
+        build_hashtable();
 
-        if(true){
-            throw new RuntimeException("");
-        }
+        Globals.schema = Schema.createSchema(dataset2_schema);
+
+        //System.out.println("the file is : "+  sparkSplit.getPath(currentFile));
+        setPartitionToIterator(sparkSplit.getPath(currentFile), iter2);
+
+        //System.out.println("There are " + hashTable.size() + " records!");
+
     }
 
-    protected boolean initializeNext() throws IOException {
-//		if (currentFile > 0)
-//			System.out.println("Records read = " + recordId);
+    void setPartitionToIterator(Path path, PartitionIterator it) {
+        FileSystem fs = null;
+        try {
+            fs = path.getFileSystem(conf);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Loading " + path.toString() + " currentFile " + currentFile);
+        HDFSPartition partition = new HDFSPartition(fs, path.toString(),
+                Short.parseShort(conf.get(SparkQueryConf.HDFS_REPLICATION_FACTOR)),
+                client);
+        partition.loadNext(); // ???
+        it.setPartition(partition);
+    }
 
-        if (currentFile >= sparkSplit.getStartOffsets().length)
-            return false;
-        else {
-            Path filePath = sparkSplit.getPath(currentFile);
-            final FileSystem fs = filePath.getFileSystem(conf);
-            HDFSPartition partition = new HDFSPartition(fs, filePath.toString(),
-                    Short.parseShort(conf.get(SparkQueryConf.HDFS_REPLICATION_FACTOR)),
-                    client);
-            System.out.println("INFO: Loading path: " + filePath.toString());
-            try {
-                partition.loadNext();
-                iterator.setPartition(partition);
-                currentFile++;
-                return true;
-            } catch (java.lang.OutOfMemoryError e) {
-                System.out.println("ERR: Failed to load " + filePath.toString());
-                System.out.println(e.getMessage());
-                e.printStackTrace();
-                return false;
+    private void build_hashtable() {
+
+        //set schema
+        Globals.schema = Schema.createSchema(dataset1_schema);
+
+        for (currentFile = 0; currentFile < sparkSplit.getNumPaths(); currentFile++) {
+
+            //System.out.println("TESTING: " + sparkSplit.getPath(currentFile).toString()  + " does it contain " + dataset2);
+
+            if (sparkSplit.getPath(currentFile).toString().contains(dataset2)) {
+
+                //System.out.println("NEXT PATH should be " + sparkSplit.getPath(currentFile));
+                break;
+            }
+
+            setPartitionToIterator(sparkSplit.getPath(currentFile), iter1);
+
+            while (iter1.hasNext()) {
+
+                tupleCountInTable1 ++;
+
+                IteratorRecord r = iter1.next();
+                byte[] rawBytes = r.getBytes();
+                long key = r.getLongAttribute(join_attr1);
+                hashTable.put(key, rawBytes);
+            }
+        }
+
+    }
+
+    private void getNext() {
+
+        if (firstRecords != null && firstRecords.hasNext()) {
+            hasNext = true;
+        } else {
+            while (true) {
+                if (iter2.hasNext()) {
+                    IteratorRecord r = iter2.next();
+                    long key = r.getLongAttribute(join_attr2);
+
+                    tupleCountInTable2 ++;
+
+                    if (hashTable.containsKey(key)) {
+                        firstRecords = hashTable.get(key).iterator();
+                        secondRecord = r.getBytes();
+                        hasNext = true;
+                        break;
+                    }
+                } else {
+                    currentFile ++;
+                    if (currentFile >= sparkSplit.getNumPaths()) {
+                        hasNext = false;
+                        break;
+                    } else {
+                        setPartitionToIterator(sparkSplit.getPath(currentFile), iter2);
+                    }
+                }
             }
         }
     }
 
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
-        while (hasNext) {
-            if (iterator.hasNext()) {
-                recordId++;
-                return true;
-            }
-            hasNext = initializeNext();
-        }
-        /*
-		 * do{ if(iterator.hasNext()){ recordId++; return true; } }
-		 * while(initializeNext());
-		 */
 
-        // System.out.println("Record read = "+recordId);
-        return false;
+        getNext();
+
+        if(hasNext){
+            key.set(recordId++);
+            byte[] firstRecord = firstRecords.next();
+            String part1 = new String(firstRecord, 0, firstRecord.length);
+            String part2 = new String(secondRecord, 0, secondRecord.length);
+            value.set(part1 + "|" + part2);
+
+            //System.out.println("INFO: [match] " + part1 + "|" + part2);
+        }
+
+        return hasNext;
     }
 
     @Override
     public LongWritable getCurrentKey() throws IOException,
             InterruptedException {
-        key.set(recordId);
         return key;
     }
 
     @Override
-    public IteratorRecord getCurrentValue() throws IOException,
+    public Text getCurrentValue() throws IOException,
             InterruptedException {
-        return iterator.next();
+        return value;
     }
 
     @Override
@@ -157,9 +228,11 @@ public class SparkJoinRecordReader extends
 
     @Override
     public void close() throws IOException {
-        iterator.finish(); // this method could even be called earlier in case
+        iter2.finish(); // this method could even be called earlier in case
         // the entire split does not fit in main-memory
         // counter.close();
         // locker.cleanup();
+        System.out.println("There are " + tupleCountInTable1 + " tuples from the first input!");
+        System.out.println("There are " + tupleCountInTable2 + " tuples from the second input!");
     }
 }
