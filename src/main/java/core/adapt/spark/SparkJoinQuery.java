@@ -43,6 +43,15 @@ public class SparkJoinQuery {
                 .set("spark.driver.memory", cfg.getSPARK_DRIVER_MEMORY())
                 .set("spark.task.cpus", cfg.getSPARK_TASK_CPUS());
 
+        try {
+            sconf.registerKryoClasses(new Class<?>[]{
+                    Class.forName("org.apache.hadoop.io.LongWritable"),
+                    Class.forName("org.apache.hadoop.io.Text")
+            });
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
         ctx = new JavaSparkContext(sconf);
         ctx.hadoopConfiguration().setBoolean(
                 FileInputFormat.INPUT_DIR_RECURSIVE, true);
@@ -70,6 +79,8 @@ public class SparkJoinQuery {
 
 
         System.out.println("PAHT: " + cfg.getHADOOP_NAMENODE() + hdfsPath);
+
+
 
         return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath,
                 SparkJoinInputFormat.class, LongWritable.class,

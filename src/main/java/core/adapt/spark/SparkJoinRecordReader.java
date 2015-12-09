@@ -56,7 +56,8 @@ public class SparkJoinRecordReader extends
 
     LongWritable key;
     Text value;
-    long recordId;
+    Long partitionKey;
+
     boolean hasNext;
 
 
@@ -95,8 +96,6 @@ public class SparkJoinRecordReader extends
         for (Path p : paths) {
             System.out.println(p);
         }
-
-        recordId = 0;
 
         key = new LongWritable();
         value = new Text();
@@ -149,7 +148,7 @@ public class SparkJoinRecordReader extends
 
             while (iter1.hasNext()) {
 
-                tupleCountInTable1 ++;
+                tupleCountInTable1++;
 
                 IteratorRecord r = iter1.next();
                 byte[] rawBytes = r.getBytes();
@@ -170,16 +169,19 @@ public class SparkJoinRecordReader extends
                     IteratorRecord r = iter2.next();
                     int key = r.getIntAttribute(join_attr2);
 
-                    tupleCountInTable2 ++;
+                    tupleCountInTable2++;
 
                     if (hashTable.containsKey(key)) {
                         firstRecords = hashTable.get(key).iterator();
                         secondRecord = r.getBytes();
                         hasNext = true;
+
+                        partitionKey = (long)key; // set it to join key for testing only
+
                         break;
                     }
                 } else {
-                    currentFile ++;
+                    currentFile++;
                     if (currentFile >= sparkSplit.getNumPaths()) {
                         hasNext = false;
                         break;
@@ -196,14 +198,13 @@ public class SparkJoinRecordReader extends
 
         getNext();
 
-        if(hasNext){
-            key.set(recordId++);
+        if (hasNext) {
+            key.set(partitionKey);
+
             byte[] firstRecord = firstRecords.next();
             String part1 = new String(firstRecord, 0, firstRecord.length);
             String part2 = new String(secondRecord, 0, secondRecord.length);
             value.set(part1 + "|" + part2);
-
-            //System.out.println("INFO: [match] " + part1 + "|" + part2);
         }
 
         return hasNext;

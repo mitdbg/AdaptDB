@@ -2,18 +2,23 @@ package perf.benchmark;
 
 
 import core.adapt.AccessMethod;
+import core.adapt.iterator.PartitionIterator;
 import core.common.globals.Schema;
 import core.common.index.MDIndex;
 import core.common.index.RobustTree;
-import core.utils.Range;
-import core.utils.TypeUtils;
+import core.utils.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.LongWritable;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.yarn.util.SystemClock;
+import org.apache.spark.HashPartitioner;
+import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Random;
 
@@ -22,13 +27,15 @@ import core.adapt.Query;
 import core.adapt.Predicate.PREDTYPE;
 import core.adapt.spark.SparkJoinQuery;
 import core.common.globals.Globals;
-import core.utils.ConfUtils;
-import core.utils.HDFSUtils;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 
 
 import core.adapt.iterator.IteratorRecord;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.PairFunction;
+import scala.Tuple2;
 
 /**
  * Created by ylu on 12/2/15.
@@ -36,6 +43,35 @@ import core.adapt.iterator.IteratorRecord;
 
 
 public class TPCHJoin {
+
+    public static class RangePartitioner extends Partitioner {
+
+        long[] ranges;
+
+        public RangePartitioner(long[] ranges){
+            this.ranges = ranges;
+        }
+
+        @Override
+        public int numPartitions() {
+            return ranges.length + 1;
+        }
+
+        @Override
+        public int getPartition(Object key) {
+            //hard code, key can only be long
+
+            long longKey = ((LongWritable) key).get();
+            for(int i = 0 ;i < ranges.length; i ++){
+                if(longKey <= ranges[i]){
+                    return i;
+                }
+            }
+
+            return ranges.length;
+        }
+    }
+
     public ConfUtils cfg;
 
     public Schema schemaCustomer, schemaLineitem, schemaNation, schemaOrders, schemaPart, schemaPartsupp, schemaRegion, schemaSupplier;
@@ -178,8 +214,27 @@ public class TPCHJoin {
 
         JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(dataset1, 0, 0, stringLineitem,  q_l, dataset2, 0, 0, stringOrders, q_o, memoryBudget);
 
-        long result = rdd.count();
-        rdd.saveAsTextFile(cfg.getHDFS_WORKING_DIR() + "/" + dataset1 + "_join_" + dataset2);
+        /*
+        JavaPairRDD<Long, String> mappedRdd = rdd.mapToPair(new PairFunction<Tuple2<LongWritable, Text>, Long, String>() {
+            @Override
+            public Tuple2<Long, String> call(Tuple2<LongWritable, Text> tuple) throws Exception {
+                return new Tuple2(tuple._1().get(), tuple._2().toString());
+            }
+        });
+        */
+
+        long[] cutPoints = {0, 10000, 100000};
+
+        Partitioner partitioner = new RangePartitioner(cutPoints);
+
+        //Partitioner partitioner = new HashPartitioner(2);
+        JavaRDD<Text> partitionedRDD = rdd.partitionBy(partitioner).values();
+
+        long result = partitionedRDD.count();
+
+
+        partitionedRDD.saveAsTextFile(cfg.getHDFS_WORKING_DIR() + "/" + dataset1 + "_join_" + dataset2);
+
         end = System.currentTimeMillis();
         System.out.println("RES: Time Taken: " + (end - start) + "; Result: " + result);
 
