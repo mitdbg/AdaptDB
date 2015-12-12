@@ -39,7 +39,7 @@ public class IndexBuilder {
 
 	// Build index from the samples collected.
 	public void buildIndexFromSample(ParsedTupleList sample, int numBuckets, MDIndex index, PartitionWriter writer) {
-		index.initBuild(numBuckets);
+		index.setMaxBuckets(numBuckets);
 		((RobustTree) index).loadSample(sample);
 
 		long startTime = System.nanoTime();

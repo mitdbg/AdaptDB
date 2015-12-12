@@ -11,23 +11,25 @@ import core.adapt.Query;
 import core.adapt.Predicate.PREDTYPE;
 import core.adapt.spark.SparkQuery;
 import core.common.globals.Globals;
+import core.common.globals.TableInfo;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
+import org.apache.hadoop.fs.FileSystem;
 
 public class TPCHWorkload {
 	public ConfUtils cfg;
-
-	public String schemaString;
-
-	int numFields;
 
 	int method;
 
 	int numQueries;
 
 	Random rand;
+
+    String tableName;
+
+    TableInfo tableInfo;
 
 	public void setUp() {
 		cfg = new ConfUtils(BenchmarkSettings.conf);
@@ -36,15 +38,26 @@ public class TPCHWorkload {
 		// Making things more deterministic.
 		rand.setSeed(0);
 
-		Globals.load(cfg.getHDFS_WORKING_DIR() + "/info",
-				HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()));
-		assert Globals.schema != null;
+		tableName = "tpch";
+		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 
-		// delete query history
-		// Cleanup queries file - to remove past query workload
+		// Load table info.
+		Globals.loadTableInfo(tableName, cfg.getHDFS_WORKING_DIR(), fs);
+		tableInfo = Globals.getTableInfo(tableName);
+		assert tableInfo != null;
+
+		// Cleanup queries file - to remove past query workload.
 		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
-				cfg.getHDFS_WORKING_DIR() + "/queries", false);
+				cfg.getHDFS_WORKING_DIR() + "/" +  tableName + "/queries", false);
 	}
+
+    public Query createQuery(Predicate[] predicates) {
+        return new Query(tableName, predicates);
+    }
+
+    public Predicate createPredicate(String attr, TYPE t, Object val, PREDTYPE predtype) {
+        return new Predicate(tableInfo, attr, t, val, predtype);
+    }
 
 	// Given the TPC-H query number returns the query.
 	// Note that only 8 queries are encoded at the moment.
@@ -68,15 +81,15 @@ public class TPCHWorkload {
 			c.add(Calendar.DAY_OF_MONTH, dateOffset);
 			SimpleDate d3 = new SimpleDate(c.get(Calendar.YEAR),
 				c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
-			Predicate p1_3 = new Predicate("c_mktsegment", TYPE.STRING, c_mktsegment, PREDTYPE.LEQ);
-			Predicate p2_3 = new Predicate("o_orderdate", TYPE.DATE, d3, PREDTYPE.LT);
-			Predicate p3_3 = new Predicate("l_shipdate", TYPE.DATE, d3, PREDTYPE.GT);
+			Predicate p1_3 = createPredicate("c_mktsegment", TYPE.STRING, c_mktsegment, PREDTYPE.LEQ);
+			Predicate p2_3 = createPredicate("o_orderdate", TYPE.DATE, d3, PREDTYPE.LT);
+			Predicate p3_3 = createPredicate("l_shipdate", TYPE.DATE, d3, PREDTYPE.GT);
 			if (rand_3 > 0) {
 				String c_mktsegment_prev = mktSegmentVals[rand_3 - 1];
-				Predicate p4_3 = new Predicate("c_mktsegment", TYPE.STRING, c_mktsegment_prev, PREDTYPE.GT);
-				return new Query(new Predicate[]{p1_3,p2_3,p3_3,p4_3});
+				Predicate p4_3 = createPredicate("c_mktsegment", TYPE.STRING, c_mktsegment_prev, PREDTYPE.GT);
+				return createQuery(new Predicate[]{p1_3,p2_3,p3_3,p4_3});
 			} else {
-				return new Query(new Predicate[]{p1_3,p2_3,p3_3});
+				return createQuery(new Predicate[]{p1_3,p2_3,p3_3});
 			}
 		case 5:
 			int rand_5 = rand.nextInt(regionNameVals.length);
@@ -84,17 +97,17 @@ public class TPCHWorkload {
 			int year_5 = 1993 + rand.nextInt(5);
 			SimpleDate d5_1 = new SimpleDate(year_5, 1, 1);
 			SimpleDate d5_2 = new SimpleDate(year_5 + 1, 1, 1);
-			Predicate p1_5 = new Predicate("c_region", TYPE.STRING, r_name_5, PREDTYPE.LEQ);
-			Predicate p2_5 = new Predicate("s_region", TYPE.STRING, r_name_5, PREDTYPE.LEQ);
-			Predicate p3_5 = new Predicate("o_orderdate", TYPE.DATE, d5_1, PREDTYPE.GEQ);
-			Predicate p4_5 = new Predicate("o_orderdate", TYPE.DATE, d5_2, PREDTYPE.LT);
+			Predicate p1_5 = createPredicate("c_region", TYPE.STRING, r_name_5, PREDTYPE.LEQ);
+			Predicate p2_5 = createPredicate("s_region", TYPE.STRING, r_name_5, PREDTYPE.LEQ);
+			Predicate p3_5 = createPredicate("o_orderdate", TYPE.DATE, d5_1, PREDTYPE.GEQ);
+			Predicate p4_5 = createPredicate("o_orderdate", TYPE.DATE, d5_2, PREDTYPE.LT);
 			if (rand_5 > 0) {
 				String r_name_prev_5 = regionNameVals[rand_5 - 1];
-				Predicate p5_5 = new Predicate("c_region", TYPE.STRING, r_name_prev_5, PREDTYPE.GT);
-				Predicate p6_5 = new Predicate("s_region", TYPE.STRING, r_name_prev_5, PREDTYPE.GT);
-				return new Query(new Predicate[]{p1_5, p2_5, p3_5, p4_5, p5_5, p6_5});
+				Predicate p5_5 = createPredicate("c_region", TYPE.STRING, r_name_prev_5, PREDTYPE.GT);
+				Predicate p6_5 = createPredicate("s_region", TYPE.STRING, r_name_prev_5, PREDTYPE.GT);
+				return createQuery(new Predicate[]{p1_5, p2_5, p3_5, p4_5, p5_5, p6_5});
 			} else {
-				return new Query(new Predicate[]{p1_5, p2_5, p3_5, p4_5});
+				return createQuery(new Predicate[]{p1_5, p2_5, p3_5, p4_5});
 			}
 		case 6:
 			int year_6 = 1993 + rand.nextInt(5);
@@ -102,12 +115,12 @@ public class TPCHWorkload {
 			SimpleDate d6_2 = new SimpleDate(year_6 + 1, 1, 1);
 			double discount = rand.nextDouble() * 0.07 + 0.02;
 			double quantity = rand.nextInt(2) + 24.0;
-			Predicate p1_6 = new Predicate("l_shipdate", TYPE.DATE, d6_1, PREDTYPE.GEQ);
-			Predicate p2_6 = new Predicate("l_shipdate", TYPE.DATE, d6_2, PREDTYPE.LT);
-			Predicate p3_6 = new Predicate("l_discount", TYPE.DOUBLE, discount - 0.01, PREDTYPE.GT);
-			Predicate p4_6 = new Predicate("l_discount", TYPE.DOUBLE, discount + 0.01, PREDTYPE.LEQ);
-			Predicate p5_6 = new Predicate("l_quantity", TYPE.DOUBLE, quantity, PREDTYPE.LEQ);
-			return new Query(new Predicate[]{p1_6, p2_6, p3_6, p4_6, p5_6});
+			Predicate p1_6 = createPredicate("l_shipdate", TYPE.DATE, d6_1, PREDTYPE.GEQ);
+			Predicate p2_6 = createPredicate("l_shipdate", TYPE.DATE, d6_2, PREDTYPE.LT);
+			Predicate p3_6 = createPredicate("l_discount", TYPE.DOUBLE, discount - 0.01, PREDTYPE.GT);
+			Predicate p4_6 = createPredicate("l_discount", TYPE.DOUBLE, discount + 0.01, PREDTYPE.LEQ);
+			Predicate p5_6 = createPredicate("l_quantity", TYPE.DOUBLE, quantity, PREDTYPE.LEQ);
+			return createQuery(new Predicate[]{p1_6, p2_6, p3_6, p4_6, p5_6});
 		case 8:
 			// Show that c_region gets introduced before s_region.
 			int rand_8_1 = rand.nextInt(regionNameVals.length);
@@ -115,16 +128,16 @@ public class TPCHWorkload {
 			SimpleDate d8_1 = new SimpleDate(1995, 1, 1);
 			SimpleDate d8_2 = new SimpleDate(1996, 12, 31);
 			String p_type_8 = partTypeVals[rand.nextInt(partTypeVals.length)];
-			Predicate p1_8 = new Predicate("c_region", TYPE.STRING, r_name_8, PREDTYPE.LEQ);
-			Predicate p2_8 = new Predicate("o_orderdate", TYPE.DATE, d8_1, PREDTYPE.GEQ);
-			Predicate p3_8 = new Predicate("o_orderdate", TYPE.DATE, d8_2, PREDTYPE.LEQ);
-			Predicate p4_8 = new Predicate("p_type", TYPE.STRING, p_type_8, PREDTYPE.EQ);
+			Predicate p1_8 = createPredicate("c_region", TYPE.STRING, r_name_8, PREDTYPE.LEQ);
+			Predicate p2_8 = createPredicate("o_orderdate", TYPE.DATE, d8_1, PREDTYPE.GEQ);
+			Predicate p3_8 = createPredicate("o_orderdate", TYPE.DATE, d8_2, PREDTYPE.LEQ);
+			Predicate p4_8 = createPredicate("p_type", TYPE.STRING, p_type_8, PREDTYPE.EQ);
 			if (rand_8_1 > 0) {
 				String r_name_prev_8 = regionNameVals[rand_8_1 - 1];
-				Predicate p5_8 = new Predicate("c_region", TYPE.STRING, r_name_prev_8, PREDTYPE.GT);
-				return new Query(new Predicate[]{p1_8, p2_8, p3_8, p4_8, p5_8});
+				Predicate p5_8 = createPredicate("c_region", TYPE.STRING, r_name_prev_8, PREDTYPE.GT);
+				return createQuery(new Predicate[]{p1_8, p2_8, p3_8, p4_8, p5_8});
 			} else {
-				return new Query(new Predicate[]{p1_8, p2_8, p3_8, p4_8});
+				return createQuery(new Predicate[]{p1_8, p2_8, p3_8, p4_8});
 			}
 		case 10:
 			String l_returnflag_10 = "R";
@@ -134,11 +147,11 @@ public class TPCHWorkload {
 			SimpleDate d10_1 = new SimpleDate(year_10 + monthOffset/12, monthOffset%12 + 1, 1);
 			monthOffset = monthOffset + 3;
 			SimpleDate d10_2 = new SimpleDate(year_10 + monthOffset/12, monthOffset%12 + 1, 1);
-			Predicate p1_10 = new Predicate("l_returnflag", TYPE.STRING, l_returnflag_10, PREDTYPE.LEQ);
-			Predicate p4_10 = new Predicate("l_returnflag", TYPE.STRING, l_returnflag_prev_10, PREDTYPE.GT);
-			Predicate p2_10 = new Predicate("o_orderdate", TYPE.DATE, d10_1, PREDTYPE.GEQ);
-			Predicate p3_10 = new Predicate("o_orderdate", TYPE.DATE, d10_2, PREDTYPE.LT);
-			return new Query(new Predicate[]{p1_10, p2_10, p3_10, p4_10});
+			Predicate p1_10 = createPredicate("l_returnflag", TYPE.STRING, l_returnflag_10, PREDTYPE.LEQ);
+			Predicate p4_10 = createPredicate("l_returnflag", TYPE.STRING, l_returnflag_prev_10, PREDTYPE.GT);
+			Predicate p2_10 = createPredicate("o_orderdate", TYPE.DATE, d10_1, PREDTYPE.GEQ);
+			Predicate p3_10 = createPredicate("o_orderdate", TYPE.DATE, d10_2, PREDTYPE.LT);
+			return createQuery(new Predicate[]{p1_10, p2_10, p3_10, p4_10});
 		case 12:
 			// TODO: We don't handle attrA < attrB style predicate.
 			// TODO: We also don't handle IN queries directly.
@@ -147,15 +160,15 @@ public class TPCHWorkload {
 			int year_12 = 1993 + rand.nextInt(5);
 			SimpleDate d12_1 = new SimpleDate(year_12, 1, 1);
 			SimpleDate d12_2 = new SimpleDate(year_12 + 1, 1, 1);
-			Predicate p1_12 = new Predicate("l_shipmode", TYPE.STRING, shipmode_12, PREDTYPE.LEQ);
-			Predicate p2_12 = new Predicate("l_receiptdate", TYPE.DATE, d12_1, PREDTYPE.GEQ);
-			Predicate p3_12 = new Predicate("l_receiptdate", TYPE.DATE, d12_2, PREDTYPE.LT);
+			Predicate p1_12 = createPredicate("l_shipmode", TYPE.STRING, shipmode_12, PREDTYPE.LEQ);
+			Predicate p2_12 = createPredicate("l_receiptdate", TYPE.DATE, d12_1, PREDTYPE.GEQ);
+			Predicate p3_12 = createPredicate("l_receiptdate", TYPE.DATE, d12_2, PREDTYPE.LT);
 			if (rand_12 > 0) {
 				String shipmode_prev_12 = shipModeVals[rand_12 - 1];
-				Predicate p4_12 = new Predicate("l_shipmode", TYPE.STRING, shipmode_prev_12, PREDTYPE.GT);
-				return new Query(new Predicate[]{p1_12, p2_12, p3_12, p4_12});
+				Predicate p4_12 = createPredicate("l_shipmode", TYPE.STRING, shipmode_prev_12, PREDTYPE.GT);
+				return createQuery(new Predicate[]{p1_12, p2_12, p3_12, p4_12});
 			} else {
-				return new Query(new Predicate[]{p1_12, p2_12, p3_12});
+				return createQuery(new Predicate[]{p1_12, p2_12, p3_12});
 			}
 		case 14:
 			int year_14 = 1993;
@@ -163,25 +176,25 @@ public class TPCHWorkload {
 			SimpleDate d14_1 = new SimpleDate(year_14 + monthOffset_14/12, monthOffset_14%12 + 1, 1);
 			monthOffset_14 += 1;
 			SimpleDate d14_2 = new SimpleDate(year_14 + monthOffset_14/12, monthOffset_14%12 + 1, 1);
-			Predicate p1_14 = new Predicate("o_orderdate", TYPE.DATE, d14_1, PREDTYPE.GEQ);
-			Predicate p2_14 = new Predicate("o_orderdate", TYPE.DATE, d14_2, PREDTYPE.LT);
-			return new Query(new Predicate[]{p1_14, p2_14});
+			Predicate p1_14 = createPredicate("o_orderdate", TYPE.DATE, d14_1, PREDTYPE.GEQ);
+			Predicate p2_14 = createPredicate("o_orderdate", TYPE.DATE, d14_2, PREDTYPE.LT);
+			return createQuery(new Predicate[]{p1_14, p2_14});
 		case 19:
 			// TODO: Add to paper how to handle OR. We can treat it as separate set of filters.
 			// TODO: Consider adding choices for p_container and l_shipmode.
 			String brand_19 = "Brand#" + (rand.nextInt(5) + 1) + "" + (rand.nextInt(5) + 1);
 			String shipInstruct_19 = "DELIVER IN PERSON";
 			double quantity_19 = rand.nextInt(10) + 1;
-			Predicate p1_19 = new Predicate("l_shipinstruct", TYPE.STRING, shipInstruct_19, PREDTYPE.EQ);
-			Predicate p2_19 = new Predicate("p_brand", TYPE.STRING, brand_19, PREDTYPE.EQ);
-			Predicate p3_19 = new Predicate("p_container", TYPE.STRING, "SM CASE",PREDTYPE.EQ);
-			Predicate p4_19 = new Predicate("l_quantity", TYPE.DOUBLE, quantity_19, PREDTYPE.GT);
+			Predicate p1_19 = createPredicate("l_shipinstruct", TYPE.STRING, shipInstruct_19, PREDTYPE.EQ);
+			Predicate p2_19 = createPredicate("p_brand", TYPE.STRING, brand_19, PREDTYPE.EQ);
+			Predicate p3_19 = createPredicate("p_container", TYPE.STRING, "SM CASE",PREDTYPE.EQ);
+			Predicate p4_19 = createPredicate("l_quantity", TYPE.DOUBLE, quantity_19, PREDTYPE.GT);
 			quantity_19 += 10;
-			Predicate p5_19 = new Predicate("l_quantity", TYPE.DOUBLE, quantity_19, PREDTYPE.LEQ);
-			Predicate p6_19 = new Predicate("p_size", TYPE.INT, 1, PREDTYPE.GEQ);
-			Predicate p7_19 = new Predicate("p_size", TYPE.INT, 5, PREDTYPE.LEQ);
-			Predicate p8_19 = new Predicate("l_shipmode", TYPE.STRING, "AIR", PREDTYPE.LEQ);
-			return new Query(new Predicate[]{p1_19, p2_19, p3_19, p4_19, p5_19, p6_19, p7_19, p8_19});
+			Predicate p5_19 = createPredicate("l_quantity", TYPE.DOUBLE, quantity_19, PREDTYPE.LEQ);
+			Predicate p6_19 = createPredicate("p_size", TYPE.INT, 1, PREDTYPE.GEQ);
+			Predicate p7_19 = createPredicate("p_size", TYPE.INT, 5, PREDTYPE.LEQ);
+			Predicate p8_19 = createPredicate("l_shipmode", TYPE.STRING, "AIR", PREDTYPE.LEQ);
+			return createQuery(new Predicate[]{p1_19, p2_19, p3_19, p4_19, p5_19, p6_19, p7_19, p8_19});
 		default:
 			return null;
 		}
@@ -212,7 +225,7 @@ public class TPCHWorkload {
 		for (Query q : queries) {
 			start = System.currentTimeMillis();
 			long result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(),
-					q.getPredicates()).count();
+					q).count();
 			end = System.currentTimeMillis();
 			System.out.println("RES: Time Taken: " + (end - start) + 
 					"; Result: " + result);
@@ -223,14 +236,6 @@ public class TPCHWorkload {
 		int counter = 0;
 		while (counter < args.length) {
 			switch (args[counter]) {
-			case "--schema":
-				schemaString = args[counter + 1];
-				counter += 2;
-				break;
-			case "--numFields":
-				numFields = Integer.parseInt(args[counter + 1]);
-				counter += 2;
-				break;
 			case "--method":
 				method = Integer.parseInt(args[counter + 1]);
 				counter += 2;

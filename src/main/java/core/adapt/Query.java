@@ -1,10 +1,10 @@
 package core.adapt;
 
-import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 
+import core.common.globals.TableInfo;
 import org.apache.hadoop.io.Text;
 
 import com.google.common.base.Joiner;
@@ -16,73 +16,69 @@ import core.common.key.RawIndexKey;
 public class Query implements Serializable {
 	private static final long serialVersionUID = 1L;
 
-	private static final String EMPTY = "empty";
-
 	protected Predicate[] predicates;
-	protected RawIndexKey key;
 
-	public Query() {
-		this.predicates = null;
-		key = new RawIndexKey(Globals.DELIMITER);
-	}
+	private String table;
 
-	public Query(String predString) {
-		String[] parts = predString.split(";");
-		this.predicates = new Predicate[parts.length - 1];
-		for (int i = 0; i < parts.length - 1; i++) {
-			this.predicates[i] = new Predicate(parts[i]);
+    RawIndexKey key;
+
+	public Query(String queryString) {
+        System.out.println("QUERY: " + queryString);
+		String[] parts = queryString.split("\\|");
+        System.out.println("Parts: " + parts.length);
+		this.table = parts[0];
+		String predString = parts[1].trim();
+		if (predString.length() > 0) {
+			String[] predParts = predString.split(";");
+            System.out.println("PredParts" + predParts.length);
+            this.predicates = new Predicate[predParts.length];
+            for (int i = 0; i < predParts.length; i++) {
+                this.predicates[i] = new Predicate(predParts[i]);
+            }
+		} else {
+			this.predicates = new Predicate[0];
 		}
-	}	
+	}
 	
-	public Query(Predicate[] predicates, RawIndexKey key) {
+	public Query(String table, Predicate[] predicates) {
+		this.table = table;
 		this.predicates = predicates;
-		this.key = key;
 	}
 
-	public Query(Predicate[] predicates) {
-		this(predicates, new RawIndexKey(Globals.DELIMITER));
-	}	
-	
 	public Predicate[] getPredicates() {
 		return this.predicates;
 	}
 
+    public String getTable() { return this.table; }
+
 	public void write(DataOutput out) throws IOException {
-		if (predicates.length == 0) {
-			Text.writeString(out, EMPTY);
-		} else {
-			Text.writeString(out, Joiner.on(";").join(predicates));
-		}
-		Text.writeString(out, key.toString());
+		Text.writeString(out, toString());
 	}
 
-	public void readFields(DataInput in) throws IOException {
-		String predicateStrings = Text.readString(in);
-		if (predicateStrings.equals(EMPTY)) {
-			predicates = new Predicate[0];
-		} else {
-			String[] tokens = predicateStrings.split(";");
-			predicates = new Predicate[tokens.length];
-			for (int i = 0; i < predicates.length; i++)
-				predicates[i] = new Predicate(tokens[i]);
-		}
-		key = new RawIndexKey(Text.readString(in));
-	}
+    /**
+     * Load information about table if not already done.
+     */
+    public void loadKey() {
+        if (key == null) {
+            TableInfo tableInfo = Globals.getTableInfo(table);
+            if (tableInfo == null) {
+                // TODO: throw exception ?
+                throw new RuntimeException("Table Info for table " + table + " not loaded");
+            }
+
+            key = new RawIndexKey(tableInfo.delimiter);
+        }
+    }
 
 	public boolean qualifies(IteratorRecord record) {
+        loadKey();
+
 		boolean qualify = true;
 		for (Predicate p : predicates) {
-			int[] keyAttrs = key.getKeys();
-			int attrIdx;
-			if (keyAttrs == null) {
-				attrIdx = p.attribute;
-			} else {
-				attrIdx = keyAttrs[p.attribute];
-			}
+			int attrIdx = p.attribute;
 			switch (p.type) {
 			case BOOLEAN:
-				qualify &= p
-						.isRelevant(record.getBooleanAttribute(attrIdx));
+				qualify &= p.isRelevant(record.getBooleanAttribute(attrIdx));
 				break;
 			case INT:
 				qualify &= p.isRelevant(record.getIntAttribute(attrIdx));
@@ -113,6 +109,6 @@ public class Query implements Serializable {
 
 	@Override
 	public String toString() {
-		return Joiner.on(";").join(predicates);
+		return table + "|" + Joiner.on(";").join(predicates);
 	}
 }

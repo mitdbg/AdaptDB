@@ -42,23 +42,21 @@ public class HPInput {
 		}
 	}
 
-	public PartitionSplit[] getFullScan(Predicate... predicates) {
+	public PartitionSplit[] getFullScan(Query q) {
 		return new PartitionSplit[] { new PartitionSplit(
 				Ints.toArray(partitionIdFileMap.keySet()),
-				new PostFilterIterator(new Query(predicates, am.getKey()))) };
+				new PostFilterIterator(q))};
 	}
 
-	public PartitionSplit[] getRepartitionScan(Predicate... predicates) {
+	public PartitionSplit[] getRepartitionScan(Query q) {
 		return new PartitionSplit[] { new PartitionSplit(
 				Ints.toArray(partitionIdFileMap.keySet()),
-				new RepartitionIterator(new Query(predicates,
-						am.getKey()))) };
+				new RepartitionIterator(q)) };
 	}
 
 	public PartitionSplit[] getIndexScan(boolean justAccess,
-			Predicate... predicates) {
-		return am.getPartitionSplits(new Query(predicates, am.getKey()),
-				justAccess);
+			Query q) {
+		return am.getPartitionSplits(q, justAccess);
 	}
 
 	// utility methods

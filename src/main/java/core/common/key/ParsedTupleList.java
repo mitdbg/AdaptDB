@@ -31,13 +31,11 @@ public class ParsedTupleList {
 	private TYPE[] types;
 	private int sampleSize;
 
-	/**
-	 * Create an empty key set.
-	 */
-	public ParsedTupleList() {
-		values = Lists.newArrayList();
-		sampleSize = 0;
-	}
+    public ParsedTupleList(TYPE[] types) {
+        this.types = types;
+        this.values = Lists.newArrayList();
+        sampleSize = 0;
+    }
 
 	/**
 	 * Instantiate a key set with a given set of keys.
@@ -56,9 +54,6 @@ public class ParsedTupleList {
 	 * @param key
 	 */
 	public void insert(RawIndexKey key) {
-		if (types == null)
-			this.types = key.types;
-
 		Object[] keyValues = new Object[types.length];
 		for (int i = 0; i < types.length; i++) {
 			switch (types[i]) {
@@ -80,10 +75,10 @@ public class ParsedTupleList {
 			case VARCHAR:
 				break; // skip partitioning on varchar attribute
 			default:
-				throw new RuntimeException("Unknown dimension type: "
-						+ key.types[i]);
+				throw new RuntimeException("Unknown dimension type:");
 			}
 		}
+
 		values.add(keyValues);
 		sampleSize++;
 	}
@@ -372,7 +367,7 @@ public class ParsedTupleList {
 	 * @author alekh
 	 *
 	 */
-	public static class KeySetIterator implements Iterator<RawIndexKey> {
+	public static class KeySetIterator implements Iterator<ParsedIndexKey> {
 		private Iterator<Object[]> valueItr;
 		private ParsedIndexKey key;
 
@@ -387,7 +382,7 @@ public class ParsedTupleList {
 		}
 
 		@Override
-		public RawIndexKey next() {
+		public ParsedIndexKey next() {
 			key.setValues(valueItr.next());
 			return key;
 		}
@@ -398,7 +393,7 @@ public class ParsedTupleList {
 		}
 	}
 
-	public byte[] marshall() {
+	public byte[] marshall(char delimiter) {
 		List<byte[]> byteArrays = Lists.newArrayList();
 
 		int initialSize = sampleSize * 100; // assumption: each record could be
@@ -407,7 +402,7 @@ public class ParsedTupleList {
 
 		int offset = 0;
 		for (Object[] v : values) {
-			byte[] vBytes = Joiner.on(Globals.DELIMITER).join(v).getBytes();
+			byte[] vBytes = Joiner.on(delimiter).join(v).getBytes();
 			if (offset + vBytes.length + 1 > recordBytes.length) {
 				byteArrays.add(BinaryUtils.resize(recordBytes, offset));
 				recordBytes = new byte[initialSize];
@@ -427,8 +422,8 @@ public class ParsedTupleList {
 		return Bytes.concat(finalByteArrays);
 	}
 
-	public void unmarshall(byte[] bytes) {
-		RawIndexKey record = new RawIndexKey(Globals.DELIMITER);
+	public void unmarshall(byte[] bytes, char delimiter) {
+		RawIndexKey record = new RawIndexKey(delimiter);
 		int offset = 0, previous = 0;
 
 		for (; offset < bytes.length; offset++) {
@@ -444,10 +439,5 @@ public class ParsedTupleList {
 				previous = ++offset;
 			}
 		}
-
-		// The key now has the right types. Use those types.
-		this.types = record.types;
-
-		System.out.println("DEBUG: Types length: " + this.types.length);
 	}
 }

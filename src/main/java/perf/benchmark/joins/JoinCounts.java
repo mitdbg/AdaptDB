@@ -46,6 +46,10 @@ public class JoinCounts {
 		}
 	}
 
+	public Query createQuery(Predicate[] p) {
+		return new Query("TB", p);
+	}
+
 	public void countJoinOverlapNaive(String big, String small) {
 		fillBucketSizes(big);
 		fillBucketSizes(small);
@@ -71,9 +75,10 @@ public class JoinCounts {
 						PREDTYPE.LEQ);
 
 				Optimizer partOpt = new Optimizer(conf);
-				partOpt.loadIndex();
+				// TODO: Fix this.
+				// partOpt.loadIndex();
 				PartitionSplit[] partSplits = partOpt
-						.buildAccessPlan(new Query(new Predicate[] {
+						.buildAccessPlan(createQuery(new Predicate[] {
 								part1, part2 }));
 
 				Predicate lineitem1 = new Predicate(1, TYPE.INT, (int) start,
@@ -82,9 +87,10 @@ public class JoinCounts {
 						PREDTYPE.LEQ);
 
 				Optimizer lineOpt = new Optimizer(conf);
-				lineOpt.loadIndex();
+				// TODO: Fix this.
+				// lineOpt.loadIndex();
 				PartitionSplit[] lineSplits = lineOpt
-						.buildAccessPlan(new Query(new Predicate[] {
+						.buildAccessPlan(createQuery(new Predicate[] {
 								lineitem1, lineitem2 }));
 
 				for (PartitionSplit split : lineSplits) {
@@ -113,7 +119,8 @@ public class JoinCounts {
 		fillBucketSizes(small);
 		fillBucketSizes(big);
 		Optimizer partOpt = new Optimizer(conf);
-		partOpt.loadIndex();
+		// TODO: Fix this.
+		// partOpt.loadIndex();
 
 		// Map<Integer, Integer> partCount = new HashMap<Integer, Integer>();
 		double partOverlap = 0;
@@ -133,7 +140,7 @@ public class JoinCounts {
 						Long.parseLong(tokens[2]), PREDTYPE.LEQ);
 
 				PartitionSplit[] partSplits = partOpt
-						.buildAccessPlan(new Query(new Predicate[] {
+						.buildAccessPlan(createQuery(new Predicate[] {
 								part1, part2 }));
 
 				if (tokens[0].equals("")) {

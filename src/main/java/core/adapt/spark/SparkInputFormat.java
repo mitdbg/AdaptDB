@@ -37,7 +37,6 @@ import core.utils.ReflectionUtils;
 public class SparkInputFormat extends
 		FileInputFormat<LongWritable, IteratorRecord> implements Serializable {
 
-	public static String SPLIT_ITERATOR = "SPLIT_ITERATOR";
 	private static final long serialVersionUID = 1L;
 
 	private static final Log LOG = LogFactory.getLog(FileInputFormat.class);

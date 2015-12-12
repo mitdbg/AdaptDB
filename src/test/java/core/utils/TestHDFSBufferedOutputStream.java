@@ -29,7 +29,7 @@ public class TestHDFSBufferedOutputStream extends TestCase {
 		String outputString = "";
 		String testLine = "Lorem ipsum dolor sit amet\n";
 		OutputStream os = HDFSUtils.getBufferedHDFSOutputStream(this.fs,
-				this.testFile, this.cfg.getHDFS_REPLICATION_FACTOR(), 10000);
+				this.testFile, this.cfg.getHDFS_REPLICATION_FACTOR(), 10000, null);
 
 		try {
 			for (int i = 0; i < 10; i++) {
@@ -51,7 +51,7 @@ public class TestHDFSBufferedOutputStream extends TestCase {
 		String testLine = "Lorem ipsum dolor sit amet\n";
 		String actualLine = "Lorem ipsum dolor sit amet";
 		OutputStream os = HDFSUtils.getBufferedHDFSOutputStream(this.fs,
-				this.testFile, this.cfg.getHDFS_REPLICATION_FACTOR(), 10000);
+				this.testFile, this.cfg.getHDFS_REPLICATION_FACTOR(), 10000, null);
 
 		try {
 			for (int i = 0; i < 10000; i++) {

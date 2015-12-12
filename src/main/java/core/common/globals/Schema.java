@@ -50,7 +50,16 @@ public class Schema {
 		return ret;
 	}
 
+	public TYPE[] getTypeArray() {
+		TYPE[] typeArray = new TYPE[fields.length];
+		for (int i=0; i<fields.length; i++) {
+			typeArray[i] = fields[i].type;
+		}
+		return typeArray;
+	}
+
 	public static Schema createSchema(String schemaString) {
+		System.out.println(schemaString);
 		String[] columns = schemaString.split(",");
 		Field[] fieldList = new Field[columns.length];
 

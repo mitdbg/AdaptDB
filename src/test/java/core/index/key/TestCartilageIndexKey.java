@@ -37,12 +37,6 @@ public class TestCartilageIndexKey extends TestCase {
 
 	public void testSetTupleVarchar() {
 		key.setBytes(tuple1.getBytes());
-		TYPE[] keyTypes = key.types;
-		for (int i = 0; i < types.length; i++) {
-			System.out.println(types[i] + " " + keyTypes[i]);
-			if (types[i] != TYPE.VARCHAR)
-				assertEquals(types[i], keyTypes[i]);
-		}
 	}
 
 	public void testGetKeyString() {

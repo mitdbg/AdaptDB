@@ -3,6 +3,8 @@ package core.upfront.build;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import core.utils.CuratorUtils;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
@@ -11,15 +13,18 @@ import core.utils.HDFSUtils;
 
 public class HDFSPartitionWriter extends PartitionWriter {
 
-	private ConfUtils conf;
+	private ConfUtils cfg;
 
 	private short replication;
 	private FileSystem hdfs;
 
+	private CuratorFramework client;
+
 	public HDFSPartitionWriter(String partitionDir, int bufferPartitionSize,
-			short replication, ConfUtils cfg) {
+			short replication, ConfUtils cfg, CuratorFramework client) {
 		super(partitionDir, bufferPartitionSize);
 		this.replication = replication;
+		this.client = client;
 		createHDFS(cfg);
 	}
 
@@ -31,13 +36,13 @@ public class HDFSPartitionWriter extends PartitionWriter {
 	@Override
 	public PartitionWriter clone() throws CloneNotSupportedException {
 		HDFSPartitionWriter w = (HDFSPartitionWriter) super.clone();
-		w.createHDFS(this.conf);
+		w.createHDFS(this.cfg);
 		return w;
 	}
 
 	private void createHDFS(ConfUtils cfg) {
-		this.conf = cfg;
-		this.hdfs = HDFSUtils.getFS(this.conf.getHADOOP_HOME()
+		this.cfg = cfg;
+		this.hdfs = HDFSUtils.getFS(this.cfg.getHADOOP_HOME()
 				+ "/etc/hadoop/core-site.xml");
 	}
 
@@ -61,6 +66,6 @@ public class HDFSPartitionWriter extends PartitionWriter {
 	@Override
 	protected OutputStream getOutputStream(String path) {
 		return HDFSUtils.getBufferedHDFSOutputStream(hdfs, path, replication,
-				bufferPartitionSize);
+				bufferPartitionSize, client);
 	}
 }

@@ -40,7 +40,7 @@ public class TestSparkRecordReader extends TestCase {
 
 		SparkQueryConf queryConf = new SparkQueryConf(conf);
 		queryConf.setWorkingDir(hdfsPath);
-		queryConf.setQuery(predicates);
+//		queryConf.setQuery(predicates);
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
 		queryConf.setMaxSplitSize(1024 / 64);

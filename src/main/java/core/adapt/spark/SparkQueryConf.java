@@ -1,5 +1,6 @@
 package core.adapt.spark;
 
+import core.adapt.Query;
 import org.apache.hadoop.conf.Configuration;
 
 import com.google.common.base.Joiner;
@@ -61,20 +62,16 @@ public class SparkQueryConf {
 													// i.e. just access
 	}
 
-	public void setQuery(Predicate[] predicates) {
-		conf.set(QUERY, Joiner.on(",").join(predicates));
+	public void setQuery(Query query) {
+		conf.set(QUERY, query.toString());
 	}
 
-	public Predicate[] getQuery() {
+	public Query getQuery() {
 		if (conf.get(QUERY) == null || conf.get(QUERY).equals("")) {
 			throw new RuntimeException("No query set in query conf.");
 		}
 
-		String[] tokens = conf.get(QUERY).split(",");
-		Predicate[] predicates = new Predicate[tokens.length];
-		for (int i = 0; i < predicates.length; i++)
-			predicates[i] = new Predicate(tokens[i]);
-		return predicates;
+		return new Query(conf.get(QUERY));
 	}
 
 	public void setMaxSplitSize(long maxSplitSize) {

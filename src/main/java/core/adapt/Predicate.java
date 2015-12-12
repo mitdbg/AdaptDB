@@ -1,5 +1,6 @@
 package core.adapt;
 
+import core.common.globals.TableInfo;
 import org.junit.Assert;
 
 import core.common.globals.Globals;
@@ -23,11 +24,11 @@ public class Predicate {
 		this.predtype = predtype;
 	}
 
-	public Predicate(String attr, TYPE t, Object val, PREDTYPE predtype) {
-		this.attribute = Globals.schema.getAttributeId(attr);
+	public Predicate(TableInfo tableInfo, String attr, TYPE t, Object val, PREDTYPE predtype) {
+		this.attribute = tableInfo.schema.getAttributeId(attr);
 		try {
 			Assert.assertNotEquals(this.attribute, -1);
-			Assert.assertEquals(t, Globals.schema.getType(this.attribute));
+			Assert.assertEquals(t, tableInfo.schema.getType(this.attribute));
 		} catch (Exception e) {
 			System.out.println(attr + " " + this.attribute + " " + t.toString());
 			e.printStackTrace();
@@ -42,6 +43,7 @@ public class Predicate {
 	}
 
 	public Predicate(String predString) {
+		System.out.println("PREDICATE: " + predString);
 		String[] tokens = predString.split(":");
 		this.attribute = Integer.parseInt(tokens[0]);
 		this.type = TYPE.valueOf(tokens[1]);

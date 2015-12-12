@@ -1,17 +1,12 @@
 package core.simulator;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.Random;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.mapreduce.Job;
 
 import core.adapt.Predicate;
-import core.adapt.AccessMethod.PartitionSplit;
 import core.adapt.Predicate.PREDTYPE;
 import core.adapt.Query;
-import core.adapt.iterator.RepartitionIterator;
 import core.adapt.opt.Optimizer;
 import core.utils.ConfUtils;
 import core.utils.CuratorUtils;
@@ -32,7 +27,8 @@ public class Simulator {
 		cfg = new ConfUtils(BenchmarkSettings.conf);
 		this.cleanUp();
 		opt = new Optimizer(cfg);
-		opt.loadIndex();
+		// TODO: Fix this.
+		// opt.loadIndex();
 	}
 
 	public void cleanUp() {
@@ -49,7 +45,7 @@ public class Simulator {
 	public void testRunQuery() {
 		Predicate[] predicates = new Predicate[] { new Predicate(0, TYPE.LONG,
 				3002147L, PREDTYPE.LEQ) };
-		opt.buildPlan(new Query(predicates));
+		opt.buildPlan(new Query("lineitem", predicates));
 	}
 
 	public void testSinglePredicateRun() {
@@ -61,109 +57,8 @@ public class Simulator {
 			// Predicate p2 = new Predicate(10, TYPE.DATE, new
 			// SimpleDate(year+1,1,1), PREDTYPE.LT);
 			System.out.println("Updated Bucket Counts");
-			opt.buildPlan(new Query(new Predicate[] { p1 }));
+			opt.buildPlan(new Query("lineitem", new Predicate[] { p1 }));
 			System.out.println("Completed Query " + i);
-		}
-	}
-
-	public void testCyclicShipDatePredicate() {
-		int numQueries = 25;
-		boolean doUpdate = true;
-		for (int i = 0; i < numQueries; i++) {
-			int year = 1993 + i % 6;
-			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(
-					year - 1, 12, 31), PREDTYPE.GT);
-			Predicate p2 = new Predicate(10, TYPE.DATE, new SimpleDate(year,
-					12, 31), PREDTYPE.LEQ);
-			if (doUpdate) {
-				System.out.println("Updated Bucket Counts");
-				doUpdate = false;
-			}
-
-			PartitionSplit[] splits = opt.buildPlan(new Query(
-					new Predicate[] { p1, p2 }));
-			for (PartitionSplit ps : splits) {
-				if (ps.getIterator() instanceof RepartitionIterator) {
-					doUpdate = true;
-					break;
-				}
-			}
-			System.out.println("INFO: Completed Query " + i);
-		}
-	}
-
-	public void testShipDateAdhoc() {
-		boolean doUpdate = true;
-		int numQueries = 30;
-		double selectivity = 0.05;
-		int range = 2525;
-		Random r = new Random(1);
-		Calendar c = new GregorianCalendar();
-		for (int i = 0; i < numQueries; i++) {
-			int startOffset = (int) (r.nextDouble() * range * (1 - selectivity)) + 1;
-			c.set(1992, Calendar.JANUARY, 02);
-			c.add(Calendar.DAY_OF_MONTH, startOffset);
-			SimpleDate startDate = new SimpleDate(c.get(Calendar.YEAR),
-					c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
-			c.add(Calendar.DAY_OF_MONTH, (int) (range * selectivity));
-			SimpleDate endDate = new SimpleDate(c.get(Calendar.YEAR),
-					c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
-
-			Predicate p1 = new Predicate(10, TYPE.DATE, startDate, PREDTYPE.GT);
-			Predicate p2 = new Predicate(10, TYPE.DATE, endDate, PREDTYPE.LEQ);
-			if (doUpdate) {
-				System.out.println("Updated Bucket Counts");
-				doUpdate = false;
-			}
-
-			PartitionSplit[] splits = opt.buildPlan(new Query(
-					new Predicate[] { p1, p2 }));
-			for (PartitionSplit ps : splits) {
-				if (ps.getIterator() instanceof RepartitionIterator) {
-					doUpdate = true;
-					break;
-				}
-			}
-			System.out.println("INFO: Completed Query " + i);
-		}
-	}
-
-	public void testShipDateDrillDown() {
-		int numQueries = 30;
-		double selectivity = 0.1;
-		int range = 2525;
-		Calendar c = new GregorianCalendar();
-		Random r = new Random(1);
-		int startOffset = (int) (r.nextDouble() * range * (1 - selectivity)) + 1;
-		c.set(1992, Calendar.JANUARY, 02);
-		c.add(Calendar.DAY_OF_MONTH, startOffset);
-		SimpleDate startDate = new SimpleDate(c.get(Calendar.YEAR),
-				c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
-		c.add(Calendar.DAY_OF_MONTH, (int) (range * selectivity));
-
-		int reduction = (int) (range * selectivity * -1);
-		boolean doUpdate = true;
-		for (int i = 0; i < numQueries; i++) {
-			SimpleDate endDate = new SimpleDate(c.get(Calendar.YEAR),
-					c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH));
-			Predicate p1 = new Predicate(10, TYPE.DATE, startDate, PREDTYPE.GT);
-			Predicate p2 = new Predicate(10, TYPE.DATE, endDate, PREDTYPE.LEQ);
-			if (doUpdate) {
-				System.out.println("Updated Bucket Counts");
-				doUpdate = false;
-			}
-
-			PartitionSplit[] splits = opt.buildPlan(new Query(
-					new Predicate[] { p1, p2 }));
-			for (PartitionSplit ps : splits) {
-				if (ps.getIterator() instanceof RepartitionIterator) {
-					doUpdate = true;
-					break;
-				}
-			}
-			reduction /= 2;
-			c.add(Calendar.DAY_OF_MONTH, reduction);
-			System.out.println("INFO: Completed Query " + i);
 		}
 	}
 }

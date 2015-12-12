@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import core.adapt.Query;
 import core.utils.Range;
 import core.utils.TypeUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -252,7 +253,8 @@ public class HPJoinInput extends HPInput {
 		Predicate lookupPred2 = new Predicate(joinKey, types[joinKey], highVal,
 				Predicate.PREDTYPE.LEQ);
 
-		return getIndexScan(justAccess, lookupPred1, lookupPred2);
+		// TODO: Wrong; Fix this.
+		return getIndexScan(justAccess, new Query("random", new Predicate[]{lookupPred1, lookupPred2}));
 	}
 
 	// utility methods

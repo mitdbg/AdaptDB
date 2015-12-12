@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -204,10 +205,11 @@ public class HDFSUtils {
 		}
 	}
 
-	public static OutputStream getBufferedHDFSOutputStream(FileSystem fs,
-			String filename, short replication, int bufferSize) {
+	public static OutputStream getBufferedHDFSOutputStream(
+			FileSystem fs, String filename, short replication, int bufferSize,
+			CuratorFramework client) {
 		return new HDFSBufferedOutputStream(fs, filename, replication,
-				bufferSize);
+				bufferSize, client);
 	}
 
 	public static InputStream getHDFSInputStream(FileSystem hdfs,

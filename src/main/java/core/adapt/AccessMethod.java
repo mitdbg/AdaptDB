@@ -4,6 +4,7 @@ import core.adapt.iterator.PartitionIterator;
 import core.adapt.opt.Optimizer;
 import core.adapt.spark.SparkQueryConf;
 import core.common.globals.Globals;
+import core.common.globals.TableInfo;
 import core.common.index.RobustTree;
 import core.common.key.RawIndexKey;
 import core.utils.HDFSUtils;
@@ -28,23 +29,18 @@ public class AccessMethod {
 
 	/**
 	 * Initialize hyper-partitioning data access.
-	 *
-	 * This method does two things: 1. lookup the index file (if exists) for
-	 * this dataset 2. de-serializes MDIndex from HDFS
-	 *
-	 * @param dataset
 	 */
 	public void init(SparkQueryConf conf) {
-		Globals.load(conf.getWorkingDir() + "/info",
+		Query query = conf.getQuery();
+
+		Globals.loadTableInfo(query.getTable(), conf.getWorkingDir(),
 				HDFSUtils.getFSByHadoopHome(conf.getHadoopHome()));
 
-		key = new RawIndexKey(Globals.DELIMITER);
-
-		Predicate[] query = conf.getQuery();
+        TableInfo tableInfo = Globals.getTableInfo(query.getTable());
+		key = new RawIndexKey(tableInfo.delimiter);
 		opt = new Optimizer(conf);
-		conf.setQuery(query);
 
-		opt.loadIndex();
+		opt.loadIndex(tableInfo);
 		opt.loadQueries();
 	}
 
@@ -60,7 +56,6 @@ public class AccessMethod {
 	 * This method returns whether or not a given partition qualifies for the
 	 * predicate.
 	 *
-	 * @param partition
 	 * @param predicate
 	 * @return
 	 */
@@ -76,10 +71,6 @@ public class AccessMethod {
 	 * The split thus produced must be: (a) equal in size (b) contain blocks
 	 * from the same sub-tree
 	 *
-	 * @param filterPredicate
-	 *            - the filter predicate for data access
-	 * @param n
-	 *            - the number of splits to produce
 	 * @return
 	 */
 	public PartitionSplit[] getPartitionSplits(Query q, boolean justAccess) {

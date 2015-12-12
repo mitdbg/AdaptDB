@@ -31,7 +31,7 @@ public class TestHDFSScanIterator extends TestScanIterator {
 				PREDTYPE.GEQ);
 		Predicate p2 = new Predicate(attributeIdx, TYPE.INT, 6000000,
 				PREDTYPE.LEQ);
-		query = new Query(new Predicate[] { p1, p2 });
+		query = new Query("afds", new Predicate[] { p1, p2 });
 
 		partitionPaths = Lists.newArrayList();
 		ConfUtils cfg = new ConfUtils(propertiesFile);

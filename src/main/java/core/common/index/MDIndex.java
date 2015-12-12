@@ -123,13 +123,7 @@ public interface MDIndex {
 	 * The Build phase of the index
 	 */
 
-	/**
-	 * Initialize the index with the maximum number of buckets.
-	 *
-	 * @param numBuckets
-	 *            ;
-	 */
-	public void initBuild(int numBuckets);
+	void setMaxBuckets(int maxBuckets);
 
 	/*
 	 *

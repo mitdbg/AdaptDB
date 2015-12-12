@@ -142,8 +142,8 @@ public class RepartitionIterator extends PartitionIterator {
 
 	@Override
 	public void readFields(DataInput in) throws IOException {
-		query = new Query();
-		query.readFields(in);
+		String predicateString = Text.readString(in);
+		query = new Query(predicateString);
 		zookeeperHosts = Text.readString(in);
 	}
 

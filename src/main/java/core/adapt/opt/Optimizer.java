@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
+import core.common.globals.TableInfo;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
@@ -82,7 +83,7 @@ public class Optimizer {
 	}
 
 	public Optimizer(SparkQueryConf cfg) {
-		this.workingDir = cfg.getWorkingDir() /* + "/" + cfg.getReplicaId() */;
+		this.workingDir = cfg.getWorkingDir();
 		this.hadoopHome = cfg.getHadoopHome();
 		this.fileReplicationFactor = cfg.getHDFSReplicationFactor();
 	}
@@ -93,18 +94,18 @@ public class Optimizer {
 		this.fileReplicationFactor = cfg.getHDFS_REPLICATION_FACTOR();
 	}
 
-	public void loadIndex() {
-		FileSystem fs = HDFSUtils.getFS(hadoopHome
-				+ "/etc/hadoop/core-site.xml");
-		String pathToIndex = this.workingDir + "/index";
-		String pathToSample = this.workingDir + "/sample";
+	public void loadIndex(TableInfo tableInfo) {
+		FileSystem fs = HDFSUtils.getFSByHadoopHome(hadoopHome);
+		String tableDir = this.workingDir + "/" + tableInfo.tableName;
+        String pathToIndex = tableDir + "/index";
+		String pathToSample = tableDir + "/sample";
 
 		byte[] indexBytes = HDFSUtils.readFile(fs, pathToIndex);
 		this.rt = new RobustTree();
 		this.rt.unmarshall(indexBytes);
 
 		byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
-		this.rt.loadSample(sampleBytes);
+		this.rt.loadSample(tableInfo, sampleBytes);
 	}
 
 	public RobustTree getIndex() {
@@ -587,8 +588,7 @@ public class Optimizer {
 			if (n.bucket != null) {
 				ParsedTupleList bucketSample = n.bucket.getSample();
 				if (collector == null) {
-					collector = new ParsedTupleList();
-					collector.setTypes(bucketSample.getTypes());
+					collector = new ParsedTupleList(bucketSample.getTypes());
 				}
 
 				numSamples += bucketSample.getValues().size();

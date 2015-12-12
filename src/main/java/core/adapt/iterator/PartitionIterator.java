@@ -5,6 +5,8 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Iterator;
 
+import core.adapt.Query;
+import core.common.globals.TableInfo;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.ArrayUtils;
 
@@ -20,7 +22,7 @@ import core.utils.ReflectionUtils;
 
 public class PartitionIterator implements Iterator<IteratorRecord> {
 
-	public static enum ITERATOR {
+	public enum ITERATOR {
 		SCAN, FILTER, REPART
 	};
 
@@ -37,15 +39,19 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 
 	protected Predicate[] predicates;
 
+	protected Query query;
+
 	public PartitionIterator() {
+
 	}
 
-	public PartitionIterator(String itrString) {
+	public PartitionIterator(Query q) {
+		this.query = q;
 	}
 
 	public void setPartition(Partition partition) {
 		this.partition = partition;
-		if (Globals.schema == null) {
+		if (Globals.getTableInfo(query.getTable()) == null) {
 			String path = FilenameUtils.getPathNoEndSeparator(partition
 					.getPath());
 
@@ -58,11 +64,15 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 				path = FilenameUtils.getPathNoEndSeparator(FilenameUtils.getPath(path));
 			}
 
+			// To remove table name.
+			path = FilenameUtils.getPathNoEndSeparator(FilenameUtils.getPath(path));
+
 			// Initialize Globals.
-			Globals.load(path + "/info", ((HDFSPartition) partition).getFS());
+			Globals.loadTableInfo(query.getTable(), path, ((HDFSPartition) partition).getFS());
 		}
 
-		record = new IteratorRecord();
+		TableInfo tableInfo = Globals.getTableInfo(query.getTable());
+		record = new IteratorRecord(tableInfo.delimiter);
 		bytes = partition.getNextBytes();
 		// bytesLength = partition.getSize();
 		bytesLength = bytes == null ? 0 : bytes.length;

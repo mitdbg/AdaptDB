@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import core.common.globals.TableInfo;
+import core.utils.CuratorUtils;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
@@ -22,8 +25,8 @@ import core.utils.HDFSUtils;
 
 /**
  * Builds the index. Captures time taken by the different steps in index
- * building. 
- * TODO: Make it generalized by not depending on lineitem. 
+ * building.
+ * Make sure that the table info has been created.
  * TODO: Compute sampling fraction instead of taking as an option.
  *
  * @author anil
@@ -53,58 +56,52 @@ public class RunIndexBuilder {
 	// Number of buckets in the index.
 	int numBuckets = -1;
 
-	// Number of replicas to use (only used when building a tree per replica).
-	int numReplicas = -1;
-
-	// Describes the schema of the input files.
-	String schemaString;
-
-	// Number of fields in the input file.
-	int numFields = -1;
-	
 	// Directory corresponding to table on HDFS.
 	String tableHDFSDir;
 
+	// HDFS Filesystem.
+	FileSystem fs;
+
+    // Table Info.
+    TableInfo tableInfo;
+
+    // Zookeeper client.
+    CuratorFramework client;
+
 	public void setUp() {
+
 		partitionBufferSize = 2 * 1024 * 1024;
 
 		cfg = new ConfUtils(BenchmarkSettings.conf);
+		fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
+
+		// Load table info.
+		Globals.loadTableInfo(tableName, cfg.getHDFS_WORKING_DIR(), fs);
+		tableInfo = Globals.getTableInfo(tableName);
+		assert tableInfo != null;
 
 		builder = new IndexBuilder();
-		key = new RawIndexKey(Globals.DELIMITER);
+		key = new RawIndexKey(tableInfo.delimiter);
 		
 		tableHDFSDir = cfg.getHDFS_WORKING_DIR() + "/" + tableName;
+
+        client = CuratorUtils.createAndStartClient(
+                cfg.getZOOKEEPER_HOSTS());
 	}
 
 	private PartitionWriter getHDFSWriter(String partitionDir, short replication) {
 		return new HDFSPartitionWriter(partitionDir, partitionBufferSize,
-				replication, this.cfg);
-	}
-
-	/**
-	 * Loads the globals from the /info file.
-	 * Available after the index has been written out to HDFS.
-	 */
-	public void loadGlobals() {
-		Globals.load(tableHDFSDir + "/info",
-				HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()));
+				replication, this.cfg, client);
 	}
 
 	/**
 	 * Creates one sample file sample.machineId and writes it out to HDFS.
-	 *
-	 * @param machineId
-	 *            descriptor for machine the code will run on.
 	 */
 	public void createSamples() {
-		assert numFields != -1;
 		assert inputsDir != null;
 
-		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
-				+ "/etc/hadoop/core-site.xml");
-
-		// If the input sampingRate = 0.0 (unspecified), then calculate it automatically
-		if (samplingRate == 0.0){
+		// If the input samplingRate = 0.0 (unspecified), then calculate it automatically
+		if (samplingRate == 0.0) {
 			samplingRate = calculateSampingRate(inputsDir);
 			System.out.println("The input samplingRate = 0.0, we set it to " + samplingRate);
 		}
@@ -143,19 +140,11 @@ public class RunIndexBuilder {
 	 * from the samples dir and writes it out WORKING_DIR/sample
 	 */
 	public void buildRobustTreeFromSamples() {
-		assert numFields != -1;
 		assert numBuckets != -1;
-
-		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
-				+ "/etc/hadoop/core-site.xml");
 
 		// Write out the combined sample file.
 		ParsedTupleList sample = readSampleFiles();
 		writeOutSample(fs, sample);
-
-		// Write out global settings for this dataset.
-		Globals.save(tableHDFSDir + "/info",
-				cfg.getHDFS_REPLICATION_FACTOR(), fs);
 
 		// Construct the index from the sample.
 		RobustTree index = new RobustTree();
@@ -170,12 +159,9 @@ public class RunIndexBuilder {
 	/**
 	 * Creates num_replicas robust trees. As a side effect reads all the sample
 	 * files from the samples dir and writes it out WORKING_DIR/sample
-	 *
-	 * @param tpchSize
 	 */
 	public void writeOutSampleFile() {
-		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
-				+ "/etc/hadoop/core-site.xml");
+		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 
 		// Write out the combined sample file.
 		ParsedTupleList sample = readSampleFiles();
@@ -183,15 +169,13 @@ public class RunIndexBuilder {
 	}	
 	
 	public void writePartitionsFromIndex() {
-		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
-				+ "/etc/hadoop/core-site.xml");
+		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 		byte[] indexBytes = HDFSUtils.readFile(fs, tableHDFSDir + "/index");
 
 		// Just load the index. For this we don't need to load the samples.
 		RobustTree index = new RobustTree();
 		index.unmarshall(indexBytes);
 
-		// TODO(anil): Make this the name of dataset.
 		String dataDir = "/data";
 		builder.buildDistributedFromIndex(
 				index,
@@ -215,21 +199,8 @@ public class RunIndexBuilder {
 				tableName = args[counter+1];
 				counter += 2;
 				break;
-			case "--schema":
-				schemaString = args[counter + 1];
-				Globals.schema = Schema.createSchema(schemaString);
-				counter += 2;
-				break;
-			case "--numFields":
-				numFields = Integer.parseInt(args[counter + 1]);
-				counter += 2;
-				break;
 			case "--method":
 				method = Integer.parseInt(args[counter + 1]);
-				counter += 2;
-				break;
-			case "--numReplicas":
-				numReplicas = Integer.parseInt(args[counter + 1]);
 				counter += 2;
 				break;
 			case "--samplingRate":
@@ -251,18 +222,17 @@ public class RunIndexBuilder {
 	// Helper function, reads all the sample files and creates a combined
 	// sample.
 	public ParsedTupleList readSampleFiles() {
-		FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
-				+ "/etc/hadoop/core-site.xml");
+		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 
 		// read all the sample files and put them into the sample key set
-		ParsedTupleList sample = new ParsedTupleList();
+		ParsedTupleList sample = new ParsedTupleList(tableInfo.getTypeArray());
 		try {
 			RemoteIterator<LocatedFileStatus> files = fs.listFiles(new Path(
 					tableHDFSDir + "/samples/"), false);
 			while (files.hasNext()) {
 				String path = files.next().getPath().toString();
 				byte[] bytes = HDFSUtils.readFile(fs, path);
-				sample.unmarshall(bytes);
+				sample.unmarshall(bytes, tableInfo.delimiter);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -273,7 +243,7 @@ public class RunIndexBuilder {
 
 	// Helper function, writes out the combined sample file.
 	public void writeOutSample(FileSystem fs, ParsedTupleList sample) {
-		byte[] sampleBytes = sample.marshall();
+		byte[] sampleBytes = sample.marshall(tableInfo.delimiter);
 		OutputStream out = HDFSUtils.getHDFSOutputStream(fs,
 				tableHDFSDir + "/sample",
 				cfg.getHDFS_REPLICATION_FACTOR(), 50 << 20);

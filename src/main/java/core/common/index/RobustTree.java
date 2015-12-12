@@ -11,6 +11,7 @@ import java.util.Scanner;
 
 import core.adapt.Predicate;
 import core.common.globals.Globals;
+import core.common.globals.TableInfo;
 import core.common.key.ParsedTupleList;
 import core.common.key.RawIndexKey;
 import core.utils.Pair;
@@ -35,29 +36,16 @@ public class RobustTree implements MDIndex {
 	}
 
 	public RobustTree() {
+		this.root = new RNode();
+	}
 
+	public void setMaxBuckets(int maxBuckets) {
+		this.maxBuckets = maxBuckets;
 	}
 
 	@Override
 	public MDIndex clone() throws CloneNotSupportedException {
 		throw new CloneNotSupportedException();
-	}
-
-	@Override
-	public void initBuild(int buckets) {
-		this.maxBuckets = buckets;
-		root = new RNode();
-		this.sample = new ParsedTupleList();
-	}
-
-	public void loadSampleAndBuild(int buckets, byte[] bytes) {
-		this.maxBuckets = buckets;
-		root = new RNode();
-		this.sample = new ParsedTupleList();
-		this.sample.unmarshall(bytes);
-
-		this.dimensionTypes = this.sample.getTypes();
-		this.numAttributes = this.dimensionTypes.length;
 	}
 
 	public RNode getRoot() {
@@ -94,7 +82,6 @@ public class RobustTree implements MDIndex {
 
 	public class Task {
 		RNode node;
-		float allocation;
 		int depth;
 		ParsedTupleList sample;
 	}
@@ -192,13 +179,11 @@ public class RobustTree implements MDIndex {
 	}
 
 	// TODO: Add capacity
-	static List<Integer> leastAllocated = new ArrayList<Integer>(20);
+	static List<Integer> leastAllocated = new ArrayList<>(20);
 	static Random randGenerator = new Random();
 
 	/**
 	 * Return the dimension which has the maximum allocation unfulfilled
-	 *
-	 * @return
 	 */
 	public static int getLeastAllocated(double[] allocations) {
 		int numAttributes = allocations.length;
@@ -240,17 +225,6 @@ public class RobustTree implements MDIndex {
 	public List<RNode> getMatchingBuckets(Predicate[] predicates) {
 		List<RNode> results = root.search(predicates);
 		return results;
-	}
-
-	public double getNumTuples(Predicate[] predicates) {
-		double total = 0;
-		List<RNode> matchingBuckets = getMatchingBuckets(predicates);
-		// Note that the above list is a linked-list; don't use .get over it
-		for (RNode node : matchingBuckets) {
-			total += node.bucket.getEstimatedNumTuples();
-		}
-
-		return total;
 	}
 
 	/**
@@ -296,12 +270,10 @@ public class RobustTree implements MDIndex {
 		this.root.parseNode(sc);
 	}
 
-	public void loadSample(byte[] bytes) {
-		this.sample = new ParsedTupleList();
-		this.sample.unmarshall(bytes);
-
-		System.out.println("TOTAL NUM TUPLES: " + Globals.TOTAL_NUM_TUPLES);
-		this.initializeBucketSamplesAndCounts(this.root, this.sample, this.sample.size(), Globals.TOTAL_NUM_TUPLES);
+	public void loadSample(TableInfo tableInfo, byte[] bytes) {
+		this.sample = new ParsedTupleList(tableInfo.getTypeArray());
+		this.sample.unmarshall(bytes, tableInfo.delimiter);
+		this.initializeBucketSamplesAndCounts(this.root, this.sample, this.sample.size(), tableInfo.numTuples);
 	}
 
 	public void loadSample(ParsedTupleList sample) {
@@ -329,10 +301,6 @@ public class RobustTree implements MDIndex {
 			initializeBucketSamplesAndCounts(n.rightChild, halves.second,
 					totalSamples, totalTuples);
 		}
-	}
-
-	public byte[] serializeSample() {
-		return this.sample.marshall();
 	}
 
 	public static double nthroot(int n, double A) {

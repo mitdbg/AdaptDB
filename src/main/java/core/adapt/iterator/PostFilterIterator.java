@@ -8,14 +8,18 @@ import java.io.Serializable;
 import com.google.common.io.ByteStreams;
 
 import core.adapt.Query;
+import org.apache.hadoop.io.Text;
 
 public class PostFilterIterator extends PartitionIterator implements
 		Serializable {
 	private static final long serialVersionUID = 1L;
 
-	protected Query query;
-
 	public PostFilterIterator() {
+
+	}
+
+	public PostFilterIterator(Query q) {
+		super(q);
 	}
 
 	public PostFilterIterator(String iteratorString) {
@@ -25,10 +29,6 @@ public class PostFilterIterator extends PartitionIterator implements
 			e.printStackTrace();
 			throw new RuntimeException("Failed to read the fields");
 		}
-	}
-
-	public PostFilterIterator(Query query) {
-		this.query = query;
 	}
 
 	@Override
@@ -43,8 +43,8 @@ public class PostFilterIterator extends PartitionIterator implements
 
 	@Override
 	public void readFields(DataInput in) throws IOException {
-		query = new Query(); // hard coded
-		query.readFields(in);
+		String predicateString = Text.readString(in);
+		query = new Query(predicateString);
 	}
 
 	public static PostFilterIterator read(DataInput in) throws IOException {

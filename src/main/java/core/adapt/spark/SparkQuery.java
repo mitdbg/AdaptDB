@@ -1,5 +1,6 @@
 package core.adapt.spark;
 
+import core.adapt.Query;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.spark.SparkConf;
@@ -35,15 +36,15 @@ public class SparkQuery {
 	}
 
 	public JavaPairRDD<LongWritable, IteratorRecord> createRDD(String hdfsPath,
-			Predicate... ps) {
-		return this.createRDD(hdfsPath, 0, ps);
+			Query q) {
+		return this.createRDD(hdfsPath, 0, q);
 	}
 
 	public JavaPairRDD<LongWritable, IteratorRecord> createRDD(String hdfsPath,
-			int replicaId, Predicate... ps) {
+			int replicaId, Query q) {
 		queryConf.setWorkingDir(hdfsPath);
 		queryConf.setReplicaId(replicaId);
-		queryConf.setQuery(ps);
+		queryConf.setQuery(q);
 		queryConf.setHadoopHome(cfg.getHADOOP_HOME());
 		queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
 		queryConf.setMaxSplitSize(8589934592l); // 8gb is the max size for each
@@ -52,26 +53,27 @@ public class SparkQuery {
 		queryConf.setMinSplitSize(4294967296l); // 4gb
 		queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
 
-		return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath + "/data",
+		// TODO: This is tricky. Figure out how to do for multiple tables.
+		return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath + "/"  + q.getTable() + "/data",
 				SparkInputFormat.class, LongWritable.class,
 				IteratorRecord.class, ctx.hadoopConfiguration());
 	}
 
 	public JavaPairRDD<LongWritable, IteratorRecord> createScanRDD(
-			String hdfsPath, Predicate... ps) {
+			String hdfsPath, Query q) {
 		queryConf.setFullScan(true);
-		return createRDD(hdfsPath, ps);
+		return createRDD(hdfsPath, q);
 	}
 
 	public JavaPairRDD<LongWritable, IteratorRecord> createAdaptRDD(
-			String hdfsPath, Predicate... ps) {
+			String hdfsPath, Query q) {
 		queryConf.setJustAccess(false);
-		return createRDD(hdfsPath, ps);
+		return createRDD(hdfsPath, q);
 	}
 
 	public JavaPairRDD<LongWritable, IteratorRecord> createRepartitionRDD(
-			String hdfsPath, Predicate... ps) {
+			String hdfsPath, Query q) {
 		queryConf.setRepartitionScan(true);
-		return createRDD(hdfsPath, ps);
+		return createRDD(hdfsPath, q);
 	}
 }
