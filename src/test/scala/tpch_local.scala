@@ -16,7 +16,7 @@ val DEST = "/user/mdindex/tpchd1"
 sqlContext.sql(s"""CREATE TEMPORARY TABLE part (p_partkey int, p_name string, p_mfgr string, 
     p_brand string, p_type string, p_size int, p_container string, p_retailprice double, p_comment string)
 USING com.databricks.spark.csv
-OPTIONS (path "/user/mdindex/tpch1/part.tbl", header "false", delimiter "|")""")
+OPTIONS (path "$PATH/part.tbl", header "false", delimiter "|")""")
 
 // Create raw supplier table.
 sqlContext.sql(s"""CREATE TEMPORARY TABLE rawsupplier (s_suppkey int, s_name string, s_address string,
