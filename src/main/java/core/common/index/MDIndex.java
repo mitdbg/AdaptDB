@@ -2,8 +2,6 @@ package core.common.index;
 
 import java.util.HashMap;
 
-import org.junit.Assert;
-
 import core.common.key.ParsedTupleList;
 import core.common.key.RawIndexKey;
 import core.utils.Range;
@@ -50,7 +48,6 @@ public interface MDIndex {
 
 		public static double getEstimatedNumTuples(int bucketId) {
 			Double val = counter.get(bucketId);
-			Assert.assertNotNull(val);
 			return val;
 		}
 

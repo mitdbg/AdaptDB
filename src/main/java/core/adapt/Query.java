@@ -23,14 +23,11 @@ public class Query implements Serializable {
     RawIndexKey key;
 
 	public Query(String queryString) {
-        System.out.println("QUERY: " + queryString);
 		String[] parts = queryString.split("\\|");
-        System.out.println("Parts: " + parts.length);
 		this.table = parts[0];
 		String predString = parts[1].trim();
 		if (predString.length() > 0) {
 			String[] predParts = predString.split(";");
-            System.out.println("PredParts" + predParts.length);
             this.predicates = new Predicate[predParts.length];
             for (int i = 0; i < predParts.length; i++) {
                 this.predicates[i] = new Predicate(predParts[i]);

@@ -1,7 +1,5 @@
 package core.common.globals;
 
-import org.junit.Assert;
-
 import core.utils.TypeUtils.TYPE;
 
 /**
@@ -86,7 +84,6 @@ public class Schema {
 	}
 
 	public TYPE getType(int attrId) {
-		Assert.assertEquals(fields[attrId].id, attrId);
 		return fields[attrId].type;
 	}
 }

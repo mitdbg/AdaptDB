@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import core.common.globals.Globals;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.io.Text;
 
@@ -27,7 +28,6 @@ import core.utils.HDFSUtils;
  *
  */
 public class RepartitionIterator extends PartitionIterator {
-	private Query query;
 	private RNode newIndexTree;
 	protected String zookeeperHosts;
 
@@ -47,7 +47,7 @@ public class RepartitionIterator extends PartitionIterator {
 	}
 
 	public RepartitionIterator(Query query) {
-		this.query = query;
+		super(query);
 	}
 	
 	public RepartitionIterator(Query query, RNode tree) {
@@ -90,7 +90,7 @@ public class RepartitionIterator extends PartitionIterator {
 			// Initialize RobustTree.
 			byte[] indexBytes = HDFSUtils.readFile(
 					((HDFSPartition) partition).getFS(), path + "/index");
-			RobustTree tree = new RobustTree();
+			RobustTree tree = new RobustTree(Globals.getTableInfo(query.getTable()));
 			tree.unmarshall(indexBytes);
 			newIndexTree = tree.getRoot();
 		}

@@ -1,9 +1,7 @@
 package core.adapt;
 
 import core.common.globals.TableInfo;
-import org.junit.Assert;
 
-import core.common.globals.Globals;
 import core.utils.TypeUtils;
 import core.utils.TypeUtils.TYPE;
 
@@ -26,24 +24,12 @@ public class Predicate {
 
 	public Predicate(TableInfo tableInfo, String attr, TYPE t, Object val, PREDTYPE predtype) {
 		this.attribute = tableInfo.schema.getAttributeId(attr);
-		try {
-			Assert.assertNotEquals(this.attribute, -1);
-			Assert.assertEquals(t, tableInfo.schema.getType(this.attribute));
-		} catch (Exception e) {
-			System.out.println(attr + " " + this.attribute + " " + t.toString());
-			e.printStackTrace();
-		} catch (AssertionError e) {
-			System.out.println(attr + " " + this.attribute + " " + t.toString());
-			e.printStackTrace();
-		}
-
 		this.type = t;
 		this.value = val;
 		this.predtype = predtype;
 	}
 
 	public Predicate(String predString) {
-		System.out.println("PREDICATE: " + predString);
 		String[] tokens = predString.split(":");
 		this.attribute = Integer.parseInt(tokens[0]);
 		this.type = TYPE.valueOf(tokens[1]);

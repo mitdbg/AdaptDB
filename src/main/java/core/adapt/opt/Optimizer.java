@@ -83,6 +83,8 @@ public class Optimizer {
 	}
 
 	public Optimizer(SparkQueryConf cfg) {
+		// Working Directory for the Optimizer.
+		// Each table is a folder under this directory.
 		this.workingDir = cfg.getWorkingDir();
 		this.hadoopHome = cfg.getHadoopHome();
 		this.fileReplicationFactor = cfg.getHDFSReplicationFactor();
@@ -101,7 +103,7 @@ public class Optimizer {
 		String pathToSample = tableDir + "/sample";
 
 		byte[] indexBytes = HDFSUtils.readFile(fs, pathToIndex);
-		this.rt = new RobustTree();
+		this.rt = new RobustTree(tableInfo);
 		this.rt.unmarshall(indexBytes);
 
 		byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
@@ -1053,15 +1055,15 @@ public class Optimizer {
 		}
 	}
 
-	private void persistQueryToDisk(Query fq) {
-		String pathToQueries = this.workingDir + "/queries";
+	private void persistQueryToDisk(Query q) {
+		String pathToQueries = this.workingDir + "/" + q.getTable() + "/queries";
 		HDFSUtils.safeCreateFile(hadoopHome, pathToQueries,
 				this.fileReplicationFactor);
-		HDFSUtils.appendLine(hadoopHome, pathToQueries, fq.toString());
+		HDFSUtils.appendLine(hadoopHome, pathToQueries, q.toString());
 	}
 
 	private void persistIndexToDisk() {
-		String pathToIndex = this.workingDir + "/index";
+		String pathToIndex = this.workingDir + "/" + rt.tableInfo.tableName + "/index";
 		FileSystem fs = HDFSUtils.getFSByHadoopHome(hadoopHome);
 		try {
 			if (fs.exists(new Path(pathToIndex))) {

@@ -70,10 +70,4 @@ public class SparkQuery {
 		queryConf.setJustAccess(false);
 		return createRDD(hdfsPath, q);
 	}
-
-	public JavaPairRDD<LongWritable, IteratorRecord> createRepartitionRDD(
-			String hdfsPath, Query q) {
-		queryConf.setRepartitionScan(true);
-		return createRDD(hdfsPath, q);
-	}
 }

@@ -48,12 +48,6 @@ public class HPInput {
 				new PostFilterIterator(q))};
 	}
 
-	public PartitionSplit[] getRepartitionScan(Query q) {
-		return new PartitionSplit[] { new PartitionSplit(
-				Ints.toArray(partitionIdFileMap.keySet()),
-				new RepartitionIterator(q)) };
-	}
-
 	public PartitionSplit[] getIndexScan(boolean justAccess,
 			Query q) {
 		return am.getPartitionSplits(q, justAccess);

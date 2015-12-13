@@ -147,7 +147,7 @@ public class RunIndexBuilder {
 		writeOutSample(fs, sample);
 
 		// Construct the index from the sample.
-		RobustTree index = new RobustTree();
+		RobustTree index = new RobustTree(tableInfo);
 		builder.buildIndexFromSample(
 				sample,
 				numBuckets,
@@ -173,7 +173,7 @@ public class RunIndexBuilder {
 		byte[] indexBytes = HDFSUtils.readFile(fs, tableHDFSDir + "/index");
 
 		// Just load the index. For this we don't need to load the samples.
-		RobustTree index = new RobustTree();
+		RobustTree index = new RobustTree(tableInfo);
 		index.unmarshall(indexBytes);
 
 		String dataDir = "/data";

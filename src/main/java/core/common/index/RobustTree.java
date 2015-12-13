@@ -18,6 +18,8 @@ import core.utils.Pair;
 import core.utils.TypeUtils.TYPE;
 
 public class RobustTree implements MDIndex {
+	public TableInfo tableInfo;
+
 	public int maxBuckets;
 	public int numAttributes;
 	public ParsedTupleList sample;
@@ -35,8 +37,9 @@ public class RobustTree implements MDIndex {
 		}
 	}
 
-	public RobustTree() {
+	public RobustTree(TableInfo tableInfo) {
 		this.root = new RNode();
+		this.tableInfo = tableInfo;
 	}
 
 	public void setMaxBuckets(int maxBuckets) {

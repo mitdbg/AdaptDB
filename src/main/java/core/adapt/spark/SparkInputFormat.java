@@ -104,8 +104,6 @@ public class SparkInputFormat extends
 		PartitionSplit[] splits;
 		if (queryConf.getFullScan())
 			splits = hpInput.getFullScan(queryConf.getQuery());
-		else if (queryConf.getRepartitionScan())
-			splits = hpInput.getRepartitionScan(queryConf.getQuery());
 		else
 			splits = hpInput.getIndexScan(queryConf.getJustAccess(),
 					queryConf.getQuery());
@@ -125,9 +123,10 @@ public class SparkInputFormat extends
 		for (PartitionSplit split : splits) {
 			PartitionIterator itr = split.getIterator();
 			// hack to set the zookeeper hosts
-			if (itr instanceof RepartitionIterator)
+			if (itr instanceof RepartitionIterator) {
 				((RepartitionIterator) itr).setZookeeper(queryConf
 						.getZookeeperHosts());
+			}
 
 			SparkFileSplit thissplit = new SparkFileSplit(
 					hpInput.getPaths(split.getPartitions()),

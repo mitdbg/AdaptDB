@@ -3,7 +3,6 @@ package core.common.globals;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.http.conn.scheme.Scheme;
 
 /**
  * Created by anil on 12/11/15.

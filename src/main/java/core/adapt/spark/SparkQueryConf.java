@@ -45,14 +45,6 @@ public class SparkQueryConf {
 		return conf.getBoolean(FULL_SCAN, false); // don't full scan by default
 	}
 
-	public void setRepartitionScan(boolean flag) {
-		conf.setBoolean(REPARTITION_SCAN, flag);
-	}
-
-	public boolean getRepartitionScan() {
-		return conf.getBoolean(REPARTITION_SCAN, false);
-	}
-
 	public void setJustAccess(boolean flag) {
 		conf.setBoolean(JUST_ACCESS, flag);
 	}
