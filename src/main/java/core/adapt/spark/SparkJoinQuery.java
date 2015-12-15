@@ -5,6 +5,8 @@ import core.adapt.AccessMethod;
 import core.common.index.MDIndex;
 import core.common.index.RobustTree;
 import core.utils.HDFSUtils;
+import core.utils.RangePartitionerUtils;
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.LongWritable;
@@ -87,8 +89,17 @@ public class SparkJoinQuery {
                 Text.class, ctx.hadoopConfiguration());
     }
 
+
+    public String getCutPoints(String dataset, int attr){
+        int[] cutpoints = {0, 1000000, 2000000, 3000000, 4000000,5000000};
+
+        return RangePartitionerUtils.getStringCutPoints(cutpoints);
+    }
+
     public JavaPairRDD<LongWritable, Text> createJoinScanRDD(
-            String dataset1, int dataset1_type, int join_attr1, String dataset1_schema, Query dataset1_query, String dataset2, int dataset2_type, int join_attr2,String dataset2_schema, Query dataset2_query, int budget) {
+            String dataset1, String dataset1_schema, Query dataset1_query, int join_attr1, String dataset1_cutpoints,
+            String dataset2, String dataset2_schema, Query dataset2_query, int join_attr2, String dataset2_cutpoints,
+            int budget) {
         // type == 0, mdindex, == 1 raw files
 
         Configuration conf = ctx.hadoopConfiguration();
@@ -96,8 +107,10 @@ public class SparkJoinQuery {
         conf.set("DATASET1", dataset1);
         conf.set("DATASET2", dataset2);
 
-        conf.set("DATASET1_TYPE", Integer.toString(dataset1_type));
-        conf.set("DATASET2_TYPE", Integer.toString(dataset2_type));
+
+
+        conf.set("DATASET1_CUTPOINTS", dataset1_cutpoints);
+        conf.set("DATASET2_CUTPOINTS", dataset2_cutpoints);
 
         conf.set("DATASET1_SCHEMA", dataset1_schema);
         conf.set("DATASET2_SCHEMA", dataset2_schema);

@@ -27,11 +27,16 @@ public class Query implements Serializable {
 	}
 
 	public Query(String predString) {
-		String[] parts = predString.split(";");
-		this.predicates = new Predicate[parts.length];
-		for (int i = 0; i < parts.length; i++) {
-			this.predicates[i] = new Predicate(parts[i]);
+		if(predString.equals(EMPTY)){
+			this.predicates = new Predicate[0];
+		} else {
+			String[] parts = predString.split(";");
+			this.predicates = new Predicate[parts.length];
+			for (int i = 0; i < parts.length; i++) {
+				this.predicates[i] = new Predicate(parts[i]);
+			}
 		}
+
 		this.key = new RawIndexKey(Globals.DELIMITER);
 	}	
 	
@@ -114,6 +119,10 @@ public class Query implements Serializable {
 
 	@Override
 	public String toString() {
-		return Joiner.on(";").join(predicates);
+		if(predicates.length == 0){
+			return EMPTY;
+		} else {
+			return Joiner.on(";").join(predicates);
+		}
 	}
 }

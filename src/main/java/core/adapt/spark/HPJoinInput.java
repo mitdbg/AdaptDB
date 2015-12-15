@@ -29,15 +29,30 @@ public class HPJoinInput {
 
     protected AccessMethod am;
     protected Map<Integer, FileStatus> partitionIdFileMap;
+    protected boolean MDIndexInput;
+
+
+    public HPJoinInput(boolean MDIndexInput){
+        this.MDIndexInput = MDIndexInput;
+    }
 
     public void initialize(List<FileStatus> files, AccessMethod am) {
         this.am = am;
-        partitionIdFileMap = new HashMap<Integer, FileStatus>();
+        initialize(files);
+    }
 
+    public void initialize(List<FileStatus> files) {
+        partitionIdFileMap = new HashMap<Integer, FileStatus>();
         for (FileStatus file : files) {
             System.out.println("FILE: " + file.getPath());
             try {
-                int id = Integer.parseInt(FilenameUtils.getName(file.getPath().toString()));
+                String fileName = FilenameUtils.getName(file.getPath().toString());
+                int id = 0;
+                if(MDIndexInput) {
+                    id = Integer.parseInt(fileName);
+                } else {
+                    id = Integer.parseInt(fileName.substring(fileName.indexOf('-') + 1));
+                }
                 partitionIdFileMap.put(id, file);
             } catch (NumberFormatException e) {
                 e.printStackTrace();

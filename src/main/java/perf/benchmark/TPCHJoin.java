@@ -3,14 +3,19 @@ package perf.benchmark;
 
 import core.adapt.AccessMethod;
 import core.adapt.iterator.PartitionIterator;
+import core.adapt.spark.RangePartitioner;
 import core.common.globals.Schema;
 import core.common.index.MDIndex;
 import core.common.index.RobustTree;
 import core.utils.*;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.util.Options;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.spark.HashPartitioner;
 import org.apache.spark.Partitioner;
@@ -18,9 +23,9 @@ import org.apache.spark.api.java.JavaPairRDD;
 
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 import core.adapt.Predicate;
 import core.adapt.Query;
@@ -29,7 +34,6 @@ import core.adapt.spark.SparkJoinQuery;
 import core.common.globals.Globals;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
-
 
 import core.adapt.iterator.IteratorRecord;
 import org.apache.spark.api.java.JavaRDD;
@@ -44,39 +48,21 @@ import scala.Tuple2;
 
 public class TPCHJoin {
 
-    public static class RangePartitioner extends Partitioner {
-
-        long[] ranges;
-
-        public RangePartitioner(long[] ranges){
-            this.ranges = ranges;
-        }
-
-        @Override
-        public int numPartitions() {
-            return ranges.length + 1;
-        }
-
-        @Override
-        public int getPartition(Object key) {
-            //hard code, key can only be long
-
-            long longKey = ((LongWritable) key).get();
-            for(int i = 0 ;i < ranges.length; i ++){
-                if(longKey <= ranges[i]){
-                    return i;
-                }
-            }
-
-            return ranges.length;
-        }
-    }
-
     public ConfUtils cfg;
 
     public Schema schemaCustomer, schemaLineitem, schemaNation, schemaOrders, schemaPart, schemaPartsupp, schemaRegion, schemaSupplier;
     public String stringCustomer, stringLineitem, stringNation, stringOrders, stringPart, stringPartsupp, stringRegion, stringSupplier;
     int numFields;
+
+    private static String[] mktSegmentVals = new
+            String[]{"AUTOMOBILE","BUILDING","FURNITURE","HOUSEHOLD","MACHINERY"};
+    private static String[] regionNameVals = new
+            String[]{"AFRICA", "AMERICA", "ASIA", "EUROPE", "MIDDLE EAST"};
+    private static String[] partTypeVals = new
+            String[]{"BRASS", "COPPER", "NICKEL", "STEEL", "TIN"};
+    private static String[] shipModeVals = new
+            String[]{"AIR", "FOB", "MAIL", "RAIL", "REG AIR", "SHIP", "TRUCK"};
+
 
     int method;
 
@@ -86,7 +72,7 @@ public class TPCHJoin {
 
     Random rand;
 
-    public void setUp(String dataset) {
+    public void setUp() {
         cfg = new ConfUtils(BenchmarkSettings.conf);
         rand = new Random();
 
@@ -101,8 +87,7 @@ public class TPCHJoin {
 
         // delete query history
         // Cleanup queries file - to remove past query workload
-        HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
-                cfg.getHDFS_WORKING_DIR() + "/" + dataset + "/queries", false);
+        //HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()), cfg.getHDFS_WORKING_DIR() + "/" + dataset + "/queries", false);
     }
 
 
@@ -173,12 +158,148 @@ public class TPCHJoin {
         }
     }
 
+
+    /*
+        select
+            l_orderkey,
+            sum(l_extendedprice*(1-l_discount)) as revenue, o_orderdate,
+            o_shippriority
+        from
+            customer,
+            orders,
+            lineitem
+        where
+            c_mktsegment = '[SEGMENT]' and
+            c_custkey = o_custkey and
+            l_orderkey = o_orderkey and
+            o_orderdate < date '[DATE]' and
+            l_shipdate > date '[DATE]'
+        group by l_orderkey,
+            o_orderdate,
+            o_shippriority
+        order by
+            revenue desc,
+            o_orderdate;
+     */
+
+
+    public void tpch3(){
+
+        int rand_3 = rand.nextInt(mktSegmentVals.length);
+        String c_mktsegment = mktSegmentVals[rand_3];
+        Calendar c = new GregorianCalendar();
+        int dateOffset = (int) (rand.nextFloat() * (31 + 28 + 31));
+        c.set(1995, Calendar.MARCH, 01);
+        c.add(Calendar.DAY_OF_MONTH, dateOffset);
+        SimpleDate d3 = new SimpleDate(c.get(Calendar.YEAR),
+                c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
+
+
+        Predicate p1_3 = new Predicate(schemaCustomer.getAttributeId("c_mktsegment"), TYPE.STRING, c_mktsegment, PREDTYPE.LEQ);
+        Predicate p2_3 = new Predicate(schemaOrders.getAttributeId("o_orderdate"), TYPE.DATE, d3, PREDTYPE.LT);
+        Predicate p3_3 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TYPE.DATE, d3, PREDTYPE.GT);
+
+        Query q_c = null;
+        Query q_o = new Query(new Predicate[]{p2_3});
+        Query q_l = new Query(new Predicate[]{p3_3});
+
+
+        if (rand_3 > 0) {
+            String c_mktsegment_prev = mktSegmentVals[rand_3 - 1];
+            Predicate p4_3 = new Predicate(schemaCustomer.getAttributeId("c_mktsegment"), TYPE.STRING, c_mktsegment_prev, PREDTYPE.GT);
+            q_c =  new Query(new Predicate[]{p1_3,p4_3});
+        } else {
+            q_c =  new Query(new Predicate[]{p1_3});
+        }
+
+        System.out.println("INFO: Query_cutomer:" + q_c.toString());
+        System.out.println("INFO: Query_orders:" + q_o.toString());
+        System.out.println("INFO: Query_lineitem:" + q_l.toString());
+
+
+        long start;
+
+        SparkJoinQuery sq = new SparkJoinQuery(cfg);
+
+
+        start = System.currentTimeMillis();
+
+
+        // lineitem joins with orders, then with customers
+
+
+        String lineitem = "lineitem";
+        String orders = "orders";
+        String customer = "customer";
+        String lineitem_join_orders = "lineitem_join_orders";
+
+        String stringLineitem_join_Orders = stringLineitem + ", " + stringOrders;
+
+
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(lineitem, stringLineitem,  q_l, 0, "NULL", orders, stringOrders, q_o, 0, "NULL", memoryBudget);
+
+
+        String cutPoints =  sq.getCutPoints(customer, 0); // long[] = {1, 2, 3};
+
+        Partitioner partitioner = new RangePartitioner(cutPoints);
+
+        JavaRDD<Text> rdd_lineitem_join_orders = rdd.partitionBy(partitioner).values();
+
+        String dest = cfg.getHDFS_WORKING_DIR() + "/" + lineitem_join_orders + "/data";
+
+        rdd_lineitem_join_orders.saveAsTextFile(dest);
+
+        /* rename part-0000i to i */
+
+        long result = rdd_lineitem_join_orders.count();
+
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
+
+
+        try{
+            FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
+                    + "/etc/hadoop/core-site.xml");
+
+            // delete _SUCCESS
+
+            fs.delete(new Path(dest + "/_SUCCESS"), false);
+            FileStatus[] fileStatus = fs.listStatus(new Path(dest));
+
+            for(int i = 0; i < fileStatus.length; i ++) {
+                String oldPath = fileStatus[i].getPath().toString();
+                String baseName = FilenameUtils.getBaseName(oldPath);
+                String dir = oldPath.substring(0, oldPath.length() - baseName.length());
+                String newPath = dir + Integer.parseInt(baseName.substring(baseName.indexOf('-') + 1));
+
+                fs.rename(new Path(oldPath), new Path(newPath));
+            }
+
+
+            /*  write out a fake (TOTAL_NUM_TUPLES is wrong) info to make HDFSPartition Happy*/
+
+            Globals.schema = Schema.createSchema(stringLineitem_join_Orders);
+
+            Globals.save(cfg.getHDFS_WORKING_DIR() + "/" + lineitem_join_orders + "/info",
+                    cfg.getHDFS_REPLICATION_FACTOR(), fs);
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        rdd = sq.createJoinScanRDD(customer, stringCustomer, q_c, 0, "NULL",lineitem_join_orders, stringLineitem_join_Orders, new Query(new Predicate[0]), 17, cutPoints, memoryBudget);
+
+        result = rdd.count();
+
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
+    }
+
     public void runWorkload() {
 
         String dataset1 = "lineitem";
         String dataset2 = "orders";
 
-        setUp(dataset1);
 
         System.out.println("Memory Stats (F/T/M): "
                 + Runtime.getRuntime().freeMemory() + " "
@@ -212,7 +333,7 @@ public class TPCHJoin {
         start = System.currentTimeMillis();
 
 
-        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(dataset1, 0, 0, stringLineitem,  q_l, dataset2, 0, 0, stringOrders, q_o, memoryBudget);
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(dataset1, stringLineitem,q_l, 0, "NULL", dataset2, stringOrders, q_o, 0, "NULL", memoryBudget);
 
         /*
         JavaPairRDD<Long, String> mappedRdd = rdd.mapToPair(new PairFunction<Tuple2<LongWritable, Text>, Long, String>() {
@@ -222,21 +343,6 @@ public class TPCHJoin {
             }
         });
         */
-
-        long[] cutPoints = {0, 10000, 100000};
-
-        Partitioner partitioner = new RangePartitioner(cutPoints);
-
-        //Partitioner partitioner = new HashPartitioner(2);
-        JavaRDD<Text> partitionedRDD = rdd.partitionBy(partitioner).values();
-
-        long result = partitionedRDD.count();
-
-
-        partitionedRDD.saveAsTextFile(cfg.getHDFS_WORKING_DIR() + "/" + dataset1 + "_join_" + dataset2);
-
-        end = System.currentTimeMillis();
-        System.out.println("RES: Time Taken: " + (end - start) + "; Result: " + result);
 
     }
 
@@ -248,8 +354,9 @@ public class TPCHJoin {
 
         TPCHJoin t = new TPCHJoin();
         t.loadSettings(args);
+        t.setUp();
+        t.tpch3();
 
-
-        t.runWorkload();
+        //t.runWorkload();
     }
 }

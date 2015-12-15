@@ -1,6 +1,6 @@
 // Load TPC-H tables from the datafiles generated
 // Start the spark shell using
-// ./spark-shell --master spark://128.30.77.88:7077 --packages com.databricks:spark-csv_2.11:1.2.0 --executor-memory 10g --driver-memory 4g
+// ./spark-shell --master spark://localhost:7077 --packages com.databricks:spark-csv_2.11:1.2.0 --executor-memory 4g --driver-memory 1g
 // sc is an existing SparkContext.
 val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 
@@ -27,16 +27,44 @@ sqlContext.sql(s"""CREATE TEMPORARY TABLE lineitem (l_orderkey int, l_partkey in
 USING com.databricks.spark.csv
 OPTIONS (path "$PATH/lineitem.tbl", header "false", delimiter "|")""")
 
-val a = sqlContext.sql(s"""select count(*) from lineitem where l_returnflag <= "R" and l_returnflag > "N" """);
 
-// 1478870 / 6001215
+// create customer table
 
-val b = sqlContext.sql(s"""select count(*) from orders where o_orderdate >= "1993-01-01" and o_orderdate < "1993-04-01" """);
+sqlContext.sql(s"""CREATE TEMPORARY TABLE customer (c_custkey int, c_name string, c_address string,
+  c_nationkey int, c_phone string, c_acctbal double, c_mktsegment string , c_comment string)
+USING com.databricks.spark.csv
+OPTIONS (path "$PATH/customer.tbl", header "false", delimiter "|")""")
 
-// 55924 / 1500000
+// tpch3
+
+//INFO: Query_cutomer:6:STRING:AUTOMOBILE:LEQ
+//INFO: Query_orders:4:DATE:1995-04-14:LT
+//INFO: Query_lineitem:10:DATE:1995-04-14:GT
+
+
+val a = sqlContext.sql(s"""SELECT  COUNT(*)
+  FROM lineitem WHERE l_shipdate > "1995-04-14" """)
+
+// 3165950
+
+val b = sqlContext.sql(s"""SELECT  COUNT(*)
+  FROM orders WHERE o_orderdate < "1995-04-14" """)
+
+// 746047
 
 val c = sqlContext.sql(s"""SELECT  COUNT(*)
-  FROM lineitem JOIN orders ON l_orderkey = o_orderkey
-	WHERE l_returnflag <= "R" and l_returnflag > "N" and o_orderdate >= "1993-01-01" and o_orderdate < "1993-04-01" """)
+  FROM customer WHERE c_mktsegment <= "AUTOMOBILE" """)
 
-// 111918
+//29752
+
+val d = sqlContext.sql(s"""SELECT  COUNT(*)
+  FROM lineitem JOIN orders ON l_orderkey = o_orderkey
+	WHERE l_shipdate > "1995-04-14" and  o_orderdate < "1995-04-14" """)
+
+// 150722
+
+val e = sqlContext.sql(s"""SELECT  COUNT(*)
+  FROM lineitem JOIN orders ON l_orderkey = o_orderkey JOIN customer ON o_custkey = c_custkey
+	WHERE l_shipdate > "1995-04-14" and  o_orderdate < "1995-04-14" and c_mktsegment <= "AUTOMOBILE" """)
+
+// 29569
