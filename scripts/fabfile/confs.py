@@ -28,6 +28,7 @@ confs = {
             'SCHEMALINEITEM': 'l_orderkey int, l_partkey int, l_suppkey int, l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, l_tax double, l_returnflag string,  l_linestatus string, l_shipdate date, l_commitdate date, l_receiptdate date, l_shipinstruct string, l_shipmode string, l_comment string',
             'SCHEMAORDERS': 'o_orderkey int, o_custkey int, o_orderstatus string, o_totalprice double, o_orderdate date, o_orderpriority string, o_clerk string, o_shippriority int, o_comment string',
             'SCHEMACUSTOMER': 'c_custkey int, c_name string, c_address string, c_nationkey int, c_phone string, c_acctbal double, c_mktsegment string , c_comment string',
+            'SCHEMASUPPLIER': 's_suppkey int, s_name string, s_address string, s_nationkey int, s_phone string, s_acctbal double, s_comment string',
             'USER' : 'mdindex',
             'HOSTS' : ['istc2.csail.mit.edu', 'istc5.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu', 'istc9.csail.mit.edu', 'istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
             'ROLEDEFS' : { 'master': ['istc2.csail.mit.edu'] },
