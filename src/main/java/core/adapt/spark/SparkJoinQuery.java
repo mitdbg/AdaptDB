@@ -21,6 +21,7 @@ import core.adapt.Predicate;
 import core.adapt.Query;
 import core.adapt.iterator.IteratorRecord;
 import core.utils.ConfUtils;
+import org.junit.Assert;
 
 import java.util.Map;
 
@@ -102,12 +103,14 @@ public class SparkJoinQuery {
             int budget) {
         // type == 0, mdindex, == 1 raw files
 
+
+        Assert.assertNotEquals(join_attr1, -1);
+        Assert.assertNotEquals(join_attr2, -1);
+
         Configuration conf = ctx.hadoopConfiguration();
 
         conf.set("DATASET1", dataset1);
         conf.set("DATASET2", dataset2);
-
-
 
         conf.set("DATASET1_CUTPOINTS", dataset1_cutpoints);
         conf.set("DATASET2_CUTPOINTS", dataset2_cutpoints);

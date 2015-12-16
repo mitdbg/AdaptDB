@@ -151,17 +151,15 @@ public class TPCHJoin {
     }
 
 
-    public void postProcessing(String path, String schema) {
+    public void postProcessing(String path, Schema schema) {
 
         /* rename part-0000i to i and create an info file*/
 
         try {
-            FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME()
-                    + "/etc/hadoop/core-site.xml");
+            FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME() + "/etc/hadoop/core-site.xml");
+            String dest = path + "/data";
 
             // delete _SUCCESS
-
-            String dest = path + "/data";
 
             fs.delete(new Path(dest + "/_SUCCESS"), false);
             FileStatus[] fileStatus = fs.listStatus(new Path(dest));
@@ -178,8 +176,7 @@ public class TPCHJoin {
 
             /*  write out a fake (TOTAL_NUM_TUPLES is wrong) info to make HDFSPartition Happy*/
 
-            Globals.schema = Schema.createSchema(schema);
-
+            Globals.schema = schema;
             Globals.save(path + "/info", cfg.getHDFS_REPLICATION_FACTOR(), fs);
 
         } catch (FileNotFoundException e) {
@@ -247,7 +244,7 @@ public class TPCHJoin {
         start = System.currentTimeMillis();
 
 
-        // lineitem joins with orders, then with customers
+        // (lineitem ⋈ orders) ⋈ customer
 
         String lineitem = "lineitem";
         String orders = "orders";
@@ -255,8 +252,10 @@ public class TPCHJoin {
         String lineitem_join_orders = "lineitem_join_orders";
 
         String stringLineitem_join_Orders = stringLineitem + ", " + stringOrders;
+        Schema schemaLineitem_join_Orders = Schema.createSchema(stringLineitem_join_Orders);
 
-        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(lineitem, stringLineitem, q_l, 0, "NULL", orders, stringOrders, q_o, 0, "NULL", memoryBudget);
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(lineitem, stringLineitem, q_l, schemaLineitem.getAttributeId("l_orderkey"), "NULL",
+                orders, stringOrders, q_o, schemaOrders.getAttributeId("o_orderkey"), "NULL", memoryBudget);
 
         String cutPoints = sq.getCutPoints(customer, 0); // long[] = {1, 2, 3};
 
@@ -272,9 +271,10 @@ public class TPCHJoin {
 
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-        postProcessing(dest, stringLineitem_join_Orders);
+        postProcessing(dest, schemaLineitem_join_Orders);
 
-        rdd = sq.createJoinScanRDD(customer, stringCustomer, q_c, 0, "NULL", lineitem_join_orders, stringLineitem_join_Orders, new Query(new Predicate[0]), 17, cutPoints, memoryBudget);
+        rdd = sq.createJoinScanRDD(customer, stringCustomer, q_c, schemaCustomer.getAttributeId("c_custkey"), "NULL",
+                lineitem_join_orders, stringLineitem_join_Orders, new Query(new Predicate[0]), schemaLineitem_join_Orders.getAttributeId("o_custkey"), cutPoints, memoryBudget);
 
         result = rdd.count();
 
@@ -298,10 +298,9 @@ public class TPCHJoin {
             and o_orderdate >= date '[DATE]'
             and o_orderdate < date '[DATE]' + interval '1' year
 
-        （(customer ⋈ orders) ⋈ lineitem) ⋈ supplier
+        ((customer ⋈ orders) ⋈ lineitem) ⋈ supplier
      */
 
-    // under development
     public void tpch5() {
         int rand_5 = rand.nextInt(regionNameVals.length);
         String r_name_5 = regionNameVals[rand_5];
@@ -341,18 +340,24 @@ public class TPCHJoin {
         start = System.currentTimeMillis();
 
 
-        // lineitem joins with orders, then with customers
+        // ((customer ⋈ orders) ⋈ lineitem) ⋈ supplier
 
+        String lineitem = "lineitem";
         String supplier = "supplier";
         String orders = "orders";
         String customer = "customer";
         String customer_join_orders = "customer_join_orders";
+        String customer_join_orders_join_lineitem = "customer_join_orders_join_lineitem";
 
         String stringCustomer_join_Orders = stringCustomer + ", " + stringOrders;
+        Schema schemaCustomer_join_Orders = Schema.createSchema(stringCustomer_join_Orders);
+        String stringCustomer_join_Orders_join_lineitem = stringCustomer + ", " + stringOrders + ", " + stringLineitem;
+        Schema schemaCustomer_join_Orders_join_lineitem = Schema.createSchema(stringCustomer_join_Orders_join_lineitem);
 
-        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(customer, stringCustomer, q_c, 0, "NULL", orders, stringOrders, q_o, 1, "NULL", memoryBudget);
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(customer, stringCustomer, q_c, schemaCustomer.getAttributeId("c_custkey"), "NULL",
+                orders, stringOrders, q_o, schemaOrders.getAttributeId("o_custkey"), "NULL", memoryBudget);
 
-        String cutPoints = sq.getCutPoints(supplier, 0); // long[] = {1, 2, 3};
+        String cutPoints = sq.getCutPoints(lineitem, 0); // long[] = {1, 2, 3};
 
         Partitioner partitioner = new RangePartitioner(cutPoints);
 
@@ -366,13 +371,38 @@ public class TPCHJoin {
 
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-        postProcessing(dest, stringCustomer_join_Orders);
+        postProcessing(dest, schemaCustomer_join_Orders);
 
-        rdd = sq.createJoinScanRDD(customer, stringSupplier, q_s, 3, "NULL", customer_join_orders, stringCustomer_join_Orders, new Query(new Predicate[0]), 3, cutPoints, memoryBudget);
+        rdd = sq.createJoinScanRDD(lineitem, stringLineitem,  new Query(new Predicate[0]), schemaLineitem.getAttributeId("l_orderkey"), "NULL",
+                customer_join_orders, stringCustomer_join_Orders, new Query(new Predicate[0]), schemaCustomer_join_Orders.getAttributeId("o_orderkey"), cutPoints, memoryBudget);
 
         result = rdd.count();
 
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
+
+
+        cutPoints = sq.getCutPoints(supplier, 0); // long[] = {1, 2, 3};
+
+        partitioner = new RangePartitioner(cutPoints);
+
+        JavaRDD<Text> rdd_customer_join_orders_join_lineitem = rdd.partitionBy(partitioner).values();
+
+        dest = cfg.getHDFS_WORKING_DIR() + "/" + customer_join_orders_join_lineitem;
+
+        rdd_customer_join_orders_join_lineitem.saveAsTextFile(dest + "/data");
+
+        result = rdd_customer_join_orders.count();
+
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
+
+        postProcessing(dest, schemaCustomer_join_Orders_join_lineitem);
+
+        rdd = sq.createJoinScanRDD(supplier, stringSupplier, q_s, schemaSupplier.getAttributeId("s_suppkey"), "NULL",
+                customer_join_orders_join_lineitem, stringCustomer_join_Orders_join_lineitem, new Query(new Predicate[0]), schemaCustomer_join_Orders_join_lineitem.getAttributeId("l_suppkey"), cutPoints, memoryBudget);
+
+        result = rdd.count();
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
+
     }
 
     /*
@@ -430,9 +460,104 @@ public class TPCHJoin {
 
         ((lineitem ⋈ orders) ⋈ customer) ⋈ part
     */
-    // under development
+
     public void tpch8() {
 
+        int rand_8_1 = rand.nextInt(regionNameVals.length);
+        String r_name_8 = regionNameVals[rand_8_1];
+        SimpleDate d8_1 = new SimpleDate(1995, 1, 1);
+        SimpleDate d8_2 = new SimpleDate(1996, 12, 31);
+        String p_type_8 = partTypeVals[rand.nextInt(partTypeVals.length)];
+        Predicate p1_8 = new Predicate("c_region", TYPE.STRING, r_name_8, PREDTYPE.LEQ);
+        Predicate p2_8 = new Predicate("o_orderdate", TYPE.DATE, d8_1, PREDTYPE.GEQ);
+        Predicate p3_8 = new Predicate("o_orderdate", TYPE.DATE, d8_2, PREDTYPE.LEQ);
+        Predicate p4_8 = new Predicate("p_type", TYPE.STRING, p_type_8, PREDTYPE.EQ);
+
+        Query q_o =  new Query(new Predicate[]{p2_8,p3_8});
+        Query q_p =  new Query(new Predicate[]{p4_8});
+        Query q_c = null;
+
+        if (rand_8_1 > 0) {
+            String r_name_prev_8 = regionNameVals[rand_8_1 - 1];
+            Predicate p5_8 = new Predicate("c_region", TYPE.STRING, r_name_prev_8, PREDTYPE.GT);
+            q_c =  new Query(new Predicate[]{p1_8, p5_8});
+        } else {
+            q_c = new Query(new Predicate[]{p1_8});
+        }
+
+        System.out.println("INFO: Query_cutomer:" + q_c.toString());
+        System.out.println("INFO: Query_orders:" + q_o.toString());
+        System.out.println("INFO: Query_part:" + q_p.toString());
+
+
+        long start;
+
+        SparkJoinQuery sq = new SparkJoinQuery(cfg);
+
+        start = System.currentTimeMillis();
+
+
+        // ((lineitem ⋈ orders) ⋈ customer) ⋈ part
+
+        String lineitem = "lineitem";
+        String part = "part";
+        String orders = "orders";
+        String customer = "customer";
+        String lineitem_join_orders = "lineitem_join_orders";
+        String lineitem_join_orders_join_customer = "lineitem_join_orders_join_customer";
+
+        String stringLineitem_join_Orders = stringLineitem + ", " + stringOrders;
+        Schema schemaLineitem_join_Orders = Schema.createSchema(stringLineitem_join_Orders);
+        String stringLineitem_join_Orders_join_Customer = stringLineitem + ", " + stringOrders + ", " + stringCustomer;
+        Schema schemaLineitem_join_Orders_join_Customer = Schema.createSchema(stringLineitem_join_Orders_join_Customer);
+
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(lineitem, stringLineitem, new Query(new Predicate[0]), schemaLineitem.getAttributeId("l_orderkey"), "NULL",
+                orders, stringOrders, q_o, schemaOrders.getAttributeId("o_orderkey"), "NULL", memoryBudget);
+
+        String cutPoints = sq.getCutPoints(customer, 0); // long[] = {1, 2, 3};
+
+        Partitioner partitioner = new RangePartitioner(cutPoints);
+
+        JavaRDD<Text> rdd_lineitem_join_orders = rdd.partitionBy(partitioner).values();
+
+        String dest = cfg.getHDFS_WORKING_DIR() + "/" + lineitem_join_orders;
+
+        rdd_lineitem_join_orders.saveAsTextFile(dest + "/data");
+
+        long result = rdd_lineitem_join_orders.count();
+
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
+
+        postProcessing(dest, schemaLineitem_join_Orders);
+
+        rdd = sq.createJoinScanRDD(customer, stringCustomer,  q_c, schemaCustomer.getAttributeId("c_custkey"), "NULL",
+                lineitem_join_orders, stringLineitem_join_Orders, new Query(new Predicate[0]), schemaLineitem_join_Orders.getAttributeId("o_custkey"), cutPoints, memoryBudget);
+
+        result = rdd.count();
+
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
+
+        cutPoints = sq.getCutPoints(part, 0); // long[] = {1, 2, 3};
+
+        partitioner = new RangePartitioner(cutPoints);
+
+        JavaRDD<Text> rdd_lineitem_join_orders_join_customer= rdd.partitionBy(partitioner).values();
+
+        dest = cfg.getHDFS_WORKING_DIR() + "/" + lineitem_join_orders_join_customer;
+
+        rdd_lineitem_join_orders_join_customer.saveAsTextFile(dest + "/data");
+
+        result = rdd_lineitem_join_orders_join_customer.count();
+
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
+
+        postProcessing(dest, schemaLineitem_join_Orders_join_Customer);
+
+        rdd = sq.createJoinScanRDD(part, stringPart, q_p, schemaPart.getAttributeId("p_partkey"), "NULL",
+                lineitem_join_orders_join_customer, stringLineitem_join_Orders_join_Customer, new Query(new Predicate[0]), schemaLineitem_join_Orders_join_Customer.getAttributeId("l_partkey"), cutPoints, memoryBudget);
+
+        result = rdd.count();
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
     }
 
     /*
@@ -440,7 +565,8 @@ public class TPCHJoin {
             count(*)
         from
             orders,
-            lineitem
+            lineitem,
+            customer
         where
             l_orderkey = o_orderkey
             and c_custkey = o_custkey
@@ -451,9 +577,70 @@ public class TPCHJoin {
         (lineitem ⋈ orders) ⋈ customer
      */
 
-    // under development
+
     public void tpch10() {
 
+        String l_returnflag_10 = "R";
+        String l_returnflag_prev_10 = "N";
+        int year_10 = 1993;
+        int monthOffset = rand.nextInt(24);
+        SimpleDate d10_1 = new SimpleDate(year_10 + monthOffset / 12, monthOffset % 12 + 1, 1);
+        monthOffset = monthOffset + 3;
+        SimpleDate d10_2 = new SimpleDate(year_10 + monthOffset / 12, monthOffset % 12 + 1, 1);
+        Predicate p1_10 = new Predicate(schemaLineitem.getAttributeId("l_returnflag"), TYPE.STRING, l_returnflag_10, PREDTYPE.LEQ);
+        Predicate p4_10 = new Predicate(schemaLineitem.getAttributeId("l_returnflag"), TYPE.STRING, l_returnflag_prev_10, PREDTYPE.GT);
+        Predicate p2_10 = new Predicate(schemaOrders.getAttributeId("o_orderdate"), TYPE.DATE, d10_1, PREDTYPE.GEQ);
+        Predicate p3_10 = new Predicate(schemaOrders.getAttributeId("o_orderdate"), TYPE.DATE, d10_2, PREDTYPE.LT);
+
+        Query q_l = new Query(new Predicate[]{p1_10, p4_10});
+        Query q_o = new Query(new Predicate[]{p2_10, p3_10});
+
+
+        System.out.println("INFO: Query_lineitem:" + q_l.toString());
+        System.out.println("INFO: Query_orders:" + q_o.toString());
+
+        long start, end;
+
+        SparkJoinQuery sq = new SparkJoinQuery(cfg);
+
+        String lineitem = "lineitem";
+        String orders = "orders";
+        String customer = "customer";
+
+        String lineitem_join_orders = "lineitem_join_orders";
+
+        String stringLineitem_join_Orders = stringLineitem + ", " + stringOrders;
+        Schema schemaLineitem_join_Orders = Schema.createSchema(stringLineitem_join_Orders);
+
+
+        start = System.currentTimeMillis();
+
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(lineitem, stringLineitem,q_l, schemaLineitem.getAttributeId("l_orderkey"), "NULL",
+                orders, stringOrders, q_o, schemaOrders.getAttributeId("o_orderkey"), "NULL", memoryBudget);
+
+
+        String cutPoints = sq.getCutPoints(customer, 0); // long[] = {1, 2, 3};
+
+        Partitioner partitioner = new RangePartitioner(cutPoints);
+
+        JavaRDD<Text> rdd_lineitem_join_orders = rdd.partitionBy(partitioner).values();
+
+        String dest = cfg.getHDFS_WORKING_DIR() + "/" + lineitem_join_orders;
+
+        rdd_lineitem_join_orders.saveAsTextFile(dest + "/data");
+
+        long result = rdd_lineitem_join_orders.count();
+
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
+
+        postProcessing(dest, schemaLineitem_join_Orders);
+
+        rdd = sq.createJoinScanRDD(customer, stringCustomer, new Query(new Predicate[0]), schemaCustomer.getAttributeId("c_custkey"), "NULL",
+                lineitem_join_orders, stringLineitem_join_Orders, new Query(new Predicate[0]), schemaLineitem_join_Orders.getAttributeId("o_custkey"), cutPoints, memoryBudget);
+
+        result = rdd.count();
+
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
     }
 
     /*
@@ -471,8 +658,44 @@ public class TPCHJoin {
         lineitem ⋈ orders
      */
 
-    // under development
     public void tpch12() {
+        int rand_12 = rand.nextInt(shipModeVals.length);
+        String shipmode_12 = shipModeVals[rand_12];
+        int year_12 = 1993 + rand.nextInt(5);
+        SimpleDate d12_1 = new SimpleDate(year_12, 1, 1);
+        SimpleDate d12_2 = new SimpleDate(year_12 + 1, 1, 1);
+        Predicate p1_12 = new Predicate(schemaLineitem.getAttributeId("l_shipmode"), TYPE.STRING, shipmode_12, PREDTYPE.LEQ);
+        Predicate p2_12 = new Predicate(schemaLineitem.getAttributeId("l_receiptdate"), TYPE.DATE, d12_1, PREDTYPE.GEQ);
+        Predicate p3_12 = new Predicate(schemaLineitem.getAttributeId("l_receiptdate"), TYPE.DATE, d12_2, PREDTYPE.LT);
+
+        Query q_l = null;
+
+        if (rand_12 > 0) {
+            String shipmode_prev_12 = shipModeVals[rand_12 - 1];
+            Predicate p4_12 = new Predicate(schemaLineitem.getAttributeId("l_shipmode"), TYPE.STRING, shipmode_prev_12, PREDTYPE.GT);
+            q_l =  new Query(new Predicate[]{p1_12, p2_12, p3_12, p4_12});
+        } else {
+            q_l = new Query(new Predicate[]{p1_12, p2_12, p3_12});
+        }
+
+        System.out.println("INFO: Query_lineitem:" + q_l.toString());
+
+
+        long start;
+
+        SparkJoinQuery sq = new SparkJoinQuery(cfg);
+        start = System.currentTimeMillis();
+
+        // lineitem ⋈ orders
+
+        String lineitem = "lineitem";
+        String orders = "orders";
+
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(lineitem, stringLineitem, q_l, schemaLineitem.getAttributeId("l_orderkey"), "NULL",
+                orders, stringOrders, new Query(new Predicate[0]), schemaOrders.getAttributeId("o_orderkey"), "NULL", memoryBudget);
+
+        long result = rdd.count();
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
     }
 
@@ -490,9 +713,34 @@ public class TPCHJoin {
         lineitem ⋈ part
      */
 
-    // under development
     public void tpch14() {
 
+        int year_14 = 1993;
+        int monthOffset_14 = rand.nextInt(60);
+        SimpleDate d14_1 = new SimpleDate(year_14 + monthOffset_14/12, monthOffset_14%12 + 1, 1);
+        monthOffset_14 += 1;
+        SimpleDate d14_2 = new SimpleDate(year_14 + monthOffset_14/12, monthOffset_14%12 + 1, 1);
+        Predicate p1_14 = new Predicate("l_shipdate", TYPE.DATE, d14_1, PREDTYPE.GEQ);
+        Predicate p2_14 = new Predicate("l_shipdate", TYPE.DATE, d14_2, PREDTYPE.LT);
+        Query q_l = new Query(new Predicate[]{p1_14, p2_14});
+
+        System.out.println("INFO: Query_lineitem:" + q_l.toString());
+
+        long start;
+
+        SparkJoinQuery sq = new SparkJoinQuery(cfg);
+        start = System.currentTimeMillis();
+
+        // lineitem ⋈ part
+
+        String lineitem = "lineitem";
+        String part = "part";
+
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(lineitem, stringLineitem, q_l, schemaLineitem.getAttributeId("l_partkey"), "NULL",
+                part, stringPart, new Query(new Predicate[0]), schemaPart.getAttributeId("p_partkey"), "NULL", memoryBudget);
+
+        long result = rdd.count();
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
     }
 
     /*
@@ -514,9 +762,43 @@ public class TPCHJoin {
         lineitem ⋈ part
      */
 
-    // under development
     public void tpch19() {
 
+        String brand_19 = "Brand#" + (rand.nextInt(5) + 1) + "" + (rand.nextInt(5) + 1);
+        String shipInstruct_19 = "DELIVER IN PERSON";
+        double quantity_19 = rand.nextInt(10) + 1;
+        Predicate p1_19 = new Predicate("l_shipinstruct", TYPE.STRING, shipInstruct_19, PREDTYPE.EQ);
+        Predicate p2_19 = new Predicate("p_brand", TYPE.STRING, brand_19, PREDTYPE.EQ);
+        Predicate p3_19 = new Predicate("p_container", TYPE.STRING, "SM CASE",PREDTYPE.EQ);
+        Predicate p4_19 = new Predicate("l_quantity", TYPE.DOUBLE, quantity_19, PREDTYPE.GT);
+        quantity_19 += 10;
+        Predicate p5_19 = new Predicate("l_quantity", TYPE.DOUBLE, quantity_19, PREDTYPE.LEQ);
+        Predicate p6_19 = new Predicate("p_size", TYPE.INT, 1, PREDTYPE.GEQ);
+        Predicate p7_19 = new Predicate("p_size", TYPE.INT, 5, PREDTYPE.LEQ);
+        Predicate p8_19 = new Predicate("l_shipmode", TYPE.STRING, "AIR", PREDTYPE.LEQ);
+
+        Query q_l =  new Query(new Predicate[]{p1_19,p4_19,p5_19,p8_19});
+        Query q_p =  new Query(new Predicate[]{p2_19,p3_19,p6_19,p7_19});
+
+        System.out.println("INFO: Query_lineitem:" + q_l.toString());
+        System.out.println("INFO: Query_part:" + q_p.toString());
+
+
+        long start;
+
+        SparkJoinQuery sq = new SparkJoinQuery(cfg);
+        start = System.currentTimeMillis();
+
+        // lineitem ⋈ part
+
+        String lineitem = "lineitem";
+        String part = "part";
+
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(lineitem, stringLineitem, q_l, schemaLineitem.getAttributeId("l_partkey"), "NULL",
+                part, stringPart, q_p, schemaPart.getAttributeId("p_partkey"), "NULL", memoryBudget);
+
+        long result = rdd.count();
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
     }
 
     public static void main(String[] args) {
