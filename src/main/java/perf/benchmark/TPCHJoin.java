@@ -42,8 +42,8 @@ public class TPCHJoin {
 
     public ConfUtils cfg;
 
-    public Schema schemaCustomer, schemaLineitem, schemaNation, schemaOrders, schemaPart, schemaPartsupp, schemaRegion, schemaSupplier;
-    public String stringCustomer, stringLineitem, stringNation, stringOrders, stringPart, stringPartsupp, stringRegion, stringSupplier;
+    public Schema schemaCustomer, schemaLineitem, schemaOrders, schemaPart, schemaSupplier;
+    public String stringCustomer, stringLineitem, stringOrders, stringPart, stringSupplier;
     int numFields;
 
     private static String[] mktSegmentVals = new
@@ -99,11 +99,6 @@ public class TPCHJoin {
                     System.out.println(stringLineitem);
                     counter += 2;
                     break;
-                case "--schemaNation":
-                    stringNation = args[counter + 1];
-                    schemaNation = Schema.createSchema(stringNation);
-                    counter += 2;
-                    break;
                 case "--schemaOrders":
                     stringOrders = args[counter + 1];
                     schemaOrders = Schema.createSchema(stringOrders);
@@ -112,16 +107,6 @@ public class TPCHJoin {
                 case "--schemaPart":
                     stringPart = args[counter + 1];
                     schemaPart = Schema.createSchema(stringPart);
-                    counter += 2;
-                    break;
-                case "--schemaPartsupp":
-                    stringPartsupp = args[counter + 1];
-                    schemaPartsupp = Schema.createSchema(stringPartsupp);
-                    counter += 2;
-                    break;
-                case "--schemaRegion":
-                    stringRegion = args[counter + 1];
-                    schemaRegion = Schema.createSchema(stringRegion);
                     counter += 2;
                     break;
                 case "--schemaSupplier":
@@ -351,11 +336,12 @@ public class TPCHJoin {
 
         String stringCustomer_join_Orders = stringCustomer + ", " + stringOrders;
         Schema schemaCustomer_join_Orders = Schema.createSchema(stringCustomer_join_Orders);
-        String stringCustomer_join_Orders_join_lineitem = stringCustomer + ", " + stringOrders + ", " + stringLineitem;
-        Schema schemaCustomer_join_Orders_join_lineitem = Schema.createSchema(stringCustomer_join_Orders_join_lineitem);
+        String stringLineitem_join_Customer_join_Orders = stringLineitem + ", " + stringCustomer + ", " + stringOrders;
+        Schema schemaLineitem_join_Customer_join_Orders = Schema.createSchema(stringLineitem_join_Customer_join_Orders);
 
         JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(customer, stringCustomer, q_c, schemaCustomer.getAttributeId("c_custkey"), "NULL",
                 orders, stringOrders, q_o, schemaOrders.getAttributeId("o_custkey"), "NULL", memoryBudget);
+
 
         String cutPoints = sq.getCutPoints(lineitem, 0); // long[] = {1, 2, 3};
 
@@ -370,6 +356,7 @@ public class TPCHJoin {
         long result = rdd_customer_join_orders.count();
 
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
+
 
         postProcessing(dest, schemaCustomer_join_Orders);
 
@@ -395,12 +382,13 @@ public class TPCHJoin {
 
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-        postProcessing(dest, schemaCustomer_join_Orders_join_lineitem);
+        postProcessing(dest, schemaLineitem_join_Customer_join_Orders);
 
         rdd = sq.createJoinScanRDD(supplier, stringSupplier, q_s, schemaSupplier.getAttributeId("s_suppkey"), "NULL",
-                customer_join_orders_join_lineitem, stringCustomer_join_Orders_join_lineitem, new Query(new Predicate[0]), schemaCustomer_join_Orders_join_lineitem.getAttributeId("l_suppkey"), cutPoints, memoryBudget);
+                customer_join_orders_join_lineitem, stringLineitem_join_Customer_join_Orders, new Query(new Predicate[0]), schemaLineitem_join_Customer_join_Orders.getAttributeId("l_suppkey"), cutPoints, memoryBudget);
 
         result = rdd.count();
+
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
     }
@@ -430,7 +418,14 @@ public class TPCHJoin {
         Predicate p5_6 = new Predicate(schemaLineitem.getAttributeId("l_quantity"), TYPE.DOUBLE, quantity, PREDTYPE.LEQ);
         Query q_l = new Query(new Predicate[]{p1_6, p2_6, p3_6, p4_6, p5_6});
 
+
+        System.out.println("INFO: Query_lineitem:" + q_l.toString());
+
         long start = System.currentTimeMillis();
+
+        String oldWorkingDir = cfg.getHDFS_WORKING_DIR();
+        String newWorkingDir = oldWorkingDir + "/lineitem";
+        cfg.setHDFS_WORKING_DIR(newWorkingDir); // hack, make it happy
 
         SparkQuery sq = new SparkQuery(cfg);
 
@@ -439,6 +434,7 @@ public class TPCHJoin {
         long end = System.currentTimeMillis();
         System.out.println("RES: Time Taken: " + (end - start) + "; Result: " + result);
 
+        cfg.setHDFS_WORKING_DIR(oldWorkingDir);
     }
 
 
@@ -468,10 +464,10 @@ public class TPCHJoin {
         SimpleDate d8_1 = new SimpleDate(1995, 1, 1);
         SimpleDate d8_2 = new SimpleDate(1996, 12, 31);
         String p_type_8 = partTypeVals[rand.nextInt(partTypeVals.length)];
-        Predicate p1_8 = new Predicate("c_region", TYPE.STRING, r_name_8, PREDTYPE.LEQ);
-        Predicate p2_8 = new Predicate("o_orderdate", TYPE.DATE, d8_1, PREDTYPE.GEQ);
-        Predicate p3_8 = new Predicate("o_orderdate", TYPE.DATE, d8_2, PREDTYPE.LEQ);
-        Predicate p4_8 = new Predicate("p_type", TYPE.STRING, p_type_8, PREDTYPE.EQ);
+        Predicate p1_8 = new Predicate(schemaCustomer.getAttributeId("c_region"), TYPE.STRING, r_name_8, PREDTYPE.LEQ);
+        Predicate p2_8 = new Predicate(schemaOrders.getAttributeId("o_orderdate"), TYPE.DATE, d8_1, PREDTYPE.GEQ);
+        Predicate p3_8 = new Predicate(schemaOrders.getAttributeId("o_orderdate"), TYPE.DATE, d8_2, PREDTYPE.LEQ);
+        Predicate p4_8 = new Predicate(schemaPart.getAttributeId("p_type"), TYPE.STRING, p_type_8, PREDTYPE.EQ);
 
         Query q_o =  new Query(new Predicate[]{p2_8,p3_8});
         Query q_p =  new Query(new Predicate[]{p4_8});
@@ -479,7 +475,7 @@ public class TPCHJoin {
 
         if (rand_8_1 > 0) {
             String r_name_prev_8 = regionNameVals[rand_8_1 - 1];
-            Predicate p5_8 = new Predicate("c_region", TYPE.STRING, r_name_prev_8, PREDTYPE.GT);
+            Predicate p5_8 = new Predicate(schemaCustomer.getAttributeId("c_region"), TYPE.STRING, r_name_prev_8, PREDTYPE.GT);
             q_c =  new Query(new Predicate[]{p1_8, p5_8});
         } else {
             q_c = new Query(new Predicate[]{p1_8});
@@ -720,8 +716,8 @@ public class TPCHJoin {
         SimpleDate d14_1 = new SimpleDate(year_14 + monthOffset_14/12, monthOffset_14%12 + 1, 1);
         monthOffset_14 += 1;
         SimpleDate d14_2 = new SimpleDate(year_14 + monthOffset_14/12, monthOffset_14%12 + 1, 1);
-        Predicate p1_14 = new Predicate("l_shipdate", TYPE.DATE, d14_1, PREDTYPE.GEQ);
-        Predicate p2_14 = new Predicate("l_shipdate", TYPE.DATE, d14_2, PREDTYPE.LT);
+        Predicate p1_14 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TYPE.DATE, d14_1, PREDTYPE.GEQ);
+        Predicate p2_14 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TYPE.DATE, d14_2, PREDTYPE.LT);
         Query q_l = new Query(new Predicate[]{p1_14, p2_14});
 
         System.out.println("INFO: Query_lineitem:" + q_l.toString());
@@ -767,15 +763,15 @@ public class TPCHJoin {
         String brand_19 = "Brand#" + (rand.nextInt(5) + 1) + "" + (rand.nextInt(5) + 1);
         String shipInstruct_19 = "DELIVER IN PERSON";
         double quantity_19 = rand.nextInt(10) + 1;
-        Predicate p1_19 = new Predicate("l_shipinstruct", TYPE.STRING, shipInstruct_19, PREDTYPE.EQ);
-        Predicate p2_19 = new Predicate("p_brand", TYPE.STRING, brand_19, PREDTYPE.EQ);
-        Predicate p3_19 = new Predicate("p_container", TYPE.STRING, "SM CASE",PREDTYPE.EQ);
-        Predicate p4_19 = new Predicate("l_quantity", TYPE.DOUBLE, quantity_19, PREDTYPE.GT);
+        Predicate p1_19 = new Predicate(schemaLineitem.getAttributeId("l_shipinstruct"), TYPE.STRING, shipInstruct_19, PREDTYPE.EQ);
+        Predicate p2_19 = new Predicate(schemaPart.getAttributeId("p_brand"), TYPE.STRING, brand_19, PREDTYPE.EQ);
+        Predicate p3_19 = new Predicate(schemaPart.getAttributeId("p_container"), TYPE.STRING, "SM CASE",PREDTYPE.EQ);
+        Predicate p4_19 = new Predicate(schemaLineitem.getAttributeId("l_quantity"), TYPE.DOUBLE, quantity_19, PREDTYPE.GT);
         quantity_19 += 10;
-        Predicate p5_19 = new Predicate("l_quantity", TYPE.DOUBLE, quantity_19, PREDTYPE.LEQ);
-        Predicate p6_19 = new Predicate("p_size", TYPE.INT, 1, PREDTYPE.GEQ);
-        Predicate p7_19 = new Predicate("p_size", TYPE.INT, 5, PREDTYPE.LEQ);
-        Predicate p8_19 = new Predicate("l_shipmode", TYPE.STRING, "AIR", PREDTYPE.LEQ);
+        Predicate p5_19 = new Predicate(schemaLineitem.getAttributeId("l_quantity"), TYPE.DOUBLE, quantity_19, PREDTYPE.LEQ);
+        Predicate p6_19 = new Predicate(schemaPart.getAttributeId("p_size"), TYPE.INT, 1, PREDTYPE.GEQ);
+        Predicate p7_19 = new Predicate(schemaPart.getAttributeId("p_size"), TYPE.INT, 5, PREDTYPE.LEQ);
+        Predicate p8_19 = new Predicate(schemaLineitem.getAttributeId("l_shipmode"), TYPE.STRING, "AIR", PREDTYPE.LEQ);
 
         Query q_l =  new Query(new Predicate[]{p1_19,p4_19,p5_19,p8_19});
         Query q_p =  new Query(new Predicate[]{p2_19,p3_19,p6_19,p7_19});
@@ -809,7 +805,14 @@ public class TPCHJoin {
         TPCHJoin t = new TPCHJoin();
         t.loadSettings(args);
         t.setUp();
-        //t.tpch3();
-        t.tpch5();
+        //t.tpch3(); // correct
+        //t.tpch5(); // correct
+        t.tpch6(); //
+        //t.tpch8(); // correct
+        //t.tpch10(); // correct
+
+        //t.tpch12(); // correct
+        //t.tpch14(); // correct
+        //t.tpch19(); // correct
     }
 }

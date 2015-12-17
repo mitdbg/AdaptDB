@@ -24,6 +24,8 @@ def run_tpchjoin():
             ' --schemaLineitem "$SCHEMALINEITEM"'  + \
             ' --schemaOrders "$SCHEMAORDERS"'  + \
             ' --schemaCustomer "$SCHEMACUSTOMER"' + \
+            ' --schemaPart "$SCHEMAPART"' + \
+            ' --schemaSupplier "$SCHEMASUPPLIER"' + \
             ' --budget 2' + \
             ' --conf $CONF  > ~/logs/join_workload.log'
         cmd = fill_cmd(cmd)
