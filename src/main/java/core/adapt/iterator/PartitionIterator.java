@@ -94,18 +94,9 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 				}
 
 				try {
-					// TODO: Hack. Observed that sometimes there are two \n between records.
-					// There is something wrong with the partition writer.
-					// This skips small records.
-					if (recordBytes.length < 10) {
-						previous = ++offset;
-						continue;
-					}
-
 					record.setBytes(recordBytes);
 				} catch (ArrayIndexOutOfBoundsException e) {
-					System.out
-							.println("Index out of bounds while setting bytes: "
+					System.out.println("Index out of bounds while setting bytes: "
 									+ (new String(recordBytes)));
 					throw e;
 				}

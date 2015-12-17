@@ -56,7 +56,6 @@ public abstract class PartitionWriter implements Cloneable {
 
 		try {
 			b.write(bytes, b_offset, b_length);
-			b.write('\n');
 			writingTime += System.nanoTime() - start;
 		} catch (IOException e) {
 			e.printStackTrace();
