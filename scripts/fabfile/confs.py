@@ -108,9 +108,6 @@ confs = {
     "join": {
         'JAR' : '/home/mdindex/yilu/mdindex/build/libs/mdindex-all.jar',
         'CONF' : '/home/mdindex/yilu/mdindex/conf/tpch.properties',
-        'TABLENAME' : 'tpch',
-        'INPUTSDIR' : '/user/mdindex/yilu/tpch/',
-        'HDFSDIR' : '/user/yilu/tpch/',
         'HOMEDIR' : '/home/mdindex/',
         'HADOOPBIN' : '/home/mdindex/hadoop-2.6.0/bin/',
         'SAMPLINGRATE' : '0.1',
@@ -124,12 +121,12 @@ confs = {
         'HOSTS' : ['istc2.csail.mit.edu', 'istc5.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu', 'istc9.csail.mit.edu', 'istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
         'ROLEDEFS' : { 'master': ['istc2.csail.mit.edu'] },
         },
-    "local_lineitem" : {
+    "join_lineitem" : {
         'JAR' : '/Users/ylu/Documents/workspace/mdindex/build/libs/mdindex-all.jar',
         'CONF' : '/Users/ylu/Documents/workspace/mdindex/conf/ylu.properties',
         'INPUTSDIR' : '/Users/ylu/Documents/workspace/tpchdata/lineitem',
         'TABLENAME' : 'lineitem',
-        'HDFSDIR' : '/user/ylu/lineitem',
+        'HDFSDIR' : '/user/ylu',
         'HOMEDIR' : '/Users/ylu',
         'HADOOPBIN' : '/Users/ylu/Documents/workspace/hadoop-2.6.0/bin',
         'SAMPLINGRATE' : '0.1',
@@ -142,12 +139,12 @@ confs = {
         'HOSTS': ['localhost'],
         'ROLEDEFS': { 'master': ['localhost'] }
         },
-    "local_orders" : {
+    "join_orders" : {
         'JAR' : '/Users/ylu/Documents/workspace/mdindex/build/libs/mdindex-all.jar',
         'CONF' : '/Users/ylu/Documents/workspace/mdindex/conf/ylu.properties',
         'INPUTSDIR' : '/Users/ylu/Documents/workspace/tpchdata/orders',
         'TABLENAME' : 'orders',
-        'HDFSDIR' : '/user/ylu/orders',
+        'HDFSDIR' : '/user/ylu',
         'HOMEDIR' : '/Users/ylu',
         'HADOOPBIN' : '/Users/ylu/Documents/workspace/hadoop-2.6.0/bin',
         'SAMPLINGRATE' : '0.1',
@@ -160,35 +157,35 @@ confs = {
         'HOSTS': ['localhost'],
         'ROLEDEFS': { 'master': ['localhost'] }
         },
-    "local_part" : {
+    "join_part" : {
         'JAR' : '/Users/ylu/Documents/workspace/mdindex/build/libs/mdindex-all.jar',
         'CONF' : '/Users/ylu/Documents/workspace/mdindex/conf/ylu.properties',
         'INPUTSDIR' : '/Users/ylu/Documents/workspace/tpchdata/part',
         'TABLENAME' : 'part',
-        'HDFSDIR' : '/user/ylu/part',
+        'HDFSDIR' : '/user/ylu',
         'HOMEDIR' : '/Users/ylu',
         'HADOOPBIN' : '/Users/ylu/Documents/workspace/hadoop-2.6.0/bin',
-        'SAMPLINGRATE' : '0.1',
+        'SAMPLINGRATE' : '0.5',
         'DELIMITER': '|',
         'NUMBUCKETS' : '16',
         'NUMTUPLES': '200000',
-        'NUMFIELDS' : '8',
+        'NUMFIELDS' : '16',
         'SCHEMA': 'p_partkey int, p_name string, p_mfgr string, p_brand string, p_type string, p_size int, p_container string, p_retailprice double',
         'USER': 'ylu',
         'HOSTS': ['localhost'],
         'ROLEDEFS': { 'master': ['localhost'] }
         },
-     "local_supplier" : {
+     "join_supplier" : {
         'JAR' : '/Users/ylu/Documents/workspace/mdindex/build/libs/mdindex-all.jar',
         'CONF' : '/Users/ylu/Documents/workspace/mdindex/conf/ylu.properties',
         'INPUTSDIR' : '/Users/ylu/Documents/workspace/tpchdata/supplier',
         'TABLENAME' : 'supplier',
-        'HDFSDIR' : '/user/ylu/supplier',
+        'HDFSDIR' : '/user/ylu',
         'HOMEDIR' : '/Users/ylu',
         'HADOOPBIN' : '/Users/ylu/Documents/workspace/hadoop-2.6.0/bin',
-        'SAMPLINGRATE' : '0.1',
+        'SAMPLINGRATE' : '0.5',
         'DELIMITER': '|',
-        'NUMBUCKETS' : '16',
+        'NUMBUCKETS' : '8',
         'NUMTUPLES': '10000',
         'NUMFIELDS' : '7',
         'SCHEMA': 's_suppkey int, s_name string, s_address string, s_phone string, s_acctbal double, s_nation string, s_region string',
@@ -196,15 +193,15 @@ confs = {
         'HOSTS': ['localhost'],
         'ROLEDEFS': { 'master': ['localhost'] }
         },
-     "local_customer" : {
+     "join_customer" : {
         'JAR' : '/Users/ylu/Documents/workspace/mdindex/build/libs/mdindex-all.jar',
         'CONF' : '/Users/ylu/Documents/workspace/mdindex/conf/ylu.properties',
         'INPUTSDIR' : '/Users/ylu/Documents/workspace/tpchdata/customer',
         'TABLENAME' : 'customer',
-        'HDFSDIR' : '/user/ylu/customer',
+        'HDFSDIR' : '/user/ylu',
         'HOMEDIR' : '/Users/ylu',
         'HADOOPBIN' : '/Users/ylu/Documents/workspace/hadoop-2.6.0/bin',
-        'SAMPLINGRATE' : '0.1',
+        'SAMPLINGRATE' : '0.5',
         'DELIMITER': '|',
         'NUMBUCKETS' : '16',
         'NUMTUPLES': '150000',

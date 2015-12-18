@@ -105,8 +105,6 @@ public class SparkJoinRecordReader extends
 
         build_hashtable();
 
-        //Globals.schema = Schema.createSchema(dataset2_schema);
-
         //System.out.println("the file is : "+  sparkSplit.getPath(currentFile));
         setPartitionToIterator(sparkSplit.getPath(currentFile), iter2);
 
@@ -130,9 +128,6 @@ public class SparkJoinRecordReader extends
     }
 
     private void build_hashtable() {
-
-        //set schema
-        //Globals.schema = Schema.createSchema(dataset1_schema);
 
         for (currentFile = 0; currentFile < sparkSplit.getNumPaths(); currentFile++) {
 

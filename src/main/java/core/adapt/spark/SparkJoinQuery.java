@@ -103,9 +103,9 @@ public class SparkJoinQuery {
             int budget) {
         // type == 0, mdindex, == 1 raw files
 
-
-        Assert.assertNotEquals(join_attr1, -1);
-        Assert.assertNotEquals(join_attr2, -1);
+        if(join_attr1 == -1 || join_attr2 == -1) {
+            throw new RuntimeException("Join Attrs cannot be -1.");
+        }
 
         Configuration conf = ctx.hadoopConfiguration();
 

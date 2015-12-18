@@ -1,10 +1,11 @@
 package perf.benchmark;
 
 
-
 import core.adapt.spark.RangePartitioner;
 import core.adapt.spark.SparkQuery;
+import core.common.globals.Globals;
 import core.common.globals.Schema;
+import core.common.globals.TableInfo;
 import core.utils.*;
 
 import org.apache.commons.io.FilenameUtils;
@@ -32,6 +33,8 @@ import core.utils.TypeUtils.TYPE;
 import core.adapt.iterator.IteratorRecord;
 import org.apache.spark.api.java.JavaRDD;
 
+import javax.xml.bind.annotation.XmlElementDecl;
+
 /**
  * Created by ylu on 12/2/15.
  */
@@ -45,8 +48,7 @@ public class TPCHJoinWorkload {
     public String stringCustomer, stringLineitem, stringOrders, stringPart, stringSupplier;
 
     private String lineitem = "lineitem", orders = "orders", customer = "customer", supplier = "supplier", part = "part";
-    private String EMPTY = "empty";
-
+    private Predicate[] EmptyPredicates = {};
 
     private static String[] mktSegmentVals = new
             String[]{"AUTOMOBILE", "BUILDING", "FURNITURE", "HOUSEHOLD", "MACHINERY"};
@@ -82,6 +84,14 @@ public class TPCHJoinWorkload {
         // delete query history
         // Cleanup queries file - to remove past query workload
         //HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()), cfg.getHDFS_WORKING_DIR() + "/" + dataset + "/queries", false);
+
+        // set up schema
+
+        schemaCustomer = Schema.createSchema(stringCustomer);
+        schemaLineitem = Schema.createSchema(stringLineitem);
+        schemaOrders = Schema.createSchema(stringOrders);
+        schemaPart = Schema.createSchema(stringPart);
+        schemaSupplier = Schema.createSchema(stringSupplier);
     }
 
 
@@ -130,7 +140,6 @@ public class TPCHJoinWorkload {
                     break;
                 default:
                     // Something we don't use
-
                     counter += 2;
                     break;
             }
@@ -138,7 +147,7 @@ public class TPCHJoinWorkload {
     }
 
 
-    public void postProcessing(String path, Schema schema) {
+    public void postProcessing(String path, String tableName, Schema schema) {
 
         /* rename part-0000i to i and create an info file*/
 
@@ -161,10 +170,11 @@ public class TPCHJoinWorkload {
             }
 
 
-            /*  write out a fake (TOTAL_NUM_TUPLES is wrong) info to make HDFSPartition Happy*/
+            /*  write out a fake (TOTAL_NUM_TUPLES is 0, delimiter is set to '|') info to make HDFSPartition Happy*/
 
-            //Globals.schema = schema;
-            //Globals.save(path + "/info", cfg.getHDFS_REPLICATION_FACTOR(), fs);
+            TableInfo tableInfo = new TableInfo(tableName, 0, '|', schema);
+            tableInfo.save(cfg.getHDFS_WORKING_DIR(), cfg.getHDFS_REPLICATION_FACTOR(), fs);
+
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -208,7 +218,7 @@ public class TPCHJoinWorkload {
 
         Query q_c = null;
         Query q_o = new Query(orders, new Predicate[]{p2_3});
-        Query q_l = new Query(lineitem,new Predicate[]{p3_3});
+        Query q_l = new Query(lineitem, new Predicate[]{p3_3});
 
 
         if (rand_3 > 0) {
@@ -256,10 +266,10 @@ public class TPCHJoinWorkload {
 
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-        postProcessing(dest, schemaLineitem_join_Orders);
+        postProcessing(dest, lineitem_join_orders, schemaLineitem_join_Orders);
 
         rdd = sq.createJoinScanRDD(customer, stringCustomer, q_c, schemaCustomer.getAttributeId("c_custkey"), "NULL",
-                lineitem_join_orders, stringLineitem_join_Orders, new Query(EMPTY, new Predicate[0]), schemaLineitem_join_Orders.getAttributeId("o_custkey"), cutPoints, memoryBudget);
+                lineitem_join_orders, stringLineitem_join_Orders, new Query(lineitem_join_orders, EmptyPredicates), schemaLineitem_join_Orders.getAttributeId("o_custkey"), cutPoints, memoryBudget);
 
         result = rdd.count();
 
@@ -306,8 +316,8 @@ public class TPCHJoinWorkload {
             String r_name_prev_5 = regionNameVals[rand_5 - 1];
             Predicate p5_5 = new Predicate(schemaCustomer.getAttributeId("c_region"), TYPE.STRING, r_name_prev_5, PREDTYPE.GT);
             Predicate p6_5 = new Predicate(schemaSupplier.getAttributeId("s_region"), TYPE.STRING, r_name_prev_5, PREDTYPE.GT);
-            q_s = new Query(supplier, new Predicate[]{p2_5,p6_5});
-            q_c = new Query(customer, new Predicate[]{p1_5,p5_5});
+            q_s = new Query(supplier, new Predicate[]{p2_5, p6_5});
+            q_c = new Query(customer, new Predicate[]{p1_5, p5_5});
         } else {
             q_s = new Query(supplier, new Predicate[]{p2_5});
             q_c = new Query(customer, new Predicate[]{p1_5});
@@ -328,7 +338,7 @@ public class TPCHJoinWorkload {
         // ((customer ⋈ orders) ⋈ lineitem) ⋈ supplier
 
         String customer_join_orders = "customer_join_orders";
-        String customer_join_orders_join_lineitem = "customer_join_orders_join_lineitem";
+        String lineitem_join_customer_join_orders = "lineitem_join_customer_join_orders";
 
         String stringCustomer_join_Orders = stringCustomer + ", " + stringOrders;
         Schema schemaCustomer_join_Orders = Schema.createSchema(stringCustomer_join_Orders);
@@ -354,10 +364,10 @@ public class TPCHJoinWorkload {
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
 
-        postProcessing(dest, schemaCustomer_join_Orders);
+        postProcessing(dest, customer_join_orders, schemaCustomer_join_Orders);
 
-        rdd = sq.createJoinScanRDD(lineitem, stringLineitem,  new Query(null, new Predicate[0]), schemaLineitem.getAttributeId("l_orderkey"), "NULL",
-                customer_join_orders, stringCustomer_join_Orders, new Query(null, new Predicate[0]), schemaCustomer_join_Orders.getAttributeId("o_orderkey"), cutPoints, memoryBudget);
+        rdd = sq.createJoinScanRDD(lineitem, stringLineitem, new Query(lineitem, EmptyPredicates), schemaLineitem.getAttributeId("l_orderkey"), "NULL",
+                customer_join_orders, stringCustomer_join_Orders, new Query(customer_join_orders, EmptyPredicates), schemaCustomer_join_Orders.getAttributeId("o_orderkey"), cutPoints, memoryBudget);
 
         result = rdd.count();
 
@@ -370,7 +380,7 @@ public class TPCHJoinWorkload {
 
         JavaRDD<Text> rdd_customer_join_orders_join_lineitem = rdd.partitionBy(partitioner).values();
 
-        dest = cfg.getHDFS_WORKING_DIR() + "/" + customer_join_orders_join_lineitem;
+        dest = cfg.getHDFS_WORKING_DIR() + "/" + lineitem_join_customer_join_orders;
 
         rdd_customer_join_orders_join_lineitem.saveAsTextFile(dest + "/data");
 
@@ -378,10 +388,10 @@ public class TPCHJoinWorkload {
 
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-        postProcessing(dest, schemaLineitem_join_Customer_join_Orders);
+        postProcessing(dest, lineitem_join_customer_join_orders, schemaLineitem_join_Customer_join_Orders);
 
         rdd = sq.createJoinScanRDD(supplier, stringSupplier, q_s, schemaSupplier.getAttributeId("s_suppkey"), "NULL",
-                customer_join_orders_join_lineitem, stringLineitem_join_Customer_join_Orders, new Query(EMPTY, new Predicate[0]), schemaLineitem_join_Customer_join_Orders.getAttributeId("l_suppkey"), cutPoints, memoryBudget);
+                lineitem_join_customer_join_orders, stringLineitem_join_Customer_join_Orders, new Query(lineitem_join_customer_join_orders, EmptyPredicates), schemaLineitem_join_Customer_join_Orders.getAttributeId("l_suppkey"), cutPoints, memoryBudget);
 
         result = rdd.count();
 
@@ -419,10 +429,6 @@ public class TPCHJoinWorkload {
 
         long start = System.currentTimeMillis();
 
-        String oldWorkingDir = cfg.getHDFS_WORKING_DIR();
-        String newWorkingDir = oldWorkingDir + "/lineitem";
-        cfg.setHDFS_WORKING_DIR(newWorkingDir); // hack, make it happy
-
         SparkQuery sq = new SparkQuery(cfg);
 
         JavaPairRDD<LongWritable, IteratorRecord> rdd = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), q_l);
@@ -430,7 +436,6 @@ public class TPCHJoinWorkload {
         long end = System.currentTimeMillis();
         System.out.println("RES: Time Taken: " + (end - start) + "; Result: " + result);
 
-        cfg.setHDFS_WORKING_DIR(oldWorkingDir);
     }
 
 
@@ -465,14 +470,14 @@ public class TPCHJoinWorkload {
         Predicate p3_8 = new Predicate(schemaOrders.getAttributeId("o_orderdate"), TYPE.DATE, d8_2, PREDTYPE.LEQ);
         Predicate p4_8 = new Predicate(schemaPart.getAttributeId("p_type"), TYPE.STRING, p_type_8, PREDTYPE.EQ);
 
-        Query q_o =  new Query(orders, new Predicate[]{p2_8,p3_8});
-        Query q_p =  new Query(part, new Predicate[]{p4_8});
+        Query q_o = new Query(orders, new Predicate[]{p2_8, p3_8});
+        Query q_p = new Query(part, new Predicate[]{p4_8});
         Query q_c = null;
 
         if (rand_8_1 > 0) {
             String r_name_prev_8 = regionNameVals[rand_8_1 - 1];
             Predicate p5_8 = new Predicate(schemaCustomer.getAttributeId("c_region"), TYPE.STRING, r_name_prev_8, PREDTYPE.GT);
-            q_c =  new Query(customer, new Predicate[]{p1_8, p5_8});
+            q_c = new Query(customer, new Predicate[]{p1_8, p5_8});
         } else {
             q_c = new Query(customer, new Predicate[]{p1_8});
         }
@@ -496,14 +501,14 @@ public class TPCHJoinWorkload {
         String orders = "orders";
         String customer = "customer";
         String lineitem_join_orders = "lineitem_join_orders";
-        String lineitem_join_orders_join_customer = "lineitem_join_orders_join_customer";
+        String customer_join_lineitem_join_orders = "customer_join_lineitem_join_orders";
 
         String stringLineitem_join_Orders = stringLineitem + ", " + stringOrders;
         Schema schemaLineitem_join_Orders = Schema.createSchema(stringLineitem_join_Orders);
-        String stringLineitem_join_Orders_join_Customer = stringLineitem + ", " + stringOrders + ", " + stringCustomer;
-        Schema schemaLineitem_join_Orders_join_Customer = Schema.createSchema(stringLineitem_join_Orders_join_Customer);
+        String stringCustomer_join_Lineitem_join_Orders = stringCustomer + ", " + stringLineitem + ", " + stringOrders;
+        Schema schemaCustomer_join_Lineitem_join_Orders = Schema.createSchema(stringCustomer_join_Lineitem_join_Orders);
 
-        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(lineitem, stringLineitem, new Query(EMPTY, new Predicate[0]), schemaLineitem.getAttributeId("l_orderkey"), "NULL",
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(lineitem, stringLineitem, new Query(lineitem, EmptyPredicates), schemaLineitem.getAttributeId("l_orderkey"), "NULL",
                 orders, stringOrders, q_o, schemaOrders.getAttributeId("o_orderkey"), "NULL", memoryBudget);
 
         String cutPoints = sq.getCutPoints(customer, 0); // long[] = {1, 2, 3};
@@ -520,10 +525,10 @@ public class TPCHJoinWorkload {
 
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-        postProcessing(dest, schemaLineitem_join_Orders);
+        postProcessing(dest, lineitem_join_orders, schemaLineitem_join_Orders);
 
-        rdd = sq.createJoinScanRDD(customer, stringCustomer,  q_c, schemaCustomer.getAttributeId("c_custkey"), "NULL",
-                lineitem_join_orders, stringLineitem_join_Orders, new Query(EMPTY, new Predicate[0]), schemaLineitem_join_Orders.getAttributeId("o_custkey"), cutPoints, memoryBudget);
+        rdd = sq.createJoinScanRDD(customer, stringCustomer, q_c, schemaCustomer.getAttributeId("c_custkey"), "NULL",
+                lineitem_join_orders, stringLineitem_join_Orders, new Query(lineitem_join_orders, EmptyPredicates), schemaLineitem_join_Orders.getAttributeId("o_custkey"), cutPoints, memoryBudget);
 
         result = rdd.count();
 
@@ -533,9 +538,9 @@ public class TPCHJoinWorkload {
 
         partitioner = new RangePartitioner(cutPoints);
 
-        JavaRDD<Text> rdd_lineitem_join_orders_join_customer= rdd.partitionBy(partitioner).values();
+        JavaRDD<Text> rdd_lineitem_join_orders_join_customer = rdd.partitionBy(partitioner).values();
 
-        dest = cfg.getHDFS_WORKING_DIR() + "/" + lineitem_join_orders_join_customer;
+        dest = cfg.getHDFS_WORKING_DIR() + "/" + customer_join_lineitem_join_orders;
 
         rdd_lineitem_join_orders_join_customer.saveAsTextFile(dest + "/data");
 
@@ -543,10 +548,10 @@ public class TPCHJoinWorkload {
 
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-        postProcessing(dest, schemaLineitem_join_Orders_join_Customer);
+        postProcessing(dest, customer_join_lineitem_join_orders, schemaCustomer_join_Lineitem_join_Orders);
 
         rdd = sq.createJoinScanRDD(part, stringPart, q_p, schemaPart.getAttributeId("p_partkey"), "NULL",
-                lineitem_join_orders_join_customer, stringLineitem_join_Orders_join_Customer, new Query(EMPTY, new Predicate[0]), schemaLineitem_join_Orders_join_Customer.getAttributeId("l_partkey"), cutPoints, memoryBudget);
+                customer_join_lineitem_join_orders, stringCustomer_join_Lineitem_join_Orders, new Query(customer_join_lineitem_join_orders, EmptyPredicates), schemaCustomer_join_Lineitem_join_Orders.getAttributeId("l_partkey"), cutPoints, memoryBudget);
 
         result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
@@ -604,10 +609,9 @@ public class TPCHJoinWorkload {
         String stringLineitem_join_Orders = stringLineitem + ", " + stringOrders;
         Schema schemaLineitem_join_Orders = Schema.createSchema(stringLineitem_join_Orders);
 
-
         start = System.currentTimeMillis();
 
-        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(lineitem, stringLineitem,q_l, schemaLineitem.getAttributeId("l_orderkey"), "NULL",
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(lineitem, stringLineitem, q_l, schemaLineitem.getAttributeId("l_orderkey"), "NULL",
                 orders, stringOrders, q_o, schemaOrders.getAttributeId("o_orderkey"), "NULL", memoryBudget);
 
 
@@ -625,10 +629,10 @@ public class TPCHJoinWorkload {
 
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-        postProcessing(dest, schemaLineitem_join_Orders);
+        postProcessing(dest, lineitem_join_orders, schemaLineitem_join_Orders);
 
-        rdd = sq.createJoinScanRDD(customer, stringCustomer, new Query(EMPTY, new Predicate[0]), schemaCustomer.getAttributeId("c_custkey"), "NULL",
-                lineitem_join_orders, stringLineitem_join_Orders, new Query(EMPTY, new Predicate[0]), schemaLineitem_join_Orders.getAttributeId("o_custkey"), cutPoints, memoryBudget);
+        rdd = sq.createJoinScanRDD(customer, stringCustomer, new Query(customer, EmptyPredicates), schemaCustomer.getAttributeId("c_custkey"), "NULL",
+                lineitem_join_orders, stringLineitem_join_Orders, new Query(lineitem_join_orders, EmptyPredicates), schemaLineitem_join_Orders.getAttributeId("o_custkey"), cutPoints, memoryBudget);
 
         result = rdd.count();
 
@@ -665,7 +669,7 @@ public class TPCHJoinWorkload {
         if (rand_12 > 0) {
             String shipmode_prev_12 = shipModeVals[rand_12 - 1];
             Predicate p4_12 = new Predicate(schemaLineitem.getAttributeId("l_shipmode"), TYPE.STRING, shipmode_prev_12, PREDTYPE.GT);
-            q_l =  new Query(lineitem, new Predicate[]{p1_12, p2_12, p3_12, p4_12});
+            q_l = new Query(lineitem, new Predicate[]{p1_12, p2_12, p3_12, p4_12});
         } else {
             q_l = new Query(lineitem, new Predicate[]{p1_12, p2_12, p3_12});
         }
@@ -684,7 +688,7 @@ public class TPCHJoinWorkload {
         String orders = "orders";
 
         JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(lineitem, stringLineitem, q_l, schemaLineitem.getAttributeId("l_orderkey"), "NULL",
-                orders, stringOrders, new Query(EMPTY, new Predicate[0]), schemaOrders.getAttributeId("o_orderkey"), "NULL", memoryBudget);
+                orders, stringOrders, new Query(orders, EmptyPredicates), schemaOrders.getAttributeId("o_orderkey"), "NULL", memoryBudget);
 
         long result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
@@ -709,9 +713,9 @@ public class TPCHJoinWorkload {
 
         int year_14 = 1993;
         int monthOffset_14 = rand.nextInt(60);
-        SimpleDate d14_1 = new SimpleDate(year_14 + monthOffset_14/12, monthOffset_14%12 + 1, 1);
+        SimpleDate d14_1 = new SimpleDate(year_14 + monthOffset_14 / 12, monthOffset_14 % 12 + 1, 1);
         monthOffset_14 += 1;
-        SimpleDate d14_2 = new SimpleDate(year_14 + monthOffset_14/12, monthOffset_14%12 + 1, 1);
+        SimpleDate d14_2 = new SimpleDate(year_14 + monthOffset_14 / 12, monthOffset_14 % 12 + 1, 1);
         Predicate p1_14 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TYPE.DATE, d14_1, PREDTYPE.GEQ);
         Predicate p2_14 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TYPE.DATE, d14_2, PREDTYPE.LT);
         Query q_l = new Query(lineitem, new Predicate[]{p1_14, p2_14});
@@ -729,7 +733,7 @@ public class TPCHJoinWorkload {
         String part = "part";
 
         JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(lineitem, stringLineitem, q_l, schemaLineitem.getAttributeId("l_partkey"), "NULL",
-                part, stringPart, new Query(EMPTY, new Predicate[0]), schemaPart.getAttributeId("p_partkey"), "NULL", memoryBudget);
+                part, stringPart, new Query(part, EmptyPredicates), schemaPart.getAttributeId("p_partkey"), "NULL", memoryBudget);
 
         long result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
@@ -761,7 +765,7 @@ public class TPCHJoinWorkload {
         double quantity_19 = rand.nextInt(10) + 1;
         Predicate p1_19 = new Predicate(schemaLineitem.getAttributeId("l_shipinstruct"), TYPE.STRING, shipInstruct_19, PREDTYPE.EQ);
         Predicate p2_19 = new Predicate(schemaPart.getAttributeId("p_brand"), TYPE.STRING, brand_19, PREDTYPE.EQ);
-        Predicate p3_19 = new Predicate(schemaPart.getAttributeId("p_container"), TYPE.STRING, "SM CASE",PREDTYPE.EQ);
+        Predicate p3_19 = new Predicate(schemaPart.getAttributeId("p_container"), TYPE.STRING, "SM CASE", PREDTYPE.EQ);
         Predicate p4_19 = new Predicate(schemaLineitem.getAttributeId("l_quantity"), TYPE.DOUBLE, quantity_19, PREDTYPE.GT);
         quantity_19 += 10;
         Predicate p5_19 = new Predicate(schemaLineitem.getAttributeId("l_quantity"), TYPE.DOUBLE, quantity_19, PREDTYPE.LEQ);
@@ -769,8 +773,8 @@ public class TPCHJoinWorkload {
         Predicate p7_19 = new Predicate(schemaPart.getAttributeId("p_size"), TYPE.INT, 5, PREDTYPE.LEQ);
         Predicate p8_19 = new Predicate(schemaLineitem.getAttributeId("l_shipmode"), TYPE.STRING, "AIR", PREDTYPE.LEQ);
 
-        Query q_l =  new Query(lineitem, new Predicate[]{p1_19,p4_19,p5_19,p8_19});
-        Query q_p =  new Query(part, new Predicate[]{p2_19,p3_19,p6_19,p7_19});
+        Query q_l = new Query(lineitem, new Predicate[]{p1_19, p4_19, p5_19, p8_19});
+        Query q_p = new Query(part, new Predicate[]{p2_19, p3_19, p6_19, p7_19});
 
         System.out.println("INFO: Query_lineitem:" + q_l.toString());
         System.out.println("INFO: Query_part:" + q_p.toString());
@@ -801,14 +805,36 @@ public class TPCHJoinWorkload {
         TPCHJoinWorkload t = new TPCHJoinWorkload();
         t.loadSettings(args);
         t.setUp();
-        t.tpch3(); // correct
-        //t.tpch5(); // correct
-        //t.tpch6(); //
-        //t.tpch8(); // correct
-        //t.tpch10(); // correct
 
-        //t.tpch12(); // correct
-        //t.tpch14(); // correct
-        //t.tpch19(); // correct
+
+        switch (t.method) {
+            case 3:
+                t.tpch3();
+                break;
+            case 5:
+                t.tpch5();
+                break;
+            case 6:
+                t.tpch6();
+                break;
+            case 8:
+                t.tpch8();
+                break;
+            case 10:
+                t.tpch10();
+                break;
+            case 12:
+                t.tpch12();
+                break;
+            case 14:
+                t.tpch14();
+                break;
+            case 19:
+                t.tpch19();
+                break;
+
+            default:
+                break;
+        }
     }
 }

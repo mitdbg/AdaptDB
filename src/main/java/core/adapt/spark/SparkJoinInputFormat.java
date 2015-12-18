@@ -10,7 +10,6 @@ import core.adapt.Query;
 import core.adapt.iterator.*;
 import core.common.globals.Globals;
 import core.common.globals.Schema;
-import core.common.globals.TableInfo;
 import core.common.index.MDIndex;
 import core.common.index.RobustTree;
 import core.utils.HDFSUtils;
@@ -62,7 +61,6 @@ public class SparkJoinInputFormat extends
 
     private String dataset1, dataset2;
     private Query dataset1_query, dataset2_query;
-    private TableInfo dataset1_table, dataset2_table;
 
     private int[] dataset1_cutpoints, dataset2_cutpoints;
     private boolean dataset1_MDIndex, dataset2_MDIndex;
@@ -81,7 +79,7 @@ public class SparkJoinInputFormat extends
         }
 
         public SparkJoinFileSplit(Path[] files, long[] lengths,
-                              PartitionIterator iter1, PartitionIterator iter2) {
+                                  PartitionIterator iter1, PartitionIterator iter2) {
             super(files, lengths);
             this.iter1 = iter1;
             this.iter2 = iter2;
@@ -119,16 +117,18 @@ public class SparkJoinInputFormat extends
         }
     }
 
-    private void read_index(Map<Integer, MDIndex.BucketInfo> info, TableInfo tableInfo, String path, int attr){
+    private void read_index(Map<Integer, MDIndex.BucketInfo> info, String path, int attr){
         String index = path + "/index";
         String sample = path + "/sample";
         FileSystem fs = HDFSUtils.getFS(queryConf.getHadoopHome()
                 + "/etc/hadoop/core-site.xml");
 
         byte[] indexBytes = HDFSUtils.readFile(fs, index);
-
-        RobustTree rt = new RobustTree(tableInfo);
+        RobustTree rt = new RobustTree();
         rt.unmarshall(indexBytes);
+
+        //byte[] sampleBytes = HDFSUtils.readFile(fs, sample);
+        //rt.loadSample(sampleBytes);
 
         // If a particular bucket is not in the following map, then the range is (-oo,+oo).
 
@@ -177,18 +177,22 @@ public class SparkJoinInputFormat extends
         String dataset2_schema = conf.get("DATASET2_SCHEMA");
 
 
+        //Globals.schema = Schema.createSchema(dataset1_schema);
+
         System.out.println("Populate dataset1_bucketInfo");
 
         if(dataset1_MDIndex){
-            read_index(dataset1_bucketInfo, dataset1_table, queryConf.getWorkingDir() + "/" + dataset1, join_attr1);
+            read_index(dataset1_bucketInfo, queryConf.getWorkingDir() + "/" + dataset1,join_attr1);
         } else {
             read_range(dataset1_bucketInfo, dataset1_cutpoints);
         }
 
+        //Globals.schema =  Schema.createSchema(dataset2_schema);
+
         System.out.println("Populate dataset2_bucketInfo");
 
         if(dataset2_MDIndex){
-            read_index(dataset2_bucketInfo, dataset2_table, queryConf.getWorkingDir() + "/" + dataset2, join_attr2);
+            read_index(dataset2_bucketInfo, queryConf.getWorkingDir() + "/" + dataset2,join_attr2);
         } else {
             read_range(dataset2_bucketInfo, dataset2_cutpoints);
         }
@@ -310,6 +314,10 @@ public class SparkJoinInputFormat extends
         dataset1_query = new Query(conf.get("DATASET1_QUERY"));
         dataset2_query = new Query(conf.get("DATASET2_QUERY"));
 
+
+        System.out.println("INFO Dataset|Query: " + dataset1 + " " + dataset1_query);
+        System.out.println("INFO Dataset|Query: " + dataset2 + " " + dataset2_query);
+
         dataset1_cutpoints = RangePartitionerUtils.getIntCutPoints(job.getConfiguration().get("DATASET1_CUTPOINTS"));
         dataset2_cutpoints = RangePartitionerUtils.getIntCutPoints(job.getConfiguration().get("DATASET2_CUTPOINTS"));
 
@@ -317,7 +325,7 @@ public class SparkJoinInputFormat extends
         dataset2_MDIndex = dataset2_cutpoints == null;
 
         String workingDir = queryConf.getWorkingDir();
-        System.out.println("INFO working dir: " + workingDir);
+        //System.out.println("INFO working dir: " + workingDir);
 
         AccessMethod dataset1_am = new AccessMethod();
         AccessMethod dataset2_am = new AccessMethod();
@@ -329,7 +337,7 @@ public class SparkJoinInputFormat extends
 
         int[] dataset1_splits = null;
 
-        queryConf.setWorkingDir(workingDir + "/" + dataset1);
+        //queryConf.setWorkingDir(workingDir + "/" + dataset1);
         conf.set(INPUT_DIR, workingDir + "/" + dataset1 + "/data");
         if(dataset1_MDIndex){
             queryConf.setQuery(dataset1_query);
@@ -343,7 +351,7 @@ public class SparkJoinInputFormat extends
 
         int[] dataset2_splits = null;
 
-        queryConf.setWorkingDir(workingDir + "/" + dataset2);
+        //queryConf.setWorkingDir(workingDir + "/" + dataset2);
         conf.set(INPUT_DIR, workingDir + "/" + dataset2 + "/data");
         if(dataset2_MDIndex){
             queryConf.setQuery(dataset2_query);
@@ -357,7 +365,7 @@ public class SparkJoinInputFormat extends
 
         //System.out.println("Barrier 3");
 
-        queryConf.setWorkingDir(workingDir);
+        //queryConf.setWorkingDir(workingDir);
 
         init_bucketInfo(job, dataset1_splits, dataset2_splits);
 

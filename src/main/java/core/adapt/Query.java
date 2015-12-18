@@ -25,8 +25,8 @@ public class Query implements Serializable {
 	public Query(String queryString) {
 		String[] parts = queryString.split("\\|");
 		this.table = parts[0];
-		String predString = parts[1].trim();
-		if (predString.length() > 0) {
+		if (parts.length > 1) {
+			String predString = parts[1].trim();
 			String[] predParts = predString.split(";");
             this.predicates = new Predicate[predParts.length];
             for (int i = 0; i < predParts.length; i++) {
