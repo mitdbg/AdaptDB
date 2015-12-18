@@ -1,15 +1,11 @@
-package core.adapt.spark;
+package core.adapt.spark.join;
 
 
 import java.io.IOException;
 import java.util.Iterator;
 
 import com.google.common.collect.ArrayListMultimap;
-import core.adapt.Query;
-import core.adapt.iterator.PostFilterIterator;
-import core.common.globals.Globals;
-import core.common.globals.Schema;
-import core.utils.TypeUtils;
+import core.adapt.spark.SparkQueryConf;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -23,7 +19,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import core.adapt.HDFSPartition;
 import core.adapt.iterator.IteratorRecord;
 import core.adapt.iterator.PartitionIterator;
-import core.adapt.spark.SparkJoinInputFormat.SparkJoinFileSplit;
+import core.adapt.spark.join.SparkJoinInputFormat.SparkJoinFileSplit;
 import core.utils.CuratorUtils;
 
 /**

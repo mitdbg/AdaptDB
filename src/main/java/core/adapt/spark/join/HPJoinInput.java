@@ -1,4 +1,4 @@
-package core.adapt.spark;
+package core.adapt.spark.join;
 
 /**
  * Created by ylu on 12/3/15.

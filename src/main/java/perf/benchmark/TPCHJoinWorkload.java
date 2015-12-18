@@ -3,7 +3,6 @@ package perf.benchmark;
 
 import core.adapt.spark.RangePartitioner;
 import core.adapt.spark.SparkQuery;
-import core.common.globals.Globals;
 import core.common.globals.Schema;
 import core.common.globals.TableInfo;
 import core.utils.*;
@@ -26,14 +25,12 @@ import java.util.*;
 import core.adapt.Predicate;
 import core.adapt.Query;
 import core.adapt.Predicate.PREDTYPE;
-import core.adapt.spark.SparkJoinQuery;
+import core.adapt.spark.join.SparkJoinQuery;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 
 import core.adapt.iterator.IteratorRecord;
 import org.apache.spark.api.java.JavaRDD;
-
-import javax.xml.bind.annotation.XmlElementDecl;
 
 /**
  * Created by ylu on 12/2/15.

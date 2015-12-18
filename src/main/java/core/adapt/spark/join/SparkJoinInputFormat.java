@@ -1,4 +1,4 @@
-package core.adapt.spark;
+package core.adapt.spark.join;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -8,8 +8,7 @@ import java.util.*;
 
 import core.adapt.Query;
 import core.adapt.iterator.*;
-import core.common.globals.Globals;
-import core.common.globals.Schema;
+import core.adapt.spark.SparkQueryConf;
 import core.common.index.MDIndex;
 import core.common.index.RobustTree;
 import core.utils.HDFSUtils;
@@ -35,9 +34,6 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import core.adapt.AccessMethod;
 import core.adapt.AccessMethod.PartitionSplit;
 import core.utils.ReflectionUtils;
-import org.apache.hadoop.mapreduce.lib.join.ArrayListBackedIterator;
-import org.apache.hadoop.util.StringUtils;
-import scala.Int;
 
 
 /**

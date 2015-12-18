@@ -1,9 +1,4 @@
-package core.adapt.spark;
-
-import core.adapt.AccessMethod.PartitionSplit;
-import core.adapt.Query;
-import core.adapt.iterator.PostFilterIterator;
-import scala.Int;
+package core.adapt.spark.join;
 
 import java.util.*;
 

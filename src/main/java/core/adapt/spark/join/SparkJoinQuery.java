@@ -1,29 +1,18 @@
-package core.adapt.spark;
+package core.adapt.spark.join;
 
 
-import core.adapt.AccessMethod;
-import core.common.index.MDIndex;
-import core.common.index.RobustTree;
-import core.utils.HDFSUtils;
+import core.adapt.spark.SparkQueryConf;
 import core.utils.RangePartitionerUtils;
-import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
-import org.apache.hadoop.util.Options;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
-import core.adapt.Predicate;
 import core.adapt.Query;
-import core.adapt.iterator.IteratorRecord;
 import core.utils.ConfUtils;
-import org.junit.Assert;
-
-import java.util.Map;
 
 
 /**
