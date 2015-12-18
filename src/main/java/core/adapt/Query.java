@@ -106,6 +106,10 @@ public class Query implements Serializable {
 
 	@Override
 	public String toString() {
-		return table + "|" + Joiner.on(";").join(predicates);
+		String stringPredicates = "";
+		if (predicates.length != 0)
+			stringPredicates = Joiner.on(";").join(predicates);
+
+		return table + "|" + stringPredicates;
 	}
 }

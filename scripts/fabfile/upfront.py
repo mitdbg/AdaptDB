@@ -45,7 +45,7 @@ def create_robust_tree():
             ' --conf $CONF' + \
             ' --tableName $TABLENAME' + \
             ' --inputsDir $INPUTSDIR' + \
-            ' --samplesDir $HDFSDIRsamples/' + \
+            ' --samplesDir $HDFSDIR/samples' + \
             ' --method 2 ' + \
             ' --numReplicas 1' + \
             ' --numBuckets $NUMBUCKETS' + \

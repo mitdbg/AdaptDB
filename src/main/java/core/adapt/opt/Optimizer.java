@@ -102,6 +102,8 @@ public class Optimizer {
         String pathToIndex = tableDir + "/index";
 		String pathToSample = tableDir + "/sample";
 
+		System.out.println("Load index: " + pathToIndex);
+
 		byte[] indexBytes = HDFSUtils.readFile(fs, pathToIndex);
 		this.rt = new RobustTree(tableInfo);
 		this.rt.unmarshall(indexBytes);
