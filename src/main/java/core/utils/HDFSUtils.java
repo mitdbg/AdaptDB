@@ -290,6 +290,17 @@ public class HDFSUtils {
 		}
 	}
 
+
+	public static void safeCreateDirectory(FileSystem fs, String path) {
+		try {
+			Path p = new Path(path);
+			if (!fs.exists(p)) {
+				fs.mkdirs(p);
+			}
+		} catch (IOException e) {
+		}
+	}
+
 	public static List<String> readHDFSLines(String hadoopHome, String filename) {
 		try {
 			Configuration conf = new Configuration();
