@@ -42,6 +42,9 @@ public class RobustTree implements MDIndex {
 		this.tableInfo = tableInfo;
 	}
 
+	public RobustTree(){
+	}
+
 	public void setMaxBuckets(int maxBuckets) {
 		this.maxBuckets = maxBuckets;
 	}

@@ -9,6 +9,7 @@ import java.util.Random;
 import core.adapt.Predicate;
 import core.adapt.Query;
 import core.adapt.Predicate.PREDTYPE;
+import core.adapt.iterator.IteratorRecord;
 import core.adapt.spark.SparkQuery;
 import core.common.globals.Globals;
 import core.common.globals.TableInfo;
@@ -255,6 +256,11 @@ public class TPCHWorkload {
 	public static void main(String[] args) {
 		BenchmarkSettings.loadSettings(args);
 		BenchmarkSettings.printSettings();
+
+		System.out.println("Memory Stats (F/T/M): "
+				+ Runtime.getRuntime().freeMemory() + " "
+				+ Runtime.getRuntime().totalMemory() + " "
+				+ Runtime.getRuntime().maxMemory());
 
 		TPCHWorkload t = new TPCHWorkload();
 		t.loadSettings(args);

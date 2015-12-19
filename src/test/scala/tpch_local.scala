@@ -1,6 +1,6 @@
 // Load TPC-H tables from the datafiles generated
 // Start the spark shell using
-// ./spark-shell --master spark://128.30.77.88:7077 --packages com.databricks:spark-csv_2.11:1.2.0
+// ./spark-shell --master spark://31-33-49.wireless.csail.mit.edu:7077 --packages com.databricks:spark-csv_2.11:1.2.0 --executor-memory 4g --driver-memory 1g
 
 // sc is an existing SparkContext.
 val sqlContext = new org.apache.spark.sql.SQLContext(sc)
@@ -9,8 +9,8 @@ val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 import sqlContext.implicits._
 import org.apache.spark.sql.SaveMode
 
-val PATH = "/user/mdindex/tpch1"
-val DEST = "/user/mdindex/tpchd1"
+val PATH = "hdfs://localhost:9000/user/ylu/tpch1"
+val DEST = "hdfs://localhost:9000/user/ylu/tpchd1"
 
 // Create part table.
 sqlContext.sql(s"""CREATE TEMPORARY TABLE part (p_partkey int, p_name string, p_mfgr string, 
@@ -97,21 +97,3 @@ FROM
 lopsc.registerTempTable("lopsc")
 
 lopsc.save("com.databricks.spark.csv", SaveMode.ErrorIfExists, Map("path" -> DEST, "delimiter" -> "|"))
-
-// A quick set of ops that can be done on a Dataframe
-// df.show()
-// df.cache()
-// df.printSchema()
-// df.select("name").show()
-// df.select("name", df("age") + 1).show()
-// df.filter(df("name") > 21).show()
-// df.groupBy("age").count().show()
-
-var lopscSample = lopsc.takeSample(false, num)
-
-lopscSample.registerTempTable("lopscSample")
-
-// lopsc num tuples = 600037902 == num tuples in lineitem
-
-val p = sqlContext.sql(s"SELECT COUNT(*) AS T FROM lineItem")
-

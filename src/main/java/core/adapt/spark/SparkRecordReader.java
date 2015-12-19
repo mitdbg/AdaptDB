@@ -2,6 +2,7 @@ package core.adapt.spark;
 
 import java.io.IOException;
 
+import core.common.globals.Globals;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -102,7 +103,8 @@ public class SparkRecordReader extends
 	@Override
 	public IteratorRecord getCurrentValue() throws IOException,
 			InterruptedException {
-		return iterator.next();
+		IteratorRecord record = iterator.next();
+		return record;
 	}
 
 	@Override

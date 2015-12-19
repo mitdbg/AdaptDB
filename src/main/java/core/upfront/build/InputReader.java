@@ -196,11 +196,11 @@ public class InputReader {
 						}
 
 						if (writer != null) {
-							key.setBytes(byteArray, previous, byteArrayIdx - previous);
+							key.setBytes(byteArray, previous, byteArrayIdx - previous + 1);
 							startTime = System.nanoTime();
 							String bucketId = index.getBucketId(key).toString();
 							bucketIdTime += System.nanoTime() - startTime;
-							writer.writeToPartition(bucketId, byteArray, previous, byteArrayIdx - previous);
+							writer.writeToPartition(bucketId, byteArray, previous, byteArrayIdx - previous + 1);
 						}
 					}
 					previous = ++byteArrayIdx;
