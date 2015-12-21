@@ -14,6 +14,7 @@ def setup(mode="server"):
 def fill_cmd(cmd):
     for k in env.conf.keys():
         if type(env.conf[k]) is str:
-            cmd = cmd.replace('$' + k, env.conf[k])
+            cmd = cmd.replace('$' + k + '"',  env.conf[k] + '"')
+            cmd = cmd.replace('$' + k + ' ',  env.conf[k] + ' ')
     return cmd
 

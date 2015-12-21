@@ -16,13 +16,30 @@
 #fab setup:join_part write_partitions
 
 
-fab setup:join_supplier create_table_info
-fab setup:join_supplier bulk_sample_gen
-fab setup:join_supplier create_robust_tree
-fab setup:join_supplier write_partitions
+#fab setup:join_supplier create_table_info
+#fab setup:join_supplier bulk_sample_gen
+#fab setup:join_supplier create_robust_tree
+#fab setup:join_supplier write_partitions
 
 
 #fab setup:join_customer create_table_info
 #fab setup:join_customer bulk_sample_gen
 #fab setup:join_customer create_robust_tree
 #fab setup:join_customer write_partitions
+
+
+fab setup:join_mh create_table_info
+fab setup:join_mh bulk_sample_gen
+fab setup:join_mh create_robust_tree
+fab setup:join_mh write_partitions
+
+fab setup:join_mhl create_table_info
+fab setup:join_mhl bulk_sample_gen
+fab setup:join_mhl create_robust_tree
+fab setup:join_mhl write_partitions
+
+fab setup:join_sf create_table_info
+fab setup:join_sf bulk_sample_gen
+fab setup:join_sf create_robust_tree
+fab setup:join_sf write_partitions
+

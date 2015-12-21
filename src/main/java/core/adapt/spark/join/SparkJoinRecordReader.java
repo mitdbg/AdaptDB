@@ -41,6 +41,7 @@ public class SparkJoinRecordReader extends
     private String dataset1, dataset2;
     private int join_attr1, join_attr2;
     private String dataset1_schema, dataset2_schema, join_schema;
+    private String delimiter;
 
     protected PartitionIterator iter1;
     protected PartitionIterator iter2;
@@ -80,6 +81,8 @@ public class SparkJoinRecordReader extends
 
         dataset1_schema = conf.get("DATASET1_SCHEMA");
         dataset2_schema = conf.get("DATASET2_SCHEMA");
+
+        delimiter =  conf.get("DELIMITER");
 
         join_schema = dataset1_schema + ", " + dataset2_schema;
 
@@ -129,7 +132,7 @@ public class SparkJoinRecordReader extends
 
             //System.out.println("TESTING: " + sparkSplit.getPath(currentFile).toString()  + " does it contain " + dataset2);
 
-            if (sparkSplit.getPath(currentFile).toString().contains(dataset2)) {
+            if (sparkSplit.getPath(currentFile).toString().contains(dataset2 + "/")) { // solve the issue that dataset names share the same prefix
 
                 //System.out.println("NEXT PATH should be " + sparkSplit.getPath(currentFile));
                 break;
@@ -195,7 +198,7 @@ public class SparkJoinRecordReader extends
             byte[] firstRecord = firstRecords.next();
             String part1 = new String(firstRecord, 0, firstRecord.length);
             String part2 = new String(secondRecord, 0, secondRecord.length);
-            value.set(part1 + "|" + part2);
+            value.set(part1 + delimiter + part2);
         }
 
         return hasNext;
