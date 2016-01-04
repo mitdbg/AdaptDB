@@ -21,6 +21,7 @@ public class SparkQuery {
 	protected ConfUtils cfg;
 
 	private String Delimiter = "|";
+	private String joinStrategy = "Heuristic";
 
 	public SparkQuery(ConfUtils config) {
 		this.cfg = config;
@@ -158,6 +159,8 @@ public class SparkQuery {
 		conf.set("JOIN_ATTR2", Integer.toString(join_attr2));
 
 		conf.set("BUDGET", Integer.toString(budget));
+
+		conf.set("JOINALGO", joinStrategy);
 
 		conf.set("DELIMITER", Delimiter);
 

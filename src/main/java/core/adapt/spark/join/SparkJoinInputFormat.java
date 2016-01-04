@@ -63,6 +63,9 @@ public class SparkJoinInputFormat extends
 
     private int budget;
 
+    private String joinStrategy;
+
+
     SparkQueryConf queryConf;
 
     public static class SparkJoinFileSplit extends CombineFileSplit implements
@@ -304,6 +307,8 @@ public class SparkJoinInputFormat extends
 
         budget = Integer.parseInt(conf.get("BUDGET"));
 
+        joinStrategy = conf.get("JOINALGO");
+
         dataset1 = conf.get("DATASET1");
         dataset2 = conf.get("DATASET2");
 
@@ -367,7 +372,13 @@ public class SparkJoinInputFormat extends
 
         //System.out.println("Barrier 4");
 
-        JoinAlgo joinAlgo = new RandomGroup();
+        JoinAlgo joinAlgo = null;
+
+        if(joinStrategy.equals("Random")){
+            joinAlgo = new RandomGroup();
+        } else if (joinStrategy.equals("Heuristic")){
+            joinAlgo = new HeuristicGroup();
+        }
 
         ArrayList<ArrayList<Integer> > splits = joinAlgo.getSplits(dataset1_splits, overlap_chunks, budget);
 

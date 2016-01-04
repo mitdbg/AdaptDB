@@ -6,7 +6,7 @@ import java.util.*;
  * Created by ylu on 1/4/16.
  */
 
-public class HeuristicGroup {
+public class HeuristicGroup implements JoinAlgo {
 
     Random rand = new Random();
 
