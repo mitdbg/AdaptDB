@@ -36,9 +36,7 @@ public class TPCHSparkJoinWorkload {
     private static String[] shipModeVals = new
             String[]{"AIR", "FOB", "MAIL", "RAIL", "REG AIR", "SHIP", "TRUCK"};
 
-    private SparkQuery sq;
 
-    private String Delimiter = "|";
     private int method;
     private int numQueries;
 

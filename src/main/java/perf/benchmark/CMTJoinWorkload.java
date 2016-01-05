@@ -29,22 +29,22 @@ import java.util.*;
 
 public class CMTJoinWorkload {
 
-    public ConfUtils cfg;
+    private ConfUtils cfg;
 
-    public Schema schemaMH, schemaMHL, schemaSF;
-    public String stringMH, stringMHL, stringSF;
+    private Schema schemaMH, schemaMHL, schemaSF;
+    private String stringMH, stringMHL, stringSF;
 
     private String MH = "mh", MHL = "mhl", SF = "sf";
     private Predicate[] EmptyPredicates = {};
 
 
-    int method;
+    private int method;
 
-    int memoryBudget;
+    private int memoryBudget;
 
-    int numQueries;
+    private int numQueries;
 
-    Random rand;
+    private Random rand;
 
     public void setUp() {
         cfg = new ConfUtils(BenchmarkSettings.conf);
@@ -52,23 +52,6 @@ public class CMTJoinWorkload {
 
         // Making things more deterministic.
         rand.setSeed(0);
-
-        //Globals.load(cfg.getHDFS_WORKING_DIR() + "/" + dataset + "/info", HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()));
-
-        //assert Globals.schema != null;
-
-        //System.out.println(Globals.schema);
-
-        // delete query history
-        // Cleanup queries file - to remove past query workload
-        //HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()), cfg.getHDFS_WORKING_DIR() + "/" + dataset + "/queries", false);
-
-        // set up schema
-
-        schemaMH = Schema.createSchema(stringMH);
-        schemaMHL = Schema.createSchema(stringMHL);
-        schemaSF = Schema.createSchema(stringSF);
-
     }
 
 

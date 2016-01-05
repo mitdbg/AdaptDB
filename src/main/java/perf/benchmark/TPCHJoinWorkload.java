@@ -70,19 +70,10 @@ public class TPCHJoinWorkload {
     public void setUp() {
         cfg = new ConfUtils(BenchmarkSettings.conf);
         sq = new SparkQuery(cfg);
-
         rand = new Random();
 
         // Making things more deterministic.
         rand.setSeed(0);
-
-        // set up schema
-
-        schemaCustomer = Schema.createSchema(stringCustomer);
-        schemaLineitem = Schema.createSchema(stringLineitem);
-        schemaOrders = Schema.createSchema(stringOrders);
-        schemaPart = Schema.createSchema(stringPart);
-        schemaSupplier = Schema.createSchema(stringSupplier);
     }
 
 
