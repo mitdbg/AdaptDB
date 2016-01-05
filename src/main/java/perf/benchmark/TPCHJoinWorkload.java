@@ -69,20 +69,12 @@ public class TPCHJoinWorkload {
 
     public void setUp() {
         cfg = new ConfUtils(BenchmarkSettings.conf);
+        sq = new SparkQuery(cfg);
+
         rand = new Random();
 
         // Making things more deterministic.
         rand.setSeed(0);
-
-        //Globals.load(cfg.getHDFS_WORKING_DIR() + "/" + dataset + "/info", HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()));
-
-        //assert Globals.schema != null;
-
-        //System.out.println(Globals.schema);
-
-        // delete query history
-        // Cleanup queries file - to remove past query workload
-        //HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()), cfg.getHDFS_WORKING_DIR() + "/" + dataset + "/queries", false);
 
         // set up schema
 
@@ -803,8 +795,6 @@ public class TPCHJoinWorkload {
 
     public void runWorkload(int numQueries) {
         int queries[] = {3, 5, 6, 8, 10, 12, 14, 19};
-
-        sq = new SparkQuery(cfg);
 
         for (int i = 0; i < numQueries; i++) {
             int q = queries[rand.nextInt(queries.length)];

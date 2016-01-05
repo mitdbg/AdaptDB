@@ -1,46 +1,20 @@
 package perf.benchmark;
 
-
-import core.adapt.spark.RangePartitioner;
 import core.adapt.spark.SparkQuery;
-import core.adapt.spark.SparkQueryConf;
-import core.common.globals.Schema;
-import core.common.globals.TableInfo;
+
 import core.utils.*;
 
-import org.apache.commons.io.FilenameUtils;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.LongWritable;
-
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
-import org.apache.spark.Partitioner;
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaPairRDD;
 
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.SQLContext;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.*;
 
-import core.adapt.Predicate;
-import core.adapt.Query;
-import core.adapt.Predicate.PREDTYPE;
 import core.utils.TypeUtils.SimpleDate;
-import core.utils.TypeUtils.TYPE;
 
-import core.adapt.iterator.IteratorRecord;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.PairFunction;
-import scala.Tuple2;
-
-import javax.xml.crypto.Data;
-
 
 /**
  * Created by ylu on 1/4/16.
@@ -75,9 +49,7 @@ public class TPCHSparkJoinWorkload {
 
     public void setUp() {
         cfg = new ConfUtils(BenchmarkSettings.conf);
-
         rand = new Random();
-
         // Making things more deterministic.
         rand.setSeed(0);
 
@@ -106,6 +78,54 @@ public class TPCHSparkJoinWorkload {
                 org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
 
         sqlContext = new SQLContext(ctx);
+
+        // Create customer table
+        String customerPath = cfg.getHDFS_WORKING_DIR() + "/" + customer + "/data";
+
+        sqlContext.sql("CREATE TEMPORARY TABLE customer (c_custkey int, c_name string, c_address string, "
+                + "c_phone string, c_acctbal double, c_mktsegment string , c_nation string, c_region string) "
+                + "USING com.databricks.spark.csv "
+                + "OPTIONS (path \"" + customerPath + "\", header \"false\", delimiter \"|\")");
+
+        // Create order table.
+        String ordersPath = cfg.getHDFS_WORKING_DIR() + "/" + orders + "/data";
+
+        sqlContext.sql("CREATE TEMPORARY TABLE orders (o_orderkey int, o_custkey int, "
+                + "o_orderstatus string, o_totalprice double, o_orderdate string, "
+                + "o_orderpriority string, o_clerk string, o_shippriority int) "
+                + "USING com.databricks.spark.csv "
+                + "OPTIONS (path \"" + ordersPath + "\", header \"false\", delimiter \"|\")");
+
+
+        // Create lineitem table.
+        String lineitemPath = cfg.getHDFS_WORKING_DIR() + "/" + lineitem + "/data";
+
+        sqlContext.sql("CREATE TEMPORARY TABLE lineitem (l_orderkey int, l_partkey int, l_suppkey int, "
+                + "l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, "
+                + "l_tax double, l_returnflag string,  l_linestatus string, l_shipdate string, "
+                + "l_commitdate string, l_receiptdate string, l_shipinstruct string, l_shipmode string) "
+                + "USING com.databricks.spark.csv "
+                + "OPTIONS (path \"" + lineitemPath + "\", header \"false\", delimiter \"|\")");
+
+        // Create supplier table.
+        String supplierPath = cfg.getHDFS_WORKING_DIR() + "/" + supplier + "/data";
+
+        sqlContext.sql("CREATE TEMPORARY TABLE supplier (s_suppkey int, s_name string, s_address string, "
+                + "s_phone string, s_acctbal double, s_nation string, s_region string) "
+                + "USING com.databricks.spark.csv "
+                + "OPTIONS (path \"" + supplierPath + "\", header \"false\", delimiter \"|\")");
+
+
+
+        // Create path table.
+        String partPath = cfg.getHDFS_WORKING_DIR() + "/" + part + "/data";
+
+        sqlContext.sql("CREATE TEMPORARY TABLE part (p_partkey int, p_name string, p_mfgr string, p_brand string, "
+                + "p_type string, p_size int, p_container string, p_retailprice double) "
+                + "USING com.databricks.spark.csv "
+                + "OPTIONS (path \"" + partPath + "\", header \"false\", delimiter \"|\")");
+
+
     }
 
 
@@ -148,7 +168,6 @@ public class TPCHSparkJoinWorkload {
      */
 
     public void tpch3() {
-
         int rand_3 = rand.nextInt(mktSegmentVals.length);
         String c_mktsegment = mktSegmentVals[rand_3];
         Calendar c = new GregorianCalendar();
@@ -157,7 +176,6 @@ public class TPCHSparkJoinWorkload {
         c.add(Calendar.DAY_OF_MONTH, dateOffset);
         SimpleDate d3 = new SimpleDate(c.get(Calendar.YEAR),
                 c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
-
 
         String customerPredicate = "c_mktsegment <= \"" +  c_mktsegment + "\"";
         String ordersPredicate = "o_orderdate < \"" + d3 + "\"";
@@ -169,37 +187,7 @@ public class TPCHSparkJoinWorkload {
             customerPredicate = "c_mktsegment > \"" + c_mktsegment_prev + "\" and " + customerPredicate;
         }
 
-
-
         long start = System.currentTimeMillis();
-
-        String customerPath = cfg.getHDFS_WORKING_DIR() + "/" + customer + "/data";
-        String ordersPath = cfg.getHDFS_WORKING_DIR() + "/" + orders + "/data";
-        String lineitemPath = cfg.getHDFS_WORKING_DIR() + "/" + lineitem + "/data";
-
-        // Create customer table
-
-        sqlContext.sql("CREATE TEMPORARY TABLE customer (c_custkey int, c_name string, c_address string, "
-                + "c_phone string, c_acctbal double, c_mktsegment string , c_nation string, c_region string) "
-                + "USING com.databricks.spark.csv "
-                + "OPTIONS (path \"" + customerPath + "\", header \"false\", delimiter \"|\")");
-
-        // Create order table.
-        sqlContext.sql("CREATE TEMPORARY TABLE orders (o_orderkey int, o_custkey int, "
-                + "o_orderstatus string, o_totalprice double, o_orderdate string, "
-                + "o_orderpriority string, o_clerk string, o_shippriority int) "
-                + "USING com.databricks.spark.csv "
-                + "OPTIONS (path \"" + ordersPath + "\", header \"false\", delimiter \"|\")");
-
-
-        // Create lineitem table.
-        sqlContext.sql("CREATE TEMPORARY TABLE lineitem (l_orderkey int, l_partkey int, l_suppkey int, "
-                + "l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, "
-                + "l_tax double, l_returnflag string,  l_linestatus string, l_shipdate string, "
-                + "l_commitdate string, l_receiptdate string, l_shipinstruct string, l_shipmode string) "
-                + "USING com.databricks.spark.csv "
-                + "OPTIONS (path \"" + lineitemPath + "\", header \"false\", delimiter \"|\")");
-
 
         System.out.println("SELECT  COUNT(*) "
                 + "FROM lineitem JOIN orders ON l_orderkey = o_orderkey JOIN customer ON o_custkey = c_custkey "
@@ -209,14 +197,8 @@ public class TPCHSparkJoinWorkload {
                 + "FROM lineitem JOIN orders ON l_orderkey = o_orderkey JOIN customer ON o_custkey = c_custkey "
                 + "WHERE " + lineitemPredicate + " and " + ordersPredicate + " and " +  customerPredicate);
 
-
-
-        // 29569
-
-        String result = df.collect()[0].toString();
-
+        String result = df.collect()[0].toString(); // 29569
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
-
     }
 
     /*
@@ -240,7 +222,38 @@ public class TPCHSparkJoinWorkload {
      */
 
     public void tpch5() {
+        int rand_5 = rand.nextInt(regionNameVals.length);
+        String r_name_5 = regionNameVals[rand_5];
+        int year_5 = 1993 + rand.nextInt(5);
+        SimpleDate d5_1 = new SimpleDate(year_5, 1, 1);
+        SimpleDate d5_2 = new SimpleDate(year_5 + 1, 1, 1);
 
+        String customerPredicate = "c_region <= \"" +  r_name_5 + "\"";
+        String supplierPredicate = "s_region <= \"" +  r_name_5 + "\"";
+        String ordersPredicate = "o_orderdate >= \"" + d5_1 + "\" and o_orderdate < \"" + d5_2 + "\"";
+
+        if (rand_5 > 0) {
+            String r_name_prev_5 = regionNameVals[rand_5 - 1];
+            customerPredicate = "c_region > \"" + r_name_prev_5 + "\" and " + customerPredicate;
+            supplierPredicate = "s_region > \"" + r_name_prev_5 + "\" and " + supplierPredicate;
+        }
+
+        long start = System.currentTimeMillis();
+
+        System.out.println("SELECT  COUNT(*) "
+                + "FROM customer JOIN orders ON c_custkey = o_custkey "
+                + "JOIN lineitem ON l_orderkey = o_orderkey "
+                + "JOIN supplier ON l_suppkey = s_suppkey "
+                + "WHERE " + customerPredicate + " and " + ordersPredicate + " and " +  supplierPredicate);
+
+        DataFrame df = sqlContext.sql("SELECT  COUNT(*) "
+                + "FROM customer JOIN orders ON c_custkey = o_custkey "
+                + "JOIN lineitem ON l_orderkey = o_orderkey "
+                + "JOIN supplier ON l_suppkey = s_suppkey "
+                + "WHERE " + customerPredicate + " and " + ordersPredicate + " and " +  supplierPredicate);
+
+        String result = df.collect()[0].toString(); // 35307
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
     /*
@@ -256,7 +269,28 @@ public class TPCHSparkJoinWorkload {
      */
 
     public void tpch6() {
+        int year_6 = 1993 + rand.nextInt(5);
+        SimpleDate d6_1 = new SimpleDate(year_6, 1, 1);
+        SimpleDate d6_2 = new SimpleDate(year_6 + 1, 1, 1);
+        double discount = rand.nextDouble() * 0.07 + 0.02;
+        double quantity = rand.nextInt(2) + 24.0;
 
+        String lineitemPredicate = "l_shipdate >= \"" + d6_1 + "\" and l_shipdate < \"" + d6_2 + "\" and "
+                + " l_discount > " + (discount - 0.01) + " and l_discount <= " + (discount + 0.01)
+                + " and l_quantity <= " + quantity;
+
+        long start = System.currentTimeMillis();
+
+        System.out.println("SELECT  COUNT(*) "
+                + "FROM lineitem "
+                + "WHERE " + lineitemPredicate);
+
+        DataFrame df = sqlContext.sql("SELECT  COUNT(*) "
+                + "FROM lineitem "
+                + "WHERE " + lineitemPredicate);
+
+        String result = df.collect()[0].toString(); // 83063
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
 
@@ -280,7 +314,39 @@ public class TPCHSparkJoinWorkload {
     */
 
     public void tpch8() {
+        int rand_8_1 = rand.nextInt(regionNameVals.length);
+        String r_name_8 = regionNameVals[rand_8_1];
+        SimpleDate d8_1 = new SimpleDate(1995, 1, 1);
+        SimpleDate d8_2 = new SimpleDate(1996, 12, 31);
+        String p_type_8 = partTypeVals[rand.nextInt(partTypeVals.length)];
 
+
+        String customerPredicate = "c_region <= \"" +  r_name_8 + "\"";
+        String ordersPredicate = "o_orderdate >= \"" + d8_1 + "\" and o_orderdate < \"" + d8_2 + "\"";
+        String partPredicate = "p_type = \"" +  p_type_8 + "\"";
+
+
+        if (rand_8_1 > 0) {
+            String r_name_prev_8 = regionNameVals[rand_8_1 - 1];
+            customerPredicate = "c_region > \"" + r_name_prev_8 + "\" and " + customerPredicate;
+        }
+
+        long start = System.currentTimeMillis();
+
+        System.out.println("SELECT  COUNT(*) "
+                + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
+                + "JOIN customer ON c_custkey = o_custkey "
+                + "JOIN part ON l_partkey = p_partkey "
+                + "WHERE " + customerPredicate + " and " + ordersPredicate + " and " +  partPredicate);
+
+        DataFrame df = sqlContext.sql("SELECT  COUNT(*) "
+                + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
+                + "JOIN customer ON c_custkey = o_custkey "
+                + "JOIN part ON l_partkey = p_partkey "
+                + "WHERE " + customerPredicate + " and " + ordersPredicate + " and " +  partPredicate);
+
+        String result = df.collect()[0].toString(); // 0
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
     /*
@@ -302,7 +368,31 @@ public class TPCHSparkJoinWorkload {
 
 
     public void tpch10() {
+        String l_returnflag_10 = "R";
+        String l_returnflag_prev_10 = "N";
+        int year_10 = 1993;
+        int monthOffset = rand.nextInt(24);
+        SimpleDate d10_1 = new SimpleDate(year_10 + monthOffset / 12, monthOffset % 12 + 1, 1);
+        monthOffset = monthOffset + 3;
+        SimpleDate d10_2 = new SimpleDate(year_10 + monthOffset / 12, monthOffset % 12 + 1, 1);
 
+        String ordersPredicate = "o_orderdate >= \"" + d10_1 + "\" and o_orderdate < \"" + d10_2 + "\"";
+        String lineitemPredicate =  "l_returnflag <= \"" + l_returnflag_10 + "\" and l_returnflag > \"" + l_returnflag_prev_10 + "\"";
+
+        long start = System.currentTimeMillis();
+
+        System.out.println("SELECT  COUNT(*) "
+                + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
+                + "JOIN customer ON c_custkey = o_custkey "
+                + "WHERE " + ordersPredicate + " and " + lineitemPredicate);
+
+        DataFrame df = sqlContext.sql("SELECT  COUNT(*) "
+                + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
+                + "JOIN customer ON c_custkey = o_custkey "
+                + "WHERE " + ordersPredicate + " and " + lineitemPredicate);
+
+        String result = df.collect()[0].toString(); // 111918
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
     /*
@@ -321,7 +411,32 @@ public class TPCHSparkJoinWorkload {
      */
 
     public void tpch12() {
+        int rand_12 = rand.nextInt(shipModeVals.length);
+        String shipmode_12 = shipModeVals[rand_12];
+        int year_12 = 1993 + rand.nextInt(5);
+        SimpleDate d12_1 = new SimpleDate(year_12, 1, 1);
+        SimpleDate d12_2 = new SimpleDate(year_12 + 1, 1, 1);
 
+        String lineitemPredicate =  "l_shipmode <= \"" + shipmode_12 + "\" and l_receiptdate >= \"" + d12_1 + "\" and "
+                                + "l_receiptdate < \"" + d12_2 + "\"";
+
+        if (rand_12 > 0) {
+            String shipmode_prev_12 = shipModeVals[rand_12 - 1];
+            lineitemPredicate = "l_shipmode > \"" + shipmode_prev_12 + "\" and " +  lineitemPredicate;
+        }
+
+        long start = System.currentTimeMillis();
+
+        System.out.println("SELECT  COUNT(*) "
+                + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
+                + "WHERE " + lineitemPredicate);
+
+        DataFrame df = sqlContext.sql("SELECT  COUNT(*) "
+                + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
+                + "WHERE " + lineitemPredicate);
+
+        String result = df.collect()[0].toString(); // 130474
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
     /*
@@ -339,7 +454,26 @@ public class TPCHSparkJoinWorkload {
      */
 
     public void tpch14() {
+        int year_14 = 1993;
+        int monthOffset_14 = rand.nextInt(60);
+        SimpleDate d14_1 = new SimpleDate(year_14 + monthOffset_14 / 12, monthOffset_14 % 12 + 1, 1);
+        monthOffset_14 += 1;
+        SimpleDate d14_2 = new SimpleDate(year_14 + monthOffset_14 / 12, monthOffset_14 % 12 + 1, 1);
 
+        String lineitemPredicate =  "l_shipdate >= \"" + d14_1 + "\" and l_shipdate < \"" + d14_2 + "\"";
+
+        long start = System.currentTimeMillis();
+
+        System.out.println("SELECT  COUNT(*) "
+                + "FROM lineitem JOIN part ON  l_partkey = p_partkey "
+                + "WHERE " + lineitemPredicate);
+
+        DataFrame df = sqlContext.sql("SELECT  COUNT(*) "
+                + "FROM lineitem JOIN part ON  l_partkey = p_partkey "
+                + "WHERE " + lineitemPredicate);
+
+        String result = df.collect()[0].toString(); // 76860
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
     /*
@@ -362,15 +496,33 @@ public class TPCHSparkJoinWorkload {
      */
 
     public void tpch19() {
+        String brand_19 = "Brand#" + (rand.nextInt(5) + 1) + "" + (rand.nextInt(5) + 1);
+        String shipInstruct_19 = "DELIVER IN PERSON";
+        double quantity_19 = rand.nextInt(10) + 1;
 
+        String lineitemPredicate = "l_shipinstruct = \"" + shipInstruct_19 + "\" and l_quantity > "  + quantity_19;
+        String partPredicate = "p_brand = \"" + brand_19 + "\" and p_container = \"SM CASE\"";
+        quantity_19 += 10;
+
+        lineitemPredicate = lineitemPredicate + " and l_quantity <= " +  quantity_19 + " and l_shipmode <= \"AIR\"";
+        partPredicate = partPredicate + " and p_size >= 1 and p_size <= 5";
+
+        long start = System.currentTimeMillis();
+
+        System.out.println("SELECT  COUNT(*) "
+                + "FROM lineitem JOIN part ON  l_partkey = p_partkey "
+                + "WHERE " + lineitemPredicate + " and " + partPredicate);
+
+        DataFrame df = sqlContext.sql("SELECT  COUNT(*) "
+                + "FROM lineitem JOIN part ON  l_partkey = p_partkey "
+                + "WHERE " + lineitemPredicate + " and " + partPredicate);
+
+        String result = df.collect()[0].toString(); // 10
+        System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
     public void runWorkload(int numQueries) {
         int queries[] = {3, 5, 6, 8, 10, 12, 14, 19};
-
-        tpch3();
-        if (true)
-            return;
 
         for (int i = 0; i < numQueries; i++) {
             int q = queries[rand.nextInt(queries.length)];
