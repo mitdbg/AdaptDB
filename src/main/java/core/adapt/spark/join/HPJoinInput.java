@@ -79,19 +79,19 @@ public class HPJoinInput {
 
     // utility methods
 
-    public Path[] getPaths(ArrayList<Integer> partitionIds) {
-        Path[] splitFilesArr = new Path[partitionIds.size()];
+    public Path[] getPaths(int[] partitionIds) {
+        Path[] splitFilesArr = new Path[partitionIds.length];
         for (int i = 0; i < splitFilesArr.length; i++)
-            splitFilesArr[i] = partitionIdFileMap.get(partitionIds.get(i)).getPath();
+            splitFilesArr[i] = partitionIdFileMap.get(partitionIds[i]).getPath();
         return splitFilesArr;
     }
 
 
 
-    public long[] getLengths(ArrayList<Integer>  partitionIds) {
-        long[] lengthsArr = new long[partitionIds.size()];
+    public long[] getLengths(int[]  partitionIds) {
+        long[] lengthsArr = new long[partitionIds.length];
         for (int i = 0; i < lengthsArr.length; i++)
-            lengthsArr[i] = partitionIdFileMap.get(partitionIds.get(i)).getLen();
+            lengthsArr[i] = partitionIdFileMap.get(partitionIds[i]).getLen();
         return lengthsArr;
     }
 

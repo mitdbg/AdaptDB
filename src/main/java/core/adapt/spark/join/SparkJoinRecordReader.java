@@ -40,8 +40,8 @@ public class SparkJoinRecordReader extends
 
     private String dataset1, dataset2;
     private int join_attr1, join_attr2;
-    private String dataset1_schema, dataset2_schema, join_schema;
-    private String delimiter;
+    private int partitionKey;
+    private String delimiter, splitter;
 
     protected PartitionIterator iter1;
     protected PartitionIterator iter2;
@@ -53,7 +53,7 @@ public class SparkJoinRecordReader extends
 
     LongWritable key;
     Text value;
-    Long partitionKey;
+
 
     boolean hasNext;
 
@@ -68,10 +68,12 @@ public class SparkJoinRecordReader extends
                 .get(SparkQueryConf.ZOOKEEPER_HOSTS));
 
         sparkSplit = (SparkJoinFileSplit) split;
-        Path[] paths = sparkSplit.getPaths();
+
 
         join_attr1 = Integer.parseInt(conf.get("JOIN_ATTR1"));
         join_attr2 = Integer.parseInt(conf.get("JOIN_ATTR2"));
+
+        partitionKey = Integer.parseInt(conf.get("PARTITION_KEY"));
 
         dataset1 = conf.get("DATASET1");
         dataset2 = conf.get("DATASET2");
@@ -79,25 +81,26 @@ public class SparkJoinRecordReader extends
         tupleCountInTable1 = 0;
         tupleCountInTable2 = 0;
 
-        dataset1_schema = conf.get("DATASET1_SCHEMA");
-        dataset2_schema = conf.get("DATASET2_SCHEMA");
-
         delimiter =  conf.get("DELIMITER");
-
-        join_schema = dataset1_schema + ", " + dataset2_schema;
+        if (delimiter.equals("|"))
+            splitter = "\\|";
+        else
+            splitter = delimiter;
 
         hashTable = ArrayListMultimap.create();
         iter1 = sparkSplit.getFirstIterator();
         iter2 = sparkSplit.getSecondIterator();
 
-        System.out.println(">>> get join resultsfrom the following files: ");
-
-        for (Path p : paths) {
-            System.out.println(p);
-        }
 
         key = new LongWritable();
         value = new Text();
+
+        Path[] paths = sparkSplit.getPaths();
+
+        System.out.println("[Info] chunks to join");
+        for(int i = 0; i< paths.length; i ++){
+            System.out.println(paths[i].toString());
+        }
 
 
         // build hashtable
@@ -170,8 +173,6 @@ public class SparkJoinRecordReader extends
                         secondRecord = r.getBytes();
                         hasNext = true;
 
-                        partitionKey = (long)key; // set it to join key for testing only
-
                         break;
                     }
                 } else {
@@ -193,12 +194,12 @@ public class SparkJoinRecordReader extends
         getNext();
 
         if (hasNext) {
-            key.set(partitionKey);
-
             byte[] firstRecord = firstRecords.next();
             String part1 = new String(firstRecord, 0, firstRecord.length);
             String part2 = new String(secondRecord, 0, secondRecord.length);
-            value.set(part1 + delimiter + part2);
+            String strValue = part1 + delimiter + part2;
+            key.set(Long.parseLong(strValue.split(splitter)[partitionKey]));
+            value.set(strValue);
         }
 
         return hasNext;

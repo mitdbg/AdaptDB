@@ -5,6 +5,7 @@ import core.adapt.Query;
 import core.adapt.iterator.IteratorRecord;
 import core.adapt.spark.RangePartitioner;
 import core.adapt.spark.SparkQuery;
+import core.adapt.spark.join.SparkJoinQuery;
 import core.common.globals.Schema;
 import core.common.globals.TableInfo;
 import core.utils.ConfUtils;
@@ -225,7 +226,7 @@ public class CMTJoinWorkload {
 
         ArrayList<ArrayList<Query>> queries = generateWorkload();
 
-        SparkQuery sq = new SparkQuery(cfg);
+        SparkJoinQuery sq = new SparkJoinQuery(cfg);
         sq.setDelimiter(";");
 
         for (ArrayList<Query> q: queries) {
@@ -245,7 +246,7 @@ public class CMTJoinWorkload {
             Schema schemaMHL_join_MH = Schema.createSchema(stringMHL_join_MH);
 
             JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(MHL, stringMHL, new Query(MHL, EmptyPredicates), schemaMHL.getAttributeId("mhl_mapmatch_history_id"), "NULL",
-                    MH, stringMH, q_mh, schemaMH.getAttributeId("mh_id"), "NULL", memoryBudget);
+                    MH, stringMH, q_mh, schemaMH.getAttributeId("mh_id"), "NULL",schemaMHL_join_MH.getAttributeId("mhl_dataset_id"),  memoryBudget);
 
             String cutPoints = sq.getCutPoints(SF, 0); // long[] = {1, 2, 3};
 
@@ -264,7 +265,7 @@ public class CMTJoinWorkload {
             postProcessing(dest, mhl_join_mh, schemaMHL_join_MH);
 
             rdd = sq.createJoinScanRDD(SF, stringSF, q_sf, schemaSF.getAttributeId("sf_id"), "NULL",
-                    mhl_join_mh, stringMHL_join_MH, new Query(mhl_join_mh, EmptyPredicates), schemaMHL_join_MH.getAttributeId("mhl_dataset_id"), cutPoints, memoryBudget);
+                    mhl_join_mh, stringMHL_join_MH, new Query(mhl_join_mh, EmptyPredicates), schemaMHL_join_MH.getAttributeId("mhl_dataset_id"), cutPoints,0, memoryBudget);
 
             result = rdd.count();
 
