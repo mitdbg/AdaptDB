@@ -20,7 +20,7 @@ def run_tpchsparkjoin():
         submit_script_path = "/home/mdindex/spark-1.6.0-bin-hadoop2.6/bin/spark-submit"
         cmd = submit_script_path + ' --class perf.benchmark.TPCHSparkJoinWorkload --deploy-mode client --master spark://128.30.77.88:7077 $JAR ' + \
             ' --numQueries 10' + \
-            ' --method 1' + \
+            ' --method 12' + \
             ' --conf $CONF  > ~/logs/join_workload.log'
         cmd = fill_cmd(cmd)
         run(cmd)
@@ -36,7 +36,6 @@ def run_cmtsparkjoin():
         cmd = fill_cmd(cmd)
         run(cmd)
 
-
 @roles('master')
 def run_tpchjoin():
     with cd(env.conf['HADOOPBIN']):
@@ -47,7 +46,6 @@ def run_tpchjoin():
             ' --schemaCustomer "$SCHEMACUSTOMER"' + \
             ' --schemaPart "$SCHEMAPART"' + \
             ' --schemaSupplier "$SCHEMASUPPLIER"' + \
-            ' --budget 2' + \
             ' --numQueries 10' + \
             ' --method 2' + \
             ' --conf $CONF  > ~/logs/join_workload.log'

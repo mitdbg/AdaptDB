@@ -41,8 +41,6 @@ public class CMTJoinWorkload {
 
     private int method;
 
-    private int memoryBudget;
-
     private int numQueries;
 
     private Random rand;
@@ -81,10 +79,6 @@ public class CMTJoinWorkload {
                     break;
                 case "--numQueries":
                     numQueries = Integer.parseInt(args[counter + 1]);
-                    counter += 2;
-                    break;
-                case "--budget":
-                    memoryBudget = Integer.parseInt(args[counter + 1]);
                     counter += 2;
                     break;
                 default:
@@ -246,7 +240,7 @@ public class CMTJoinWorkload {
             Schema schemaMHL_join_MH = Schema.createSchema(stringMHL_join_MH);
 
             JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(MHL, stringMHL, new Query(MHL, EmptyPredicates), schemaMHL.getAttributeId("mhl_mapmatch_history_id"), "NULL",
-                    MH, stringMH, q_mh, schemaMH.getAttributeId("mh_id"), "NULL",schemaMHL_join_MH.getAttributeId("mhl_dataset_id"),  memoryBudget);
+                    MH, stringMH, q_mh, schemaMH.getAttributeId("mh_id"), "NULL",schemaMHL_join_MH.getAttributeId("mhl_dataset_id"));
 
             String cutPoints = sq.getCutPoints(SF, 0); // long[] = {1, 2, 3};
 
@@ -265,7 +259,7 @@ public class CMTJoinWorkload {
             postProcessing(dest, mhl_join_mh, schemaMHL_join_MH);
 
             rdd = sq.createJoinScanRDD(SF, stringSF, q_sf, schemaSF.getAttributeId("sf_id"), "NULL",
-                    mhl_join_mh, stringMHL_join_MH, new Query(mhl_join_mh, EmptyPredicates), schemaMHL_join_MH.getAttributeId("mhl_dataset_id"), cutPoints,0, memoryBudget);
+                    mhl_join_mh, stringMHL_join_MH, new Query(mhl_join_mh, EmptyPredicates), schemaMHL_join_MH.getAttributeId("mhl_dataset_id"), cutPoints,0);
 
             result = rdd.count();
 

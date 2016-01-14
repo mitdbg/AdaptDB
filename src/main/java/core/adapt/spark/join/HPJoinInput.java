@@ -5,10 +5,7 @@ package core.adapt.spark.join;
  */
 
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.avro.generic.GenericData;
 import org.apache.commons.io.FilenameUtils;
@@ -29,6 +26,7 @@ public class HPJoinInput {
 
     protected AccessMethod am;
     protected Map<Integer, FileStatus> partitionIdFileMap;
+    protected Map<Integer, Long> partitionIdSizeMap;
     protected boolean MDIndexInput;
 
 
@@ -43,6 +41,7 @@ public class HPJoinInput {
 
     public void initialize(List<FileStatus> files) {
         partitionIdFileMap = new HashMap<Integer, FileStatus>();
+        partitionIdSizeMap = new HashMap<Integer, Long>();
         for (FileStatus file : files) {
             System.out.println("FILE: " + file.getPath());
             try {
@@ -54,6 +53,7 @@ public class HPJoinInput {
                     id = Integer.parseInt(fileName.substring(fileName.indexOf('-') + 1));
                 }
                 partitionIdFileMap.put(id, file);
+                partitionIdSizeMap.put(id, file.getLen());
             } catch (NumberFormatException e) {
                 e.printStackTrace();
             }
@@ -80,6 +80,7 @@ public class HPJoinInput {
     // utility methods
 
     public Path[] getPaths(int[] partitionIds) {
+
         Path[] splitFilesArr = new Path[partitionIds.length];
         for (int i = 0; i < splitFilesArr.length; i++)
             splitFilesArr[i] = partitionIdFileMap.get(partitionIds[i]).getPath();
@@ -88,11 +89,14 @@ public class HPJoinInput {
 
 
 
-    public long[] getLengths(int[]  partitionIds) {
+    public long[] getLengths(int[] partitionIds) {
         long[] lengthsArr = new long[partitionIds.length];
-        for (int i = 0; i < lengthsArr.length; i++)
-            lengthsArr[i] = partitionIdFileMap.get(partitionIds[i]).getLen();
+        for (int i = 0; i < lengthsArr.length; i++) {
+            lengthsArr[i] = partitionIdSizeMap.get(partitionIds[i]);
+        }
         return lengthsArr;
     }
-
+    public Map<Integer, Long> getPartitionIdSizeMap() {
+        return partitionIdSizeMap;
+    }
 }

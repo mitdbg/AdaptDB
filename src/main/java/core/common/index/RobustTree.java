@@ -224,6 +224,26 @@ public class RobustTree implements MDIndex {
 		return root.getBucketId(key);
 	}
 
+
+	private void getAllBucketsHelper(RNode node, ArrayList<Integer> ids){
+		if(node.bucket != null){
+			ids.add(node.bucket.getBucketId());
+			return;
+		}
+		getAllBucketsHelper(node.leftChild, ids);
+		getAllBucketsHelper(node.rightChild, ids);
+	}
+
+	public int[] getAllBuckets(){
+		ArrayList<Integer> ids = new ArrayList<Integer>();
+		getAllBucketsHelper(root, ids);
+		int[] buckets = new int[ids.size()];
+		for(int i = 0 ;i < buckets.length; i ++){
+			buckets[i] = ids.get(i);
+		}
+		return buckets;
+	}
+
 	/***************************************************
 	 ***************** RUNTIME METHODS *****************
 	 ***************************************************/

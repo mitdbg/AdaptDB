@@ -62,7 +62,13 @@ public class SparkScanRecordReader extends
 
         sparkSplit = (SparkFileSplit) split;
 
-        join_attr = Integer.parseInt(conf.get("JOIN_ATTR"));
+        int flag = Integer.parseInt(conf.get("DATASETFLAG"));
+
+        if(flag == 1){
+            join_attr = Integer.parseInt(conf.get("JOIN_ATTR1"));
+        } else {
+            join_attr = Integer.parseInt(conf.get("JOIN_ATTR2"));
+        }
 
         iter = sparkSplit.getIterator();
 
