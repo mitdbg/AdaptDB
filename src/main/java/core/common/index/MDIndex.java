@@ -122,11 +122,15 @@ public interface MDIndex {
 
 	void setMaxBuckets(int maxBuckets);
 
+	int getMaxBuckets();
+
 	/*
 	 *
 	 * The Probe phase of the index
 	 */
 	public void initProbe();
+
+	public void initProbe(int[] dims);
 
 	/**
 	 * Get the bucket id, for a given key, from an existing index.

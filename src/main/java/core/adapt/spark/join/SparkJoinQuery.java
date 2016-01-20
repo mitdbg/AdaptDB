@@ -170,8 +170,11 @@ public class SparkJoinQuery {
         // parallel)
         //queryConf.setMinSplitSize(4294967296l); // 4gb
 
-        queryConf.setMaxSplitSize(134217728);
-        queryConf.setMinSplitSize(33554432);
+        queryConf.setMaxSplitSize(1288490188); // 1.2gb
+        queryConf.setMinSplitSize(858993459); // 0.8gb
+
+        //queryConf.setMaxSplitSize(134217728);
+        //queryConf.setMinSplitSize(33554432);
 
         queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
 
@@ -204,7 +207,7 @@ public class SparkJoinQuery {
 
         String hyperJoinInput = planner.getHyperJoinInput();
 
-        //System.out.println("hyperJoinInput: " + hyperJoinInput);
+        System.out.println("hyperJoinInput: " + hyperJoinInput);
 
         conf.set("DATASETINFO",hyperJoinInput);
 
@@ -216,8 +219,8 @@ public class SparkJoinQuery {
         String input1 = planner.getShuffleJoinInput1();
         String input2 = planner.getShuffleJoinInput2();
 
-        //System.out.println("shuffleInput1: " + input1);
-        //System.out.println("shuffleInput2: " + input2);
+        System.out.println("shuffleInput1: " + input1);
+        System.out.println("shuffleInput2: " + input2);
 
         // set conf input;
         conf.set("DATASETFLAG", "1");

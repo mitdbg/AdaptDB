@@ -52,7 +52,7 @@ public class JoinPlanner {
 
     private ArrayList<PartitionSplit> hyperJoinSplit, shuffleJoinSplit;
 
-    private int threshold = 4;
+    private int threshold = 80000000;
 
 
     public JoinPlanner(Configuration conf) {
@@ -299,7 +299,7 @@ public class JoinPlanner {
     }
 
     private void printStatistics(){
-        System.out.println("Input1: " + dataset1_splits.length + " Input2: " + dataset2_int_splits.length);
+        System.out.println("Input1: " + dataset1_int_splits.length + " Input2: " + dataset2_int_splits.length);
 
         int[] hist = new int[16];
         for (int chunk : overlap_chunks.keySet()) {
@@ -315,6 +315,25 @@ public class JoinPlanner {
         for (int i = 0; i < 16; i++) {
             System.out.println((1 << i) + ": " + hist[i]);
         }
+
+
+
+        int sum = 0;
+
+        for(int i = 0 ;i < dataset1_splits.length; i ++){
+            PartitionSplit split = dataset1_splits[i];
+            int[] chunks = split.getPartitions();
+            HashSet<Integer> set = new HashSet<Integer>();
+            for(int j = 0; j < chunks.length; j ++){
+                for(int k :  overlap_chunks.get(chunks[j])){
+                    set.add(k);
+                }
+            }
+            sum += set.size();
+        }
+
+        System.out.println(sum + " chunks from table 2 are read!");
+
     }
 
     private RobustTree initRobustTree(String path){

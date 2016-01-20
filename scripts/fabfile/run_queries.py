@@ -47,7 +47,7 @@ def run_tpchjoin():
             ' --schemaPart "$SCHEMAPART"' + \
             ' --schemaSupplier "$SCHEMASUPPLIER"' + \
             ' --numQueries 10' + \
-            ' --method 2' + \
+            ' --method 12' + \
             ' --conf $CONF  > ~/logs/join_workload.log'
         cmd = fill_cmd(cmd)
         run(cmd)
