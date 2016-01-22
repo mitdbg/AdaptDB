@@ -155,7 +155,7 @@ public class RNode {
 							goLeft = false;
 						break;
 					case LT:
-						if (TypeUtils.compareTo(p.value, value, type) < 0)
+						if (TypeUtils.compareTo(p.value, value, type) <= 0)
 							goRight = false;
 						break;
 					case EQ:
