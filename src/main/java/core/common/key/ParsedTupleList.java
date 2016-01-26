@@ -64,7 +64,7 @@ public class ParsedTupleList {
 				keyValues[i] = key.getLongAttribute(i);
 				break;
 			case DOUBLE:
-				keyValues[i] = key.getFloatAttribute(i);
+				keyValues[i] = key.getDoubleAttribute(i);
 				break;
 			case DATE:
 				keyValues[i] = key.getDateAttribute(i, new SimpleDate(0, 0, 0));
@@ -136,8 +136,8 @@ public class ParsedTupleList {
 			return new Comparator<Object[]>() {
 				@Override
 				public int compare(Object[] o1, Object[] o2) {
-					return ((Float) o1[attributeIdx])
-							.compareTo((Float) o2[attributeIdx]);
+					return ((Double) o1[attributeIdx])
+							.compareTo((Double) o2[attributeIdx]);
 				}
 			};
 		case DATE:

@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
+import core.adapt.JoinQuery;
 import core.common.globals.TableInfo;
 import core.common.index.JRNode;
 import core.common.index.JoinRobustTree;
@@ -15,7 +16,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
 import core.adapt.Predicate;
-import core.adapt.Query;
 import core.adapt.AccessMethod.PartitionSplit;
 import core.adapt.iterator.PartitionIterator;
 import core.adapt.iterator.PostFilterIterator;
@@ -28,7 +28,7 @@ import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.Pair;
 import core.utils.TypeUtils;
-
+import core.utils.TypeUtils.TYPE;
 /**
  * Created by ylu on 1/21/16.
  */
@@ -52,7 +52,7 @@ public class JoinOptimizer {
     private String hadoopHome;
     private short fileReplicationFactor;
 
-    private List<Query> queryWindow = new ArrayList<Query>();
+    private List<JoinQuery> queryWindow = new ArrayList<JoinQuery>();
 
     public JoinOptimizer(SparkQueryConf cfg) {
         // Working Directory for the Optimizer.
@@ -101,9 +101,9 @@ public class JoinOptimizer {
         return bids;
     }
 
-    public PartitionSplit[] buildAccessPlan(final Query fq) {
+    public PartitionSplit[] buildAccessPlan(JoinQuery fq) {
         List<JRNode> nodes = this.rt.getRoot().search(fq.getPredicates());
-        PartitionIterator pi = new PostFilterIterator(fq);
+        PartitionIterator pi = new PostFilterIterator(fq.castToQuery());
         int[] bids = this.getBidFromRNodes(nodes);
 
         PartitionSplit psplit = new PartitionSplit(bids, pi);
@@ -113,7 +113,7 @@ public class JoinOptimizer {
     }
 
 
-    public PartitionSplit[] buildPlan(final Query q) {
+    public PartitionSplit[] buildPlan(JoinQuery q) {
         this.queryWindow.add(q);
 
         Predicate[] ps = q.getPredicates();
@@ -124,12 +124,14 @@ public class JoinOptimizer {
             choices.add(ps[i]);
         }
 
-        adjustJoinRobustTree(choices, ps);
+        adjustJoinRobustTree(choices, q);
 
         JRNode root = rt.getRoot();
 
         System.out.println("plan.cost: " + root.cost + " plan.benefit: "
                 + root.benefit);
+
+        rt.printTree(); /////////
 
         boolean updated = rt.isUpdated();
 
@@ -158,12 +160,12 @@ public class JoinOptimizer {
         this.persistQueryToDisk(q);
         if (updated) {
             System.out.println("INFO: persist index to disk");
-            this.persistIndexToDisk();
+            //this.persistIndexToDisk();
             for (int i = 0; i < psplits.length; i++) {
                 if (psplits[i].getIterator().getClass() == RepartitionIterator.class) {
                     psplits[i] = new PartitionSplit(
                             psplits[i].getPartitions(),
-                            new RepartitionIterator(q));
+                            new RepartitionIterator(q.castToQuery()));
                 }
             }
         } else {
@@ -173,10 +175,12 @@ public class JoinOptimizer {
         return psplits;
     }
 
-    private void adjustJoinRobustTree(List<Predicate> choices, Predicate[] ps) {
+    private void adjustJoinRobustTree(List<Predicate> choices, JoinQuery q) {
+        Predicate[] ps = q.getPredicates();
         for (Predicate p : ps) {
             adjustJoinRobustTreeForPredicate(rt.getRoot(), p, ps);
         }
+        adjustJoinRobustTreeForJoinAttribute(rt.getRoot(), q);
     }
 
 
@@ -187,12 +191,13 @@ public class JoinOptimizer {
             } else if (node.fullAccessed && node.updated == true) {
                 modifiedBuckets.add(node.bucket.getBucketId());
             }
+        } else {
+            getPartitionSplits_helper(node.leftChild, unmodifiedBuckets, modifiedBuckets);
+            getPartitionSplits_helper(node.rightChild, unmodifiedBuckets, modifiedBuckets);
         }
-        getPartitionSplits_helper(node.leftChild, unmodifiedBuckets, modifiedBuckets);
-        getPartitionSplits_helper(node.rightChild, unmodifiedBuckets, modifiedBuckets);
     }
 
-    private PartitionSplit[] getPartitionSplits(Query q) {
+    private PartitionSplit[] getPartitionSplits(JoinQuery q) {
         List<Integer> unmodifiedBuckets = new ArrayList<Integer>();
         List<Integer> modifiedBuckets = new ArrayList<Integer>();
         JRNode root = rt.getRoot();
@@ -204,7 +209,7 @@ public class JoinOptimizer {
         for (int i = 0; i < unmodifiedBucketsIds.length; i++) {
             unmodifiedBucketsIds[i] = unmodifiedBuckets.get(i);
         }
-        PartitionIterator pi = new PostFilterIterator(q);
+        PartitionIterator pi = new PostFilterIterator(q.castToQuery());
         splits[0] = new PartitionSplit(unmodifiedBucketsIds, pi);
 
 
@@ -212,7 +217,7 @@ public class JoinOptimizer {
         for (int i = 0; i < modifiedBucketsIds.length; i++) {
             modifiedBucketsIds[i] = modifiedBuckets.get(i);
         }
-        PartitionIterator pj = new RepartitionIterator(q);
+        PartitionIterator pj = new RepartitionIterator(q.castToQuery());
         splits[1] = new PartitionSplit(modifiedBucketsIds, pj);
 
         return splits;
@@ -278,17 +283,17 @@ public class JoinOptimizer {
         double numTuples = 0;
 
         for (int i = queryWindow.size() - 1; i >= 0; i--) {
-            Query q = queryWindow.get(i);
+            JoinQuery q = queryWindow.get(i);
             numTuples += getNumTuplesAccessed(changed, q);
         }
 
         return numTuples;
     }
 
-    static float getNumTuplesAccessed(JRNode changed, Query q) {
+    static float getNumTuplesAccessed(JRNode changed, JoinQuery q) {
         // First traverse to parent to see if query accesses node
         // If yes, find the number of tuples accessed.
-        Predicate[] ps = ((Query) q).getPredicates();
+        Predicate[] ps = q.getPredicates();
 
         JRNode node = changed;
         boolean accessed = true;
@@ -371,6 +376,133 @@ public class JoinOptimizer {
         }
     }
 
+
+    private boolean checkIfGoLeft(JRNode node, Predicate[] ps) {
+        boolean goLeft = true;
+        for (int i = 0; i < ps.length; i++) {
+            Predicate pd = ps[i];
+            if (pd.attribute == node.attribute) {
+                switch (pd.predtype) {
+                    case GEQ:
+                        if (TypeUtils
+                                .compareTo(pd.value, node.value, node.type) > 0)
+                            goLeft = false;
+                        break;
+                    case LEQ:
+                        break;
+                    case GT:
+                        if (TypeUtils
+                                .compareTo(pd.value, node.value, node.type) >= 0)
+                            goLeft = false;
+                        break;
+                    case LT:
+                        break;
+                    case EQ:
+                        if (TypeUtils
+                                .compareTo(pd.value, node.value, node.type) > 0)
+                            goLeft = false;
+                        break;
+                }
+            }
+        }
+        return goLeft;
+    }
+
+    private boolean checkIfGoRight(JRNode node, Predicate[] ps) {
+        boolean goRight = true;
+        for (int i = 0; i < ps.length; i++) {
+            Predicate pd = ps[i];
+            if (pd.attribute == node.attribute) {
+                switch (pd.predtype) {
+                    case GEQ:
+                        break;
+                    case LEQ:
+                        if (TypeUtils
+                                .compareTo(pd.value, node.value, node.type) <= 0)
+                            goRight = false;
+                        break;
+                    case GT:
+                        break;
+                    case LT:
+                        if (TypeUtils
+                                .compareTo(pd.value, node.value, node.type) < 0)
+                            goRight = false;
+                        break;
+                    case EQ:
+                        if (TypeUtils
+                                .compareTo(pd.value, node.value, node.type) <= 0)
+                            goRight = false;
+                        break;
+                }
+            }
+        }
+        return goRight;
+    }
+
+    private void partitionSubTreeByJoinAttribute(JRNode node, int joinAttribute, ParsedTupleList sample) {
+        // grab the median, change the atrr and value on the node, then recurse.
+        if (node.bucket != null) {
+            return;
+        }
+
+        sample.sort(joinAttribute);
+
+        List<Object[]> values = sample.getValues();
+        Object medianVal = values.get(values.size() / 2)[joinAttribute];
+
+        node.attribute = joinAttribute;
+        node.value = medianVal;
+        node.type = sample.getTypes()[joinAttribute];
+
+        Pair<ParsedTupleList, ParsedTupleList> halves = sample.splitByMedian(joinAttribute);
+        partitionSubTreeByJoinAttribute(node.leftChild, joinAttribute, halves.first);
+        partitionSubTreeByJoinAttribute(node.rightChild, joinAttribute, halves.second);
+    }
+
+    private void adjustJoinRobustTreeForJoinAttribute(JRNode node, JoinQuery q) {
+        // attributes are from the queryWindow
+        if (node.bucket != null) {
+            // Leaf
+            node.fullAccessed = true;
+            return;
+        } else {
+            // Check if both sides are accessed
+            //boolean goLeft = checkIfGoLeft(node, ps);
+            //boolean goRight = checkIfGoRight(node, ps);
+            if (node.fullAccessed) {
+                // maybe some other condition
+                ParsedTupleList collector = null;
+                // populate the sample
+
+                LinkedList<JRNode> stack = new LinkedList<JRNode>();
+                stack.add(node);
+
+                while (stack.size() > 0) {
+                    JRNode n = stack.removeLast();
+                    if (n.bucket != null) {
+                        ParsedTupleList bucketSample = n.bucket.getSample();
+                        if (collector == null) {
+                            collector = new ParsedTupleList(bucketSample.getTypes());
+                        }
+                        collector.addValues(bucketSample.getValues());
+                    } else {
+                        stack.add(n.rightChild);
+                        stack.add(n.leftChild);
+                    }
+                }
+                // partition the tree by join attributes
+
+                partitionSubTreeByJoinAttribute(node, q.getJoinAttribute(), collector);
+
+            } else {
+                adjustJoinRobustTreeForJoinAttribute(node.leftChild, q);
+                adjustJoinRobustTreeForJoinAttribute(node.rightChild, q);
+            }
+        }
+
+    }
+
+
     private void adjustJoinRobustTreeForPredicate(JRNode node, Predicate choice, Predicate[] ps) {
         // Option Index
         // 1 => Replace
@@ -384,43 +516,8 @@ public class JoinOptimizer {
             Predicate p = choice;
 
             // Check if both sides are accessed
-            boolean goLeft = true;
-            boolean goRight = true;
-            for (int i = 0; i < ps.length; i++) {
-                Predicate pd = ps[i];
-                if (pd.attribute == node.attribute) {
-                    switch (pd.predtype) {
-                        case GEQ:
-                            if (TypeUtils
-                                    .compareTo(pd.value, node.value, node.type) > 0)
-                                goLeft = false;
-                            break;
-                        case LEQ:
-                            if (TypeUtils
-                                    .compareTo(pd.value, node.value, node.type) <= 0)
-                                goRight = false;
-                            break;
-                        case GT:
-                            if (TypeUtils
-                                    .compareTo(pd.value, node.value, node.type) >= 0)
-                                goLeft = false;
-                            break;
-                        case LT:
-                            if (TypeUtils
-                                    .compareTo(pd.value, node.value, node.type) < 0)
-                                goRight = false;
-                            break;
-                        case EQ:
-                            if (TypeUtils
-                                    .compareTo(pd.value, node.value, node.type) <= 0)
-                                goRight = false;
-                            else
-                                goLeft = false;
-                            break;
-                    }
-                }
-            }
-
+            boolean goLeft = checkIfGoLeft(node, ps);
+            boolean goRight = checkIfGoRight(node, ps);
 
             if (goLeft) {
                 adjustJoinRobustTreeForPredicate(node.leftChild, choice, ps);
@@ -430,16 +527,15 @@ public class JoinOptimizer {
                 adjustJoinRobustTreeForPredicate(node.rightChild, choice, ps);
             }
 
-            if (goLeft && goRight) {
+            if (node.leftChild.fullAccessed && node.rightChild.fullAccessed) {
                 node.fullAccessed = true;
-            }
 
-            // When trying to replace by predicate;
-            // Replace by testVal, not the actual predicate value
-            Object testVal = p.getHelpfulCutpoint();
+                // When trying to replace by predicate;
+                // Replace by testVal, not the actual predicate value
+                Object testVal = p.getHelpfulCutpoint();
 
-            // replace attribute by one in the predicate
-            if (node.fullAccessed) {
+                // replace attribute by one in the predicate
+
 
                 // If we traverse to root and see that there is no node with
                 // cutoff point less than
@@ -456,40 +552,51 @@ public class JoinOptimizer {
                 populateBucketEstimates(r);
                 double numAcccessedNew = getNumTuplesAccessed(r);
                 double benefit = numAccessedOld - numAcccessedNew;
+                double cost = this.computeCost(r); // Note that buckets
 
-                if (benefit > 0) {
-                    // TODO: Better cost model ?
-                    double cost = this.computeCost(r); // Note that buckets
+
+                if (benefit < cost) {
+                    // Restore ??
+                    replaceInTree(r, node);
+                    populateBucketEstimates(node);
+                } else {
+                    r.leftChild.updated = true;
+                    r.rightChild.updated = true;
+                }
+
+
+                // Swap down the attribute and bring p above
+
+                if (node.leftChild.bucket == null && node.rightChild.bucket == null &&
+                        node.leftChild.attribute == node.rightChild.attribute &&
+                        node.leftChild.value.equals(node.rightChild.value)) {
+
+                    node.benefit = node.leftChild.benefit + node.rightChild.benefit;
+                    node.cost = node.leftChild.cost + node.rightChild.cost;
+
+                    int attribute = node.attribute;
+                    Object value = node.value;
+                    TYPE type = node.type;
+
+                    // some condition here
+
+                    node.attribute = node.leftChild.attribute;
+                    node.value = node.leftChild.value;
+                    node.type = node.leftChild.type;
+
+                    node.leftChild.attribute = attribute;
+                    node.leftChild.value = value;
+                    node.leftChild.type = type;
+
+                    node.rightChild.attribute = attribute;
+                    node.rightChild.value = value;
+                    node.rightChild.type = type;
 
                 }
 
-                // Restore ??
-                replaceInTree(r, node);
-                populateBucketEstimates(node);
-
             }
 
-            // Swap down the attribute and bring p above
 
-            if(node.leftChild.attribute == node.rightChild.attribute && node.leftChild.value.equals(node.rightChild.value)){
-                node.benefit = node.leftChild.benefit + node.rightChild.benefit;
-                node.cost = node.leftChild.cost + node.rightChild.cost;
-
-                int attribute = node.attribute;
-                Object value = node.value;
-
-                // some condition here
-
-                node.attribute = node.leftChild.attribute;
-                node.value = node.leftChild.value;
-
-                node.leftChild.attribute = attribute;
-                node.leftChild.value = value;
-
-                node.rightChild.attribute = attribute;
-                node.rightChild.value = value;
-
-            }
             return;
         }
     }
@@ -499,10 +606,10 @@ public class JoinOptimizer {
         return WRITE_MULTIPLIER * numTuples;
     }
 
-    public void loadQueries() {
+    public void loadQueries(TableInfo tableInfo) {
         FileSystem fs = HDFSUtils.getFS(hadoopHome
                 + "/etc/hadoop/core-site.xml");
-        String pathToQueries = this.workingDir + "/queries";
+        String pathToQueries = this.workingDir + "/" + tableInfo.tableName + "/queries";
         try {
             if (fs.exists(new Path(pathToQueries))) {
                 byte[] queryBytes = HDFSUtils.readFile(fs, pathToQueries);
@@ -510,7 +617,7 @@ public class JoinOptimizer {
                 Scanner sc = new Scanner(queries);
                 while (sc.hasNextLine()) {
                     String query = sc.nextLine();
-                    Query f = new Query(query);
+                    JoinQuery f = new JoinQuery(query);
                     queryWindow.add(f);
                 }
                 sc.close();
@@ -520,7 +627,7 @@ public class JoinOptimizer {
         }
     }
 
-    private void persistQueryToDisk(Query q) {
+    private void persistQueryToDisk(JoinQuery q) {
         String pathToQueries = this.workingDir + "/" + q.getTable() + "/queries";
         HDFSUtils.safeCreateFile(hadoopHome, pathToQueries,
                 this.fileReplicationFactor);
