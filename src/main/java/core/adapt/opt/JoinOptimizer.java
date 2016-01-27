@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import core.adapt.JoinQuery;
+import core.adapt.spark.join.SparkJoinQueryConf;
 import core.common.globals.TableInfo;
 import core.common.index.JRNode;
 import core.common.index.JoinRobustTree;
@@ -20,7 +21,7 @@ import core.adapt.AccessMethod.PartitionSplit;
 import core.adapt.iterator.PartitionIterator;
 import core.adapt.iterator.PostFilterIterator;
 import core.adapt.iterator.RepartitionIterator;
-import core.adapt.spark.SparkQueryConf;
+
 
 import core.common.index.MDIndex.Bucket;
 import core.common.key.ParsedTupleList;
@@ -54,7 +55,7 @@ public class JoinOptimizer {
 
     private List<JoinQuery> queryWindow = new ArrayList<JoinQuery>();
 
-    public JoinOptimizer(SparkQueryConf cfg) {
+    public JoinOptimizer(SparkJoinQueryConf cfg) {
         // Working Directory for the Optimizer.
         // Each table is a folder under this directory.
         this.workingDir = cfg.getWorkingDir();
@@ -160,7 +161,7 @@ public class JoinOptimizer {
         this.persistQueryToDisk(q);
         if (updated) {
             System.out.println("INFO: persist index to disk");
-            //this.persistIndexToDisk();
+            this.persistIndexToDisk();
             for (int i = 0; i < psplits.length; i++) {
                 if (psplits[i].getIterator().getClass() == RepartitionIterator.class) {
                     psplits[i] = new PartitionSplit(
@@ -442,6 +443,7 @@ public class JoinOptimizer {
     private void partitionSubTreeByJoinAttribute(JRNode node, int joinAttribute, ParsedTupleList sample) {
         // grab the median, change the atrr and value on the node, then recurse.
         if (node.bucket != null) {
+            node.updated = true;
             return;
         }
 
@@ -463,7 +465,6 @@ public class JoinOptimizer {
         // attributes are from the queryWindow
         if (node.bucket != null) {
             // Leaf
-            node.fullAccessed = true;
             return;
         } else {
             // Check if both sides are accessed

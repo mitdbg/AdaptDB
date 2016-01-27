@@ -1,5 +1,6 @@
 package perf.benchmark;
 
+import core.adapt.JoinQuery;
 import core.adapt.Predicate;
 import core.adapt.Query;
 import core.adapt.iterator.IteratorRecord;
@@ -174,20 +175,20 @@ public class CMTJoinWorkload {
 
 
 
-    public ArrayList<ArrayList<Query>> generateWorkload() {
+    public ArrayList<ArrayList<JoinQuery>> generateWorkload() {
         byte[] stringBytes = HDFSUtils.readFile(
                 HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
                 "/user/mdindex/cmt_queries.log");
         String queriesString = new String(stringBytes);
         String[] queries = queriesString.split("\n");
-        ArrayList<ArrayList<Query>> ret = new ArrayList<ArrayList<Query>>();
+        ArrayList<ArrayList<JoinQuery>> ret = new ArrayList<ArrayList<JoinQuery>>();
         for (int i=0; i<queries.length; i++) {
             String query = queries[i];
             String[] predicates = query.split(";");
             ArrayList<Predicate> mhPreds = new ArrayList<Predicate>();
             ArrayList<Predicate> sfPreds = new ArrayList<Predicate>();
 
-            ArrayList<Query> q = new ArrayList<Query>();
+            ArrayList<JoinQuery> q = new ArrayList<JoinQuery>();
 
             for (int j=0; j<predicates.length; j++) {
                 if(predicates[j].startsWith(MH)){
@@ -202,8 +203,8 @@ public class CMTJoinWorkload {
             Predicate[] mhArray = mhPreds.toArray(new Predicate[mhPreds.size()]);
             Predicate[] sfArray = sfPreds.toArray(new Predicate[sfPreds.size()]);
 
-            Query q_mh = new Query(MH, mhArray);
-            Query q_sf = new Query(SF, sfArray);
+            JoinQuery q_mh = new JoinQuery(MH, schemaMH.getAttributeId("mh_id"),  mhArray);
+            JoinQuery q_sf = new JoinQuery(SF, schemaSF.getAttributeId("sf_id"), sfArray);
 
             q.add(q_mh);
             q.add(q_sf);
@@ -218,15 +219,15 @@ public class CMTJoinWorkload {
     // sf ⋈ (mhl ⋈ mh)
     public void runWorkload(){
 
-        ArrayList<ArrayList<Query>> queries = generateWorkload();
+        ArrayList<ArrayList<JoinQuery>> queries = generateWorkload();
 
         SparkJoinQuery sq = new SparkJoinQuery(cfg);
         sq.setDelimiter(";");
 
-        for (ArrayList<Query> q: queries) {
+        for (ArrayList<JoinQuery> q: queries) {
 
-            Query q_mh = q.get(0);
-            Query q_sf = q.get(1);
+            JoinQuery q_mh = q.get(0);
+            JoinQuery q_sf = q.get(1);
 
             System.out.println("INFO: Query_MH:" + q_mh.toString());
             System.out.println("INFO: Query_sf:" + q_sf.toString());
@@ -239,8 +240,7 @@ public class CMTJoinWorkload {
             String stringMHL_join_MH = stringMHL + ", " + stringMH;
             Schema schemaMHL_join_MH = Schema.createSchema(stringMHL_join_MH);
 
-            JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(MHL, stringMHL, new Query(MHL, EmptyPredicates), schemaMHL.getAttributeId("mhl_mapmatch_history_id"), "NULL",
-                    MH, stringMH, q_mh, schemaMH.getAttributeId("mh_id"), "NULL",schemaMHL_join_MH.getAttributeId("mhl_dataset_id"));
+            JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(MHL, new JoinQuery(MHL, schemaMHL.getAttributeId("mhl_mapmatch_history_id"), EmptyPredicates), "NULL", MH, q_mh, "NULL",schemaMHL_join_MH.getAttributeId("mhl_dataset_id"));
 
             String cutPoints = sq.getCutPoints(SF, 0); // long[] = {1, 2, 3};
 
@@ -258,8 +258,7 @@ public class CMTJoinWorkload {
 
             postProcessing(dest, mhl_join_mh, schemaMHL_join_MH);
 
-            rdd = sq.createJoinScanRDD(SF, stringSF, q_sf, schemaSF.getAttributeId("sf_id"), "NULL",
-                    mhl_join_mh, stringMHL_join_MH, new Query(mhl_join_mh, EmptyPredicates), schemaMHL_join_MH.getAttributeId("mhl_dataset_id"), cutPoints,0);
+            rdd = sq.createJoinScanRDD(SF, q_sf , "NULL", mhl_join_mh, new JoinQuery(mhl_join_mh,schemaMHL_join_MH.getAttributeId("mhl_dataset_id"), EmptyPredicates), cutPoints,0);
 
             result = rdd.count();
 

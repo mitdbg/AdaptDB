@@ -6,7 +6,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
 import core.adapt.AccessMethod;
-import core.adapt.Query;
+import core.adapt.JoinQuery;
+
 
 import core.adapt.iterator.PartitionIterator;
 import core.adapt.iterator.PostFilterIterator;
@@ -35,9 +36,9 @@ import java.util.*;
 public class JoinPlanner {
     FileSystem fs;
 
-    private SparkQueryConf queryConf;
+    private SparkJoinQueryConf queryConf;
     private String dataset1, dataset2;
-    private Query dataset1_query, dataset2_query;
+    private JoinQuery dataset1_query, dataset2_query;
     private int[] dataset1_cutpoints, dataset2_cutpoints;
     private boolean dataset1_MDIndex, dataset2_MDIndex;
     private RobustTree rt1, rt2;
@@ -59,15 +60,15 @@ public class JoinPlanner {
 
         System.out.println("INFO: in JoinPlanner constructor");
 
-        queryConf = new SparkQueryConf(conf);
+        queryConf = new SparkJoinQueryConf(conf);
 
         fs = HDFSUtils.getFS(queryConf.getHadoopHome() + "/etc/hadoop/core-site.xml");
 
         dataset1 = conf.get("DATASET1");
         dataset2 = conf.get("DATASET2");
 
-        dataset1_query = new Query(conf.get("DATASET1_QUERY"));
-        dataset2_query = new Query(conf.get("DATASET2_QUERY"));
+        dataset1_query = new JoinQuery(conf.get("DATASET1_QUERY"));
+        dataset2_query = new JoinQuery(conf.get("DATASET2_QUERY"));
 
         //System.out.println("INFO Dataset|Query: " + dataset1 + " " + dataset1_query);
         //System.out.println("INFO Dataset|Query: " + dataset2 + " " + dataset2_query);
@@ -82,8 +83,8 @@ public class JoinPlanner {
         //System.out.println("INFO working dir: " + workingDir);
 
 
-        AccessMethod dataset1_am = new AccessMethod();
-        AccessMethod dataset2_am = new AccessMethod();
+        JoinAccessMethod dataset1_am = new JoinAccessMethod();
+        JoinAccessMethod dataset2_am = new JoinAccessMethod();
 
         // if there are no cutpoints, we read ranges from MDIndex.
 
@@ -98,7 +99,7 @@ public class JoinPlanner {
         // init RobustTree
         rt1 = initRobustTree(queryConf.getWorkingDir() + "/" + dataset1);
 
-        queryConf.setQuery(dataset1_query);
+        queryConf.setJoinQuery(dataset1_query);
         dataset1_am.init(queryConf);
         dataset1_hpinput.initialize(listStatus(input_dir), dataset1_am);
 
@@ -119,7 +120,7 @@ public class JoinPlanner {
         if (dataset2_MDIndex) {
             // init RobustTree
             rt2 = initRobustTree(queryConf.getWorkingDir() + "/" + dataset2);
-            queryConf.setQuery(dataset2_query);
+            queryConf.setJoinQuery(dataset2_query);
             dataset2_am.init(queryConf);
             dataset2_hpinput.initialize(listStatus(input_dir), dataset2_am);
             dataset2_int_splits = expandPartitionSplit(dataset2_am.getPartitionSplits(dataset2_query, true));
@@ -255,11 +256,11 @@ public class JoinPlanner {
         return sb.toString();
     }
 
-    public Query getDataset1_query(){
+    public JoinQuery getDataset1_query(){
         return dataset1_query;
     }
 
-    public Query getDataset2_query(){
+    public JoinQuery getDataset2_query(){
         return dataset2_query;
     }
 
