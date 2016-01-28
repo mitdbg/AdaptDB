@@ -31,8 +31,8 @@ import core.utils.HDFSUtils;
  */
 
 public class JoinAccessMethod {
-    JoinOptimizer opt;
-    RawIndexKey key;
+    public JoinOptimizer opt;
+    public RawIndexKey key;
 
     /**
      * Initialize hyper-partitioning data access.

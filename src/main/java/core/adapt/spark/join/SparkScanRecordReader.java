@@ -1,9 +1,11 @@
 package core.adapt.spark.join;
 
 import core.adapt.HDFSPartition;
+import core.adapt.Query;
 import core.adapt.iterator.IteratorRecord;
+import core.adapt.iterator.JoinRepartitionIterator;
 import core.adapt.iterator.PartitionIterator;
-import core.adapt.spark.SparkInputFormat.SparkFileSplit;
+import core.adapt.iterator.PostFilterIterator;
 import core.adapt.spark.SparkQueryConf;
 import core.utils.CuratorUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -15,6 +17,8 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import core.adapt.spark.join.SparkScanInputFormat.SparkScanFileSplit;
+
 
 import java.io.IOException;
 
@@ -25,20 +29,22 @@ public class SparkScanRecordReader extends
         RecordReader<LongWritable, Text> {
 
     private Configuration conf;
-    private SparkFileSplit sparkSplit;
+    private SparkQueryConf queryConf;
+    private SparkScanFileSplit sparkSplit;
     private CuratorFramework client;
     private PartitionIterator iter;
     private int join_attr;
     private int tupleCountInTable; // test only
-
+    private int[] types;
     private LongWritable key;
     private Text value;
+    private Query query;
 
     private boolean hasNext;
 
     private int currentFile;
 
-    void setPartitionToIterator(Path path, PartitionIterator it) {
+    void setPartitionToIterator(Path path) {
         FileSystem fs = null;
         try {
             fs = path.getFileSystem(conf);
@@ -50,43 +56,51 @@ public class SparkScanRecordReader extends
                 Short.parseShort(conf.get(SparkQueryConf.HDFS_REPLICATION_FACTOR)),
                 client);
         partition.loadNext(); // ???
-        it.setPartition(partition);
+
+        if(currentFile > 0){
+            iter.finish();
+        }
+        if(types[currentFile] == 1){
+            iter = new PostFilterIterator(query);
+        } else {
+            iter = new JoinRepartitionIterator(query);
+            ((JoinRepartitionIterator) iter).setZookeeper(queryConf.getZookeeperHosts());
+        }
+
+        iter.setPartition(partition);
+
     }
 
     @Override
     public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
 
         conf = context.getConfiguration();
+        queryConf = new SparkQueryConf(conf);
         client = CuratorUtils.createAndStartClient(conf
                 .get(SparkQueryConf.ZOOKEEPER_HOSTS));
 
-        sparkSplit = (SparkFileSplit) split;
+        sparkSplit = (SparkScanFileSplit) split;
 
         int flag = Integer.parseInt(conf.get("DATASETFLAG"));
 
         if(flag == 1){
             join_attr = Integer.parseInt(conf.get("JOIN_ATTR1"));
+            query =  new Query(conf.get("DATASET1_QUERY"));
         } else {
             join_attr = Integer.parseInt(conf.get("JOIN_ATTR2"));
+            query =  new Query(conf.get("DATASET2_QUERY"));
         }
 
-        iter = sparkSplit.getIterator();
 
         key = new LongWritable();
         value = new Text();
 
         tupleCountInTable = 0;
 
-
-        Path[] paths = sparkSplit.getPaths();
-
-        System.out.println("[Info] chunks to join");
-        for(int i = 0; i< paths.length; i ++){
-            System.out.println(paths[i].toString());
-        }
+        types = sparkSplit.getTypes();
 
         currentFile = 0;
-        setPartitionToIterator(sparkSplit.getPath(currentFile), iter);
+        setPartitionToIterator(sparkSplit.getPath(currentFile));
 
     }
 
@@ -109,7 +123,7 @@ public class SparkScanRecordReader extends
                     hasNext = false;
                     break;
                 } else {
-                    setPartitionToIterator(sparkSplit.getPath(currentFile), iter);
+                    setPartitionToIterator(sparkSplit.getPath(currentFile));
                 }
             }
         }

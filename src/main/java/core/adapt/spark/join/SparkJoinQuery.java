@@ -133,8 +133,6 @@ public class SparkJoinQuery {
         conf.set("DATASET1_QUERY", dataset1_query.toString());
         conf.set("DATASET2_QUERY", dataset2_query.toString());
 
-        conf.set("JOIN_ATTR1", Integer.toString(dataset1_query.getJoinAttribute()));
-        conf.set("JOIN_ATTR2", Integer.toString(dataset2_query.getJoinAttribute()));
         conf.set("PARTITION_KEY", Integer.toString(partitionKey)) ;
 
         conf.set("JOINALGO", joinStrategy);
