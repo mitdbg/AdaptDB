@@ -51,6 +51,7 @@ public class SparkJoinRecordReader extends
     protected PartitionIterator iter1;
     protected PartitionIterator iter2;
     protected int[] types;
+    protected JoinQuery dataset1_joinquery, dataset2_joinquery;
     protected Query dataset2_query;
 
     ArrayListMultimap<Integer, byte[]> hashTable;
@@ -78,11 +79,13 @@ public class SparkJoinRecordReader extends
 
         sparkSplit = (SparkJoinFileSplit) split;
 
+        dataset1_joinquery = new JoinQuery(conf.get("DATASET1_QUERY"));
+        dataset2_joinquery = new JoinQuery(conf.get("DATASET2_QUERY"));
 
-        join_attr1 = Integer.parseInt(conf.get("JOIN_ATTR1"));
-        join_attr2 = Integer.parseInt(conf.get("JOIN_ATTR2"));
+        dataset2_query = dataset2_joinquery.castToQuery();
 
-        dataset2_query = (new JoinQuery(conf.get("DATASET2_QUERY"))).castToQuery();
+        join_attr1 = dataset1_joinquery.getJoinAttribute();
+        join_attr2 = dataset2_joinquery.getJoinAttribute();
 
         partitionKey = Integer.parseInt(conf.get("PARTITION_KEY"));
 
@@ -109,14 +112,12 @@ public class SparkJoinRecordReader extends
 
         build_hashtable();
 
-        //System.out.println("the file is : "+  sparkSplit.getPath(currentFile));
-        setPartitionToSecondIterator(sparkSplit.getPath(currentFile));
 
-        //System.out.println("There are " + hashTable.size() + " records!");
+        setPartitionToSecondIterator(sparkSplit.getPath(currentFile));
 
     }
 
-    void setPartitionToFirstIterator(Path path) {
+    void setPartitionToSecondIterator(Path path) {
         FileSystem fs = null;
         try {
             fs = path.getFileSystem(conf);
@@ -142,7 +143,7 @@ public class SparkJoinRecordReader extends
         iter2.setPartition(partition);
     }
 
-    void setPartitionToSecondIterator(Path path) {
+    void setPartitionToFirstIterator(Path path) {
         FileSystem fs = null;
         try {
             fs = path.getFileSystem(conf);
@@ -166,7 +167,7 @@ public class SparkJoinRecordReader extends
             if (sparkSplit.getPath(currentFile).toString().contains(dataset2 + "/")) { // solve the issue that dataset names share the same prefix
                 iter1.finish();
                 numFilesinDataset1 = currentFile;
-                //System.out.println("NEXT PATH should be " + sparkSplit.getPath(currentFile));
+
                 break;
             }
 
@@ -182,9 +183,6 @@ public class SparkJoinRecordReader extends
                 hashTable.put(key, rawBytes);
             }
         }
-
-
-
     }
 
     private void getNext() {

@@ -80,8 +80,8 @@ public class SparkJoinQuery {
         queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
         queryConf.setHadoopHome(cfg.getHADOOP_HOME());
         queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
-        queryConf.setMaxSplitSize(1288490188); // 1.2gb
-        queryConf.setMinSplitSize(858993459); // 0.8gb
+        queryConf.setMaxSplitSize(128849018); // 0.12gb
+        queryConf.setMinSplitSize(85899345); // 0.08gb
 
 
     }
@@ -119,7 +119,6 @@ public class SparkJoinQuery {
 
         String hdfsPath = cfg.getHDFS_WORKING_DIR();
 
-        queryConf.setFullScan(true);
         queryConf.setWorkingDir(hdfsPath);
 
         Configuration conf = ctx.hadoopConfiguration();
@@ -173,8 +172,6 @@ public class SparkJoinQuery {
         JavaPairRDD<LongWritable, Text> dataset2RDD = createSingleTableScanRDD(hdfsPath, dataset2_query);
 
         JavaPairRDD<LongWritable, Text> shufflejoinRDD = dataset1RDD.join(dataset2RDD).mapToPair(new Mapper(Delimiter, partitionKey));
-
-        System.out.println("Table 1 count: " + dataset1RDD.count()  + " Table 2 count: " + dataset2RDD.count());
 
         JavaPairRDD<LongWritable, Text> rdd = hyperjoinRDD.union(shufflejoinRDD);
 

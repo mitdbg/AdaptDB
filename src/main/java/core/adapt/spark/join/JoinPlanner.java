@@ -56,7 +56,7 @@ public class JoinPlanner {
 
     private ArrayList<PartitionSplit> hyperJoinSplit, shuffleJoinSplit;
 
-    private int threshold = 80000000;
+    private int threshold = 0;
 
 
     public JoinPlanner(Configuration conf) {
@@ -113,6 +113,8 @@ public class JoinPlanner {
 
         // optimize for the JoinRobustTree
 
+        System.out.println("Optimizing dataset 1");
+
         if (dataset1_MDIndex) {
             dataset1_splits = dataset1_hpinput.getIndexScan(queryConf.getJustAccess(), dataset1_query);
         } else {
@@ -120,13 +122,19 @@ public class JoinPlanner {
         }
         dataset1_splits = resizeSplits(dataset1_splits, dataset1_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize(), queryConf.getMinSplitSize());
 
+        System.out.println("Optimizing dataset 2");
+
         if (dataset2_MDIndex) {
             dataset2_splits = dataset2_hpinput.getIndexScan(queryConf.getJustAccess(), dataset2_query);
         } else {
             dataset2_splits = getPartitionSplits(dataset2_int_splits, dataset2_query);
         }
 
+        System.out.println("init iteratorType");
+
         init_iteratorType(dataset2_splits);
+
+        System.out.println("print stats");
 
         printStatistics();
 
@@ -169,7 +177,7 @@ public class JoinPlanner {
             } else {
                 type = 2;
             }
-            for(int j = 0; j < bids.length; i ++){
+            for(int j = 0; j < bids.length; j ++){
                 iteratorType.put(bids[j], type);
             }
         }

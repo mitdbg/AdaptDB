@@ -29,7 +29,6 @@ public class SparkScanInputFormat extends FileInputFormat<LongWritable, Text> im
     private static int split_size = 2;
 
     private String dataset;
-    private Query query;
 
     private int flag; // 1 for split, 2 for data bucket id
     private Configuration conf;
@@ -97,8 +96,6 @@ public class SparkScanInputFormat extends FileInputFormat<LongWritable, Text> im
         } else {
             dataset = conf.get("DATASET2");
         }
-
-        query = queryConf.getQuery();
 
         String dataset_info = conf.get("DATASETINFO");
 

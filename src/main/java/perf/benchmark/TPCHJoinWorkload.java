@@ -777,6 +777,33 @@ public class TPCHJoinWorkload {
                 System.out.println("Num Queries: " + t.numQueries);
                 t.runWorkload(t.numQueries);
                 break;
+            case 2:
+                System.out.println("Run TPCH-3");
+                t.rand.setSeed(0);
+                t.tpch3();
+                System.out.println("Run TPCH-5");
+                t.rand.setSeed(0);
+                t.tpch5();
+                System.out.println("Run TPCH-8");
+                t.rand.setSeed(0);
+                t.tpch8();
+                System.out.println("Run TPCH-10");
+                t.rand.setSeed(0);
+                t.tpch10();
+                System.out.println("Run TPCH-12");
+                t.rand.setSeed(0);
+                t.tpch12();
+                System.out.println("Run TPCH-14");
+                t.rand.setSeed(0);
+                t.tpch14();
+                System.out.println("Run TPCH-19");
+                t.rand.setSeed(0);
+                t.tpch19();
+                break;
+            case 12:
+                System.out.println("Run TPCH-12");
+                t.rand.setSeed(0);
+                t.tpch12();
             default:
                 break;
         }
