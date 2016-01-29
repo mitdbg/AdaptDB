@@ -2,10 +2,7 @@ package perf.benchmark;
 
 import core.adapt.JoinQuery;
 import core.adapt.Predicate;
-import core.adapt.Query;
-import core.adapt.iterator.IteratorRecord;
 import core.adapt.spark.RangePartitioner;
-import core.adapt.spark.SparkQuery;
 import core.adapt.spark.join.SparkJoinQuery;
 import core.common.globals.Schema;
 import core.common.globals.TableInfo;
@@ -18,8 +15,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.join.ArrayListBackedIterator;
-import org.apache.hadoop.yarn.webapp.hamlet.HamletSpec;
 import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -240,7 +235,7 @@ public class CMTJoinWorkload {
             String stringMHL_join_MH = stringMHL + ", " + stringMH;
             Schema schemaMHL_join_MH = Schema.createSchema(stringMHL_join_MH);
 
-            JavaPairRDD<LongWritable, Text> rdd = sq.createJoinScanRDD(MHL, new JoinQuery(MHL, schemaMHL.getAttributeId("mhl_mapmatch_history_id"), EmptyPredicates), "NULL", MH, q_mh, "NULL",schemaMHL_join_MH.getAttributeId("mhl_dataset_id"));
+            JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(MHL, new JoinQuery(MHL, schemaMHL.getAttributeId("mhl_mapmatch_history_id"), EmptyPredicates), "NULL", MH, q_mh, "NULL",schemaMHL_join_MH.getAttributeId("mhl_dataset_id"));
 
             String cutPoints = sq.getCutPoints(SF, 0); // long[] = {1, 2, 3};
 
@@ -258,7 +253,7 @@ public class CMTJoinWorkload {
 
             postProcessing(dest, mhl_join_mh, schemaMHL_join_MH);
 
-            rdd = sq.createJoinScanRDD(SF, q_sf , "NULL", mhl_join_mh, new JoinQuery(mhl_join_mh,schemaMHL_join_MH.getAttributeId("mhl_dataset_id"), EmptyPredicates), cutPoints,0);
+            rdd = sq.createJoinRDD(SF, q_sf , "NULL", mhl_join_mh, new JoinQuery(mhl_join_mh,schemaMHL_join_MH.getAttributeId("mhl_dataset_id"), EmptyPredicates), cutPoints,0);
 
             result = rdd.count();
 

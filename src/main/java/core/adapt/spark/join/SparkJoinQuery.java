@@ -2,10 +2,6 @@ package core.adapt.spark.join;
 
 
 import core.adapt.JoinQuery;
-import core.adapt.Query;
-import core.adapt.iterator.IteratorRecord;
-import core.adapt.spark.SparkInputFormat;
-import core.adapt.spark.SparkQueryConf;
 import core.utils.RangePartitionerUtils;
 import core.utils.SparkUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -109,7 +105,7 @@ public class SparkJoinQuery {
     }
 
 
-    public JavaPairRDD<LongWritable, Text> createJoinScanRDD(
+    public JavaPairRDD<LongWritable, Text> createJoinRDD(
             String dataset1, JoinQuery dataset1_query, String dataset1_cutpoints,
             String dataset2, JoinQuery dataset2_query, String dataset2_cutpoints,
             int partitionKey) {
@@ -163,13 +159,13 @@ public class SparkJoinQuery {
         conf.set("DATASETFLAG", "1");
         conf.set("DATASETINFO", input1);
 
-        JavaPairRDD<LongWritable, Text> dataset1RDD = createSingleTableScanRDD(hdfsPath, dataset1_query);
+        JavaPairRDD<LongWritable, Text> dataset1RDD = createSingleTableRDD(hdfsPath, dataset1_query);
 
         // set conf input;
         conf.set("DATASETFLAG", "2");
         conf.set("DATASETINFO", input2);
 
-        JavaPairRDD<LongWritable, Text> dataset2RDD = createSingleTableScanRDD(hdfsPath, dataset2_query);
+        JavaPairRDD<LongWritable, Text> dataset2RDD = createSingleTableRDD(hdfsPath, dataset2_query);
 
         JavaPairRDD<LongWritable, Text> shufflejoinRDD = dataset1RDD.join(dataset2RDD).mapToPair(new Mapper(Delimiter, partitionKey));
 
@@ -180,8 +176,8 @@ public class SparkJoinQuery {
 
     /* SingleTableScan  */
 
-    public JavaPairRDD<LongWritable, Text> createSingleTableScanRDD(String hdfsPath,
-                                                               JoinQuery q) {
+    public JavaPairRDD<LongWritable, Text> createSingleTableRDD(String hdfsPath,
+                                                                JoinQuery q) {
         queryConf.setWorkingDir(hdfsPath);
         queryConf.setJoinQuery(q);
 
