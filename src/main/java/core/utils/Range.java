@@ -27,7 +27,7 @@ public class Range implements Cloneable, Clusterable {
                     this.low = Long.MIN_VALUE;
                     break;
                 case DOUBLE:
-                    this.low = Float.MIN_VALUE;
+                    this.low = Double.MIN_VALUE;
                     break;
                 case DATE:
                     this.low = new SimpleDate(-1, -1, -1);
@@ -47,7 +47,7 @@ public class Range implements Cloneable, Clusterable {
                     this.high = Long.MAX_VALUE;
                     break;
                 case DOUBLE:
-                    this.high = Float.MAX_VALUE;
+                    this.high = Double.MAX_VALUE;
                     break;
                 case DATE:
                     this.high = new SimpleDate(Integer.MAX_VALUE,

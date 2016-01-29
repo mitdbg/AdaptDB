@@ -145,7 +145,7 @@ public class JRNode {
             case LONG:
                 return ((Long) value).compareTo(key.getLongAttribute(dimension));
             case DOUBLE:
-                return ((Float) value).compareTo(key.getFloatAttribute(dimension));
+                return ((Double) value).compareTo(key.getDoubleAttribute(dimension));
             case DATE:
                 return ((SimpleDate) value).compareTo(key
                         .getDateAttribute(dimension));

@@ -136,6 +136,7 @@ public class JoinOptimizer {
 
         boolean updated = rt.isUpdated();
 
+        System.out.println("Updated?: " + updated);
 
         PartitionSplit[] psplits;
 
@@ -145,23 +146,11 @@ public class JoinOptimizer {
             psplits = this.buildAccessPlan(q);
         }
 
-        // Debug
-        long totalCostOfQuery = 0;
-        for (int i = 0; i < psplits.length; i++) {
-            int[] bids = psplits[i].getPartitions();
-            double numTuplesAccessed = 0;
-            for (int j = 0; j < bids.length; j++) {
-                numTuplesAccessed += Bucket.getEstimatedNumTuples(bids[j]);
-            }
-
-            totalCostOfQuery += numTuplesAccessed;
-        }
-        System.out.println("Query Cost: " + totalCostOfQuery);
-
         this.persistQueryToDisk(q);
         if (updated) {
             System.out.println("INFO: persist index to disk");
-            this.persistIndexToDisk();
+            updateBucketIds(rt.getRoot());
+            persistIndexToDisk();
             for (int i = 0; i < psplits.length; i++) {
                 if (psplits[i].getIterator().getClass() == RepartitionIterator.class) {
                     psplits[i] = new PartitionSplit(
@@ -182,6 +171,7 @@ public class JoinOptimizer {
             adjustJoinRobustTreeForPredicate(rt.getRoot(), p, ps);
         }
         adjustJoinRobustTreeForJoinAttribute(rt.getRoot(), q);
+
     }
 
 
@@ -371,10 +361,16 @@ public class JoinOptimizer {
     }
 
 
-    private void updateBucketIds(List<JRNode> r) {
-        for (JRNode n : r) {
-            n.bucket.updateId();
+    private void updateBucketIds(JRNode node) {
+
+        if(node.bucket != null){
+            if(node.updated){
+                node.bucket.updateId();
+            }
+            return;
         }
+        updateBucketIds(node.leftChild);
+        updateBucketIds(node.rightChild);
     }
 
 

@@ -80,8 +80,8 @@ public class SparkJoinQuery {
         queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
         queryConf.setHadoopHome(cfg.getHADOOP_HOME());
         queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
-        queryConf.setMaxSplitSize(128849018); // 0.12gb
-        queryConf.setMinSplitSize(85899345); // 0.08gb
+        queryConf.setMaxSplitSize(1288490180); // 1.2gb
+        queryConf.setMinSplitSize(858993450); // 0.8gb
 
 
     }
@@ -102,7 +102,6 @@ public class SparkJoinQuery {
 	/* SparkJoinQuery */
 
     public JavaPairRDD<LongWritable, Text> createJoinRDD(String hdfsPath) {
-        queryConf.setJustAccess(true);
         queryConf.setReplicaId(0);
         return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath,
                 SparkJoinInputFormat.class, LongWritable.class,
@@ -120,6 +119,7 @@ public class SparkJoinQuery {
         String hdfsPath = cfg.getHDFS_WORKING_DIR();
 
         queryConf.setWorkingDir(hdfsPath);
+        queryConf.setJustAccess(false);
 
         Configuration conf = ctx.hadoopConfiguration();
 
@@ -184,7 +184,6 @@ public class SparkJoinQuery {
                                                                JoinQuery q) {
         queryConf.setWorkingDir(hdfsPath);
         queryConf.setJoinQuery(q);
-        queryConf.setJustAccess(true);
 
         return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath + "/" + q.getTable() + "/data",
                 SparkScanInputFormat.class, LongWritable.class,

@@ -108,6 +108,18 @@ public class SparkJoinRecordReader extends
         key = new LongWritable();
         value = new Text();
 
+        System.out.println("Path and types >>>>>>>>>>>>>>>>");
+
+        Path[] paths = sparkSplit.getPaths();
+        for(int i = 0; i < paths.length; i ++) {
+            System.out.println(paths[i]);
+        }
+
+        for(int i = 0; i < types.length; i ++){
+            System.out.println(types[i]);
+        }
+
+
         // build hashtable
 
         build_hashtable();

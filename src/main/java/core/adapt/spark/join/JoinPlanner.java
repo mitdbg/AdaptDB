@@ -56,7 +56,7 @@ public class JoinPlanner {
 
     private ArrayList<PartitionSplit> hyperJoinSplit, shuffleJoinSplit;
 
-    private int threshold = 0;
+    private int threshold = 8;
 
 
     public JoinPlanner(Configuration conf) {
@@ -84,9 +84,8 @@ public class JoinPlanner {
 
         JoinAccessMethod dataset1_am = new JoinAccessMethod();
         queryConf.setJoinQuery(dataset1_query);
-        dataset1_am.init(queryConf);
-
         if (dataset1_MDIndex) {
+            dataset1_am.init(queryConf);
             dataset1_int_splits = expandPartitionSplit(dataset1_am.getPartitionSplits(dataset1_query, true));
 
         } else {
@@ -99,8 +98,9 @@ public class JoinPlanner {
 
         JoinAccessMethod dataset2_am = new JoinAccessMethod();
         queryConf.setJoinQuery(dataset2_query);
-        dataset2_am.init(queryConf);
+
         if (dataset2_MDIndex) {
+            dataset2_am.init(queryConf);
             dataset2_int_splits = expandPartitionSplit(dataset2_am.getPartitionSplits(dataset2_query, true));
         } else {
             dataset2_int_splits = RangePartitionerUtils.getSplits(dataset2_cutpoints);
@@ -109,7 +109,7 @@ public class JoinPlanner {
         input_dir = workingDir + "/" + dataset2 + "/data";
         dataset2_hpinput.initialize(listStatus(input_dir), dataset2_am);
 
-        init_bucketInfo(conf, dataset1_int_splits, dataset1_am.opt.getIndex(), dataset2_int_splits, dataset2_am.opt.getIndex());
+        init_bucketInfo(conf, dataset1_int_splits, dataset1_am, dataset2_int_splits, dataset2_am);
 
         // optimize for the JoinRobustTree
 
@@ -167,6 +167,7 @@ public class JoinPlanner {
 
     private void init_iteratorType(PartitionSplit[] splits){
         // 1 for PostFilterIterator, 2 for JoinRepartitionIterator
+        System.out.println("Bucket Iterator type: ");
         iteratorType = new HashMap<Integer, Integer>();
         for(int i  = 0 ; i < splits.length; i ++){
             int[] bids = splits[i].getPartitions();
@@ -178,6 +179,7 @@ public class JoinPlanner {
                 type = 2;
             }
             for(int j = 0; j < bids.length; j ++){
+                System.out.println("bucket: " + bids[j] + " type: " + type);
                 iteratorType.put(bids[j], type);
             }
         }
@@ -218,7 +220,9 @@ public class JoinPlanner {
                 if (i > 0) {
                     sb.append(":");
                 }
-                sb.append(dep_bucketIDs[i] + ":" + dep_bucket_lens[i]+ ":" + iteratorType.get(dep_bucketIDs[i]));
+                int type = iteratorType.get(dep_bucketIDs[i]);
+                sb.append(dep_bucketIDs[i] + ":" + dep_bucket_lens[i]+ ":" + type);
+                iteratorType.put(dep_bucketIDs[i], 1);// we can only use JoinRepartitionIterator once.
             }
         }
 
@@ -429,7 +433,7 @@ public class JoinPlanner {
     }
 
 
-    private void init_bucketInfo(Configuration conf, int[] dataset1_splits, JoinRobustTree rt1, int[] dataset2_splits, JoinRobustTree rt2) {
+    private void init_bucketInfo(Configuration conf, int[] dataset1_splits, JoinAccessMethod jam1, int[] dataset2_splits, JoinAccessMethod jam2) {
         dataset1_bucketInfo = new HashMap<Integer, MDIndex.BucketInfo>();
         dataset2_bucketInfo = new HashMap<Integer, MDIndex.BucketInfo>();
 
@@ -439,7 +443,7 @@ public class JoinPlanner {
         System.out.println("Populate dataset1_bucketInfo");
 
         if (dataset1_MDIndex) {
-            read_index(dataset1_bucketInfo, rt1, dataset1_query.getJoinAttribute());
+            read_index(dataset1_bucketInfo, jam1.opt.getIndex(), dataset1_query.getJoinAttribute());
         } else {
             read_range(dataset1_bucketInfo, dataset1_cutpoints);
         }
@@ -449,7 +453,7 @@ public class JoinPlanner {
         System.out.println("Populate dataset2_bucketInfo");
 
         if (dataset2_MDIndex) {
-            read_index(dataset2_bucketInfo, rt2, dataset2_query.getJoinAttribute());
+            read_index(dataset2_bucketInfo, jam2.opt.getIndex(), dataset2_query.getJoinAttribute());
         } else {
             read_range(dataset2_bucketInfo, dataset2_cutpoints);
         }
