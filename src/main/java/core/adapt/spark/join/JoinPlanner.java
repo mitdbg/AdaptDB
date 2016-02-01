@@ -123,7 +123,7 @@ public class JoinPlanner {
         } else {
             dataset1_splits = getPartitionSplits(dataset1_int_splits, dataset1_query);
         }
-        dataset1_splits = resizeSplits(dataset1_splits, dataset1_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize(), queryConf.getMinSplitSize());
+        dataset1_splits = resizeSplits(dataset1_splits, dataset1_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize());
 
         System.out.println("Optimizing dataset 2");
 
@@ -523,125 +523,95 @@ public class JoinPlanner {
         return ret_ids;
     }
 
-    /* the following code is stolen from SparkInputFormt
-       TODO: add different grouping algos
-     */
-
-    /**
-     * The goal of this method is to check the size of each and break large
-     * splits into multiple smaller splits.
-     *
-     * The maximum split size is read from the configuration and it depends on
-     * the size of each machine.
-     *
-     * @param initialSplits
-     * @return
-     */
-    public PartitionSplit[] resizeSplits(PartitionSplit[] initialSplits,
-                                         Map<Integer, Long> partitionSizes, long maxSplitSize,
-                                         long minSplitSize) {
-        List<PartitionSplit> resizedSplits = Lists.newArrayList();
-        ArrayListMultimap<String, PartitionSplit> smallSplits = ArrayListMultimap
-                .create();
-
-        // For statistics count the size of data per iterator.
-        Map<String, Long> accessSizes = new HashMap<String, Long>();
-
-        for (PartitionSplit split : initialSplits) {
-            long splitSize = getPartitionSplitSize(split, partitionSizes);
-
-            // Add to statistics.
-            String iterName = split.getIterator().getClass().getName();
-            Long existingCount = accessSizes.containsKey(iterName) ?
-                    accessSizes.get(iterName) : (long) 0;
-            accessSizes.put(iterName, existingCount + splitSize);
-
-            if (splitSize > maxSplitSize) {
-                // create smaller splits
-                resizedSplits.addAll(createSmaller(split, partitionSizes,
-                        maxSplitSize));
-            } else if (splitSize < minSplitSize) {
-                // create larger splits
-                smallSplits.put(split.getIterator().getClass().getName(), split);
-            } else {
-                // just accept as it is
-                PartitionIterator itr = split.getIterator();
-                resizedSplits.add(new PartitionSplit(split.getPartitions(), itr));
+    private int getIntersectionSize(HashSet<Integer> chunks, ArrayList<Integer> vals) {
+        int sum = 0;
+        for (int i = 0; i < vals.size(); i++) {
+            if (chunks.contains(vals.get(i))) {
+                sum++;
             }
         }
+        return sum;
+    }
 
-        // Print statistics.
-        System.out.println("INFO: Access Sizes");
-        for (Map.Entry<String, Long> entry : accessSizes.entrySet()) {
-            System.out.println(entry.getKey() + " : " + entry.getValue());
+
+    private ArrayList<PartitionSplit> resizeSplits_helper(PartitionIterator partitionIter, int[] bids, Map<Integer, Long> partitionSizes, long maxSplitSize){
+        ArrayList<PartitionSplit> resizedSplits = new ArrayList<PartitionSplit>();
+
+        Random rand = new Random();
+        rand.setSeed(0); // Making things more deterministic.
+
+        LinkedList<Integer> buckets = new LinkedList<Integer>();
+
+        int size = bids.length;
+        for(int i = 0 ;i < bids.length;i ++){
+            buckets.add(bids[i]);
         }
 
-        for (String key : smallSplits.keySet())
-            resizedSplits.addAll(createLarger(smallSplits.get(key),
-                    partitionSizes, maxSplitSize));
+        while(size > 0){
+            ArrayList<Integer> cur_split = new ArrayList<Integer>();
+            HashSet<Integer> chunks = new HashSet<Integer>();
+            long splitAvailableSize = maxSplitSize, totalSize = 0;
+            while (size > 0 && splitAvailableSize > 0) {
+                int maxIntersection = -1;
+                int best_offset = -1;
+
+                ListIterator<Integer> it = buckets.listIterator();
+                int offset = 0;
+
+                while(it.hasNext()){
+                    int value = it.next();
+                    if (maxIntersection == -1) {
+                        maxIntersection = getIntersectionSize(chunks, overlap_chunks.get(value));
+                        best_offset = offset;
+                    } else {
+                        int curIntersection = getIntersectionSize(chunks, overlap_chunks.get(value));
+                        if (curIntersection > maxIntersection) {
+                            maxIntersection = curIntersection;
+                            best_offset = offset;
+                        }
+                    }
+                    offset ++;
+                }
+                int bucket = buckets.get(best_offset);
+                splitAvailableSize -= partitionSizes.get(bucket);
+
+                if(splitAvailableSize >= 0){
+                    totalSize += partitionSizes.get(bucket);
+                    cur_split.add(bucket);
+                    for(int rhs :  overlap_chunks.get(bucket)){
+                        chunks.add(rhs);
+                    }
+                    buckets.remove(best_offset);
+                    size --;
+                }
+            }
+
+            int[] split_bids = new int[cur_split.size()];
+            for(int i = 0; i < split_bids.length; i ++){
+                split_bids[i] = cur_split.get(i);
+            }
+
+            PartitionSplit split = new PartitionSplit(split_bids, partitionIter);
+            resizedSplits.add(split);
+            //System.out.println("split size: " + totalSize + " " + Arrays.toString(split_bids));
+        }
+        return resizedSplits;
+    }
+
+    /* the following code uses heuristic grouping
+       TODO: add different grouping algos
+    */
+
+    public PartitionSplit[] resizeSplits(PartitionSplit[] initialSplits, Map<Integer, Long> partitionSizes, long maxSplitSize) {
+
+        ArrayList<PartitionSplit> resizedSplits = new ArrayList<PartitionSplit>();
+
+        for(int i = 0 ;i < initialSplits.length; i ++){
+            ArrayList<PartitionSplit> splits = resizeSplits_helper(initialSplits[i].getIterator(), initialSplits[i].getPartitions(), partitionSizes, maxSplitSize);
+            resizedSplits.addAll(splits);
+        }
 
         return resizedSplits.toArray(new PartitionSplit[resizedSplits.size()]);
-    }
-
-    private List<PartitionSplit> createLarger(List<PartitionSplit> splits,
-                                              Map<Integer, Long> partitionSizes, long maxSplitSize) {
-        List<PartitionSplit> largerSplits = Lists.newArrayList();
-
-        Multimap<Integer, Integer> largerSplitPartitionIds = ArrayListMultimap
-                .create();
-        long currentSize = 0;
-        int largerSplitId = 0;
-
-        for (PartitionSplit split : splits) {
-            for (Integer p : split.getPartitions()) {
-                long pSize = partitionSizes.containsKey(p) ? partitionSizes
-                        .get(p) : 0;
-                if (currentSize + pSize > maxSplitSize) {
-                    largerSplitId++;
-                    currentSize = 0;
-                }
-                currentSize += pSize;
-                largerSplitPartitionIds.put(largerSplitId, p);
-            }
-        }
-
-        for (Integer k : largerSplitPartitionIds.keySet()) {
-            PartitionIterator itr = splits.get(0).getIterator();
-            largerSplits.add(new PartitionSplit(Ints
-                    .toArray(largerSplitPartitionIds.get(k)), itr));
-        }
-
-        return largerSplits;
-    }
-
-    private List<PartitionSplit> createSmaller(PartitionSplit split,
-                                               Map<Integer, Long> partitionSizes, long maxSplitSize) {
-        List<PartitionSplit> smallerSplits = Lists.newArrayList();
-
-        int[] partitions = split.getPartitions();
-        long currentSize = 0;
-        Multimap<Integer, Integer> splitPartitionIds = ArrayListMultimap
-                .create();
-        int splitId = 0;
-
-        for (int i = 0; i < partitions.length; i++) {
-            long pSize = partitionSizes.containsKey(partitions[i]) ? partitionSizes
-                    .get(partitions[i]) : 0;
-            if (currentSize + pSize > maxSplitSize) {
-                splitId++;
-                currentSize = 0;
-            }
-            currentSize += pSize;
-            splitPartitionIds.put(splitId, partitions[i]);
-        }
-
-        for (Integer k : splitPartitionIds.keySet()) {
-            PartitionIterator itr = split.getIterator();
-            smallerSplits.add(new PartitionSplit(Ints.toArray(splitPartitionIds
-                    .get(k)), itr));
-        }
-
-        return smallerSplits;
     }
 
     private long getPartitionSplitSize(PartitionSplit split,
