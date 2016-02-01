@@ -279,7 +279,7 @@ public class ParsedTupleList {
 			comparison = ((Long) middle).compareTo((Long) val);
 			break;
 		case DOUBLE:
-			comparison = ((Float) middle).compareTo((Float) val);
+			comparison = ((Double) middle).compareTo((Double) val);
 			break;
 		case DATE:
 			comparison = ((SimpleDate) middle).compareTo((SimpleDate) val);
