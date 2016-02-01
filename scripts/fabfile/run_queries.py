@@ -52,7 +52,7 @@ def run_tpchjoin():
             ' --sizeOrders 64' + \
             ' --sizePart 90' + \
             ' --numQueries 10' + \
-            ' --method 2' + \
+            ' --method 1' + \
             ' --conf $CONF  > ~/logs/join_workload.log'
         cmd = fill_cmd(cmd)
         run(cmd)

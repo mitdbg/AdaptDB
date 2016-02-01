@@ -813,10 +813,6 @@ public class TPCHJoinWorkload {
                 System.out.println("Num Queries: " + t.numQueries);
                 t.runWorkload(t.numQueries);
                 break;
-            case 2:
-                System.out.println("Running TPCH3: ");
-                t.tpch3();
-                break;
             default:
                 break;
         }
