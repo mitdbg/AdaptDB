@@ -42,6 +42,7 @@ public class TPCHJoinWorkload {
 
     private Schema schemaCustomer, schemaLineitem, schemaOrders, schemaPart, schemaSupplier;
     private String stringCustomer, stringLineitem, stringOrders, stringPart, stringSupplier;
+    private int    sizeCustomer, sizeLineitem, sizeOrders, sizePart, sizeSupplier;
 
     private String lineitem = "lineitem", orders = "orders", customer = "customer", supplier = "supplier", part = "part";
     private Predicate[] EmptyPredicates = {};
@@ -120,6 +121,26 @@ public class TPCHJoinWorkload {
                 case "--schemaSupplier":
                     stringSupplier = args[counter + 1];
                     schemaSupplier = Schema.createSchema(stringSupplier);
+                    counter += 2;
+                    break;
+                case "--sizeCustomer":
+                    sizeCustomer = Integer.parseInt(args[counter + 1]);
+                    counter += 2;
+                    break;
+                case "--sizeLineitem":
+                    sizeLineitem = Integer.parseInt(args[counter + 1]);
+                    counter += 2;
+                    break;
+                case "--sizeOrders":
+                    sizeOrders = Integer.parseInt(args[counter + 1]);
+                    counter += 2;
+                    break;
+                case "--sizePart":
+                    sizePart = Integer.parseInt(args[counter + 1]);
+                    counter += 2;
+                    break;
+                case "--sizeSupplier":
+                    sizeSupplier = Integer.parseInt(args[counter + 1]);
                     counter += 2;
                     break;
                 case "--method":
@@ -251,7 +272,7 @@ public class TPCHJoinWorkload {
 
         JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", orders, q_o, "NULL", schemaLineitem_join_Orders.getAttributeId("o_custkey"));
 
-        String cutPoints = sq.getCutPoints(customer, 0); // long[] = {1, 2, 3};
+        String cutPoints = sq.getCutPoints(rdd, sizeLineitem + sizeOrders); // long[] = {1, 2, 3};
 
         Partitioner partitioner = new RangePartitioner(cutPoints);
 
@@ -345,8 +366,7 @@ public class TPCHJoinWorkload {
 
         JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(customer, q_c, "NULL", orders, q_o,"NULL",schemaCustomer_join_Orders.getAttributeId("o_orderkey"));
 
-        String cutPoints = sq.getCutPoints(lineitem, 0); // long[] = {1, 2, 3};
-
+        String cutPoints = sq.getCutPoints(rdd, sizeCustomer + sizeOrders); // long[] = {1, 2, 3};
 
         Partitioner partitioner = new RangePartitioner(cutPoints);
 
@@ -370,7 +390,7 @@ public class TPCHJoinWorkload {
         //System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
 
-        cutPoints = sq.getCutPoints(supplier, 0); // long[] = {1, 2, 3};
+        cutPoints = sq.getCutPoints(rdd, sizeLineitem + sizeCustomer + sizeOrders); // long[] = {1, 2, 3};
 
         partitioner = new RangePartitioner(cutPoints);
 
@@ -466,7 +486,7 @@ public class TPCHJoinWorkload {
 
         JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, new JoinQuery(lineitem,  schemaLineitem.getAttributeId("l_orderkey"), EmptyPredicates), "NULL", orders, q_o, "NULL", schemaLineitem_join_Orders.getAttributeId("o_custkey"));
 
-        String cutPoints = sq.getCutPoints(customer, 0); // long[] = {1, 2, 3};
+        String cutPoints = sq.getCutPoints(rdd, sizeLineitem + sizeOrders); // long[] = {1, 2, 3};
 
         Partitioner partitioner = new RangePartitioner(cutPoints);
 
@@ -488,7 +508,7 @@ public class TPCHJoinWorkload {
 
         //System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-        cutPoints = sq.getCutPoints(part, 0); // long[] = {1, 2, 3};
+        cutPoints = sq.getCutPoints(rdd, sizeLineitem + sizeOrders + sizeCustomer); // long[] = {1, 2, 3};
 
         partitioner = new RangePartitioner(cutPoints);
 
@@ -569,7 +589,7 @@ public class TPCHJoinWorkload {
         JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", orders, q_o, "NULL", schemaLineitem_join_Orders.getAttributeId("o_custkey"));
 
 
-        String cutPoints = sq.getCutPoints(customer, 0); // long[] = {1, 2, 3};
+        String cutPoints = sq.getCutPoints(rdd, sizeLineitem + sizeOrders); // long[] = {1, 2, 3};
 
         Partitioner partitioner = new RangePartitioner(cutPoints);
 
@@ -792,6 +812,10 @@ public class TPCHJoinWorkload {
             case 1:
                 System.out.println("Num Queries: " + t.numQueries);
                 t.runWorkload(t.numQueries);
+                break;
+            case 2:
+                System.out.println("Running TPCH3: ");
+                t.tpch3();
                 break;
             default:
                 break;

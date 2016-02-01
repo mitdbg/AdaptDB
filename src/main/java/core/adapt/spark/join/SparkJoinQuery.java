@@ -16,6 +16,8 @@ import org.apache.spark.api.java.function.PairFunction;
 
 import scala.Tuple2;
 
+import java.util.List;
+
 /**
  * Created by ylu on 1/6/16.
  */
@@ -90,8 +92,22 @@ public class SparkJoinQuery {
         return Delimiter;
     }
 
-    public String getCutPoints(String dataset, int attr) {
-        int[] cutpoints = {0, 1000000, 2000000, 3000000, 4000000, 5000000};
+    public String getCutPoints(JavaPairRDD<LongWritable, Text> rdd, int recordSize) {
+        long chunkSize = 32 * 1024 * 1024; // 32 MB
+        long count = rdd.count();
+        long totalSize = count * recordSize;
+        int numSplits = (int) ( (totalSize + chunkSize - 1)  / chunkSize); // ceiling
+        double sampleRate = 0.01;
+        if(sampleRate * count > 100){
+            sampleRate = 100.0 / count;
+        }
+
+        System.out.println("[Info] getCutPoints");
+        System.out.println("count: " + count + " totalSize: " + totalSize + " numSplits: " + numSplits + " sampleRate: " + sampleRate);
+
+        List<LongWritable> sampleKeys = rdd.keys().sample(false, sampleRate).collect();
+        int[] cutpoints = RangePartitionerUtils.getCutPoints(sampleKeys, numSplits);
+
         return RangePartitionerUtils.getStringCutPoints(cutpoints);
     }
 

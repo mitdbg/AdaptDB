@@ -30,6 +30,7 @@ public class CMTJoinWorkload {
 
     private Schema schemaMH, schemaMHL, schemaSF;
     private String stringMH, stringMHL, stringSF;
+    private int    sizeMH, sizeMHL, sizeSF;
 
     private String MH = "mh", MHL = "mhl", SF = "sf";
     private Predicate[] EmptyPredicates = {};
@@ -81,6 +82,18 @@ public class CMTJoinWorkload {
                 case "--schemaSF":
                     stringSF = args[counter + 1];
                     schemaSF = Schema.createSchema(stringSF);
+                    counter += 2;
+                    break;
+                case "--sizeMH":
+                    sizeMH = Integer.parseInt(args[counter + 1]);
+                    counter += 2;
+                    break;
+                case "--sizeMHL":
+                    sizeMHL = Integer.parseInt(args[counter + 1]);
+                    counter += 2;
+                    break;
+                case "--sizeSF":
+                    sizeSF = Integer.parseInt(args[counter + 1]);
                     counter += 2;
                     break;
                 case "--method":
@@ -251,7 +264,7 @@ public class CMTJoinWorkload {
 
             JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(MHL, new JoinQuery(MHL, schemaMHL.getAttributeId("mhl_mapmatch_history_id"), EmptyPredicates), "NULL", MH, q_mh, "NULL",schemaMHL_join_MH.getAttributeId("mhl_dataset_id"));
 
-            String cutPoints = sq.getCutPoints(SF, 0); // long[] = {1, 2, 3};
+            String cutPoints = sq.getCutPoints(rdd, sizeMHL + sizeMH); // long[] = {1, 2, 3};
 
             Partitioner partitioner = new RangePartitioner(cutPoints);
 

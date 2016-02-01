@@ -99,7 +99,7 @@ public class TableInfo {
 				Path fp = existingFiles[i].getPath();
 				String fileName = FilenameUtils.getName(fp.toString());
 				int id = Integer.parseInt(fileName);
-				if(buckets.contains(id) == true){
+				if(buckets.contains(id) == false){
 					System.out.println("[GC]: Deleting " + fp.toString());
 					fs.delete(fp, false);
 				}
