@@ -49,6 +49,20 @@ public class CMTJoinWorkload {
         rand.setSeed(0);
     }
 
+    public void garbageCollect(){
+        FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME() + "/etc/hadoop/core-site.xml");
+
+        TableInfo tableMH = new TableInfo(MH, 0, '|', schemaMH);
+        tableMH.gc(cfg.getHDFS_WORKING_DIR(), fs);
+
+        TableInfo tableMHL = new TableInfo(MHL, 0, '|', schemaMHL);
+        tableMHL.gc(cfg.getHDFS_WORKING_DIR(), fs);
+
+        TableInfo tableSF = new TableInfo(SF, 0, '|', schemaSF);
+        tableSF.gc(cfg.getHDFS_WORKING_DIR(), fs);
+
+    }
+
 
     public void loadSettings(String[] args) {
         int counter = 0;
@@ -280,5 +294,7 @@ public class CMTJoinWorkload {
             default:
                 break;
         }
+
+        t.garbageCollect();
     }
 }

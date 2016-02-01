@@ -1,8 +1,17 @@
 package core.common.globals;
 
+import core.common.index.RobustTree;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashSet;
 
 /**
  * Created by anil on 12/11/15.
@@ -70,5 +79,34 @@ public class TableInfo {
 				System.out.println("Unknown setting found: " + parts[0].trim());
 			}
 		}
+	}
+
+	public void gc(String hdfsWorkingDir, FileSystem fs){
+		String path = hdfsWorkingDir + "/" + tableName;
+		String pathToData = path + "/data";
+		String pathToIndex = path + "/index";
+		byte[] indexBytes = HDFSUtils.readFile(fs, pathToIndex);
+		RobustTree rt = new RobustTree(this);
+		rt.unmarshall(indexBytes);
+		int[] bids = rt.getAllBuckets();
+		HashSet<Integer> buckets = new HashSet<Integer>();
+		for(int i = 0 ;i < bids.length; i ++){
+			buckets.add(bids[i]);
+		}
+		try {
+			FileStatus[] existingFiles = fs.listStatus(new Path(pathToData));
+			for(int i = 0 ;i < existingFiles.length; i ++){
+				Path fp = existingFiles[i].getPath();
+				String fileName = FilenameUtils.getName(fp.toString());
+				int id = Integer.parseInt(fileName);
+				if(buckets.contains(id) == true){
+					System.out.println("[GC]: Deleting " + fp.toString());
+					fs.delete(fp, false);
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 	}
 }

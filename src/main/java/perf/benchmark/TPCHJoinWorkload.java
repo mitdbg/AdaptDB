@@ -74,6 +74,24 @@ public class TPCHJoinWorkload {
         rand.setSeed(0);
     }
 
+    public void garbageCollect(){
+        FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME() + "/etc/hadoop/core-site.xml");
+
+        TableInfo tableLineitem = new TableInfo(lineitem, 0, '|', schemaLineitem);
+        tableLineitem.gc(cfg.getHDFS_WORKING_DIR(), fs);
+
+        TableInfo tableCustomer = new TableInfo(customer, 0, '|', schemaCustomer);
+        tableCustomer.gc(cfg.getHDFS_WORKING_DIR(), fs);
+
+        TableInfo tableOrders = new TableInfo(orders, 0, '|', schemaOrders);
+        tableOrders.gc(cfg.getHDFS_WORKING_DIR(), fs);
+
+        TableInfo tableSupplier = new TableInfo(supplier, 0, '|', schemaSupplier);
+        tableSupplier.gc(cfg.getHDFS_WORKING_DIR(), fs);
+
+        TableInfo tablePart = new TableInfo(part, 0, '|', schemaPart);
+        tablePart.gc(cfg.getHDFS_WORKING_DIR(), fs);
+    }
 
     public void loadSettings(String[] args) {
         int counter = 0;
@@ -779,5 +797,6 @@ public class TPCHJoinWorkload {
                 break;
         }
 
+        t.garbageCollect();
     }
 }

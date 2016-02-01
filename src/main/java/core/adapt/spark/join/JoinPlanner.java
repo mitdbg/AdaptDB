@@ -9,6 +9,7 @@ import com.google.common.primitives.Ints;
 import core.adapt.JoinQuery;
 
 
+import core.adapt.iterator.JoinRepartitionIterator;
 import core.adapt.iterator.PartitionIterator;
 import core.adapt.iterator.PostFilterIterator;
 import core.common.index.JoinRobustTree;
@@ -18,6 +19,7 @@ import core.utils.HDFSUtils;
 import core.utils.RangePartitionerUtils;
 import core.utils.TypeUtils;
 import org.apache.commons.collections.map.HashedMap;
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -26,6 +28,7 @@ import org.apache.hadoop.fs.Path;
 import core.adapt.AccessMethod.PartitionSplit;
 
 
+import java.io.File;
 import java.io.IOException;
 
 import java.util.*;
@@ -164,7 +167,6 @@ public class JoinPlanner {
         return ps;
     }
 
-
     private void init_iteratorType(PartitionSplit[] splits){
         // 1 for PostFilterIterator, 2 for JoinRepartitionIterator
         System.out.println("Bucket Iterator type: ");
@@ -179,7 +181,7 @@ public class JoinPlanner {
                 type = 2;
             }
             for(int j = 0; j < bids.length; j ++){
-                System.out.println("bucket: " + bids[j] + " type: " + type);
+                //System.out.println("bucket: " + bids[j] + " type: " + type);
                 iteratorType.put(bids[j], type);
             }
         }
