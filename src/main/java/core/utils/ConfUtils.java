@@ -96,6 +96,9 @@ public class ConfUtils {
 	public String getHDFS_WORKING_DIR() {
 		return p.getProperty("HDFS_WORKING_DIR").trim();
 	}
+	public void setHDFS_WORKING_DIR(String path){
+		p.setProperty("HDFS_WORKING_DIR", path);
+	}
 
 	/**
 	 * Get HDFS Replication Factor

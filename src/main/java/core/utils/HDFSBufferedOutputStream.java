@@ -7,7 +7,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 import org.apache.hadoop.fs.FileSystem;
 
-import core.globals.Globals;
+import core.common.globals.Globals;
 
 /**
  * Custom HDFS Output Stream implementation. Buffers the writes and writes out
@@ -32,31 +32,36 @@ public class HDFSBufferedOutputStream extends OutputStream {
 	FileSystem fs;
 
 	CuratorFramework client;
-	
+
 	public HDFSBufferedOutputStream(FileSystem fs, String filePath,
-			short replication, int bufferSize) {
+			short replication, int bufferSize, CuratorFramework client) {
 		this.buffer = new byte[bufferSize];
 		this.filePath = filePath;
 		this.fs = fs;
 
 		// Create the file if it does not exist.
 		HDFSUtils.safeCreateFile(this.fs, filePath, replication);
-		
-		client = CuratorUtils.createAndStartClient(
-				Globals.zookeeperHosts);
+
+		this.client = client;
 	}
 
 	@Override
 	public void flush() {
-		InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client,
-				"/partition-lock-" + this.filePath.hashCode());
+		if (client != null) {
+			InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client,
+					"/partition-lock-" + this.filePath.hashCode());
 
-		try {
+			try {
+				HDFSUtils.appendBytes(this.fs, this.filePath, this.buffer, 0,
+						curPointer);
+				this.curPointer = 0;
+			} finally {
+				CuratorUtils.releaseLock(l);
+			}
+		} else {
 			HDFSUtils.appendBytes(this.fs, this.filePath, this.buffer, 0,
-					curPointer);
-			this.curPointer = 0;			
-		} finally {
-			CuratorUtils.releaseLock(l);
+						curPointer);
+			this.curPointer = 0;
 		}
 	}
 

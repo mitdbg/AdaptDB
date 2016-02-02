@@ -3,16 +3,17 @@ package perf.benchmark;
 import java.util.ArrayList;
 import java.util.List;
 
-import core.access.Predicate;
-import core.access.Query;
-import core.access.Predicate.PREDTYPE;
-import core.access.Query.FilterQuery;
-import core.access.spark.SparkQuery;
-import core.globals.Globals;
+import core.adapt.Predicate;
+import core.adapt.Query;
+import core.adapt.Predicate.PREDTYPE;
+import core.adapt.spark.SparkQuery;
+import core.common.globals.Globals;
+import core.common.globals.TableInfo;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils;
 import core.utils.TypeUtils.TYPE;
+import org.apache.hadoop.fs.FileSystem;
 
 public class CMTWorkload {
 	public ConfUtils cfg;
@@ -23,12 +24,18 @@ public class CMTWorkload {
 
 	int method;
 
+    String tableName;
+
+    TableInfo tableInfo;
+
 	public void setUp() {
 		cfg = new ConfUtils(BenchmarkSettings.conf);
+		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 
-		Globals.load(cfg.getHDFS_WORKING_DIR() + "/info",
-				HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()));
-		assert Globals.schema != null;
+		// Load table info.
+		Globals.loadTableInfo(tableName, cfg.getHDFS_WORKING_DIR(), fs);
+		tableInfo = Globals.getTableInfo(tableName);
+		assert tableInfo != null;
 
 		// delete query history
 		// Cleanup queries file - to remove past query workload
@@ -38,13 +45,14 @@ public class CMTWorkload {
 
 	public Predicate getPredicate(String pred) {
 		String[] parts = pred.split(" ");
-		int attrId = Globals.schema.getAttributeId(parts[0].trim());
 
+		int attrId = tableInfo.schema.getAttributeId(parts[0].trim());
+		
 		if (attrId == -1) {
 			throw new RuntimeException("Unknown attr: " + parts[0].trim());
 		}
-
-		TYPE attrType = Globals.schema.getType(attrId);
+		
+		TYPE attrType = tableInfo.schema.getType(attrId);
 		Object value = TypeUtils.deserializeValue(attrType, parts[2].trim().replaceAll("'", ""));
 		String predTypeStr = parts[1].trim();
 		PREDTYPE predType;
@@ -68,17 +76,17 @@ public class CMTWorkload {
 			throw new RuntimeException("Unknown predType " + predTypeStr);
 		}
 
-		Predicate p = new Predicate(parts[0].trim(), attrType, value, predType);
+		Predicate p = new Predicate(tableInfo, parts[0].trim(), attrType, value, predType);
 		return p;
 	}
-
-	public List<FilterQuery> generateWorkload() {
+	
+	public List<Query> generateWorkload() {
 		byte[] stringBytes = HDFSUtils.readFile(
 				HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
 				"/user/mdindex/cmt_queries.log");
 		String queriesString = new String(stringBytes);
 		String[] queries = queriesString.split("\n");
-		List<FilterQuery> ret = new ArrayList<FilterQuery>();
+		List<Query> ret = new ArrayList<Query>();
 		for (int i=0; i<queries.length; i++) {
 			String query = queries[i];
 			String[] predicates = query.split(";");
@@ -88,7 +96,7 @@ public class CMTWorkload {
 				queryPreds.add(p);
 			}
 			Predicate[] predArray = queryPreds.toArray(new Predicate[queryPreds.size()]);
-			ret.add(new Query.FilterQuery(predArray));
+			ret.add(new Query(tableName, predArray));
 		}
 
 		return ret;
@@ -97,15 +105,15 @@ public class CMTWorkload {
 	public void runWorkload() {
 		long start, end;
 		SparkQuery sq = new SparkQuery(cfg);
-		List<FilterQuery> queries = generateWorkload();
-		for (FilterQuery q: queries) {
+		List<Query> queries = generateWorkload();
+		for (Query q: queries) {
 			System.out.println("INFO: Query:" + q.toString());
 		}
 
-		for (FilterQuery q : queries) {
+		for (Query q : queries) {
 			start = System.currentTimeMillis();
 			long result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(),
-					q.getPredicates()).count();
+					q).count();
 			end = System.currentTimeMillis();
 			System.out.println("RES: Time Taken: " + (end - start) +
 					"; Result: " + result);

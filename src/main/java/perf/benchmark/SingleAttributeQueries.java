@@ -3,12 +3,16 @@ package perf.benchmark;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-import core.access.Predicate;
-import core.access.Predicate.PREDTYPE;
-import core.access.spark.SparkQuery;
+import core.adapt.Predicate;
+import core.adapt.Predicate.PREDTYPE;
+import core.adapt.Query;
+import core.adapt.iterator.IteratorRecord;
+import core.adapt.spark.SparkQuery;
 import core.utils.ConfUtils;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.spark.api.java.JavaPairRDD;
 
 public class SingleAttributeQueries {
 	public final static String propertyFile = BenchmarkSettings.conf;
@@ -23,6 +27,14 @@ public class SingleAttributeQueries {
 		sq = new SparkQuery(cfg);
 	}
 
+	public JavaPairRDD<LongWritable, IteratorRecord> createRDD(String hdfsDir, Predicate... ps) {
+		return sq.createRDD(hdfsDir, new Query("lineitem", ps));
+	}
+
+	public JavaPairRDD<LongWritable, IteratorRecord> createScanRDD(String hdfsDir, Predicate... ps) {
+		return sq.createScanRDD(hdfsDir, new Query("lineitem", ps));
+	}
+
 	public void testOrderKeyQueries() {
 		int range = scaleFactor * 6000000;
 		for (int i = 1; i <= numQueries; i++) {
@@ -33,7 +45,7 @@ public class SingleAttributeQueries {
 			Predicate p1 = new Predicate(0, TYPE.LONG, orderKey, PREDTYPE.GT);
 			Predicate p2 = new Predicate(0, TYPE.LONG, orderKey
 					+ (int) (range * selectivity), PREDTYPE.LEQ);
-			long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: ORDERKEY " + (end - start) + " " + result);
@@ -50,7 +62,7 @@ public class SingleAttributeQueries {
 			Predicate p1 = new Predicate(1, TYPE.INT, partKey, PREDTYPE.GT);
 			Predicate p2 = new Predicate(1, TYPE.INT, partKey
 					+ (int) (range * selectivity), PREDTYPE.LEQ);
-			long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: PARTKEY " + (end - start) + " " + result);
@@ -67,7 +79,7 @@ public class SingleAttributeQueries {
 			Predicate p1 = new Predicate(2, TYPE.INT, suppKey, PREDTYPE.GT);
 			Predicate p2 = new Predicate(2, TYPE.INT, suppKey
 					+ (int) (range * selectivity), PREDTYPE.LEQ);
-			long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: SUPPLIERKEY " + (end - start) + " "
@@ -86,7 +98,7 @@ public class SingleAttributeQueries {
 			long start = System.currentTimeMillis();
 			Predicate p1 = new Predicate(3, TYPE.INT, lineNum, PREDTYPE.GT);
 			Predicate p2 = new Predicate(3, TYPE.INT, endNum, PREDTYPE.LEQ);
-			long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: LINENUMBER " + (end - start) + " "
@@ -105,7 +117,7 @@ public class SingleAttributeQueries {
 			Predicate p1 = new Predicate(4, TYPE.INT, startNum, PREDTYPE.GT);
 			Predicate p2 = new Predicate(4, TYPE.INT, endNum, PREDTYPE.LEQ);
 			long start = System.currentTimeMillis();
-			long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: QUANTITY " + (end - start) + " " + result);
@@ -130,7 +142,7 @@ public class SingleAttributeQueries {
 			Predicate p1 = new Predicate(5, TYPE.DOUBLE, startNum, PREDTYPE.GT);
 			Predicate p2 = new Predicate(5, TYPE.DOUBLE, endNum, PREDTYPE.LEQ);
 			long start = System.currentTimeMillis();
-			long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: EXTENDEDPRICE " + (end - start) + " "
@@ -149,7 +161,7 @@ public class SingleAttributeQueries {
 			Predicate p1 = new Predicate(6, TYPE.DOUBLE, startNum, PREDTYPE.GT);
 			Predicate p2 = new Predicate(6, TYPE.DOUBLE, endNum, PREDTYPE.LEQ);
 			long start = System.currentTimeMillis();
-			long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: DISCOUNT " + (end - start) + " " + result);
@@ -168,7 +180,7 @@ public class SingleAttributeQueries {
 			Predicate p1 = new Predicate(7, TYPE.DOUBLE, startNum, PREDTYPE.GT);
 			Predicate p2 = new Predicate(7, TYPE.DOUBLE, endNum, PREDTYPE.LEQ);
 			long start = System.currentTimeMillis();
-			long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: TAX " + (end - start) + " " + result);
@@ -179,7 +191,7 @@ public class SingleAttributeQueries {
 		System.out.println("INFO: Running RETURN FLAG Query " + 1);
 		Predicate p1 = new Predicate(8, TYPE.STRING, "R", PREDTYPE.EQ);
 		long start = System.currentTimeMillis();
-		long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
+		long result = createRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
 		long end = System.currentTimeMillis();
 		System.out.println("RES: RETURN FLAG " + (end - start) + " " + "R"
 				+ " " + result);
@@ -189,7 +201,7 @@ public class SingleAttributeQueries {
 		System.out.println("INFO: Running LINE STATUS Query " + 1);
 		Predicate p1 = new Predicate(9, TYPE.STRING, "O", PREDTYPE.EQ);
 		long start = System.currentTimeMillis();
-		long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
+		long result = createRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
 		long end = System.currentTimeMillis();
 		System.out.println("RES: LINE STATUS " + (end - start) + " " + "O"
 				+ " " + result);
@@ -220,7 +232,7 @@ public class SingleAttributeQueries {
 			long start = System.currentTimeMillis();
 			Predicate p1 = new Predicate(10, TYPE.DATE, startDate, PREDTYPE.GT);
 			Predicate p2 = new Predicate(10, TYPE.DATE, endDate, PREDTYPE.LEQ);
-			long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: SHIPDATE " + (end - start) + " " + result);
@@ -248,7 +260,7 @@ public class SingleAttributeQueries {
 			long start = System.currentTimeMillis();
 			Predicate p1 = new Predicate(11, TYPE.DATE, startDate, PREDTYPE.GT);
 			Predicate p2 = new Predicate(11, TYPE.DATE, endDate, PREDTYPE.LEQ);
-			long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: COMMITDATE " + (end - start) + " "
@@ -279,7 +291,7 @@ public class SingleAttributeQueries {
 			long start = System.currentTimeMillis();
 			Predicate p1 = new Predicate(12, TYPE.DATE, startDate, PREDTYPE.GT);
 			Predicate p2 = new Predicate(12, TYPE.DATE, endDate, PREDTYPE.LEQ);
-			long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: RECEIPTDATE " + (end - start) + " "
@@ -292,7 +304,7 @@ public class SingleAttributeQueries {
 				PREDTYPE.EQ);
 		System.out.println("INFO: Running SHIP INSTRUCT Query " + 1);
 		long start = System.currentTimeMillis();
-		long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
+		long result = createRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
 		long end = System.currentTimeMillis();
 		System.out.println("RES: SHIP INSTRUCT " + (end - start) + " "
 				+ "DELIVER IN PERSON" + " " + result);
@@ -302,7 +314,7 @@ public class SingleAttributeQueries {
 		System.out.println("INFO: Running SHIP MODE Query " + 1);
 		Predicate p1 = new Predicate(14, TYPE.STRING, "AIR", PREDTYPE.EQ);
 		long start = System.currentTimeMillis();
-		long result = sq.createRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
+		long result = createRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
 		long end = System.currentTimeMillis();
 		System.out.println("RES: SHIP MODE " + (end - start) + " " + "AIR"
 				+ " " + result);
@@ -318,7 +330,7 @@ public class SingleAttributeQueries {
 			Predicate p1 = new Predicate(0, TYPE.LONG, orderKey, PREDTYPE.GT);
 			Predicate p2 = new Predicate(0, TYPE.LONG, orderKey
 					+ (int) (range * selectivity), PREDTYPE.LEQ);
-			long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: ORDERKEY " + (end - start) + " " + result);
@@ -335,7 +347,7 @@ public class SingleAttributeQueries {
 			Predicate p1 = new Predicate(1, TYPE.INT, partKey, PREDTYPE.GT);
 			Predicate p2 = new Predicate(1, TYPE.INT, partKey
 					+ (int) (range * selectivity), PREDTYPE.LEQ);
-			long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: PARTKEY " + (end - start) + " " + result);
@@ -352,7 +364,7 @@ public class SingleAttributeQueries {
 			Predicate p1 = new Predicate(2, TYPE.INT, suppKey, PREDTYPE.GT);
 			Predicate p2 = new Predicate(2, TYPE.INT, suppKey
 					+ (int) (range * selectivity), PREDTYPE.LEQ);
-			long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: SUPPLIERKEY " + (end - start) + " "
@@ -371,7 +383,7 @@ public class SingleAttributeQueries {
 			long start = System.currentTimeMillis();
 			Predicate p1 = new Predicate(3, TYPE.INT, lineNum, PREDTYPE.GT);
 			Predicate p2 = new Predicate(3, TYPE.INT, endNum, PREDTYPE.LEQ);
-			long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: LINENUMBER " + (end - start) + " "
@@ -390,7 +402,7 @@ public class SingleAttributeQueries {
 			Predicate p1 = new Predicate(4, TYPE.INT, startNum, PREDTYPE.GT);
 			Predicate p2 = new Predicate(4, TYPE.INT, endNum, PREDTYPE.LEQ);
 			long start = System.currentTimeMillis();
-			long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: QUANTITY " + (end - start) + " " + result);
@@ -415,7 +427,7 @@ public class SingleAttributeQueries {
 			Predicate p1 = new Predicate(5, TYPE.DOUBLE, startNum, PREDTYPE.GT);
 			Predicate p2 = new Predicate(5, TYPE.DOUBLE, endNum, PREDTYPE.LEQ);
 			long start = System.currentTimeMillis();
-			long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: EXTENDEDPRICE " + (end - start) + " "
@@ -434,7 +446,7 @@ public class SingleAttributeQueries {
 			Predicate p1 = new Predicate(6, TYPE.DOUBLE, startNum, PREDTYPE.GT);
 			Predicate p2 = new Predicate(6, TYPE.DOUBLE, endNum, PREDTYPE.LEQ);
 			long start = System.currentTimeMillis();
-			long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: DISCOUNT " + (end - start) + " " + result);
@@ -453,7 +465,7 @@ public class SingleAttributeQueries {
 			Predicate p1 = new Predicate(7, TYPE.DOUBLE, startNum, PREDTYPE.GT);
 			Predicate p2 = new Predicate(7, TYPE.DOUBLE, endNum, PREDTYPE.LEQ);
 			long start = System.currentTimeMillis();
-			long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: TAX " + (end - start) + " " + result);
@@ -464,7 +476,7 @@ public class SingleAttributeQueries {
 		System.out.println("INFO: Running RETURN FLAG Query " + 1);
 		Predicate p1 = new Predicate(8, TYPE.STRING, "R", PREDTYPE.EQ);
 		long start = System.currentTimeMillis();
-		long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
+		long result = createScanRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
 		long end = System.currentTimeMillis();
 		System.out.println("RES: RETURN FLAG " + (end - start) + " " + "R"
 				+ " " + result);
@@ -474,7 +486,7 @@ public class SingleAttributeQueries {
 		System.out.println("INFO: Running LINE STATUS Query " + 1);
 		Predicate p1 = new Predicate(9, TYPE.STRING, "O", PREDTYPE.EQ);
 		long start = System.currentTimeMillis();
-		long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
+		long result = createScanRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
 		long end = System.currentTimeMillis();
 		System.out.println("RES: LINE STATUS " + (end - start) + " " + "O"
 				+ " " + result);
@@ -505,7 +517,7 @@ public class SingleAttributeQueries {
 			long start = System.currentTimeMillis();
 			Predicate p1 = new Predicate(10, TYPE.DATE, startDate, PREDTYPE.GT);
 			Predicate p2 = new Predicate(10, TYPE.DATE, endDate, PREDTYPE.LEQ);
-			long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: SHIPDATE " + (end - start) + " " + result);
@@ -533,7 +545,7 @@ public class SingleAttributeQueries {
 			long start = System.currentTimeMillis();
 			Predicate p1 = new Predicate(11, TYPE.DATE, startDate, PREDTYPE.GT);
 			Predicate p2 = new Predicate(11, TYPE.DATE, endDate, PREDTYPE.LEQ);
-			long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: COMMITDATE " + (end - start) + " "
@@ -564,7 +576,7 @@ public class SingleAttributeQueries {
 			long start = System.currentTimeMillis();
 			Predicate p1 = new Predicate(12, TYPE.DATE, startDate, PREDTYPE.GT);
 			Predicate p2 = new Predicate(12, TYPE.DATE, endDate, PREDTYPE.LEQ);
-			long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
+			long result = createScanRDD(cfg.getHDFS_WORKING_DIR(), p1, p2)
 					.count();
 			long end = System.currentTimeMillis();
 			System.out.println("RES: RECEIPTDATE " + (end - start) + " "
@@ -577,7 +589,7 @@ public class SingleAttributeQueries {
 				PREDTYPE.EQ);
 		System.out.println("INFO: Running SHIP INSTRUCT Query " + 1);
 		long start = System.currentTimeMillis();
-		long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
+		long result = createScanRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
 		long end = System.currentTimeMillis();
 		System.out.println("RES: SHIP INSTRUCT " + (end - start) + " "
 				+ "DELIVER IN PERSON" + " " + result);
@@ -587,7 +599,7 @@ public class SingleAttributeQueries {
 		System.out.println("INFO: Running SHIP MODE Query " + 1);
 		Predicate p1 = new Predicate(14, TYPE.STRING, "AIR", PREDTYPE.EQ);
 		long start = System.currentTimeMillis();
-		long result = sq.createScanRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
+		long result = createScanRDD(cfg.getHDFS_WORKING_DIR(), p1).count();
 		long end = System.currentTimeMillis();
 		System.out.println("RES: SHIP MODE " + (end - start) + " " + "AIR"
 				+ " " + result);
