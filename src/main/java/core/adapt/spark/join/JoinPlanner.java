@@ -9,6 +9,7 @@ import com.google.common.primitives.Ints;
 import core.adapt.JoinQuery;
 
 
+import core.adapt.iterator.JoinRepartitionIterator;
 import core.adapt.iterator.PartitionIterator;
 import core.adapt.iterator.PostFilterIterator;
 import core.common.index.JoinRobustTree;
@@ -18,6 +19,7 @@ import core.utils.HDFSUtils;
 import core.utils.RangePartitionerUtils;
 import core.utils.TypeUtils;
 import org.apache.commons.collections.map.HashedMap;
+import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -26,6 +28,7 @@ import org.apache.hadoop.fs.Path;
 import core.adapt.AccessMethod.PartitionSplit;
 
 
+import java.io.File;
 import java.io.IOException;
 
 import java.util.*;
@@ -56,7 +59,7 @@ public class JoinPlanner {
 
     private ArrayList<PartitionSplit> hyperJoinSplit, shuffleJoinSplit;
 
-    private int threshold = 80000000;
+    private int threshold = 8;
 
 
     public JoinPlanner(Configuration conf) {
@@ -79,14 +82,16 @@ public class JoinPlanner {
         dataset1_MDIndex = dataset1_cutpoints == null;
         dataset2_MDIndex = dataset2_cutpoints == null;
 
+        hyperJoinSplit = new ArrayList<PartitionSplit>();
+        shuffleJoinSplit = new ArrayList<PartitionSplit>();
+
         String workingDir = queryConf.getWorkingDir();
         //System.out.println("INFO working dir: " + workingDir);
 
         JoinAccessMethod dataset1_am = new JoinAccessMethod();
         queryConf.setJoinQuery(dataset1_query);
-        dataset1_am.init(queryConf);
-
         if (dataset1_MDIndex) {
+            dataset1_am.init(queryConf);
             dataset1_int_splits = expandPartitionSplit(dataset1_am.getPartitionSplits(dataset1_query, true));
 
         } else {
@@ -99,8 +104,9 @@ public class JoinPlanner {
 
         JoinAccessMethod dataset2_am = new JoinAccessMethod();
         queryConf.setJoinQuery(dataset2_query);
-        dataset2_am.init(queryConf);
+
         if (dataset2_MDIndex) {
+            dataset2_am.init(queryConf);
             dataset2_int_splits = expandPartitionSplit(dataset2_am.getPartitionSplits(dataset2_query, true));
         } else {
             dataset2_int_splits = RangePartitionerUtils.getSplits(dataset2_cutpoints);
@@ -109,16 +115,19 @@ public class JoinPlanner {
         input_dir = workingDir + "/" + dataset2 + "/data";
         dataset2_hpinput.initialize(listStatus(input_dir), dataset2_am);
 
-        init_bucketInfo(conf, dataset1_int_splits, dataset1_am.opt.getIndex(), dataset2_int_splits, dataset2_am.opt.getIndex());
+        init_bucketInfo(conf, dataset1_int_splits, dataset1_am, dataset2_int_splits, dataset2_am);
 
         // optimize for the JoinRobustTree
+
+        System.out.println("Optimizing dataset 1");
 
         if (dataset1_MDIndex) {
             dataset1_splits = dataset1_hpinput.getIndexScan(queryConf.getJustAccess(), dataset1_query);
         } else {
             dataset1_splits = getPartitionSplits(dataset1_int_splits, dataset1_query);
         }
-        dataset1_splits = resizeSplits(dataset1_splits, dataset1_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize(), queryConf.getMinSplitSize());
+
+        System.out.println("Optimizing dataset 2");
 
         if (dataset2_MDIndex) {
             dataset2_splits = dataset2_hpinput.getIndexScan(queryConf.getJustAccess(), dataset2_query);
@@ -126,29 +135,57 @@ public class JoinPlanner {
             dataset2_splits = getPartitionSplits(dataset2_int_splits, dataset2_query);
         }
 
+        System.out.println("init iteratorType");
+
         init_iteratorType(dataset2_splits);
+
+        System.out.println("print stats");
 
         printStatistics();
 
-        hyperJoinSplit = new ArrayList<PartitionSplit>();
-        shuffleJoinSplit = new ArrayList<PartitionSplit>();
-
-        for (PartitionSplit split : dataset1_splits) {
-
-            int[] split_ids = split.getPartitions();
-            int[] dep_split_ids = getOverlappedSplits(split_ids);
-
-            if (dep_split_ids.length > threshold) { // shuffleJoin
-                shuffleJoinSplit.add(split);
-            } else { // hyperJoin
-                hyperJoinSplit.add(split);
-            }
-        }
+        extractJoin(dataset1_splits, dataset1_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize());
 
         System.out.println("done with JoinPlanner constructor");
     }
 
-    private PartitionSplit[] getPartitionSplits(int[] bids, JoinQuery q){
+    private void extractJoin(PartitionSplit[] splits, Map<Integer, Long> partitionSizes, long maxSplitSize){
+        for(int i = 0 ;i < dataset1_splits.length; i ++){
+            PartitionSplit split = splits[i];
+            int[] bids = split.getPartitions();
+            ArrayList<Integer> shuffle_ids = new ArrayList<Integer>();
+            ArrayList<Integer> hyper_ids = new ArrayList<Integer>();
+            for(int j = 0; j < bids.length; j ++){
+                ArrayList<Integer> dep_bids = overlap_chunks.get(bids[j]);
+                if(dep_bids.size() > threshold){
+                    shuffle_ids.add(bids[j]);
+                } else{
+                    hyper_ids.add(bids[j]);
+                }
+            }
+            if(shuffle_ids.size() > 0){
+                int[] shuffle_ids_int = new int[shuffle_ids.size()];
+                for(int j = 0 ; j< shuffle_ids_int.length; j ++){
+                    shuffle_ids_int[j] = shuffle_ids.get(j);
+                }
+                PartitionSplit shuffle_split = new PartitionSplit(shuffle_ids_int, split.getIterator());
+                shuffleJoinSplit.add(shuffle_split);
+            }
+            if(hyper_ids.size() > 0){
+                int[] hyper_ids_int = new int[hyper_ids.size()];
+                for(int j = 0 ; j< hyper_ids_int.length; j ++){
+                    hyper_ids_int[j] = hyper_ids.get(j);
+                }
+                PartitionSplit hyper_split = new PartitionSplit(hyper_ids_int, split.getIterator());
+                ArrayList<PartitionSplit> hyper_splits = resizeSplits(split.getIterator(),hyper_ids_int,partitionSizes, maxSplitSize);
+                for(PartitionSplit hs : hyper_splits){
+                    hyperJoinSplit.add(hs);
+                }
+            }
+        }
+    }
+
+
+    private PartitionSplit[] getPartitionSplits(int[] bids, JoinQuery q) {
         PostFilterIterator pi = new PostFilterIterator(q.castToQuery());
         PartitionSplit psplit = new PartitionSplit(bids, pi);
         PartitionSplit[] ps = new PartitionSplit[1];
@@ -156,20 +193,21 @@ public class JoinPlanner {
         return ps;
     }
 
-
-    private void init_iteratorType(PartitionSplit[] splits){
+    private void init_iteratorType(PartitionSplit[] splits) {
         // 1 for PostFilterIterator, 2 for JoinRepartitionIterator
+        System.out.println("Bucket Iterator type: ");
         iteratorType = new HashMap<Integer, Integer>();
-        for(int i  = 0 ; i < splits.length; i ++){
+        for (int i = 0; i < splits.length; i++) {
             int[] bids = splits[i].getPartitions();
             PartitionIterator it = splits[i].getIterator();
             int type = 0;
-            if(it instanceof PostFilterIterator){
+            if (it instanceof PostFilterIterator) {
                 type = 1;
             } else {
                 type = 2;
             }
-            for(int j = 0; j < bids.length; i ++){
+            for (int j = 0; j < bids.length; j++) {
+                //System.out.println("bucket: " + bids[j] + " type: " + type);
                 iteratorType.put(bids[j], type);
             }
         }
@@ -202,7 +240,7 @@ public class JoinPlanner {
                 if (i > 0) {
                     sb.append(":");
                 }
-                sb.append(bucketIds[i] + ":" + bucket_lens[i] );
+                sb.append(bucketIds[i] + ":" + bucket_lens[i]);
             }
             sb.append(",");
 
@@ -210,7 +248,9 @@ public class JoinPlanner {
                 if (i > 0) {
                     sb.append(":");
                 }
-                sb.append(dep_bucketIDs[i] + ":" + dep_bucket_lens[i]+ ":" + iteratorType.get(dep_bucketIDs[i]));
+                int type = iteratorType.get(dep_bucketIDs[i]);
+                sb.append(dep_bucketIDs[i] + ":" + dep_bucket_lens[i] + ":" + type);
+                iteratorType.put(dep_bucketIDs[i], 1);// we can only use JoinRepartitionIterator once.
             }
         }
 
@@ -273,7 +313,7 @@ public class JoinPlanner {
             if (sb.length() > 0) {
                 sb.append(";");
             }
-            sb.append(bucketIds[i] + ":" + lens[i] + ":" +  iteratorType.get(bucketIds[i]));
+            sb.append(bucketIds[i] + ":" + lens[i] + ":" + iteratorType.get(bucketIds[i]));
         }
 
         return sb.toString();
@@ -421,7 +461,7 @@ public class JoinPlanner {
     }
 
 
-    private void init_bucketInfo(Configuration conf, int[] dataset1_splits, JoinRobustTree rt1, int[] dataset2_splits, JoinRobustTree rt2) {
+    private void init_bucketInfo(Configuration conf, int[] dataset1_splits, JoinAccessMethod jam1, int[] dataset2_splits, JoinAccessMethod jam2) {
         dataset1_bucketInfo = new HashMap<Integer, MDIndex.BucketInfo>();
         dataset2_bucketInfo = new HashMap<Integer, MDIndex.BucketInfo>();
 
@@ -431,7 +471,7 @@ public class JoinPlanner {
         System.out.println("Populate dataset1_bucketInfo");
 
         if (dataset1_MDIndex) {
-            read_index(dataset1_bucketInfo, rt1, dataset1_query.getJoinAttribute());
+            read_index(dataset1_bucketInfo, jam1.opt.getIndex(), dataset1_query.getJoinAttribute());
         } else {
             read_range(dataset1_bucketInfo, dataset1_cutpoints);
         }
@@ -441,7 +481,7 @@ public class JoinPlanner {
         System.out.println("Populate dataset2_bucketInfo");
 
         if (dataset2_MDIndex) {
-            read_index(dataset2_bucketInfo, rt2, dataset2_query.getJoinAttribute());
+            read_index(dataset2_bucketInfo, jam2.opt.getIndex(), dataset2_query.getJoinAttribute());
         } else {
             read_range(dataset2_bucketInfo, dataset2_cutpoints);
         }
@@ -509,126 +549,86 @@ public class JoinPlanner {
         return ret_ids;
     }
 
-    /* the following code is stolen from SparkInputFormt
+    private int getIntersectionSize(HashSet<Integer> chunks, ArrayList<Integer> vals) {
+        int sum = 0;
+        for (int i = 0; i < vals.size(); i++) {
+            if (chunks.contains(vals.get(i))) {
+                sum++;
+            }
+        }
+        return sum;
+    }
+
+    /* the following code uses heuristic grouping
        TODO: add different grouping algos
-     */
+    */
 
-    /**
-     * The goal of this method is to check the size of each and break large
-     * splits into multiple smaller splits.
-     *
-     * The maximum split size is read from the configuration and it depends on
-     * the size of each machine.
-     *
-     * @param initialSplits
-     * @return
-     */
-    public PartitionSplit[] resizeSplits(PartitionSplit[] initialSplits,
-                                         Map<Integer, Long> partitionSizes, long maxSplitSize,
-                                         long minSplitSize) {
-        List<PartitionSplit> resizedSplits = Lists.newArrayList();
-        ArrayListMultimap<String, PartitionSplit> smallSplits = ArrayListMultimap
-                .create();
+    private ArrayList<PartitionSplit> resizeSplits(PartitionIterator partitionIter, int[] bids, Map<Integer, Long> partitionSizes, long maxSplitSize) {
+        ArrayList<PartitionSplit> resizedSplits = new ArrayList<PartitionSplit>();
 
-        // For statistics count the size of data per iterator.
-        Map<String, Long> accessSizes = new HashMap<String, Long>();
+        Random rand = new Random();
+        rand.setSeed(0); // Making things more deterministic.
 
-        for (PartitionSplit split : initialSplits) {
-            long splitSize = getPartitionSplitSize(split, partitionSizes);
+        LinkedList<Integer> buckets = new LinkedList<Integer>();
 
-            // Add to statistics.
-            String iterName = split.getIterator().getClass().getName();
-            Long existingCount = accessSizes.containsKey(iterName) ?
-                    accessSizes.get(iterName) : (long) 0;
-            accessSizes.put(iterName, existingCount + splitSize);
-
-            if (splitSize > maxSplitSize) {
-                // create smaller splits
-                resizedSplits.addAll(createSmaller(split, partitionSizes,
-                        maxSplitSize));
-            } else if (splitSize < minSplitSize) {
-                // create larger splits
-                smallSplits.put(split.getIterator().getClass().getName(), split);
-            } else {
-                // just accept as it is
-                PartitionIterator itr = split.getIterator();
-                resizedSplits.add(new PartitionSplit(split.getPartitions(), itr));
-            }
+        int size = bids.length;
+        for (int i = 0; i < bids.length; i++) {
+            buckets.add(bids[i]);
         }
 
-        // Print statistics.
-        System.out.println("INFO: Access Sizes");
-        for (Map.Entry<String, Long> entry : accessSizes.entrySet()) {
-            System.out.println(entry.getKey() + " : " + entry.getValue());
-        }
+        while (size > 0) {
+            ArrayList<Integer> cur_split = new ArrayList<Integer>();
+            HashSet<Integer> chunks = new HashSet<Integer>();
+            long splitAvailableSize = maxSplitSize, totalSize = 0;
+            while (size > 0 && splitAvailableSize > 0) {
+                int maxIntersection = -1;
+                int best_offset = -1;
 
-        for (String key : smallSplits.keySet())
-            resizedSplits.addAll(createLarger(smallSplits.get(key),
-                    partitionSizes, maxSplitSize));
+                ListIterator<Integer> it = buckets.listIterator();
+                int offset = 0;
 
-        return resizedSplits.toArray(new PartitionSplit[resizedSplits.size()]);
-    }
-
-    private List<PartitionSplit> createLarger(List<PartitionSplit> splits,
-                                              Map<Integer, Long> partitionSizes, long maxSplitSize) {
-        List<PartitionSplit> largerSplits = Lists.newArrayList();
-
-        Multimap<Integer, Integer> largerSplitPartitionIds = ArrayListMultimap
-                .create();
-        long currentSize = 0;
-        int largerSplitId = 0;
-
-        for (PartitionSplit split : splits) {
-            for (Integer p : split.getPartitions()) {
-                long pSize = partitionSizes.containsKey(p) ? partitionSizes
-                        .get(p) : 0;
-                if (currentSize + pSize > maxSplitSize) {
-                    largerSplitId++;
-                    currentSize = 0;
+                while (it.hasNext()) {
+                    int value = it.next();
+                    if (maxIntersection == -1) {
+                        maxIntersection = getIntersectionSize(chunks, overlap_chunks.get(value));
+                        best_offset = offset;
+                    } else {
+                        int curIntersection = getIntersectionSize(chunks, overlap_chunks.get(value));
+                        if (curIntersection > maxIntersection) {
+                            maxIntersection = curIntersection;
+                            best_offset = offset;
+                        }
+                    }
+                    offset++;
                 }
-                currentSize += pSize;
-                largerSplitPartitionIds.put(largerSplitId, p);
+                int bucket = buckets.get(best_offset);
+                splitAvailableSize -= partitionSizes.get(bucket);
+
+                if (splitAvailableSize >= 0) {
+                    totalSize += partitionSizes.get(bucket);
+                    cur_split.add(bucket);
+                    for (int rhs : overlap_chunks.get(bucket)) {
+                        chunks.add(rhs);
+                    }
+                    buckets.remove(best_offset);
+                    size--;
+                }
             }
-        }
 
-        for (Integer k : largerSplitPartitionIds.keySet()) {
-            PartitionIterator itr = splits.get(0).getIterator();
-            largerSplits.add(new PartitionSplit(Ints
-                    .toArray(largerSplitPartitionIds.get(k)), itr));
-        }
+            int[] split_bids = new int[cur_split.size()];
+            for (int i = 0; i < split_bids.length; i++) {
+                split_bids[i] = cur_split.get(i);
+            }
 
-        return largerSplits;
+            PartitionSplit split = new PartitionSplit(split_bids, partitionIter);
+            resizedSplits.add(split);
+            //System.out.println("split size: " + totalSize + " " + Arrays.toString(split_bids));
+        }
+        return resizedSplits;
     }
 
-    private List<PartitionSplit> createSmaller(PartitionSplit split,
-                                               Map<Integer, Long> partitionSizes, long maxSplitSize) {
-        List<PartitionSplit> smallerSplits = Lists.newArrayList();
 
-        int[] partitions = split.getPartitions();
-        long currentSize = 0;
-        Multimap<Integer, Integer> splitPartitionIds = ArrayListMultimap
-                .create();
-        int splitId = 0;
 
-        for (int i = 0; i < partitions.length; i++) {
-            long pSize = partitionSizes.containsKey(partitions[i]) ? partitionSizes
-                    .get(partitions[i]) : 0;
-            if (currentSize + pSize > maxSplitSize) {
-                splitId++;
-                currentSize = 0;
-            }
-            currentSize += pSize;
-            splitPartitionIds.put(splitId, partitions[i]);
-        }
-
-        for (Integer k : splitPartitionIds.keySet()) {
-            PartitionIterator itr = split.getIterator();
-            smallerSplits.add(new PartitionSplit(Ints.toArray(splitPartitionIds
-                    .get(k)), itr));
-        }
-
-        return smallerSplits;
-    }
 
     private long getPartitionSplitSize(PartitionSplit split,
                                        Map<Integer, Long> partitionIdSizeMap) {

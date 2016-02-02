@@ -84,7 +84,7 @@ public class Query implements Serializable {
 				qualify &= p.isRelevant(record.getLongAttribute(attrIdx));
 				break;
 			case DOUBLE:
-				qualify &= p.isRelevant(record.getFloatAttribute(attrIdx));
+				qualify &= p.isRelevant(record.getDoubleAttribute(attrIdx));
 				break;
 			case DATE:
 				qualify &= p.isRelevant(record.getDateAttribute(attrIdx));

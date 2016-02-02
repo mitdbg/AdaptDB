@@ -144,46 +144,6 @@ public class RawIndexKey implements Cloneable {
         return sign * num;
     }
 
-    public float getFloatAttribute(int index) {
-        int off = attributeOffsets[index];
-        int len;
-        if (index < attributeOffsets.length - 1)
-            len = attributeOffsets[index + 1] - 1;
-        else
-            len = offset + length;
-
-        float ret = 0f; // return value
-        int part = 0; // the current part (int, float and sci parts of the
-        // number)
-        boolean neg = false; // true if part is a negative number
-
-        // sign
-        if ((char) bytes[off] == '-') {
-            neg = true;
-            off++;
-        }
-
-        // integer part
-        while (off < len && (char) bytes[off] != '.')
-            part = part * 10 + ((char) bytes[off++] - '0');
-        ret = neg ? (float) (part * -1) : (float) part;
-
-        // float part
-        if (off < len) {
-            off++;
-            int mul = 1;
-            part = 0;
-            while (off < len) {
-                part = part * 10 + ((char) bytes[off++] - '0');
-                mul *= 10;
-            }
-            ret = neg ? ret - (float) part / (float) mul : ret + (float) part
-                    / (float) mul;
-        }
-
-        return ret;
-    }
-
     public double getDoubleAttribute(int index) {
         int off = attributeOffsets[index];
         int len;

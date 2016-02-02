@@ -35,10 +35,6 @@ public class ParsedIndexKey {
 		return (Long) values[index];
 	}
 
-	public float getFloatAttribute(int index) {
-		return (Float) values[index];
-	}
-
 	public double getDoubleAttribute(int index) {
 		return (Double) values[index];
 	}

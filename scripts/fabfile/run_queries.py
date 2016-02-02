@@ -46,8 +46,13 @@ def run_tpchjoin():
             ' --schemaCustomer "$SCHEMACUSTOMER"' + \
             ' --schemaPart "$SCHEMAPART"' + \
             ' --schemaSupplier "$SCHEMASUPPLIER"' + \
+            ' --sizeLineitem 100' + \
+            ' --sizeCustomer 94' + \
+            ' --sizeSupplier 82' + \
+            ' --sizeOrders 64' + \
+            ' --sizePart 90' + \
             ' --numQueries 10' + \
-            ' --method 12' + \
+            ' --method 1' + \
             ' --conf $CONF  > ~/logs/join_workload.log'
         cmd = fill_cmd(cmd)
         run(cmd)
@@ -60,7 +65,9 @@ def run_cmtjoin():
             ' --schemaMH  "$SCHEMAMH"'  + \
             ' --schemaMHL "$SCHEMAMHL"'  + \
             ' --schemaSF  "$SCHEMASF"' + \
-            ' --budget 2' + \
+            ' --sizeMH 1210' + \
+            ' --sizeMHL 12' + \
+            ' --sizeSF 404' + \
             ' --method 1' + \
             ' --conf $CONF  > ~/logs/join_workload.log'
         cmd = fill_cmd(cmd)

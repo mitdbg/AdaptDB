@@ -1,6 +1,7 @@
 package core.adapt.spark.join;
 
 import core.adapt.HDFSPartition;
+import core.adapt.JoinQuery;
 import core.adapt.Query;
 import core.adapt.iterator.IteratorRecord;
 import core.adapt.iterator.JoinRepartitionIterator;
@@ -81,15 +82,16 @@ public class SparkScanRecordReader extends
 
         sparkSplit = (SparkScanFileSplit) split;
 
+        JoinQuery jq = null;
         int flag = Integer.parseInt(conf.get("DATASETFLAG"));
-
         if(flag == 1){
-            join_attr = Integer.parseInt(conf.get("JOIN_ATTR1"));
-            query =  new Query(conf.get("DATASET1_QUERY"));
+            jq = new JoinQuery(conf.get("DATASET1_QUERY"));
+
         } else {
-            join_attr = Integer.parseInt(conf.get("JOIN_ATTR2"));
-            query =  new Query(conf.get("DATASET2_QUERY"));
+            jq = new JoinQuery(conf.get("DATASET2_QUERY"));
         }
+        query =  jq.castToQuery();
+        join_attr = jq.getJoinAttribute();
 
 
         key = new LongWritable();

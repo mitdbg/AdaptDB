@@ -187,7 +187,7 @@ public class TypeUtils {
 		case LONG:
 			return (Long) value - 1;
 		case DOUBLE:
-			return (Float) value - 0.001;
+			return (Double) value - 0.001;
 		case DATE:
 			SimpleDate d = (SimpleDate) value;
 			return d.oneDayLess();
