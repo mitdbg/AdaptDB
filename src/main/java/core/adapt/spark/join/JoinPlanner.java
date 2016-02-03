@@ -2,12 +2,11 @@ package core.adapt.spark.join;
 
 
 import core.adapt.AccessMethod;
+import core.adapt.AccessMethod.PartitionSplit;
 import core.adapt.Query;
-
 import core.adapt.spark.SparkQueryConf;
 import core.common.index.MDIndex;
 import core.common.index.RobustTree;
-
 import core.utils.HDFSUtils;
 import core.utils.RangePartitionerUtils;
 import core.utils.TypeUtils;
@@ -15,9 +14,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-
-import core.adapt.AccessMethod.PartitionSplit;
-import scala.Int;
 
 import java.io.IOException;
 import java.util.*;
@@ -79,8 +75,7 @@ public class JoinPlanner {
     private void read_index(Map<Integer, MDIndex.BucketInfo> info, String path, int attr){
         String index = path + "/index";
         String sample = path + "/sample";
-        FileSystem fs = HDFSUtils.getFS(queryConf.getHadoopHome()
-                + "/etc/hadoop/core-site.xml");
+        FileSystem fs = HDFSUtils.getFSByHadoopHome(queryConf.getHadoopHome());
 
         byte[] indexBytes = HDFSUtils.readFile(fs, index);
         RobustTree rt = new RobustTree();
@@ -260,7 +255,7 @@ public class JoinPlanner {
 
         queryConf = new SparkQueryConf(conf);
 
-        fs = HDFSUtils.getFS(queryConf.getHadoopHome() + "/etc/hadoop/core-site.xml");
+        fs = HDFSUtils.getFSByHadoopHome(queryConf.getHadoopHome());
 
         dataset1 = conf.get("DATASET1");
         dataset2 = conf.get("DATASET2");

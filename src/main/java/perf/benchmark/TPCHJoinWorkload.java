@@ -1,36 +1,33 @@
 package perf.benchmark;
 
 
+import core.adapt.Predicate;
+import core.adapt.Predicate.PREDTYPE;
+import core.adapt.Query;
+import core.adapt.iterator.IteratorRecord;
 import core.adapt.spark.RangePartitioner;
-import core.adapt.spark.SparkQuery;
 import core.adapt.spark.join.SparkJoinQuery;
 import core.common.globals.Schema;
 import core.common.globals.TableInfo;
-import core.utils.*;
-
+import core.utils.ConfUtils;
+import core.utils.HDFSUtils;
+import core.utils.TypeUtils.SimpleDate;
+import core.utils.TypeUtils.TYPE;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
-
 import org.apache.hadoop.io.Text;
 import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaPairRDD;
-
+import org.apache.spark.api.java.JavaRDD;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.*;
-
-import core.adapt.Predicate;
-import core.adapt.Query;
-import core.adapt.Predicate.PREDTYPE;
-import core.utils.TypeUtils.SimpleDate;
-import core.utils.TypeUtils.TYPE;
-
-import core.adapt.iterator.IteratorRecord;
-import org.apache.spark.api.java.JavaRDD;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.Random;
 
 /**
  * Created by ylu on 12/2/15.
@@ -129,7 +126,7 @@ public class TPCHJoinWorkload {
 
 
     public void cleanup(String path) {
-        FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME() + "/etc/hadoop/core-site.xml");
+        FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
         try {
             fs.delete(new Path(path), true);
         } catch (IOException e) {
@@ -142,7 +139,7 @@ public class TPCHJoinWorkload {
         /* rename part-0000i to i and create an info file*/
 
         try {
-            FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME() + "/etc/hadoop/core-site.xml");
+            FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
             String dest = path + "/data";
 
             // delete _SUCCESS

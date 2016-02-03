@@ -1,15 +1,13 @@
 package core.upfront.build;
 
-import java.io.IOException;
-import java.io.OutputStream;
-
-import core.utils.CuratorUtils;
+import core.utils.ConfUtils;
+import core.utils.HDFSUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import core.utils.ConfUtils;
-import core.utils.HDFSUtils;
+import java.io.IOException;
+import java.io.OutputStream;
 
 public class HDFSPartitionWriter extends PartitionWriter {
 
@@ -42,8 +40,7 @@ public class HDFSPartitionWriter extends PartitionWriter {
 
 	private void createHDFS(ConfUtils cfg) {
 		this.cfg = cfg;
-		this.hdfs = HDFSUtils.getFS(this.cfg.getHADOOP_HOME()
-				+ "/etc/hadoop/core-site.xml");
+		this.hdfs = HDFSUtils.getFSByHadoopHome(this.cfg.getHADOOP_HOME());
 	}
 
 	@Override

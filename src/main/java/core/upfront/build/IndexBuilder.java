@@ -1,15 +1,15 @@
 package core.upfront.build;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import org.apache.hadoop.fs.FileSystem;
-
 import core.common.index.MDIndex;
 import core.common.index.RobustTree;
 import core.common.key.ParsedTupleList;
 import core.common.key.RawIndexKey;
 import core.utils.HDFSUtils;
+import org.apache.hadoop.fs.FileSystem;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 
 public class IndexBuilder {
 

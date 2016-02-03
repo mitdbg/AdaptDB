@@ -1,8 +1,5 @@
 package perf.benchmark;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-
 import core.adapt.Predicate;
 import core.adapt.Predicate.PREDTYPE;
 import core.adapt.Query;
@@ -13,6 +10,9 @@ import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.spark.api.java.JavaPairRDD;
+
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 
 public class SingleAttributeQueries {
 	public final static String propertyFile = BenchmarkSettings.conf;

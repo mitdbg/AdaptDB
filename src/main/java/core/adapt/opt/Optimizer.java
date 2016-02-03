@@ -1,32 +1,27 @@
 package core.adapt.opt;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
-
-import core.common.globals.TableInfo;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-
+import core.adapt.AccessMethod.PartitionSplit;
 import core.adapt.Predicate;
 import core.adapt.Query;
-import core.adapt.AccessMethod.PartitionSplit;
 import core.adapt.iterator.PartitionIterator;
 import core.adapt.iterator.PostFilterIterator;
 import core.adapt.iterator.RepartitionIterator;
 import core.adapt.spark.SparkQueryConf;
+import core.common.globals.TableInfo;
+import core.common.index.MDIndex.Bucket;
 import core.common.index.RNode;
 import core.common.index.RobustTree;
-import core.common.index.MDIndex.Bucket;
 import core.common.key.ParsedTupleList;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.Pair;
 import core.utils.TypeUtils;
 import core.utils.TypeUtils.TYPE;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Optimizer creates the execution plans for the queries.
@@ -101,8 +96,6 @@ public class Optimizer {
 		String tableDir = this.workingDir + "/" + tableInfo.tableName;
         String pathToIndex = tableDir + "/index";
 		String pathToSample = tableDir + "/sample";
-
-		System.out.println("Load index: " + pathToIndex);
 
 		byte[] indexBytes = HDFSUtils.readFile(fs, pathToIndex);
 		this.rt = new RobustTree(tableInfo);
@@ -190,8 +183,9 @@ public class Optimizer {
 				cost += r.bucket.getEstimatedNumTuples();
 			}
 		}
-		
-		this.persistQueryToDisk(q);
+
+		FileSystem fs = HDFSUtils.getFSByHadoopHome(hadoopHome);
+		this.persistQueryToDisk(fs, q);
 		List<PartitionSplit> lps = new ArrayList<PartitionSplit>();
 		if (benefit > cost) {
 			if (unmodifiedBuckets.size() > 0) {
@@ -306,11 +300,12 @@ public class Optimizer {
 		}
 		System.out.println("Query Cost: " + totalCostOfQuery);
 
-		this.persistQueryToDisk(q);
+		FileSystem fs = HDFSUtils.getFSByHadoopHome(hadoopHome);
+		this.persistQueryToDisk(fs, q);
 		if (updated) {
 			System.out.println("INFO: Index being updated");
 			this.updateIndex(best, q.getPredicates());
-			this.persistIndexToDisk();
+			this.persistIndexToDisk(fs);
 			for (int i = 0; i < psplits.length; i++) {
 				if (psplits[i].getIterator().getClass() == RepartitionIterator.class) {
 					psplits[i] = new PartitionSplit(
@@ -1037,8 +1032,7 @@ public class Optimizer {
 	}
 
 	public void loadQueries() {
-		FileSystem fs = HDFSUtils.getFS(hadoopHome
-				+ "/etc/hadoop/core-site.xml");
+		FileSystem fs = HDFSUtils.getFSByHadoopHome(hadoopHome);
 		String pathToQueries = this.workingDir + "/queries";
 		try {
 			if (fs.exists(new Path(pathToQueries))) {
@@ -1057,16 +1051,15 @@ public class Optimizer {
 		}
 	}
 
-	private void persistQueryToDisk(Query q) {
+	private void persistQueryToDisk(FileSystem fs, Query q) {
 		String pathToQueries = this.workingDir + "/" + q.getTable() + "/queries";
-		HDFSUtils.safeCreateFile(hadoopHome, pathToQueries,
+		HDFSUtils.safeCreateFile(fs, pathToQueries,
 				this.fileReplicationFactor);
-		HDFSUtils.appendLine(hadoopHome, pathToQueries, q.toString());
+		HDFSUtils.appendLine(fs, pathToQueries, q.toString());
 	}
 
-	private void persistIndexToDisk() {
+	private void persistIndexToDisk(FileSystem fs) {
 		String pathToIndex = this.workingDir + "/" + rt.tableInfo.tableName + "/index";
-		FileSystem fs = HDFSUtils.getFSByHadoopHome(hadoopHome);
 		try {
 			if (fs.exists(new Path(pathToIndex))) {
 				// If index file exists, move it to a new filename
@@ -1079,7 +1072,7 @@ public class Optimizer {
 							+ " failed");
 				}
 			}
-			HDFSUtils.safeCreateFile(hadoopHome, pathToIndex,
+			HDFSUtils.safeCreateFile(fs, pathToIndex,
 					this.fileReplicationFactor);
 		} catch (IOException e) {
 			System.out.println("ERR: Writing Index failed: " + e.getMessage());
@@ -1087,7 +1080,7 @@ public class Optimizer {
 		}
 
 		byte[] indexBytes = this.rt.marshall();
-		HDFSUtils.writeFile(HDFSUtils.getFSByHadoopHome(hadoopHome),
+		HDFSUtils.writeFile(fs,
 				pathToIndex, this.fileReplicationFactor, this.rt.marshall(), 0,
 				indexBytes.length, false);
 	}

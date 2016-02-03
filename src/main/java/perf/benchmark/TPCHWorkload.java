@@ -1,15 +1,8 @@
 package perf.benchmark;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.List;
-import java.util.Random;
-
 import core.adapt.Predicate;
-import core.adapt.Query;
 import core.adapt.Predicate.PREDTYPE;
-import core.adapt.iterator.IteratorRecord;
+import core.adapt.Query;
 import core.adapt.spark.SparkQuery;
 import core.common.globals.Globals;
 import core.common.globals.TableInfo;
@@ -18,6 +11,8 @@ import core.utils.HDFSUtils;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 import org.apache.hadoop.fs.FileSystem;
+
+import java.util.*;
 
 public class TPCHWorkload {
 	public ConfUtils cfg;
@@ -31,6 +26,8 @@ public class TPCHWorkload {
     String tableName;
 
     TableInfo tableInfo;
+
+    SparkQuery sq;
 
 	public void setUp() {
 		cfg = new ConfUtils(BenchmarkSettings.conf);
@@ -46,6 +43,8 @@ public class TPCHWorkload {
 		Globals.loadTableInfo(tableName, cfg.getHDFS_WORKING_DIR(), fs);
 		tableInfo = Globals.getTableInfo(tableName);
 		assert tableInfo != null;
+
+		sq = new SparkQuery(cfg);
 
 		// Cleanup queries file - to remove past query workload.
 		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
@@ -214,9 +213,12 @@ public class TPCHWorkload {
 		return queries;
 	}
 
+	public long runQuery(Query q) {
+		return sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(), q).count();
+	}
+
 	public void runWorkload(int numQueries) {
 		long start, end;
-		SparkQuery sq = new SparkQuery(cfg);
 		List<Query> queries = generateWorkload(numQueries);
 		System.out.println("INFO: Workload " + numQueries);
 		for (Query q: queries) {
@@ -225,8 +227,7 @@ public class TPCHWorkload {
 
 		for (Query q : queries) {
 			start = System.currentTimeMillis();
-			long result = sq.createAdaptRDD(cfg.getHDFS_WORKING_DIR(),
-					q).count();
+			long result = runQuery(q);
 			end = System.currentTimeMillis();
 			System.out.println("RES: Time Taken: " + (end - start) + 
 					"; Result: " + result);

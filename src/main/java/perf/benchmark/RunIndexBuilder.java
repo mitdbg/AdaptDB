@@ -1,19 +1,7 @@
 package perf.benchmark;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-
-import core.common.globals.TableInfo;
-import core.utils.CuratorUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocatedFileStatus;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RemoteIterator;
-
 import core.common.globals.Globals;
-import core.common.globals.Schema;
+import core.common.globals.TableInfo;
 import core.common.index.RobustTree;
 import core.common.key.ParsedTupleList;
 import core.common.key.RawIndexKey;
@@ -21,7 +9,17 @@ import core.upfront.build.HDFSPartitionWriter;
 import core.upfront.build.IndexBuilder;
 import core.upfront.build.PartitionWriter;
 import core.utils.ConfUtils;
+import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Builds the index. Captures time taken by the different steps in index

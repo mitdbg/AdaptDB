@@ -2,9 +2,7 @@ package perf.benchmark;
 
 import core.adapt.Predicate;
 import core.adapt.Query;
-import core.adapt.iterator.IteratorRecord;
 import core.adapt.spark.RangePartitioner;
-import core.adapt.spark.SparkQuery;
 import core.adapt.spark.join.SparkJoinQuery;
 import core.common.globals.Schema;
 import core.common.globals.TableInfo;
@@ -17,15 +15,14 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.join.ArrayListBackedIterator;
-import org.apache.hadoop.yarn.webapp.hamlet.HamletSpec;
 import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Random;
 
 
 public class CMTJoinWorkload {
@@ -96,7 +93,7 @@ public class CMTJoinWorkload {
     }
 
     public void cleanup(String path){
-        FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME() + "/etc/hadoop/core-site.xml");
+        FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
         try {
             fs.delete(new Path(path), true);
         } catch (IOException e) {
@@ -110,7 +107,7 @@ public class CMTJoinWorkload {
         /* rename part-0000i to i and create an info file*/
 
         try {
-            FileSystem fs = HDFSUtils.getFS(cfg.getHADOOP_HOME() + "/etc/hadoop/core-site.xml");
+            FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
             String dest = path + "/data";
 
             // delete _SUCCESS

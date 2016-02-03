@@ -1,14 +1,14 @@
 package core.upfront.build;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-
 import core.common.index.MDIndex;
 import core.common.key.RawIndexKey;
 import core.utils.BinaryUtils;
 import core.utils.IOUtils;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 
 public class InputReader {
 

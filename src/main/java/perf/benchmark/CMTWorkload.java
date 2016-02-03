@@ -1,11 +1,8 @@
 package perf.benchmark;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import core.adapt.Predicate;
-import core.adapt.Query;
 import core.adapt.Predicate.PREDTYPE;
+import core.adapt.Query;
 import core.adapt.spark.SparkQuery;
 import core.common.globals.Globals;
 import core.common.globals.TableInfo;
@@ -14,6 +11,9 @@ import core.utils.HDFSUtils;
 import core.utils.TypeUtils;
 import core.utils.TypeUtils.TYPE;
 import org.apache.hadoop.fs.FileSystem;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class CMTWorkload {
 	public ConfUtils cfg;

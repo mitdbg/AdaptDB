@@ -1,28 +1,15 @@
 package core.utils;
 
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.util.List;
-
+import com.google.common.collect.Lists;
+import com.google.common.io.ByteStreams;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.BlockLocation;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
 
-import com.google.common.collect.Lists;
-import com.google.common.io.ByteStreams;
+import java.io.*;
+import java.util.List;
 
 public class HDFSUtils {
 
@@ -168,11 +155,7 @@ public class HDFSUtils {
 
 	private static FileSystem fs;
 
-	public static FileSystem getFSByHadoopHome(String hadoopHome) {
-		return getFS(hadoopHome + "/etc/hadoop/core-site.xml");
-	}
-
-	public static FileSystem getFS(String coreSitePath) {
+	private static FileSystem getFS(String coreSitePath) {
 		if (fs == null) {
 			try {
 				Configuration conf = new Configuration();
@@ -184,6 +167,10 @@ public class HDFSUtils {
 			}
 		}
 		return fs;
+	}
+
+	public static FileSystem getFSByHadoopHome(String hadoopHome) {
+		return getFS(hadoopHome + "/etc/hadoop/core-site.xml");
 	}
 
 	public static OutputStream getHDFSOutputStream(FileSystem hdfs,
@@ -261,24 +248,6 @@ public class HDFSUtils {
 		}
 	}
 
-	public static void createFile(String hadoopHome, String path,
-			short replication) {
-		try {
-			FSDataOutputStream os = getFSByHadoopHome(hadoopHome).create(
-					new Path(path), replication);
-			os.close();
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to create the file: " + path
-					+ ", " + e.getMessage());
-		}
-	}
-
-	public static void safeCreateFile(String hadoopHome, String path,
-			short replication) {
-		FileSystem fs = getFSByHadoopHome(hadoopHome);
-		safeCreateFile(fs, path, replication);
-	}
-
 	public static void safeCreateFile(FileSystem fs, String path,
 			short replication) {
 		try {
@@ -299,6 +268,21 @@ public class HDFSUtils {
 			}
 		} catch (IOException e) {
 		}
+	}
+
+	public static boolean deleteFile(FileSystem fs, String filename,
+			boolean recursive) {
+		try {
+			return fs.delete(new Path(filename), recursive);
+		} catch (IOException e) {
+			return false;
+		}
+	}
+
+	public static void copyFile(FileSystem fs, String origin, String destination,
+			short replication) {
+        byte[] contents = readFile(fs, origin);
+        writeFile(fs, destination, replication, contents, 0, contents.length, false);
 	}
 
 	public static List<String> readHDFSLines(String hadoopHome, String filename) {
@@ -344,10 +328,10 @@ public class HDFSUtils {
 		}
 	}
 
-	public static void appendLine(String hadoopHome, String filepath,
+	public static void appendLine(FileSystem fs, String filepath,
 			String line) {
 		try {
-			FSDataOutputStream fout = getFSByHadoopHome(hadoopHome).append(
+			FSDataOutputStream fout = fs.append(
 					new Path(filepath));
 			fout.write(line.getBytes());
 			fout.write('\n');
@@ -438,24 +422,6 @@ public class HDFSUtils {
 			return fout;
 	}
 
-	public static boolean tryDelete(FileSystem hdfs, String filename,
-			boolean recursive) {
-		try {
-			return hdfs.delete(new Path(filename), recursive);
-		} catch (IOException e) {
-			return false;
-		}
-	}
-
-	public static void deleteFile(FileSystem hdfs, String filename,
-			boolean recursive) {
-		try {
-			hdfs.delete(new Path(filename), recursive);
-		} catch (IOException e) {
-			System.out.println("Failed to delete: " + filename);
-			e.printStackTrace();
-		}
-	}
 
 	public static List<String> getDataNodes(String hadoopHome) {
 		List<String> lines = Lists.newArrayList();

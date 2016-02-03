@@ -1,14 +1,14 @@
 package core.upfront.build;
 
+import core.common.index.MDIndex;
+import core.common.key.RawIndexKey;
+import core.utils.IOUtils;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import core.common.index.MDIndex;
-import core.common.key.RawIndexKey;
-import core.utils.IOUtils;
 
 public class InputReaderMT {
 

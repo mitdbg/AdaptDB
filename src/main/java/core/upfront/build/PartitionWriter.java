@@ -1,14 +1,13 @@
 package core.upfront.build;
 
+import com.google.common.collect.Maps;
+import org.apache.commons.lang3.mutable.MutableInt;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.commons.lang3.mutable.MutableInt;
-
-import com.google.common.collect.Maps;
 
 public abstract class PartitionWriter implements Cloneable {
 	protected int bufferPartitionSize = 2 * 1024 * 1024;  // 2 MB

@@ -1,16 +1,7 @@
 package perf.benchmark;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.Random;
-
-import core.adapt.Predicate;
-import core.adapt.Predicate.PREDTYPE;
-import core.adapt.spark.SparkQuery;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
-import core.utils.TypeUtils.SimpleDate;
-import core.utils.TypeUtils.TYPE;
 
 public class ChangingWorkload {
 	ConfUtils cfg;

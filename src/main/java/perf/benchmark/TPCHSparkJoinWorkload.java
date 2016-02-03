@@ -1,20 +1,16 @@
 package perf.benchmark;
 
-import core.adapt.spark.SparkQuery;
-
-import core.utils.*;
-
+import core.utils.ConfUtils;
+import core.utils.TypeUtils.SimpleDate;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.spark.SparkConf;
-
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.SQLContext;
 
-import java.util.*;
-
-import core.utils.TypeUtils.SimpleDate;
-
-import org.apache.spark.api.java.JavaSparkContext;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.Random;
 
 /**
  * Created by ylu on 1/4/16.
