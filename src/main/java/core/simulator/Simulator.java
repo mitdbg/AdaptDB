@@ -1,64 +1,68 @@
 package core.simulator;
 
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.hadoop.mapreduce.Job;
-
 import core.adapt.Predicate;
 import core.adapt.Predicate.PREDTYPE;
 import core.adapt.Query;
 import core.adapt.opt.Optimizer;
+import core.common.globals.Globals;
 import core.utils.ConfUtils;
 import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.mapreduce.Job;
 import perf.benchmark.BenchmarkSettings;
 
 public class Simulator {
-	Job job;
 	Optimizer opt;
-	int sf;
-	final long TUPLES_PER_SF = 6000000;
+
 	ConfUtils cfg;
 
-	public void setUp() {
-		sf = 1000;
-		cfg = new ConfUtils(BenchmarkSettings.conf);
-		this.cleanUp();
-		opt = new Optimizer(cfg);
-		// TODO: Fix this.
-		// opt.loadIndex();
-	}
+	String simName;
 
-	public void cleanUp() {
-		// Cleanup queries file - to remove past query workload
-		HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
-				cfg.getHDFS_WORKING_DIR() + "/queries", false);
+	String dataset;
 
-		CuratorFramework client = CuratorUtils.createAndStartClient(cfg
-				.getZOOKEEPER_HOSTS());
+	Query[] queries;
+
+	public void setUp(ConfUtils cfg, String simName, String dataset, Query[] queries) {
+		this.cfg = cfg;
+		this.simName = simName;
+		this.dataset = dataset;
+		this.queries = queries;
+
+		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
+
+		HDFSUtils.deleteFile(fs,
+				cfg.getHDFS_WORKING_DIR() + "/" + simName, true);
+		HDFSUtils.safeCreateDirectory(fs, cfg.getHDFS_WORKING_DIR() + "/" + simName);
+
+		CuratorFramework client = CuratorUtils.createAndStartClient(
+				cfg.getZOOKEEPER_HOSTS());
 		CuratorUtils.deleteAll(client, "/", "partition-");
 		CuratorUtils.stopClient(client);
+
+		HDFSUtils.copyFile(fs, cfg.getHDFS_WORKING_DIR() + "/" + dataset + "/" + "index",
+				cfg.getHDFS_WORKING_DIR() + "/" + simName + "/" + "index",
+				cfg.getHDFS_REPLICATION_FACTOR());
+		HDFSUtils.copyFile(fs, cfg.getHDFS_WORKING_DIR() + "/" + dataset + "/" + "sample",
+				cfg.getHDFS_WORKING_DIR() + "/" + simName + "/" + "sample",
+				cfg.getHDFS_REPLICATION_FACTOR());
+		HDFSUtils.copyFile(fs, cfg.getHDFS_WORKING_DIR() + "/" + dataset + "/" + "info",
+				cfg.getHDFS_WORKING_DIR() + "/" + simName + "/" + "info",
+				cfg.getHDFS_REPLICATION_FACTOR());
+
+		opt = new Optimizer(cfg);
+		opt.loadIndex(Globals.getTableInfo(simName));
 	}
 
-	public void testRunQuery() {
-		Predicate[] predicates = new Predicate[] { new Predicate(0, TYPE.LONG,
-				3002147L, PREDTYPE.LEQ) };
-		opt.buildPlan(new Query("lineitem", predicates));
-	}
-
-	public void testSinglePredicateRun() {
-		int numQueries = 50;
-		for (int i = 1; i <= numQueries; i++) {
-			int year = 1993 + (i + 1) % 5;
-			Predicate p1 = new Predicate(10, TYPE.DATE, new SimpleDate(
-					year - 1, 12, 31), PREDTYPE.GT);
-			// Predicate p2 = new Predicate(10, TYPE.DATE, new
-			// SimpleDate(year+1,1,1), PREDTYPE.LT);
-			System.out.println("Updated Bucket Counts");
-			opt.buildPlan(new Query("lineitem", new Predicate[] { p1 }));
-			System.out.println("Completed Query " + i);
+	public void run() {
+		for (int i=0; i<queries.length; i++) {
+			Query q = queries[i];
+			q.setTable(simName);
+			opt.buildPlan(q);
 		}
 	}
 }
