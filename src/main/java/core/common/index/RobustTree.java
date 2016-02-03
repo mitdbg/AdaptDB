@@ -48,6 +48,7 @@ public class RobustTree implements MDIndex {
 	public void setMaxBuckets(int maxBuckets) {
 		this.maxBuckets = maxBuckets;
 	}
+	public int getMaxBuckets(){return maxBuckets;}
 
 	@Override
 	public MDIndex clone() throws CloneNotSupportedException {
@@ -184,6 +185,84 @@ public class RobustTree implements MDIndex {
 				.println("Final Allocations: " + Arrays.toString(allocations));
 	}
 
+
+	@Override
+	public void initProbe(int[] dims) {
+		System.out.println(this.sample.size() + " keys inserted");
+
+		// Computes log(this.maxBuckets)
+		int maxDepth = 31 - Integer.numberOfLeadingZeros(this.maxBuckets);
+		double allocationPerAttribute = RobustTree.nthroot(
+				this.numAttributes, this.maxBuckets);
+		System.out.println("Max allocation: " + allocationPerAttribute);
+
+		double[] allocations = new double[this.numAttributes];
+		for (int i = 0; i < this.numAttributes; i++) {
+			allocations[i] = allocationPerAttribute;
+		}
+
+		/**
+		 * Do a level-order traversal
+		 */
+		LinkedList<Task> nodeQueue = new LinkedList<Task>();
+		// Initialize root with attribute 0
+		Task initialTask = new Task();
+		initialTask.node = root;
+		initialTask.sample = this.sample;
+		initialTask.depth = 0;
+		nodeQueue.add(initialTask);
+
+		while (nodeQueue.size() > 0) {
+			Task t = nodeQueue.pollFirst();
+			if (t.depth < maxDepth) {
+				int dim = -1;
+				int testDim = dims[t.depth];
+				Pair<ParsedTupleList, ParsedTupleList> halves = t.sample.sortAndSplit(testDim);
+				if (halves.first.size() > 0 && halves.second.size() > 0) {
+					dim = testDim;
+				} else{
+					System.err.println("WARN: Skipping attribute "
+							+ testDim);
+				}
+
+				if (dim == -1) {
+					System.err.println("ERR: No attribute to partition on");
+					Bucket b = new Bucket();
+					b.setSample(sample);
+					t.node.bucket = b;
+				} else {
+					t.node.attribute = dim;
+					t.node.type = this.dimensionTypes[dim];
+					t.node.value = halves.first.getLast(dim); // Need to traverse up for range.
+
+					t.node.leftChild = new RNode();
+					t.node.leftChild.parent = t.node;
+					Task tl = new Task();
+					tl.node = t.node.leftChild;
+					tl.depth = t.depth + 1;
+					tl.sample = halves.first;
+					nodeQueue.add(tl);
+
+					t.node.rightChild = new RNode();
+					t.node.rightChild.parent = t.node;
+					Task tr = new Task();
+					tr.node = t.node.rightChild;
+					tr.depth = t.depth + 1;
+					tr.sample = halves.second;
+					nodeQueue.add(tr);
+				}
+			} else {
+				Bucket b = new Bucket();
+				b.setSample(sample);
+				t.node.bucket = b;
+			}
+		}
+
+		System.out
+				.println("Final Allocations: " + Arrays.toString(allocations));
+	}
+
+
 	// TODO: Add capacity
 	static List<Integer> leastAllocated = new ArrayList<>(20);
 	static Random randGenerator = new Random();
@@ -222,6 +301,26 @@ public class RobustTree implements MDIndex {
 	@Override
 	public Object getBucketId(RawIndexKey key) {
 		return root.getBucketId(key);
+	}
+
+
+	private void getAllBucketsHelper(RNode node, ArrayList<Integer> ids){
+		if(node.bucket != null){
+			ids.add(node.bucket.getBucketId());
+			return;
+		}
+		getAllBucketsHelper(node.leftChild, ids);
+		getAllBucketsHelper(node.rightChild, ids);
+	}
+
+	public int[] getAllBuckets(){
+		ArrayList<Integer> ids = new ArrayList<Integer>();
+		getAllBucketsHelper(root, ids);
+		int[] buckets = new int[ids.size()];
+		for(int i = 0 ;i < buckets.length; i ++){
+			buckets[i] = ids.get(i);
+		}
+		return buckets;
 	}
 
 	/***************************************************

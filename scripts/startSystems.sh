@@ -10,4 +10,6 @@ $HADOOP_HOME/sbin/start-dfs.sh
 # start spark
 $SPARK_HOME/sbin/start-all.sh
 
+$ZOOKEEPER_HOME/bin/zkServer.sh start
+
 jps

@@ -1,11 +1,9 @@
 package core.adapt.spark.join;
 
 
-import core.adapt.Query;
-import core.adapt.iterator.IteratorRecord;
-import core.adapt.spark.SparkInputFormat;
-import core.adapt.spark.SparkQueryConf;
+import core.adapt.JoinQuery;
 import core.utils.RangePartitionerUtils;
+import core.utils.SparkUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -17,6 +15,8 @@ import core.utils.ConfUtils;
 import org.apache.spark.api.java.function.PairFunction;
 
 import scala.Tuple2;
+
+import java.util.List;
 
 /**
  * Created by ylu on 1/6/16.
@@ -48,7 +48,7 @@ public class SparkJoinQuery {
         }
     }
 
-    protected SparkQueryConf queryConf;
+    protected SparkJoinQueryConf queryConf;
     protected JavaSparkContext ctx;
     protected ConfUtils cfg;
 
@@ -57,14 +57,7 @@ public class SparkJoinQuery {
 
     public SparkJoinQuery(ConfUtils config) {
         this.cfg = config;
-        SparkConf sconf = new SparkConf().setMaster(cfg.getSPARK_MASTER())
-                .setAppName(this.getClass().getName())
-                .setSparkHome(cfg.getSPARK_HOME())
-                .setJars(new String[]{cfg.getSPARK_APPLICATION_JAR()})
-                .set("spark.hadoop.cloneConf", "false")
-                .set("spark.executor.memory", cfg.getSPARK_EXECUTOR_MEMORY())
-                .set("spark.driver.memory", cfg.getSPARK_DRIVER_MEMORY())
-                .set("spark.task.cpus", cfg.getSPARK_TASK_CPUS());
+        SparkConf sconf = SparkUtils.getSparkConf(this.getClass().getName(), config);
 
         try {
             sconf.registerKryoClasses(new Class<?>[]{
@@ -80,7 +73,14 @@ public class SparkJoinQuery {
                 FileInputFormat.INPUT_DIR_RECURSIVE, true);
         ctx.hadoopConfiguration().set("fs.hdfs.impl",
                 org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
-        queryConf = new SparkQueryConf(ctx.hadoopConfiguration());
+        queryConf = new SparkJoinQueryConf(ctx.hadoopConfiguration());
+
+        queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
+        queryConf.setHadoopHome(cfg.getHADOOP_HOME());
+        queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
+        queryConf.setMaxSplitSize(128 * 1024 * 1024); // 128MB
+
+
     }
 
     public void setDelimiter(String delimiter) {
@@ -91,88 +91,46 @@ public class SparkJoinQuery {
         return Delimiter;
     }
 
+    public String getCutPoints(JavaPairRDD<LongWritable, Text> rdd, int recordSize) {
+        long chunkSize = 32 * 1024 * 1024; // 32 MB
+        long count = rdd.count();
+        long totalSize = count * recordSize;
+        int numSplits = (int) ( (totalSize + chunkSize - 1)  / chunkSize); // ceiling
+        double sampleRate = 0.01;
+        if(sampleRate * count > 100){
+            sampleRate = 100.0 / count;
+        }
 
-    public JavaPairRDD<LongWritable, IteratorRecord> createRDD(String hdfsPath,
-                                                               Query q) {
-        return this.createRDD(hdfsPath, 0, q);
-    }
+        System.out.println("[Info] getCutPoints");
+        System.out.println("count: " + count + " totalSize: " + totalSize + " numSplits: " + numSplits + " sampleRate: " + sampleRate);
 
-    public JavaPairRDD<LongWritable, IteratorRecord> createRDD(String hdfsPath,
-                                                               int replicaId, Query q) {
-        queryConf.setWorkingDir(hdfsPath);
-        queryConf.setReplicaId(replicaId);
-        queryConf.setQuery(q);
-        queryConf.setHadoopHome(cfg.getHADOOP_HOME());
-        queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
-        queryConf.setMaxSplitSize(8589934592l); // 8gb is the max size for each
-        // split (with 8 threads in
-        // parallel)
-        queryConf.setMinSplitSize(4294967296l); // 4gb
-        queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
+        List<LongWritable> sampleKeys = rdd.keys().sample(false, sampleRate).collect();
+        int[] cutpoints = RangePartitionerUtils.getCutPoints(sampleKeys, numSplits);
 
-        // TODO: This is tricky. Figure out how to do for multiple tables.
-        return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath + "/"  + q.getTable() + "/data",
-                SparkInputFormat.class, LongWritable.class,
-                IteratorRecord.class, ctx.hadoopConfiguration());
-    }
-
-    public JavaPairRDD<LongWritable, IteratorRecord> createScanRDD(
-            String hdfsPath, Query q) {
-        queryConf.setFullScan(true);
-        return createRDD(hdfsPath, q);
-    }
-
-    public JavaPairRDD<LongWritable, IteratorRecord> createAdaptRDD(
-            String hdfsPath, Query q) {
-        queryConf.setJustAccess(false);
-        return createRDD(hdfsPath, q);
+        return RangePartitionerUtils.getStringCutPoints(cutpoints);
     }
 
 	/* SparkJoinQuery */
 
     public JavaPairRDD<LongWritable, Text> createJoinRDD(String hdfsPath) {
-        return this.createJoinRDD(hdfsPath, 0);
-    }
-
-    public JavaPairRDD<LongWritable, Text> createJoinRDD(String hdfsPath,
-                                                         int replicaId) {
-        queryConf.setReplicaId(replicaId);
+        queryConf.setReplicaId(0);
         return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath,
                 SparkJoinInputFormat.class, LongWritable.class,
                 Text.class, ctx.hadoopConfiguration());
     }
 
 
-    public String getCutPoints(String dataset, int attr) {
-        int[] cutpoints = {0, 1000000, 2000000, 3000000, 4000000, 5000000};
-
-        return RangePartitionerUtils.getStringCutPoints(cutpoints);
-    }
-
-    public JavaPairRDD<LongWritable, Text> createJoinScanRDD(
-            String dataset1, String dataset1_schema, Query dataset1_query, final int join_attr1, String dataset1_cutpoints,
-            String dataset2, String dataset2_schema, Query dataset2_query, final int join_attr2, String dataset2_cutpoints,
-            int partitionKey, int budget) {
-        // type == 0, mdindex, == 1 raw files
-
-        if (join_attr1 == -1 || join_attr2 == -1) {
-            throw new RuntimeException("Join Attrs cannot be -1.");
-        }
+    public JavaPairRDD<LongWritable, Text> createJoinRDD(
+            String dataset1, JoinQuery dataset1_query, String dataset1_cutpoints,
+            String dataset2, JoinQuery dataset2_query, String dataset2_cutpoints,
+            int partitionKey) {
 
         // set SparkQuery conf
 
         String hdfsPath = cfg.getHDFS_WORKING_DIR();
 
-        queryConf.setFullScan(true);
         queryConf.setWorkingDir(hdfsPath);
-        queryConf.setHadoopHome(cfg.getHADOOP_HOME());
-        queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
-        queryConf.setMaxSplitSize(8589934592l); // 8gb is the max size for each
-        // split (with 8 threads in
-        // parallel)
-        queryConf.setMinSplitSize(4294967296l); // 4gb
-        queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
-
+        queryConf.setJustAccess(false);
 
         Configuration conf = ctx.hadoopConfiguration();
 
@@ -182,125 +140,64 @@ public class SparkJoinQuery {
         conf.set("DATASET1_CUTPOINTS", dataset1_cutpoints);
         conf.set("DATASET2_CUTPOINTS", dataset2_cutpoints);
 
-        conf.set("DATASET1_SCHEMA", dataset1_schema);
-        conf.set("DATASET2_SCHEMA", dataset2_schema);
-
         conf.set("DATASET1_QUERY", dataset1_query.toString());
         conf.set("DATASET2_QUERY", dataset2_query.toString());
 
-        conf.set("JOIN_ATTR1", Integer.toString(join_attr1));
-        conf.set("JOIN_ATTR2", Integer.toString(join_attr2));
         conf.set("PARTITION_KEY", Integer.toString(partitionKey)) ;
-
-        conf.set("BUDGET", Integer.toString(budget));
 
         conf.set("JOINALGO", joinStrategy);
 
         conf.set("DELIMITER", Delimiter);
 
-        System.out.println("Before planner");
-
         JoinPlanner planner = new JoinPlanner(conf);
-
-
-        System.out.println("After planner");
-
-        // shuffle join
-
-        String[] shuffleJoin = planner.getShuffleJoin();
-
-
-
-        // set conf input;
-        conf.set("DATASET", dataset1);
-        conf.set("JOIN_ATTR",Integer.toString(join_attr1));
-        conf.set("DATASETINFO", shuffleJoin[0]);
-
-        JavaPairRDD<LongWritable, Text> dataset1RDD = createSingleTableScanRDD(hdfsPath, dataset1_query);
-        dataset1RDD.count();
-
-
-        // set conf input;
-        conf.set("DATASET", dataset2);
-        conf.set("JOIN_ATTR",Integer.toString(join_attr2));
-        conf.set("DATASETINFO", shuffleJoin[1]);
-
-        JavaPairRDD<LongWritable, Text> dataset2RDD = createSingleTableScanRDD(hdfsPath, dataset2_query);
-
-        JavaPairRDD<LongWritable, Text> shufflejoinRDD = dataset1RDD.join(dataset2RDD).mapToPair(new Mapper(Delimiter, partitionKey));
-
-        System.out.println("Table 1 count: " + dataset1RDD.count()  + " Table 2 count: " + dataset2RDD.count());
 
         // hyper join
 
-        String[] hyperJoin = planner.getHyperJoin();
+        String hyperJoinInput = planner.getHyperJoinInput();
 
-        conf.set("DATASETINFO1", hyperJoin[0]);
-        conf.set("DATASETINFO2", hyperJoin[1]);
+        System.out.println("hyperJoinInput: " + hyperJoinInput);
 
-        String overlap = planner.getHyperJoinOverlap();
-
-        conf.set("OVERLAP", overlap);
-
+        conf.set("DATASETINFO",hyperJoinInput);
 
         JavaPairRDD<LongWritable, Text> hyperjoinRDD = createJoinRDD(hdfsPath);
-        System.out.println(">>> " + hyperJoin[0] + " ## " +  shuffleJoin[0]);
+
+
+        // shuffle join
+
+        String input1 = planner.getShuffleJoinInput1();
+        String input2 = planner.getShuffleJoinInput2();
+
+        System.out.println("shuffleInput1: " + input1);
+        System.out.println("shuffleInput2: " + input2);
+
+        // set conf input;
+        conf.set("DATASETFLAG", "1");
+        conf.set("DATASETINFO", input1);
+
+        JavaPairRDD<LongWritable, Text> dataset1RDD = createSingleTableRDD(hdfsPath, dataset1_query);
+
+        // set conf input;
+        conf.set("DATASETFLAG", "2");
+        conf.set("DATASETINFO", input2);
+
+        JavaPairRDD<LongWritable, Text> dataset2RDD = createSingleTableRDD(hdfsPath, dataset2_query);
+
+        JavaPairRDD<LongWritable, Text> shufflejoinRDD = dataset1RDD.join(dataset2RDD).mapToPair(new Mapper(Delimiter, partitionKey));
 
         JavaPairRDD<LongWritable, Text> rdd = hyperjoinRDD.union(shufflejoinRDD);
+
         return rdd;
     }
-
-
-    public JavaPairRDD<LongWritable, Text> createJoinScanRDD(
-            String hdfsPath) {
-        queryConf.setFullScan(true);
-        return createJoinRDD(hdfsPath);
-    }
-
-    public JavaPairRDD<LongWritable, Text> createJoinAdaptRDD(
-            String hdfsPath) {
-        queryConf.setJustAccess(false);
-        return createJoinRDD(hdfsPath);
-    }
-
 
     /* SingleTableScan  */
 
     public JavaPairRDD<LongWritable, Text> createSingleTableRDD(String hdfsPath,
-                                                               Query q) {
-        return this.createSingleTableRDD(hdfsPath, 0, q);
-    }
-
-
-    public JavaPairRDD<LongWritable, Text> createSingleTableRDD(String hdfsPath,
-                                                     int replicaId, Query q) {
+                                                                JoinQuery q) {
         queryConf.setWorkingDir(hdfsPath);
-        queryConf.setReplicaId(replicaId);
-        queryConf.setQuery(q);
-        queryConf.setHadoopHome(cfg.getHADOOP_HOME());
-        queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
-        queryConf.setMaxSplitSize(8589934592l); // 8gb is the max size for each
-        // split (with 8 threads in
-        // parallel)
-        queryConf.setMinSplitSize(4294967296l); // 4gb
-        queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
+        queryConf.setJoinQuery(q);
 
-        // TODO: This is tricky. Figure out how to do for multiple tables.
         return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath + "/" + q.getTable() + "/data",
                 SparkScanInputFormat.class, LongWritable.class,
                 Text.class, ctx.hadoopConfiguration());
     }
-
-    public JavaPairRDD<LongWritable, Text> createSingleTableScanRDD(
-            String hdfsPath, Query q) {
-        queryConf.setFullScan(true);
-        return createSingleTableRDD(hdfsPath, q);
-    }
-
-    public JavaPairRDD<LongWritable, Text> createSingleTableAdaptRDD(
-            String hdfsPath, Query q) {
-        queryConf.setJustAccess(false);
-        return createSingleTableRDD(hdfsPath, q);
-    }
-
 }

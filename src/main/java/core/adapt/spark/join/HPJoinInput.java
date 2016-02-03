@@ -5,30 +5,27 @@ package core.adapt.spark.join;
  */
 
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import org.apache.avro.generic.GenericData;
+
 import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 
-import com.google.common.collect.Lists;
+
 import com.google.common.primitives.Ints;
 
-import core.adapt.AccessMethod;
-import core.adapt.Predicate;
+
 import core.adapt.AccessMethod.PartitionSplit;
-import core.adapt.Query;
+import core.adapt.JoinQuery;
 import core.adapt.iterator.PostFilterIterator;
 import core.adapt.iterator.RepartitionIterator;
 
 public class HPJoinInput {
 
-    protected AccessMethod am;
+    protected JoinAccessMethod am;
     protected Map<Integer, FileStatus> partitionIdFileMap;
+    protected Map<Integer, Long> partitionIdSizeMap;
     protected boolean MDIndexInput;
 
 
@@ -36,13 +33,14 @@ public class HPJoinInput {
         this.MDIndexInput = MDIndexInput;
     }
 
-    public void initialize(List<FileStatus> files, AccessMethod am) {
+    public void initialize(List<FileStatus> files, JoinAccessMethod am) {
         this.am = am;
         initialize(files);
     }
 
     public void initialize(List<FileStatus> files) {
         partitionIdFileMap = new HashMap<Integer, FileStatus>();
+        partitionIdSizeMap = new HashMap<Integer, Long>();
         for (FileStatus file : files) {
             System.out.println("FILE: " + file.getPath());
             try {
@@ -54,32 +52,34 @@ public class HPJoinInput {
                     id = Integer.parseInt(fileName.substring(fileName.indexOf('-') + 1));
                 }
                 partitionIdFileMap.put(id, file);
+                partitionIdSizeMap.put(id, file.getLen());
             } catch (NumberFormatException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public PartitionSplit[] getFullScan(Query q) {
+    public PartitionSplit[] getFullScan(JoinQuery q) {
         return new PartitionSplit[]{new PartitionSplit(
                 Ints.toArray(partitionIdFileMap.keySet()),
-                new PostFilterIterator(q))};
+                new PostFilterIterator(q.castToQuery()))};
     }
 
-    public PartitionSplit[] getRepartitionScan(Query q) {
+    public PartitionSplit[] getRepartitionScan(JoinQuery q) {
         return new PartitionSplit[]{new PartitionSplit(
                 Ints.toArray(partitionIdFileMap.keySet()),
-                new RepartitionIterator(q))};
+                new RepartitionIterator(q.castToQuery()))};
     }
 
     public PartitionSplit[] getIndexScan(boolean justAccess,
-                                         Query q) {
+                                         JoinQuery q) {
         return am.getPartitionSplits(q, justAccess);
     }
 
     // utility methods
 
     public Path[] getPaths(int[] partitionIds) {
+
         Path[] splitFilesArr = new Path[partitionIds.length];
         for (int i = 0; i < splitFilesArr.length; i++)
             splitFilesArr[i] = partitionIdFileMap.get(partitionIds[i]).getPath();
@@ -88,11 +88,14 @@ public class HPJoinInput {
 
 
 
-    public long[] getLengths(int[]  partitionIds) {
+    public long[] getLengths(int[] partitionIds) {
         long[] lengthsArr = new long[partitionIds.length];
-        for (int i = 0; i < lengthsArr.length; i++)
-            lengthsArr[i] = partitionIdFileMap.get(partitionIds[i]).getLen();
+        for (int i = 0; i < lengthsArr.length; i++) {
+            lengthsArr[i] = partitionIdSizeMap.get(partitionIds[i]);
+        }
         return lengthsArr;
     }
-
+    public Map<Integer, Long> getPartitionIdSizeMap() {
+        return partitionIdSizeMap;
+    }
 }

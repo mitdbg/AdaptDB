@@ -1,11 +1,6 @@
 package core.adapt.spark.join;
 
 import core.adapt.Query;
-import core.adapt.iterator.PartitionIterator;
-import core.adapt.iterator.PostFilterIterator;
-
-import core.adapt.spark.SparkInputFormat;
-import core.adapt.spark.SparkInputFormat.SparkFileSplit;
 import core.adapt.spark.SparkQueryConf;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -16,8 +11,10 @@ import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapreduce.lib.input.CombineFileSplit;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -29,34 +26,55 @@ import java.util.List;
 
 public class SparkScanInputFormat extends FileInputFormat<LongWritable, Text> implements Serializable {
 
-    private static int split_size = 4;
+    private static int split_size = 2;
 
     private String dataset;
-    private Query query;
 
+    private int flag; // 1 for split, 2 for data bucket id
     private Configuration conf;
     private SparkQueryConf queryConf;
 
-    private Path[] dataset_path;
-    private long[] dataset_len;
 
-    private void init_input(String input_info){
-        // 1:123;2:234
-        String[] splits = input_info.split(";");
+    public static class SparkScanFileSplit extends CombineFileSplit implements
+            Serializable {
+        private static final long serialVersionUID = 1L;
 
-        dataset_path = new Path[splits.length];
-        dataset_len = new long[splits.length];
+        private int[] types;
+        public SparkScanFileSplit() {
+        }
 
-        String hdfsDefaultName = conf.get("fs.default.name");
-        String workingDir = queryConf.getWorkingDir();
+        public SparkScanFileSplit(Path[] files, long[] lengths, int[] types) {
+            super(files, lengths);
+            this.types = types;
+        }
+        public int[] getTypes(){
+            return types;
+        }
 
-        for(int i = 0 ;i < splits.length; i ++){
-            String[] subsplits = splits[i].split(":");
-            int id = Integer.parseInt(subsplits[0]);
-            long len =  Integer.parseInt(subsplits[1]);
-            String file =  hdfsDefaultName + workingDir + "/" + dataset + "/data/" + id;
-            dataset_path[i] = new Path(file);
-            dataset_len[i] = len;
+        @Override
+        public void write(DataOutput out) throws IOException {
+            super.write(out);
+
+            out.writeInt(types.length);
+            for(int i = 0; i < types.length; i ++){
+                out.writeInt(types[i]);
+            }
+        }
+
+        @Override
+        public void readFields(DataInput in) throws IOException {
+            super.readFields(in);
+            int length = in.readInt();
+            types = new int[length];
+            for(int i = 0 ;i < length; i ++){
+                types[i] = in.readInt();
+            }
+        }
+
+        public static SparkScanFileSplit read(DataInput in) throws IOException {
+            SparkScanFileSplit s = new SparkScanFileSplit();
+            s.readFields(in);
+            return s;
         }
     }
 
@@ -71,9 +89,13 @@ public class SparkScanInputFormat extends FileInputFormat<LongWritable, Text> im
 
         queryConf = new SparkQueryConf(conf);
 
-        dataset = conf.get("DATASET");
+        flag =  Integer.parseInt(conf.get("DATASETFLAG"));
 
-        query = queryConf.getQuery();
+        if (flag == 1) {
+            dataset = conf.get("DATASET1");
+        } else {
+            dataset = conf.get("DATASET2");
+        }
 
         String dataset_info = conf.get("DATASETINFO");
 
@@ -81,23 +103,58 @@ public class SparkScanInputFormat extends FileInputFormat<LongWritable, Text> im
             return finalSplits;
         }
 
-        init_input(dataset_info);
 
-        PartitionIterator iter = new PostFilterIterator(query);
+        String hdfsDefaultName = conf.get("fs.default.name");
+        String workingDir = queryConf.getWorkingDir();
 
-        for(int i = 0 ;i < dataset_path.length; i += split_size){
-            int size = Math.min(split_size, dataset_path.length - i);
-            Path[] path = new Path[size];
-            long[] len = new long[size];
-            for(int j = 0 ;j < size; j ++ ){
-                path[j] = dataset_path[i + j];
-                len[j] = dataset_len[i + j];
+
+        String[] splits = dataset_info.split(";");
+
+        if(flag == 1){
+            // handling split
+            for(int i = 0 ;i < splits.length; i ++){
+                String[] subsplits = splits[i].split(",");
+                int iter_type = Integer.parseInt(subsplits[0]);
+
+                Path[] path = new Path[subsplits.length - 1];
+                long[] len = new long[subsplits.length - 1];
+                int[] types = new int[subsplits.length - 1];
+                for(int j = 0 ;j < path.length; j ++){
+                    String[] ss = subsplits[j+1].split(":");
+                    int id = Integer.parseInt(ss[0]);
+                    long length =  Long.parseLong(ss[1]);
+                    path[j] = new Path(hdfsDefaultName + workingDir + "/" + dataset + "/data/" + id);
+                    len[j] = length;
+                    types[j] = iter_type;
+                    //System.out.println("<<< " + path[j].toString());
+                }
+
+                SparkScanFileSplit split = new SparkScanFileSplit(path, len, types);
+                finalSplits.add(split);
             }
-            SparkFileSplit split = new SparkFileSplit(path, len, iter);
-            finalSplits.add(split);
+        } else {
+            // handling bucketID
+
+            for(int i = 0 ;i < splits.length; i += split_size){
+                int size = Math.min(split_size, splits.length - i);
+                Path[] path = new Path[size];
+                long[] len = new long[size];
+                int[] types = new int[size];
+                for(int j = 0 ;j < size; j ++ ){
+                    String[] subsplits = splits[i + j].split(":");
+                    int id = Integer.parseInt(subsplits[0]);
+                    long length = Long.parseLong(subsplits[1]);
+                    int type = Integer.parseInt(subsplits[2]);
+                    path[j] = new Path(hdfsDefaultName + workingDir + "/" + dataset + "/data/" + id);
+                    len[j] = length;
+                    types[j] = type;
+                }
+                SparkScanFileSplit split = new SparkScanFileSplit(path, len, types);
+                finalSplits.add(split);
+            }
         }
 
-        job.getConfiguration().setLong(NUM_INPUT_FILES, dataset_path.length);
+        job.getConfiguration().setLong(NUM_INPUT_FILES, finalSplits.size());
         System.out.println("done with getting splits");
         return finalSplits;
     }

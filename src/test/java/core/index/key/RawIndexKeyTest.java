@@ -66,13 +66,6 @@ public class RawIndexKeyTest extends TestCase {
 		assertEquals(expected, key.getLongAttribute(1));
 	}
 
-	public void testGetFloatAttribute() {
-		key.setBytes(tuple1.getBytes());
-		// key.detectTypes();
-		float expected = Float.parseFloat(tuple1.split("\\|")[5]);
-		assertEquals(expected, key.getFloatAttribute(5));
-	}
-
 	public void testGetDoubleAttribute() {
 		key.setBytes(tuple1.getBytes());
 		// key.detectTypes();

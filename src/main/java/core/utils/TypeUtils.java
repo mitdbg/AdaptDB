@@ -87,7 +87,7 @@ public class TypeUtils {
 		case INT:
 			return ((Integer) x).compareTo((Integer) y);
 		case DOUBLE:
-			return ((Float) x).compareTo((Float) y);
+			return ((Double) x).compareTo((Double) y);
 		case LONG:
 			return ((Long) x).compareTo((Long) y);
 		case DATE:
@@ -120,7 +120,7 @@ public class TypeUtils {
 			return new Comparator<Object>() {
 				@Override
 				public int compare(Object o1, Object o2) {
-					return ((Float) o1).compareTo((Float) o2);
+					return ((Double) o1).compareTo((Double) o2);
 				}
 			};
 		case DATE:
@@ -159,7 +159,7 @@ public class TypeUtils {
 		case LONG:
 			return Long.parseLong(token);
 		case DOUBLE:
-			return Float.parseFloat(token);
+			return Double.parseDouble(token);
 		case DATE:
 			byte[] bytes = token.getBytes();
 			int off = 0;
@@ -187,7 +187,7 @@ public class TypeUtils {
 		case LONG:
 			return (Long) value - 1;
 		case DOUBLE:
-			return (Float) value - 0.001;
+			return (Double) value - 0.001;
 		case DATE:
 			SimpleDate d = (SimpleDate) value;
 			return d.oneDayLess();

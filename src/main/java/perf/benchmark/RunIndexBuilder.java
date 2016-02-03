@@ -154,6 +154,38 @@ public class RunIndexBuilder {
 						cfg.getHDFS_REPLICATION_FACTOR()));
 	}
 
+
+	/**
+	 * Creates a single robust tree(hard code the attributes used in the tree for now).
+	 * As a side effect reads all the sample files
+	 * from the samples dir and writes it out WORKING_DIR/sample
+	 */
+	public void buildJoinRobustTreeFromSamples() {
+		assert numBuckets != -1;
+
+		// Write out the combined sample file.
+		ParsedTupleList sample = readSampleFiles();
+		writeOutSample(fs, sample);
+
+		//lineitem
+
+		//int[] dim = {0,0,0,0,0,0,0,12,12,12,14};
+
+		// orders
+
+		int[] dim = {0,0,0,0,0,0,0,4};
+
+		// Construct the index from the sample.
+		RobustTree index = new RobustTree(tableInfo);
+		builder.buildJoinIndexFromSample(
+				sample,
+				numBuckets,dim,
+				index,
+				getHDFSWriter(tableHDFSDir,
+						cfg.getHDFS_REPLICATION_FACTOR()));
+	}
+
+
 	/**
 	 * Creates num_replicas robust trees. As a side effect reads all the sample
 	 * files from the samples dir and writes it out WORKING_DIR/sample
@@ -268,6 +300,9 @@ public class RunIndexBuilder {
 			break;
 		case 2:
 			t.buildRobustTreeFromSamples();
+			break;
+		case 3:
+			t.buildJoinRobustTreeFromSamples();
 			break;
 		case 4:
 			t.writePartitionsFromIndex();

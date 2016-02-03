@@ -11,9 +11,42 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 
+
 public class IndexBuilder {
 
 	int bucketSize = 64 << 20; // 64 MB.
+
+	/*
+	public void sparkSampleInput(double sampleRate, String inputDirectory, String outputSamplePath,
+								 FileSystem fs, ConfUtils cfg){
+
+		SparkConf sconf = SparkUtils.getSparkConf(this.getClass().getName(), cfg);
+		JavaSparkContext ctx = new JavaSparkContext(sconf);
+		ctx.hadoopConfiguration().setBoolean(
+				FileInputFormat.INPUT_DIR_RECURSIVE, true);
+		ctx.hadoopConfiguration().set("fs.hdfs.impl",
+				org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+
+		long startTime = System.nanoTime();
+
+		JavaRDD<String> input = ctx.textFile(inputDirectory);
+		JavaRDD<String> sample = input.sample(false, sampleRate);
+
+		String sparkTempOutput = outputSamplePath + ".temp";
+		sample.saveAsTextFile(sparkTempOutput);
+
+		//Merge files from sparkTempOutput into a single sample file.
+		try {
+			FileUtil.copyMerge(fs, new Path(sparkTempOutput),
+					fs, new Path(outputSamplePath), true,
+					ctx.hadoopConfiguration(), null);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		double timeScanAndWrite = (System.nanoTime() - startTime) / 1e9;
+		System.out.println("Scanning, sampling and write time: " + timeScanAndWrite + " sec");
+	}
+	*/
 
 	// Reads the files from inputDirectory and samples them using blockSampling.
 	// Writes out the samples to SAMPLES_DIR/sample.machineId.
@@ -44,6 +77,23 @@ public class IndexBuilder {
 
 		long startTime = System.nanoTime();
 		index.initProbe();
+		System.out.println("BUILD: index building time = " + ((System.nanoTime() - startTime) / 1E9));
+
+		startTime = System.nanoTime();
+		byte[] indexBytes = index.marshall();
+		System.out.println("Index Size: " + indexBytes.length);
+		writer.writeToPartition("index", indexBytes, 0, indexBytes.length);
+		writer.flush();
+		System.out.println("BUILD: index writing time = " + ((System.nanoTime() - startTime) / 1E9));
+	}
+
+	// Build join index from the samples collected.
+	public void buildJoinIndexFromSample(ParsedTupleList sample, int numBuckets,int[] dims, MDIndex index, PartitionWriter writer) {
+		index.setMaxBuckets(numBuckets);
+		((RobustTree) index).loadSample(sample);
+
+		long startTime = System.nanoTime();
+		index.initProbe(dims);
 		System.out.println("BUILD: index building time = " + ((System.nanoTime() - startTime) / 1E9));
 
 		startTime = System.nanoTime();

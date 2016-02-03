@@ -27,7 +27,7 @@ public class Range implements Cloneable, Clusterable {
                     this.low = Long.MIN_VALUE;
                     break;
                 case DOUBLE:
-                    this.low = Float.MIN_VALUE;
+                    this.low = Double.MIN_VALUE;
                     break;
                 case DATE:
                     this.low = new SimpleDate(-1, -1, -1);
@@ -47,7 +47,7 @@ public class Range implements Cloneable, Clusterable {
                     this.high = Long.MAX_VALUE;
                     break;
                 case DOUBLE:
-                    this.high = Float.MAX_VALUE;
+                    this.high = Double.MAX_VALUE;
                     break;
                 case DATE:
                     this.high = new SimpleDate(Integer.MAX_VALUE,
@@ -83,7 +83,7 @@ public class Range implements Cloneable, Clusterable {
             case LONG:
                 return (Long) this.high - (Long) this.low;
             case DOUBLE:
-                return (Float) this.high - (Float) this.low;
+                return (Double) this.high - (Double) this.low;
             case DATE:
                 // not quite accurate, but should be fine for estimation purposes
                 SimpleDate low = (SimpleDate) this.low;
@@ -208,8 +208,8 @@ public class Range implements Cloneable, Clusterable {
                 this.high = (long) ((Long) this.high + length * percentage);
                 break;
             case DOUBLE:
-                this.low = (float) ((Float) this.low - length * percentage);
-                this.high = (float) ((Float) this.high + length * percentage);
+                this.low = (double) ((Double) this.low - length * percentage);
+                this.high = (double) ((Double) this.high + length * percentage);
                 break;
             default:
                 throw new RuntimeException(this.type + " not implemented for range");
@@ -232,8 +232,8 @@ public class Range implements Cloneable, Clusterable {
                     splitHigh = (long) (((Long) low) + splitLength * (i + 1));
                     break;
                 case DOUBLE:
-                    splitLow = (float) (((Float) low) + splitLength * i);
-                    splitHigh = (float) (((Float) low) + splitLength * (i + 1));
+                    splitLow = (double) (((Double) low) + splitLength * i);
+                    splitHigh = (double) (((Double) low) + splitLength * (i + 1));
                     break;
                 default:
                     throw new RuntimeException("can't split non-numeric ranges");

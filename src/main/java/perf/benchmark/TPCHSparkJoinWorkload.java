@@ -564,6 +564,9 @@ public class TPCHSparkJoinWorkload {
                 System.out.println("Num Queries: " + t.numQueries);
                 t.runWorkload(t.numQueries);
                 break;
+            case 12:
+                System.out.println("Run TPCH-12");
+                t.tpch12();
             default:
                 break;
         }
