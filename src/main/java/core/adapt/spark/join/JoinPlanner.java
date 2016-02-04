@@ -149,19 +149,58 @@ public class JoinPlanner {
     }
 
     private void extractJoin(PartitionSplit[] splits, Map<Integer, Long> partitionSizes, long maxSplitSize){
+        // TODO: the threshold should be on the number of blocks on LHS, not RHS, since we are building hashtable on LHS
+
+        HashMap<Integer, Integer> counters = new HashMap<Integer, Integer>();
+
         for(int i = 0 ;i < dataset1_splits.length; i ++){
             PartitionSplit split = splits[i];
             int[] bids = split.getPartitions();
-            ArrayList<Integer> shuffle_ids = new ArrayList<Integer>();
-            ArrayList<Integer> hyper_ids = new ArrayList<Integer>();
+
             for(int j = 0; j < bids.length; j ++){
                 ArrayList<Integer> dep_bids = overlap_chunks.get(bids[j]);
-                if(dep_bids.size() > threshold){
+                for(int dep_id : dep_bids){
+                    if(counters.containsKey(dep_id) == false){
+                        counters.put(dep_id, 0);
+                    }
+                    counters.put(dep_id, counters.get(dep_id) + 1);
+                }
+            }
+        }
+
+        // filter out low counts
+
+        HashSet<Integer> shuffleJoinBids = new HashSet<Integer>();
+
+        for(int bid:  counters.keySet()){
+            if(counters.get(bid) > threshold){
+                shuffleJoinBids.add(bid);
+            }
+        }
+
+        for(int i = 0 ;i < dataset1_splits.length; i ++){
+            PartitionSplit split = splits[i];
+            int[] bids = split.getPartitions();
+
+            ArrayList<Integer> shuffle_ids = new ArrayList<Integer>();
+            ArrayList<Integer> hyper_ids = new ArrayList<Integer>();
+
+            for(int j = 0; j < bids.length; j ++){
+                boolean shuffle = false;
+                ArrayList<Integer> dep_bids = overlap_chunks.get(bids[j]);
+                for(int k = 0 ; k < dep_bids.size(); k ++){
+                    if(shuffleJoinBids.contains(dep_bids.get(k))){
+                        shuffle = true;
+                        break;
+                    }
+                }
+                if(shuffle){
                     shuffle_ids.add(bids[j]);
-                } else{
+                } else {
                     hyper_ids.add(bids[j]);
                 }
             }
+
             if(shuffle_ids.size() > 0){
                 int[] shuffle_ids_int = new int[shuffle_ids.size()];
                 for(int j = 0 ; j< shuffle_ids_int.length; j ++){
@@ -175,7 +214,6 @@ public class JoinPlanner {
                 for(int j = 0 ; j< hyper_ids_int.length; j ++){
                     hyper_ids_int[j] = hyper_ids.get(j);
                 }
-                PartitionSplit hyper_split = new PartitionSplit(hyper_ids_int, split.getIterator());
                 ArrayList<PartitionSplit> hyper_splits = resizeSplits(split.getIterator(),hyper_ids_int,partitionSizes, maxSplitSize);
                 for(PartitionSplit hs : hyper_splits){
                     hyperJoinSplit.add(hs);
