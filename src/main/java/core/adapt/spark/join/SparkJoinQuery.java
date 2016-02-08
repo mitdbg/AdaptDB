@@ -43,7 +43,7 @@ public class SparkJoinQuery {
             String s1 = x._2()._1().toString();
             String s2 = x._2()._2().toString();
             String value = s1 + Delimiter + s2;
-            int key = Integer.parseInt(value.split(Splitter)[partitionKey]);
+            long key = Long.parseLong(value.split(Splitter)[partitionKey]);
             return new Tuple2<LongWritable, Text>(new LongWritable(key), new Text(value));
         }
     }
@@ -105,7 +105,7 @@ public class SparkJoinQuery {
         System.out.println("count: " + count + " totalSize: " + totalSize + " numSplits: " + numSplits + " sampleRate: " + sampleRate);
 
         List<LongWritable> sampleKeys = rdd.keys().sample(false, sampleRate).collect();
-        int[] cutpoints = RangePartitionerUtils.getCutPoints(sampleKeys, numSplits);
+        long[] cutpoints = RangePartitionerUtils.getCutPoints(sampleKeys, numSplits);
 
         return RangePartitionerUtils.getStringCutPoints(cutpoints);
     }
@@ -114,6 +114,7 @@ public class SparkJoinQuery {
 
     public JavaPairRDD<LongWritable, Text> createJoinRDD(String hdfsPath) {
         queryConf.setReplicaId(0);
+
         return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath,
                 SparkJoinInputFormat.class, LongWritable.class,
                 Text.class, ctx.hadoopConfiguration());
@@ -130,7 +131,7 @@ public class SparkJoinQuery {
         String hdfsPath = cfg.getHDFS_WORKING_DIR();
 
         queryConf.setWorkingDir(hdfsPath);
-        queryConf.setJustAccess(false);
+        queryConf.setJustAccess(true);
 
         Configuration conf = ctx.hadoopConfiguration();
 
@@ -195,7 +196,6 @@ public class SparkJoinQuery {
                                                                 JoinQuery q) {
         queryConf.setWorkingDir(hdfsPath);
         queryConf.setJoinQuery(q);
-
         return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath + "/" + q.getTable() + "/data",
                 SparkScanInputFormat.class, LongWritable.class,
                 Text.class, ctx.hadoopConfiguration());

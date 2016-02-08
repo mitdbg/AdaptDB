@@ -112,7 +112,7 @@ public class SparkScanRecordReader extends
             if (iter.hasNext()) {
                 IteratorRecord r = iter.next();
 
-                key.set(r.getIntAttribute(join_attr));
+                key.set(r.getLongAttribute(join_attr));
                 value.set(r.getBytes());
 
                 tupleCountInTable++;

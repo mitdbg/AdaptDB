@@ -84,7 +84,7 @@ public class TPCHSparkJoinWorkload {
         // Create order table.
         String ordersPath = cfg.getHDFS_WORKING_DIR() + "/" + orders + "/data";
 
-        sqlContext.sql("CREATE TEMPORARY TABLE orders (o_orderkey int, o_custkey int, "
+        sqlContext.sql("CREATE TEMPORARY TABLE orders (o_orderkey long, o_custkey int, "
                 + "o_orderstatus string, o_totalprice double, o_orderdate string, "
                 + "o_orderpriority string, o_clerk string, o_shippriority int) "
                 + "USING com.databricks.spark.csv "
@@ -94,7 +94,7 @@ public class TPCHSparkJoinWorkload {
         // Create lineitem table.
         String lineitemPath = cfg.getHDFS_WORKING_DIR() + "/" + lineitem + "/data";
 
-        sqlContext.sql("CREATE TEMPORARY TABLE lineitem (l_orderkey int, l_partkey int, l_suppkey int, "
+        sqlContext.sql("CREATE TEMPORARY TABLE lineitem (l_orderkey long, l_partkey int, l_suppkey int, "
                 + "l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, "
                 + "l_tax double, l_returnflag string,  l_linestatus string, l_shipdate string, "
                 + "l_commitdate string, l_receiptdate string, l_shipinstruct string, l_shipmode string) "
@@ -183,15 +183,15 @@ public class TPCHSparkJoinWorkload {
 
         long start = System.currentTimeMillis();
 
-        System.out.println("SELECT  COUNT(*) "
+        System.out.println("SELECT * "
                 + "FROM lineitem JOIN orders ON l_orderkey = o_orderkey JOIN customer ON o_custkey = c_custkey "
                 + "WHERE " + lineitemPredicate + " and " + ordersPredicate + " and " +  customerPredicate);
 
-        DataFrame df = sqlContext.sql("SELECT  COUNT(*) "
+        DataFrame df = sqlContext.sql("SELECT * "
                 + "FROM lineitem JOIN orders ON l_orderkey = o_orderkey JOIN customer ON o_custkey = c_custkey "
                 + "WHERE " + lineitemPredicate + " and " + ordersPredicate + " and " +  customerPredicate);
 
-        String result = df.collect()[0].toString(); // 29569
+        long result = df.count();  // 29569
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
@@ -234,19 +234,19 @@ public class TPCHSparkJoinWorkload {
 
         long start = System.currentTimeMillis();
 
-        System.out.println("SELECT  COUNT(*) "
+        System.out.println("SELECT * "
                 + "FROM customer JOIN orders ON c_custkey = o_custkey "
                 + "JOIN lineitem ON l_orderkey = o_orderkey "
                 + "JOIN supplier ON l_suppkey = s_suppkey "
                 + "WHERE " + customerPredicate + " and " + ordersPredicate + " and " +  supplierPredicate);
 
-        DataFrame df = sqlContext.sql("SELECT  COUNT(*) "
+        DataFrame df = sqlContext.sql("SELECT * "
                 + "FROM customer JOIN orders ON c_custkey = o_custkey "
                 + "JOIN lineitem ON l_orderkey = o_orderkey "
                 + "JOIN supplier ON l_suppkey = s_suppkey "
                 + "WHERE " + customerPredicate + " and " + ordersPredicate + " and " +  supplierPredicate);
 
-        String result = df.collect()[0].toString(); // 35307
+        long result = df.count(); // 35307
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
@@ -275,15 +275,15 @@ public class TPCHSparkJoinWorkload {
 
         long start = System.currentTimeMillis();
 
-        System.out.println("SELECT  COUNT(*) "
+        System.out.println("SELECT * "
                 + "FROM lineitem "
                 + "WHERE " + lineitemPredicate);
 
-        DataFrame df = sqlContext.sql("SELECT  COUNT(*) "
+        DataFrame df = sqlContext.sql("SELECT * "
                 + "FROM lineitem "
                 + "WHERE " + lineitemPredicate);
 
-        String result = df.collect()[0].toString(); // 83063
+        long result = df.count();  // 83063
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
@@ -327,19 +327,19 @@ public class TPCHSparkJoinWorkload {
 
         long start = System.currentTimeMillis();
 
-        System.out.println("SELECT  COUNT(*) "
+        System.out.println("SELECT * "
                 + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
                 + "JOIN customer ON c_custkey = o_custkey "
                 + "JOIN part ON l_partkey = p_partkey "
                 + "WHERE " + customerPredicate + " and " + ordersPredicate + " and " +  partPredicate);
 
-        DataFrame df = sqlContext.sql("SELECT  COUNT(*) "
+        DataFrame df = sqlContext.sql("SELECT * "
                 + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
                 + "JOIN customer ON c_custkey = o_custkey "
                 + "JOIN part ON l_partkey = p_partkey "
                 + "WHERE " + customerPredicate + " and " + ordersPredicate + " and " +  partPredicate);
 
-        String result = df.collect()[0].toString(); // 0
+        long result = df.count();  // 0
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
@@ -375,17 +375,17 @@ public class TPCHSparkJoinWorkload {
 
         long start = System.currentTimeMillis();
 
-        System.out.println("SELECT  COUNT(*) "
+        System.out.println("SELECT * "
                 + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
                 + "JOIN customer ON c_custkey = o_custkey "
                 + "WHERE " + ordersPredicate + " and " + lineitemPredicate);
 
-        DataFrame df = sqlContext.sql("SELECT  COUNT(*) "
+        DataFrame df = sqlContext.sql("SELECT * "
                 + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
                 + "JOIN customer ON c_custkey = o_custkey "
                 + "WHERE " + ordersPredicate + " and " + lineitemPredicate);
 
-        String result = df.collect()[0].toString(); // 111918
+        long result = df.count();  // 111918
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
@@ -421,15 +421,15 @@ public class TPCHSparkJoinWorkload {
 
         long start = System.currentTimeMillis();
 
-        System.out.println("SELECT  COUNT(*) "
+        System.out.println("SELECT * "
                 + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
                 + "WHERE " + lineitemPredicate);
 
-        DataFrame df = sqlContext.sql("SELECT  COUNT(*) "
+        DataFrame df = sqlContext.sql("SELECT * "
                 + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
                 + "WHERE " + lineitemPredicate);
 
-        String result = df.collect()[0].toString(); // 130474
+        long result = df.count(); // 130474
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
@@ -458,15 +458,15 @@ public class TPCHSparkJoinWorkload {
 
         long start = System.currentTimeMillis();
 
-        System.out.println("SELECT  COUNT(*) "
+        System.out.println("SELECT * "
                 + "FROM lineitem JOIN part ON  l_partkey = p_partkey "
                 + "WHERE " + lineitemPredicate);
 
-        DataFrame df = sqlContext.sql("SELECT  COUNT(*) "
+        DataFrame df = sqlContext.sql("SELECT * "
                 + "FROM lineitem JOIN part ON  l_partkey = p_partkey "
                 + "WHERE " + lineitemPredicate);
 
-        String result = df.collect()[0].toString(); // 76860
+        long result = df.count();  // 76860
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
@@ -503,15 +503,15 @@ public class TPCHSparkJoinWorkload {
 
         long start = System.currentTimeMillis();
 
-        System.out.println("SELECT  COUNT(*) "
+        System.out.println("SELECT * "
                 + "FROM lineitem JOIN part ON  l_partkey = p_partkey "
                 + "WHERE " + lineitemPredicate + " and " + partPredicate);
 
-        DataFrame df = sqlContext.sql("SELECT  COUNT(*) "
+        DataFrame df = sqlContext.sql("SELECT * "
                 + "FROM lineitem JOIN part ON  l_partkey = p_partkey "
                 + "WHERE " + lineitemPredicate + " and " + partPredicate);
 
-        String result = df.collect()[0].toString(); // 10
+        long result = df.count(); // 10
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
@@ -564,9 +564,31 @@ public class TPCHSparkJoinWorkload {
                 System.out.println("Num Queries: " + t.numQueries);
                 t.runWorkload(t.numQueries);
                 break;
-            case 12:
+            case 2:
+                System.out.println("Run TPCH-3");
+                t.rand.setSeed(0);
+                t.tpch3();
+                System.out.println("Run TPCH-5");
+                t.rand.setSeed(0);
+                t.tpch5();
+                System.out.println("Run TPCH-6");
+                t.rand.setSeed(0);
+                t.tpch6();
+                System.out.println("Run TPCH-8");
+                t.rand.setSeed(0);
+                t.tpch8();
+                System.out.println("Run TPCH-10");
+                t.rand.setSeed(0);
+                t.tpch10();
                 System.out.println("Run TPCH-12");
+                t.rand.setSeed(0);
                 t.tpch12();
+                System.out.println("Run TPCH-14");
+                t.rand.setSeed(0);
+                t.tpch14();
+                System.out.println("Run TPCH-19");
+                t.rand.setSeed(0);
+                t.tpch19();
             default:
                 break;
         }

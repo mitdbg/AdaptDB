@@ -54,7 +54,7 @@ public class SparkJoinRecordReader extends
     protected JoinQuery dataset1_joinquery, dataset2_joinquery;
     protected Query dataset2_query;
 
-    ArrayListMultimap<Integer, byte[]> hashTable;
+    ArrayListMultimap<Long, byte[]> hashTable;
 
     Iterator<byte[]> firstRecords;
     byte[] secondRecord;
@@ -191,7 +191,7 @@ public class SparkJoinRecordReader extends
 
                 IteratorRecord r = iter1.next();
                 byte[] rawBytes = r.getBytes();
-                int key = r.getIntAttribute(join_attr1);
+                long key = r.getLongAttribute(join_attr1);
                 hashTable.put(key, rawBytes);
             }
         }
@@ -205,7 +205,7 @@ public class SparkJoinRecordReader extends
             while (true) {
                 if (iter2.hasNext()) {
                     IteratorRecord r = iter2.next();
-                    int key = r.getIntAttribute(join_attr2);
+                    long key = r.getLongAttribute(join_attr2);
 
                     tupleCountInTable2++;
 
