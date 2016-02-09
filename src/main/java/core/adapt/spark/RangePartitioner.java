@@ -10,10 +10,10 @@ import org.apache.spark.Partitioner;
 
 public class RangePartitioner extends Partitioner {
 
-    int[] ranges;
+    long[] ranges;
 
     public RangePartitioner(String ranges){
-        this.ranges = RangePartitionerUtils.getIntCutPoints(ranges);
+        this.ranges = RangePartitionerUtils.getLongCutPoints(ranges);
     }
 
     @Override

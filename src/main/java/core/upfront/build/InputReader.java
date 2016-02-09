@@ -184,7 +184,7 @@ public class InputReader {
 						}
 
 						if (writer != null) {
-							key.setBytes(keyBytes);
+							key.setBytes(keyBytes, 0, keyBytes.length - 1); // // skip newline
 							startTime = System.nanoTime();
 							String bucketId = index.getBucketId(key).toString();
 							bucketIdTime += System.nanoTime() - startTime;
@@ -196,7 +196,7 @@ public class InputReader {
 						}
 
 						if (writer != null) {
-							key.setBytes(byteArray, previous, byteArrayIdx - previous + 1);
+							key.setBytes(byteArray, previous, byteArrayIdx - previous); // skip newline
 							startTime = System.nanoTime();
 							String bucketId = index.getBucketId(key).toString();
 							bucketIdTime += System.nanoTime() - startTime;

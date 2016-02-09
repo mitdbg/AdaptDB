@@ -9,7 +9,7 @@ import java.util.List;
  * Created by ylu on 12/14/15.
  */
 public class RangePartitionerUtils {
-    public static int[] getCutPoints(List<LongWritable> sampleKeys, int n){
+    public static long[] getCutPoints(List<LongWritable> sampleKeys, int n){
         long[] keys = new long[sampleKeys.size()];
         int i = 0;
         for(LongWritable lw : sampleKeys){
@@ -18,7 +18,7 @@ public class RangePartitionerUtils {
         Arrays.sort(keys);
 
         int m = keys.length;
-        int[] cutpoints = new int[n - 1];
+        long[] cutpoints = new long[n - 1];
 
         int small = n - m % n;
         int large = m % n;
@@ -40,21 +40,21 @@ public class RangePartitionerUtils {
         return cutpoints;
     }
 
-    public static int[] getIntCutPoints(String cutpoints){
+    public static long[] getLongCutPoints(String cutpoints){
         if(cutpoints.equals("NULL")){
             return null;
         }
         if(cutpoints.length() == 0){
-            return new int[0];
+            return new long[0];
         }
         String[] values = cutpoints.split(",");
-        int[] ranges = new int[values.length];
+        long[] ranges = new long[values.length];
         for(int i = 0 ; i < ranges.length; i ++){
-            ranges[i] = Integer.parseInt(values[i]);
+            ranges[i] = Long.parseLong(values[i]);
         }
         return ranges;
     }
-    public static String getStringCutPoints(int[] cutpoints){
+    public static String getStringCutPoints(long[] cutpoints){
         StringBuilder sb  = new StringBuilder();
         for(int i = 0 ;i < cutpoints.length; i ++){
             if(sb.length() > 0){
@@ -64,7 +64,7 @@ public class RangePartitionerUtils {
         }
         return sb.toString();
     }
-    public static int[] getSplits(int[] cutpoints){
+    public static int[] getSplits(long[] cutpoints){
         int[] splits = new int[cutpoints.length + 1];
         for(int i = 0 ;i < splits.length; i ++){
             splits[i] = i;
