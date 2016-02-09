@@ -76,7 +76,7 @@ public class TPCHWorkload {
 			int rand_3 = rand.nextInt(mktSegmentVals.length);
 			String c_mktsegment = mktSegmentVals[rand_3];
 			Calendar c = new GregorianCalendar();
-			int dateOffset = (int) (rand.nextFloat() * (31 + 28 + 31));
+			int dateOffset = (int) (rand.nextFloat() * 31);
 			c.set(1995, Calendar.MARCH, 01);
 			c.add(Calendar.DAY_OF_MONTH, dateOffset);
 			SimpleDate d3 = new SimpleDate(c.get(Calendar.YEAR),
