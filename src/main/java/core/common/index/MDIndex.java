@@ -17,7 +17,7 @@ public interface MDIndex {
 	/*
 	 * Placeholder class for the index leaves.
 	 */
-	public final static class Bucket {
+	final class Bucket {
 		/* Actual Values */
 		int bucketId;
 		ParsedTupleList sample;

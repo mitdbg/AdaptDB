@@ -1,8 +1,7 @@
 package perf.benchmark;
 
 public class BenchmarkSettings {
-	//public static String conf = "/Users/ylu/Documents/workspace/mdindex/conf/ylu.properties";
-	public static String conf = "/home/mdindex/yilu/mdindex/conf/tpch.properties";
+	public static String conf;
 
 	public static void loadSettings(String[] args) {
 		int counter = 0;

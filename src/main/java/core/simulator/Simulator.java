@@ -1,20 +1,15 @@
 package core.simulator;
 
-
-import core.adapt.Predicate;
-import core.adapt.Predicate.PREDTYPE;
+import core.adapt.AccessMethod.PartitionSplit;
 import core.adapt.Query;
+import core.adapt.iterator.RepartitionIterator;
 import core.adapt.opt.Optimizer;
 import core.common.globals.Globals;
 import core.utils.ConfUtils;
 import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
-import core.utils.TypeUtils.SimpleDate;
-import core.utils.TypeUtils.TYPE;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.mapreduce.Job;
-import perf.benchmark.BenchmarkSettings;
 
 public class Simulator {
 	Optimizer opt;
@@ -54,15 +49,45 @@ public class Simulator {
 				cfg.getHDFS_WORKING_DIR() + "/" + simName + "/" + "info",
 				cfg.getHDFS_REPLICATION_FACTOR());
 
+        Globals.loadTableInfo(simName, cfg.getHDFS_WORKING_DIR(), fs);
+
 		opt = new Optimizer(cfg);
 		opt.loadIndex(Globals.getTableInfo(simName));
 	}
 
-	public void run() {
+	public void runOld() {
 		for (int i=0; i<queries.length; i++) {
 			Query q = queries[i];
 			q.setTable(simName);
-			opt.buildPlan(q);
+            PartitionSplit[] splits = opt.buildPlan(q);
+
+            // Check if there was an index update. If yes, we need
+            // to reload the index.
+            for (PartitionSplit p: splits) {
+                if (p.getIterator().getClass() == RepartitionIterator.class) {
+                    System.out.println("INFO: Reloading index ..");
+                    opt.loadIndex(Globals.getTableInfo(simName));
+                    break;
+                }
+            }
+		}
+	}
+
+    public void run() {
+		for (int i=0; i<queries.length; i++) {
+			Query q = queries[i];
+			q.setTable(simName);
+            PartitionSplit[] splits = opt.buildMultiPredicatePlan(q);
+
+            // Check if there was an index update. If yes, we need
+            // to reload the index.
+            for (PartitionSplit p: splits) {
+                if (p.getIterator().getClass() == RepartitionIterator.class) {
+                    System.out.println("INFO: Reloading index ..");
+                    opt.loadIndex(Globals.getTableInfo(simName));
+                    break;
+                }
+            }
 		}
 	}
 }

@@ -234,6 +234,13 @@ public class TPCHWorkload {
 		}
 	}
 
+	public void printWorkload(int numQueries) {
+		List<Query> queries = generateWorkload(numQueries);
+		for (Query q : queries) {
+			System.out.println(q.toString());
+		}
+	}
+
 	public void loadSettings(String[] args) {
 		int counter = 0;
 		while (counter < args.length) {
@@ -258,22 +265,28 @@ public class TPCHWorkload {
 		BenchmarkSettings.loadSettings(args);
 		BenchmarkSettings.printSettings();
 
-		System.out.println("Memory Stats (F/T/M): "
-				+ Runtime.getRuntime().freeMemory() + " "
-				+ Runtime.getRuntime().totalMemory() + " "
-				+ Runtime.getRuntime().maxMemory());
-
 		TPCHWorkload t = new TPCHWorkload();
 		t.loadSettings(args);
 		t.setUp();
 
 		switch (t.method) {
-		case 1:
-			System.out.println("Num Queries: " + t.numQueries);
-			t.runWorkload(t.numQueries);
-			break;
-		default:
-			break;
+			// Run Workload
+			case 1:
+				System.out.println("Memory Stats (F/T/M): "
+						+ Runtime.getRuntime().freeMemory() + " "
+						+ Runtime.getRuntime().totalMemory() + " "
+						+ Runtime.getRuntime().maxMemory());
+
+				System.out.println("Num Queries: " + t.numQueries);
+				t.runWorkload(t.numQueries);
+				break;
+			// Print Workload
+			case 2:
+				System.out.println("Num Queries: " + t.numQueries);
+				t.printWorkload(t.numQueries);
+				break;
+            default:
+                break;
 		}
 	}
 }

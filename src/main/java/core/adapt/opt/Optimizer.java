@@ -307,7 +307,7 @@ public class Optimizer {
 			this.updateIndex(best, q.getPredicates());
 			this.persistIndexToDisk(fs);
 			for (int i = 0; i < psplits.length; i++) {
-				if (psplits[i].getIterator().getClass() == RepartitionIterator.class) {
+                if (psplits[i].getIterator().getClass() == RepartitionIterator.class) {
 					psplits[i] = new PartitionSplit(
 							psplits[i].getPartitions(),
 							new RepartitionIterator(q));
