@@ -169,11 +169,16 @@ public class RunIndexBuilder {
 
 		//lineitem
 
-		//int[] dim = {0,0,0,0,0,0,0,12,12,12,14};
+		int[] dim = {0,0,0,0,0,0,0,0,12,12,12,12,12,14,14,14};
 
 		// orders
 
-		int[] dim = {0,0,0,0,0,0,0,4};
+		//int[] dim = {0,0,0,0,0,0,0,0,0,0,0};
+
+		// part
+
+		//int[] dim = {0,0,0,0,0,0,0,0};
+
 
 		// Construct the index from the sample.
 		RobustTree index = new RobustTree(tableInfo);

@@ -1,7 +1,14 @@
 package core.utils;
 
+import core.common.globals.TableInfo;
+import core.common.key.ParsedTupleList;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.io.LongWritable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -9,11 +16,40 @@ import java.util.List;
  * Created by ylu on 12/14/15.
  */
 public class RangePartitionerUtils {
-    public static long[] getCutPoints(List<LongWritable> sampleKeys, int n){
+
+    public static ArrayList<Long> getKeys(ConfUtils cfg,  TableInfo tableInfo, String path, int dimension){
+        FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
+
+        // read all the sample files and put them into the sample key set
+        ParsedTupleList sample = new ParsedTupleList(tableInfo.getTypeArray());
+        byte[] bytes = HDFSUtils.readFile(fs, path);
+        sample.unmarshall(bytes, tableInfo.delimiter);
+
+        ArrayList<Long> keys = new ArrayList<Long>();
+
+        for(Object[] o : sample.getValues()){
+            if (o[dimension] instanceof Long) {
+                keys.add((Long)o[dimension]);
+            } else  if(o[dimension] instanceof Integer){
+                int key = (Integer) o[dimension];
+                keys.add((long)key);
+            }
+        }
+
+        return keys;
+
+    }
+
+    public static String getCutPoints(ArrayList<Long> sampleKeys, int recordSize, long count){
+
+        long chunkSize = 32 * 1024 * 1024; // 32 MB
+        long totalSize = count * recordSize;
+        int n = (int) ( (totalSize + chunkSize - 1)  / chunkSize); // ceiling
+
         long[] keys = new long[sampleKeys.size()];
         int i = 0;
-        for(LongWritable lw : sampleKeys){
-            keys[i++] = lw.get();
+        for(long lw : sampleKeys){
+            keys[i++] = lw;
         }
         Arrays.sort(keys);
 
@@ -37,7 +73,9 @@ public class RangePartitionerUtils {
                 cutpoints[pi ++ ] = (int)keys[pj];
             }
         }
-        return cutpoints;
+
+        String strCutPoints = getStringCutPoints(cutpoints);
+        return strCutPoints;
     }
 
     public static long[] getLongCutPoints(String cutpoints){

@@ -8,6 +8,7 @@ import core.common.globals.Schema;
 import core.common.globals.TableInfo;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
+import core.utils.RangePartitionerUtils;
 import core.utils.TypeUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.fs.FileStatus;
@@ -32,8 +33,10 @@ public class CMTJoinWorkload {
     private Schema schemaMH, schemaMHL, schemaSF;
     private String stringMH, stringMHL, stringSF;
     private int    sizeMH, sizeMHL, sizeSF;
-
     private String MH = "mh", MHL = "mhl", SF = "sf";
+    private TableInfo tableMH, tableMHL, tableSF;
+    private ArrayList<Long> sf_id_keys;
+
     private Predicate[] EmptyPredicates = {};
 
 
@@ -49,20 +52,22 @@ public class CMTJoinWorkload {
 
         // Making things more deterministic.
         rand.setSeed(0);
+
+        tableMH = new TableInfo(MH, 0, '|', schemaMH);
+        tableMHL = new TableInfo(MHL, 0, '|', schemaMHL);
+        tableSF = new TableInfo(SF, 0, '|', schemaSF);
+
+        String workingDir = cfg.getHDFS_WORKING_DIR();
+
+        sf_id_keys = RangePartitionerUtils.getKeys(cfg, tableSF, workingDir + "/"  + SF + "/sample", schemaSF.getAttributeId("sf_id"));
     }
 
     public void garbageCollect(){
         FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 
-        TableInfo tableMH = new TableInfo(MH, 0, '|', schemaMH);
         tableMH.gc(cfg.getHDFS_WORKING_DIR(), fs);
-
-        TableInfo tableMHL = new TableInfo(MHL, 0, '|', schemaMHL);
         tableMHL.gc(cfg.getHDFS_WORKING_DIR(), fs);
-
-        TableInfo tableSF = new TableInfo(SF, 0, '|', schemaSF);
         tableSF.gc(cfg.getHDFS_WORKING_DIR(), fs);
-
     }
 
 
@@ -265,7 +270,9 @@ public class CMTJoinWorkload {
 
             JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(MHL, new JoinQuery(MHL, schemaMHL.getAttributeId("mhl_mapmatch_history_id"), EmptyPredicates), "NULL", MH, q_mh, "NULL",schemaMHL_join_MH.getAttributeId("mhl_dataset_id"));
 
-            String cutPoints = sq.getCutPoints(rdd, sizeMHL + sizeMH); // long[] = {1, 2, 3};
+            long result = rdd.count();
+
+            String cutPoints = RangePartitionerUtils.getCutPoints(sf_id_keys,  sizeMHL + sizeMH, result);
 
             Partitioner partitioner = new RangePartitioner(cutPoints);
 
@@ -274,10 +281,6 @@ public class CMTJoinWorkload {
             String dest = cfg.getHDFS_WORKING_DIR() + "/" + mhl_join_mh;
 
             rdd_mhl_join_ml.saveAsTextFile(dest + "/data");
-
-            long result = rdd_mhl_join_ml.count();
-
-            //System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
             postProcessing(dest, mhl_join_mh, schemaMHL_join_MH);
 

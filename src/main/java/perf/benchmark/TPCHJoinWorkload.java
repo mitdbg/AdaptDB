@@ -7,6 +7,7 @@ import core.common.globals.Schema;
 import core.common.globals.TableInfo;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
+import core.utils.RangePartitionerUtils;
 import core.utils.TypeUtils.SimpleDate;
 import core.utils.TypeUtils.TYPE;
 import org.apache.commons.io.FilenameUtils;
@@ -43,6 +44,9 @@ public class TPCHJoinWorkload {
     private Schema schemaCustomer, schemaLineitem, schemaOrders, schemaPart, schemaSupplier;
     private String stringCustomer, stringLineitem, stringOrders, stringPart, stringSupplier;
     private int    sizeCustomer, sizeLineitem, sizeOrders, sizePart, sizeSupplier;
+    private TableInfo tableLineitem, tableCustomer, tableOrders, tableSupplier, tablePart;
+    private ArrayList<Long> c_custkey_keys, l_orderkey_keys, s_suppkey_keys, p_partkey_keys;
+
 
     private String lineitem = "lineitem", orders = "orders", customer = "customer", supplier = "supplier", part = "part";
     private Predicate[] EmptyPredicates = {};
@@ -73,24 +77,29 @@ public class TPCHJoinWorkload {
 
         // Making things more deterministic.
         rand.setSeed(0);
+
+
+        tableLineitem = new TableInfo(lineitem, 0, '|', schemaLineitem);
+        tableCustomer = new TableInfo(customer, 0, '|', schemaCustomer);
+        tableOrders = new TableInfo(orders, 0, '|', schemaOrders);
+        tableSupplier = new TableInfo(supplier, 0, '|', schemaSupplier);
+        tablePart = new TableInfo(part, 0, '|', schemaPart);
+
+        String workingDir = cfg.getHDFS_WORKING_DIR();
+
+        c_custkey_keys = RangePartitionerUtils.getKeys(cfg, tableCustomer, workingDir + "/"  + customer + "/sample", schemaCustomer.getAttributeId("c_custkey"));
+        l_orderkey_keys = RangePartitionerUtils.getKeys(cfg, tableLineitem, workingDir + "/"  + lineitem + "/sample", schemaLineitem.getAttributeId("l_orderkey"));
+        s_suppkey_keys = RangePartitionerUtils.getKeys(cfg, tableSupplier, workingDir + "/"  + supplier + "/sample", schemaSupplier.getAttributeId("s_suppkey"));
+        p_partkey_keys = RangePartitionerUtils.getKeys(cfg, tablePart, workingDir + "/"  + part + "/sample", schemaPart.getAttributeId("p_partkey"));
     }
 
     public void garbageCollect(){
         FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 
-        TableInfo tableLineitem = new TableInfo(lineitem, 0, '|', schemaLineitem);
         tableLineitem.gc(cfg.getHDFS_WORKING_DIR(), fs);
-
-        TableInfo tableCustomer = new TableInfo(customer, 0, '|', schemaCustomer);
         tableCustomer.gc(cfg.getHDFS_WORKING_DIR(), fs);
-
-        TableInfo tableOrders = new TableInfo(orders, 0, '|', schemaOrders);
         tableOrders.gc(cfg.getHDFS_WORKING_DIR(), fs);
-
-        TableInfo tableSupplier = new TableInfo(supplier, 0, '|', schemaSupplier);
         tableSupplier.gc(cfg.getHDFS_WORKING_DIR(), fs);
-
-        TableInfo tablePart = new TableInfo(part, 0, '|', schemaPart);
         tablePart.gc(cfg.getHDFS_WORKING_DIR(), fs);
     }
 
@@ -272,7 +281,9 @@ public class TPCHJoinWorkload {
 
         JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", orders, q_o, "NULL", schemaLineitem_join_Orders.getAttributeId("o_custkey"));
 
-        String cutPoints = sq.getCutPoints(rdd, sizeLineitem + sizeOrders); // long[] = {1, 2, 3};
+        long result = rdd.count();
+
+        String cutPoints = RangePartitionerUtils.getCutPoints(c_custkey_keys, sizeLineitem + sizeOrders, result);
 
         Partitioner partitioner = new RangePartitioner(cutPoints);
 
@@ -281,10 +292,6 @@ public class TPCHJoinWorkload {
         String dest = cfg.getHDFS_WORKING_DIR() + "/" + lineitem_join_orders;
 
         rdd_lineitem_join_orders.saveAsTextFile(dest + "/data");
-
-        long result = rdd_lineitem_join_orders.count();
-
-        //System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
         postProcessing(dest, lineitem_join_orders, schemaLineitem_join_Orders);
 
@@ -366,7 +373,9 @@ public class TPCHJoinWorkload {
 
         JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(customer, q_c, "NULL", orders, q_o,"NULL",schemaCustomer_join_Orders.getAttributeId("o_orderkey"));
 
-        String cutPoints = sq.getCutPoints(rdd, sizeCustomer + sizeOrders); // long[] = {1, 2, 3};
+        long result = rdd.count();
+
+        String cutPoints = RangePartitionerUtils.getCutPoints(l_orderkey_keys, sizeCustomer + sizeOrders, result);
 
         Partitioner partitioner = new RangePartitioner(cutPoints);
 
@@ -376,10 +385,6 @@ public class TPCHJoinWorkload {
 
         rdd_customer_join_orders.saveAsTextFile(dest1 + "/data");
 
-        long result = rdd_customer_join_orders.count();
-
-        //System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
-
 
         postProcessing(dest1, customer_join_orders, schemaCustomer_join_Orders);
 
@@ -387,10 +392,7 @@ public class TPCHJoinWorkload {
 
         result = rdd.count();
 
-        //System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
-
-
-        cutPoints = sq.getCutPoints(rdd, sizeLineitem + sizeCustomer + sizeOrders); // long[] = {1, 2, 3};
+        cutPoints = RangePartitionerUtils.getCutPoints(s_suppkey_keys, sizeLineitem + sizeCustomer + sizeOrders, result); // long[] = {1, 2, 3};
 
         partitioner = new RangePartitioner(cutPoints);
 
@@ -486,7 +488,9 @@ public class TPCHJoinWorkload {
 
         JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, new JoinQuery(lineitem,  schemaLineitem.getAttributeId("l_orderkey"), EmptyPredicates), "NULL", orders, q_o, "NULL", schemaLineitem_join_Orders.getAttributeId("o_custkey"));
 
-        String cutPoints = sq.getCutPoints(rdd, sizeLineitem + sizeOrders); // long[] = {1, 2, 3};
+        long result = rdd.count();
+
+        String cutPoints =  RangePartitionerUtils.getCutPoints(c_custkey_keys, sizeLineitem + sizeOrders, result); // long[] = {1, 2, 3};
 
         Partitioner partitioner = new RangePartitioner(cutPoints);
 
@@ -496,9 +500,6 @@ public class TPCHJoinWorkload {
 
         rdd_lineitem_join_orders.saveAsTextFile(dest1 + "/data");
 
-        long result = rdd_lineitem_join_orders.count();
-
-        //System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
         postProcessing(dest1, lineitem_join_orders, schemaLineitem_join_Orders);
 
@@ -506,9 +507,7 @@ public class TPCHJoinWorkload {
 
         result = rdd.count();
 
-        //System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
-
-        cutPoints = sq.getCutPoints(rdd, sizeLineitem + sizeOrders + sizeCustomer); // long[] = {1, 2, 3};
+        cutPoints =  RangePartitionerUtils.getCutPoints(p_partkey_keys, sizeLineitem + sizeOrders + sizeCustomer, result); // long[] = {1, 2, 3};
 
         partitioner = new RangePartitioner(cutPoints);
 
@@ -588,8 +587,9 @@ public class TPCHJoinWorkload {
 
         JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", orders, q_o, "NULL", schemaLineitem_join_Orders.getAttributeId("o_custkey"));
 
+        long result = rdd.count();
 
-        String cutPoints = sq.getCutPoints(rdd, sizeLineitem + sizeOrders); // long[] = {1, 2, 3};
+        String cutPoints = RangePartitionerUtils.getCutPoints(c_custkey_keys, sizeLineitem + sizeOrders, result); // long[] = {1, 2, 3};
 
         Partitioner partitioner = new RangePartitioner(cutPoints);
 
@@ -600,15 +600,12 @@ public class TPCHJoinWorkload {
 
         rdd_lineitem_join_orders.saveAsTextFile(dest + "/data");
 
-        //long result = rdd_lineitem_join_orders.count();
-
-        //System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
         postProcessing(dest, lineitem_join_orders, schemaLineitem_join_Orders);
 
         rdd = sq.createJoinRDD(customer, new JoinQuery(customer, schemaCustomer.getAttributeId("c_custkey"), EmptyPredicates), "NULL", lineitem_join_orders, new JoinQuery(lineitem_join_orders, schemaLineitem_join_Orders.getAttributeId("o_custkey"),EmptyPredicates), cutPoints,0);
 
-        long result = rdd.count();
+        result = rdd.count();
 
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
