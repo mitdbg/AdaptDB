@@ -139,9 +139,7 @@ public class JoinPlanner {
 
         init_iteratorType(dataset2_splits);
 
-        System.out.println("print stats");
-
-        printStatistics();
+        System.out.println("Input size: data1 " + dataset1_int_splits.length + " data2 " + dataset2_int_splits.length);
 
         extractJoin(dataset1_splits, dataset1_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize());
 
@@ -166,6 +164,23 @@ public class JoinPlanner {
                     counters.put(dep_id, counters.get(dep_id) + 1);
                 }
             }
+        }
+
+
+        // statistics
+
+        int[] hist = new int[16];
+        for (int chunk : counters.keySet()) {
+            int i = 0;
+            while ((1 << i) < counters.get(chunk)) {
+                i++;
+            }
+            hist[i]++;
+        }
+
+        System.out.println("Histogram:");
+        for (int i = 0; i < 16; i++) {
+            System.out.println((1 << i) + ": " + hist[i]);
         }
 
         // filter out low counts
@@ -206,15 +221,17 @@ public class JoinPlanner {
                 for(int j = 0 ; j< shuffle_ids_int.length; j ++){
                     shuffle_ids_int[j] = shuffle_ids.get(j);
                 }
-                PartitionSplit shuffle_split = new PartitionSplit(shuffle_ids_int, split.getIterator());
-                shuffleJoinSplit.add(shuffle_split);
+                ArrayList<PartitionSplit> shuffle_splits = resizeSplits(split.getIterator(),shuffle_ids_int,partitionSizes, maxSplitSize);
+                for(PartitionSplit hs : shuffle_splits){
+                    shuffleJoinSplit.add(hs);
+                }
             }
             if(hyper_ids.size() > 0){
                 int[] hyper_ids_int = new int[hyper_ids.size()];
                 for(int j = 0 ; j< hyper_ids_int.length; j ++){
                     hyper_ids_int[j] = hyper_ids.get(j);
                 }
-                ArrayList<PartitionSplit> hyper_splits = resizeSplits(split.getIterator(),hyper_ids_int,partitionSizes, maxSplitSize);
+                ArrayList<PartitionSplit> hyper_splits = groupSplits(split.getIterator(),hyper_ids_int,partitionSizes, maxSplitSize);
                 for(PartitionSplit hs : hyper_splits){
                     hyperJoinSplit.add(hs);
                 }
@@ -400,42 +417,6 @@ public class JoinPlanner {
         return final_split;
     }
 
-    private void printStatistics() {
-        System.out.println("Input1: " + dataset1_int_splits.length + " Input2: " + dataset2_int_splits.length);
-
-        int[] hist = new int[16];
-        for (int chunk : overlap_chunks.keySet()) {
-            ArrayList<Integer> dep_chunk = overlap_chunks.get(chunk);
-            int i = 0;
-            while ((1 << i) < dep_chunk.size()) {
-                i++;
-            }
-            hist[i]++;
-        }
-
-        System.out.println("Histogram:");
-        for (int i = 0; i < 16; i++) {
-            System.out.println((1 << i) + ": " + hist[i]);
-        }
-
-
-        int sum = 0;
-
-        for (int i = 0; i < dataset1_splits.length; i++) {
-            PartitionSplit split = dataset1_splits[i];
-            int[] chunks = split.getPartitions();
-            HashSet<Integer> set = new HashSet<Integer>();
-            for (int j = 0; j < chunks.length; j++) {
-                for (int k : overlap_chunks.get(chunks[j])) {
-                    set.add(k);
-                }
-            }
-            sum += set.size();
-        }
-
-        System.out.println(sum + " chunks from table 2 are read!");
-
-    }
 
     private List<FileStatus> listStatus(String path) {
         ArrayList<FileStatus> input = new ArrayList<FileStatus>();
@@ -597,11 +578,50 @@ public class JoinPlanner {
         return sum;
     }
 
+
+    private ArrayList<PartitionSplit> resizeSplits(PartitionIterator partitionIter, int[] bids, Map<Integer, Long> partitionSizes, long maxSplitSize) {
+        ArrayList<PartitionSplit> resizedSplits = new ArrayList<PartitionSplit>();
+        int it = 0;
+        long totalsize = 0;
+        ArrayList<Integer> cur_split = new ArrayList<Integer>();
+
+        while(it < bids.length){
+            long cur_size = partitionSizes.get(bids[it]);
+            if(totalsize + cur_size > maxSplitSize){
+                int[] split_bids = new int[cur_split.size()];
+                for (int i = 0; i < split_bids.length; i++) {
+                    split_bids[i] = cur_split.get(i);
+                }
+                PartitionSplit split = new PartitionSplit(split_bids, partitionIter);
+                resizedSplits.add(split);
+                cur_split = new ArrayList<Integer>();
+                cur_split.add(bids[it]);
+                totalsize = cur_size;
+
+            } else {
+                totalsize += cur_size;
+                cur_split.add(bids[it]);
+            }
+            it ++;
+        }
+
+        if(cur_split.size() > 0){
+            int[] split_bids = new int[cur_split.size()];
+            for (int i = 0; i < split_bids.length; i++) {
+                split_bids[i] = cur_split.get(i);
+            }
+            PartitionSplit split = new PartitionSplit(split_bids, partitionIter);
+            resizedSplits.add(split);
+        }
+        return resizedSplits;
+    }
+
+
     /* the following code uses heuristic grouping
        TODO: add different grouping algos
     */
 
-    private ArrayList<PartitionSplit> resizeSplits(PartitionIterator partitionIter, int[] bids, Map<Integer, Long> partitionSizes, long maxSplitSize) {
+    private ArrayList<PartitionSplit> groupSplits(PartitionIterator partitionIter, int[] bids, Map<Integer, Long> partitionSizes, long maxSplitSize) {
         ArrayList<PartitionSplit> resizedSplits = new ArrayList<PartitionSplit>();
 
         Random rand = new Random();

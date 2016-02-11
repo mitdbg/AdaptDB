@@ -91,7 +91,6 @@ public class HPJoinInput {
     public long[] getLengths(int[] partitionIds) {
         long[] lengthsArr = new long[partitionIds.length];
         for (int i = 0; i < lengthsArr.length; i++) {
-            System.out.println(">>>> " + partitionIds[i] +  " "  + partitionIdSizeMap.get(partitionIds[i]) );
             lengthsArr[i] = partitionIdSizeMap.get(partitionIds[i]);
         }
         return lengthsArr;

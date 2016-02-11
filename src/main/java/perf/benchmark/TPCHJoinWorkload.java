@@ -832,10 +832,14 @@ public class TPCHJoinWorkload {
                 System.out.println("Run TPCH-19");
                 t.rand.setSeed(0);
                 t.tpch19();
+            case 3:
+                System.out.println("Run TPCH-14");
+                t.rand.setSeed(0);
+                t.tpch14();
             default:
                 break;
         }
 
-        t.garbageCollect();
+        //t.garbageCollect();
     }
 }

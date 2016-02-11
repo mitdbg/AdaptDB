@@ -26,8 +26,6 @@ import java.util.List;
 
 public class SparkScanInputFormat extends FileInputFormat<LongWritable, Text> implements Serializable {
 
-    private static int split_size = 2;
-
     private String dataset;
 
     private int flag; // 1 for split, 2 for data bucket id
@@ -126,7 +124,6 @@ public class SparkScanInputFormat extends FileInputFormat<LongWritable, Text> im
                     path[j] = new Path(hdfsDefaultName + workingDir + "/" + dataset + "/data/" + id);
                     len[j] = length;
                     types[j] = iter_type;
-                    //System.out.println("<<< " + path[j].toString());
                 }
 
                 SparkScanFileSplit split = new SparkScanFileSplit(path, len, types);
@@ -135,20 +132,17 @@ public class SparkScanInputFormat extends FileInputFormat<LongWritable, Text> im
         } else {
             // handling bucketID
 
-            for(int i = 0 ;i < splits.length; i += split_size){
-                int size = Math.min(split_size, splits.length - i);
-                Path[] path = new Path[size];
-                long[] len = new long[size];
-                int[] types = new int[size];
-                for(int j = 0 ;j < size; j ++ ){
-                    String[] subsplits = splits[i + j].split(":");
-                    int id = Integer.parseInt(subsplits[0]);
-                    long length = Long.parseLong(subsplits[1]);
-                    int type = Integer.parseInt(subsplits[2]);
-                    path[j] = new Path(hdfsDefaultName + workingDir + "/" + dataset + "/data/" + id);
-                    len[j] = length;
-                    types[j] = type;
-                }
+            for(int i = 0 ;i < splits.length; i ++){
+                Path[] path = new Path[1];
+                long[] len = new long[1];
+                int[] types = new int[1];
+                String[] subsplits = splits[i].split(":");
+                int id = Integer.parseInt(subsplits[0]);
+                long length = Long.parseLong(subsplits[1]);
+                int type = Integer.parseInt(subsplits[2]);
+                path[0] = new Path(hdfsDefaultName + workingDir + "/" + dataset + "/data/" + id);
+                len[0] = length;
+                types[0] = type;
                 SparkScanFileSplit split = new SparkScanFileSplit(path, len, types);
                 finalSplits.add(split);
             }

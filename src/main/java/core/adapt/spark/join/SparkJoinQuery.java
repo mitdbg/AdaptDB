@@ -78,7 +78,7 @@ public class SparkJoinQuery {
         queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
         queryConf.setHadoopHome(cfg.getHADOOP_HOME());
         queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
-        queryConf.setMaxSplitSize(128 * 1024 * 1024); // 128MB
+        queryConf.setMaxSplitSize(1L * 1024 * 1024 * 1024); // 8 GB
 
 
     }
