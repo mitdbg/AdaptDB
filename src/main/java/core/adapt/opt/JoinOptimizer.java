@@ -170,7 +170,7 @@ public class JoinOptimizer {
         for (Predicate p : ps) {
             adjustJoinRobustTreeForPredicate(rt.getRoot(), p, ps);
         }
-        adjustJoinRobustTreeForJoinAttribute(rt.getRoot(), q);
+        //adjustJoinRobustTreeForJoinAttribute(rt.getRoot(), q);
 
     }
 
