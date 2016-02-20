@@ -153,7 +153,7 @@ public class RawIndexKey implements Cloneable {
             len = offset + length;
 
         double ret = 0d; // return value
-        int part = 0; // the current part (int, float and sci parts of the
+        long part = 0; // the current part (int, float and sci parts of the
         // number)
         boolean neg = false; // true if part is a negative number
 
@@ -166,19 +166,19 @@ public class RawIndexKey implements Cloneable {
         // integer part
         while (off < len && (char) bytes[off] != '.')
             part = part * 10 + ((char) bytes[off++] - '0');
-        ret = neg ? (float) (part * -1) : (float) part;
+        ret = neg ? (double) (part * -1) : (double) part;
 
         // float part
         if (off < len) {
             off++;
-            int mul = 1;
+            long mul = 1;
             part = 0;
             while (off < len) {
                 part = part * 10 + ((char) bytes[off++] - '0');
                 mul *= 10;
             }
-            ret = neg ? ret - (float) part / (float) mul : ret + (float) part
-                    / (float) mul;
+            ret = neg ? ret - (double) part / (double) mul : ret + (double) part
+                    / (double) mul;
         }
 
         return ret;
