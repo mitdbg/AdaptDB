@@ -75,12 +75,16 @@ public class JoinOptimizerTest {
         Globals.loadTableInfo(lineitem, cfg.getHDFS_WORKING_DIR(), fs);
         TableInfo tableInfo = Globals.getTableInfo(lineitem);
 
-        for (int i = 0; i < 10; i ++) {
+
+
+        for (int i = 0; i < 20; i ++) {
             JoinQuery q = tpch12();
+            System.out.printf("Query %d: %s\n", i, q);
             // Load table info.
 
             JoinOptimizer opt = new JoinOptimizer(cfg);
             opt.loadIndex(tableInfo);
+            opt.loadQueries(tableInfo);
             PartitionSplit[] split = opt.buildPlan(q);
         }
     }

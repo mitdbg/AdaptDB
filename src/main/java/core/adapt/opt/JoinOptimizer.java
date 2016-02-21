@@ -45,6 +45,7 @@ import core.utils.TypeUtils.TYPE;
  */
 public class JoinOptimizer {
     private static final double WRITE_MULTIPLIER = 1.5;
+    private static final double PARTITION_MULTIPLIER = 1.2;
 
     private JoinRobustTree rt;
 
@@ -52,6 +53,8 @@ public class JoinOptimizer {
     private String workingDir;
     private String hadoopHome;
     private short fileReplicationFactor;
+
+    private TableInfo tableInfo;
 
     private List<JoinQuery> queryWindow = new ArrayList<JoinQuery>();
 
@@ -74,6 +77,8 @@ public class JoinOptimizer {
         String tableDir = this.workingDir + "/" + tableInfo.tableName;
         String pathToIndex = tableDir + "/index";
         String pathToSample = tableDir + "/sample";
+
+        this.tableInfo = tableInfo;
 
         System.out.println("Load index: " + pathToIndex);
 
@@ -114,6 +119,14 @@ public class JoinOptimizer {
     }
 
 
+    public int getTotalSampleSize(JRNode node){
+        if (node.bucket != null){
+            int size = node.bucket.getSample().size();
+            return size;
+        }
+        return getTotalSampleSize(node.leftChild) + getTotalSampleSize(node.rightChild);
+    }
+
     public PartitionSplit[] buildPlan(JoinQuery q) {
         this.queryWindow.add(q);
 
@@ -125,14 +138,21 @@ public class JoinOptimizer {
             choices.add(ps[i]);
         }
 
+        double totalTuple = tableInfo.numTuples;
+
+        System.out.println("total tuple: " + totalTuple + " total sample: " + rt.sample.size());
+
         adjustJoinRobustTree(choices, q);
 
         JRNode root = rt.getRoot();
 
-        System.out.println("plan.cost: " + root.cost + " plan.benefit: "
-                + root.benefit);
+        double count = getNumTuplesAccessed(root, q);
 
-        rt.printTree(); /////////
+        System.out.println("Accessed tuple counts: " + count);
+
+        System.out.println("plan.cost: " + root.cost + " plan.benefit: " + root.benefit);
+
+        //rt.printTree(); /////////
 
         boolean updated = rt.isUpdated();
 
@@ -170,7 +190,7 @@ public class JoinOptimizer {
         for (Predicate p : ps) {
             adjustJoinRobustTreeForPredicate(rt.getRoot(), p, ps);
         }
-        //adjustJoinRobustTreeForJoinAttribute(rt.getRoot(), q);
+        adjustJoinRobustTreeForJoinAttribute(rt.getRoot(), q);
 
     }
 
@@ -244,44 +264,25 @@ public class JoinOptimizer {
             }
         }
 
-        populateBucketEstimates(changed, collector, numTuples / numSamples);
+        populateBucketEstimates(changed, collector);
     }
 
-    private void populateBucketEstimates(JRNode n, ParsedTupleList sample,
-                                         double scaleFactor) {
+    private void populateBucketEstimates(JRNode n, ParsedTupleList sample) {
         if (n.bucket != null) {
-            n.bucket.setEstimatedNumTuples(sample.size() * scaleFactor);
+            n.bucket.setEstimatedNumTuples(1.0 * sample.size() / rt.sample.size()  * tableInfo.numTuples);
         } else {
             // By sorting we avoid memory allocation
             // Will most probably be faster
             sample.sort(n.attribute);
             Pair<ParsedTupleList, ParsedTupleList> halves = sample
                     .splitAt(n.attribute, n.value);
-            populateBucketEstimates(n.leftChild, halves.first, scaleFactor);
-            populateBucketEstimates(n.rightChild, halves.second, scaleFactor);
+            populateBucketEstimates(n.leftChild, halves.first);
+            populateBucketEstimates(n.rightChild, halves.second);
         }
     }
 
-    /**
-     * Gives the number of tuples accessed
-     *
-     * @param changed
-     * @return
-     */
-    private double getNumTuplesAccessed(JRNode changed) {
-        // First traverse to parent to see if query accesses node
-        // If yes, find the number of tuples accessed.
-        double numTuples = 0;
 
-        for (int i = queryWindow.size() - 1; i >= 0; i--) {
-            JoinQuery q = queryWindow.get(i);
-            numTuples += getNumTuplesAccessed(changed, q);
-        }
-
-        return numTuples;
-    }
-
-    static float getNumTuplesAccessed(JRNode changed, JoinQuery q) {
+    private boolean canAccessToThisNode(JRNode changed, JoinQuery q){
         // First traverse to parent to see if query accesses node
         // If yes, find the number of tuples accessed.
         Predicate[] ps = q.getPredicates();
@@ -334,13 +335,65 @@ public class JoinOptimizer {
                 break;
             node = node.parent;
         }
+        return accessed;
+    }
 
-        List<JRNode> nodesAccessed = changed.search(ps);
-        float tCount = 0;
-        for (JRNode n : nodesAccessed) {
-            tCount += n.bucket.getEstimatedNumTuples();
+    /**
+     * Gives the number of tuples accessed
+     *
+     * @param changed
+     * @return
+     */
+    private double getNumTuplesAccessed(JRNode changed) {
+        // First traverse to parent to see if query accesses node
+        // If yes, find the number of tuples accessed.
+        double numTuples = 0;
+
+        for (int i = queryWindow.size() - 1; i >= 0; i--) {
+            JoinQuery q = queryWindow.get(i);
+            numTuples += getNumTuplesAccessed(changed, q);
         }
 
+        return numTuples;
+    }
+
+    double getNumTuplesAccessed(JRNode changed, JoinQuery q) {
+
+        if (canAccessToThisNode(changed, q)){
+            Predicate[] ps = q.getPredicates();
+
+            List<JRNode> nodesAccessed = changed.search(ps);
+            float tCount = 0;
+            for (JRNode n : nodesAccessed) {
+                tCount += n.bucket.getEstimatedNumTuples();
+            }
+        }
+
+        return 0;
+    }
+
+
+    private double getNumTuplesAccessedWithoutPredicates(JRNode changed, int sampleSize) {
+        // First traverse to parent to see if query accesses node
+        // If yes, find the number of tuples accessed.
+        double numTuples = 0;
+
+        for (int i = queryWindow.size() - 1; i >= 0; i--) {
+            JoinQuery q = queryWindow.get(i);
+            numTuples += getNumTuplesAccessedWithoutPredicates(changed, sampleSize, q);
+        }
+
+        return numTuples;
+    }
+
+    double getNumTuplesAccessedWithoutPredicates(JRNode changed, int sampleSize, JoinQuery q) {
+        // First traverse to parent to see if query accesses node
+        // If yes, find the number of tuples accessed.
+
+        double tCount = 0;
+        if (canAccessToThisNode(changed, q)){
+            tCount = 1.0 * sampleSize / this.rt.sample.size() * this.tableInfo.numTuples;
+        }
         return tCount;
     }
 
@@ -489,8 +542,15 @@ public class JoinOptimizer {
                 }
                 // partition the tree by join attributes
 
-                partitionSubTreeByJoinAttribute(node, q.getJoinAttribute(), collector);
+                double totalTuplesAccess = getNumTuplesAccessed(node);
+                double totalTuplesAccessWithoutPredicates = getNumTuplesAccessedWithoutPredicates(node, collector.size());
 
+                if (totalTuplesAccessWithoutPredicates < PARTITION_MULTIPLIER * totalTuplesAccess ){ // attributes below are not helpful, change them to join attributes
+                    partitionSubTreeByJoinAttribute(node, q.getJoinAttribute(), collector);
+                } else {
+                    adjustJoinRobustTreeForJoinAttribute(node.leftChild, q);
+                    adjustJoinRobustTreeForJoinAttribute(node.rightChild, q);
+                }
             } else {
                 adjustJoinRobustTreeForJoinAttribute(node.leftChild, q);
                 adjustJoinRobustTreeForJoinAttribute(node.rightChild, q);
@@ -559,6 +619,8 @@ public class JoinOptimizer {
                 } else {
                     r.leftChild.updated = true;
                     r.rightChild.updated = true;
+                    r.benefit = benefit;
+                    r.cost = cost;
                 }
 
 
@@ -568,8 +630,6 @@ public class JoinOptimizer {
                         node.leftChild.attribute == node.rightChild.attribute &&
                         node.leftChild.value.equals(node.rightChild.value)) {
 
-                    node.benefit = node.leftChild.benefit + node.rightChild.benefit;
-                    node.cost = node.leftChild.cost + node.rightChild.cost;
 
                     int attribute = node.attribute;
                     Object value = node.value;
@@ -593,6 +653,10 @@ public class JoinOptimizer {
 
             }
 
+            if (node.leftChild.bucket == null && node.rightChild.bucket == null){
+                node.benefit = node.leftChild.benefit + node.rightChild.benefit;
+                node.cost = node.leftChild.cost + node.rightChild.cost;
+            }
 
             return;
         }
