@@ -489,7 +489,7 @@ public class JoinRobustTree implements MDIndex {
 
     private boolean isUpdated_helper(JRNode node){
         if(node.bucket != null){
-            return false;
+            return node.updated;
         }
         if(node.updated){
             return true;
