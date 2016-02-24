@@ -6,6 +6,7 @@ import core.adapt.Predicate;
 import core.common.globals.Globals;
 import core.common.globals.Schema;
 import core.common.globals.TableInfo;
+import core.common.index.JoinRobustTree;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils;
@@ -71,6 +72,18 @@ public class JoinOptimizerTest {
 
     }
 
+    private static JoinQuery tpch14(){
+        int year_14 = 1993;
+        int monthOffset_14 = rand.nextInt(60);
+        TypeUtils.SimpleDate d14_1 = new TypeUtils.SimpleDate(year_14 + monthOffset_14 / 12, monthOffset_14 % 12 + 1, 1);
+        monthOffset_14 += 1;
+        TypeUtils.SimpleDate d14_2 = new TypeUtils.SimpleDate(year_14 + monthOffset_14 / 12, monthOffset_14 % 12 + 1, 1);
+        Predicate p1_14 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TypeUtils.TYPE.DATE, d14_1, Predicate.PREDTYPE.GEQ);
+        Predicate p2_14 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TypeUtils.TYPE.DATE, d14_2, Predicate.PREDTYPE.LT);
+        JoinQuery q_l = new JoinQuery(lineitem,  schemaLineitem.getAttributeId("l_partkey"), new Predicate[]{p1_14, p2_14});
+        return q_l;
+    }
+
     public static void main(String[] args) {
         setup();
 
@@ -79,15 +92,17 @@ public class JoinOptimizerTest {
         Globals.loadTableInfo(lineitem, cfg.getHDFS_WORKING_DIR(), fs);
         TableInfo tableInfo = Globals.getTableInfo(lineitem);
 
-/*
+
         JoinQuery[] qs = new JoinQuery[5];
         for (int i = 0; i < 5; i++) {
-            qs[i] = tpch12();
+            qs[i] = tpch14();
         }
 
 
+        JoinRobustTree.randGenerator.setSeed(0);
+/*
         for (int i = 0; i < 10; i++) {
-            for (int k = 0; k < 5; k++) {
+            for (int k = 0; k < 1; k++) {
                 JoinQuery q = qs[k];
                 System.out.printf("Query %d: %s\n", k, q);
                 // Load table info.
@@ -96,13 +111,14 @@ public class JoinOptimizerTest {
                 opt.loadIndex(tableInfo);
                 opt.loadQueries(tableInfo);
                 PartitionSplit[] split = opt.buildPlan(q);
+
             }
         }
 */
 
         for (int i = 0; i < 50; i++) {
 
-            JoinQuery q = tpch12();
+            JoinQuery q = tpch14();
             System.out.printf("Query %d: %s\n", i, q);
             // Load table info.
 
@@ -112,5 +128,7 @@ public class JoinOptimizerTest {
             PartitionSplit[] split = opt.buildPlan(q);
 
         }
+
     }
+
 }

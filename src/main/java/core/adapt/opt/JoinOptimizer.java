@@ -2,11 +2,7 @@ package core.adapt.opt;
 
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 import core.adapt.JoinQuery;
 import core.adapt.spark.join.SparkJoinQueryConf;
@@ -45,7 +41,6 @@ import core.utils.TypeUtils.TYPE;
  */
 public class JoinOptimizer {
     private static final double WRITE_MULTIPLIER = 1.5;
-    private static final double PARTITION_MULTIPLIER = 1.2;
 
     private JoinRobustTree rt;
 
@@ -127,6 +122,134 @@ public class JoinOptimizer {
         return getTotalSampleSize(node.leftChild) + getTotalSampleSize(node.rightChild);
     }
 
+    private int getJoinAttribute(JRNode node, int depth){
+        if (node.bucket != null){
+            return -1; // in case joinAttributesDepth >= tree's height
+        }
+
+        int attributeOnThisNode = node.attribute;
+        if (depth == this.rt.joinAttributeDepth){
+            return attributeOnThisNode;
+        } else {
+            int attributeLeftChild = getJoinAttribute(node.leftChild, depth + 1);
+            int attributeRightChild = getJoinAttribute(node.rightChild, depth + 1);
+
+            if (attributeLeftChild != attributeOnThisNode || attributeRightChild != attributeOnThisNode) {
+                return -1;
+            } else {
+                return attributeOnThisNode;
+            }
+        }
+    }
+
+
+    private int getNumJoinAttributes(int joinAttribute){
+        int num = 0;
+        for(int i = 0 ;i < queryWindow.size(); i ++){
+            if (queryWindow.get(i).getJoinAttribute() == joinAttribute){
+                num ++;
+            }
+        }
+        return num;
+    }
+
+    private void getAllSamples(JRNode node, ParsedTupleList collector){
+        if (node.bucket != null){
+            collector.addValues(node.bucket.getSample().getValues());
+        } else {
+            getAllSamples(node.leftChild, collector);
+            getAllSamples(node.rightChild, collector);
+        }
+    }
+
+    private void setJoinAttribute(int joinAttribute, JRNode node, ParsedTupleList sample, double[] allocations, int depth) {
+        // depth <= joinAttributesDepth, set joinAttribute
+        // depth > joinAttributesDepth, use old attributes
+        // update estimation
+
+        if(node.bucket != null){
+            node.bucket.setEstimatedNumTuples(1.0 * sample.size() / rt.sample.size() * tableInfo.numTuples);
+            node.bucket.setSample(sample);
+            node.updated = true;
+            node.fullAccessed = true;
+            return;
+        }
+
+
+        if (depth <= this.rt.joinAttributeDepth){
+            Pair<ParsedTupleList, ParsedTupleList> halves = sample.splitByMedian(joinAttribute);
+
+            JRNode r = node.clone();
+            r.attribute = joinAttribute;
+            r.type = tableInfo.getTypeArray()[joinAttribute]; // should be LONG
+            r.value = halves.first.getLast(joinAttribute); // should equals to median
+            r.fullAccessed = true;
+            replaceInTree(node, r);
+
+            allocations[joinAttribute] -= 2.0 / Math.pow(2, depth - 1);
+
+            setJoinAttribute(joinAttribute, node.leftChild, halves.first, allocations,  depth + 1);
+            setJoinAttribute(joinAttribute, node.rightChild, halves.second, allocations,  depth + 1);
+        } else {
+            node.fullAccessed = true;
+
+            Pair<ParsedTupleList, ParsedTupleList> halves = null;
+
+            int numAttributes = this.rt.numAttributes;
+            boolean[] validDims = new boolean[numAttributes];
+            Arrays.fill(validDims, true);
+
+            int dim = -1;
+
+            for (int i = 0; i < numAttributes; i++) {
+                int testDim = JoinRobustTree.getLeastAllocated(allocations, validDims);
+                halves = sample.sortAndSplit(testDim);
+                if (halves.first.size() > 0 && halves.second.size() > 0) {
+                    dim = testDim;
+                    allocations[dim] -= 2.0 / Math.pow(2, depth - 1);
+                    break;
+                } else {
+                    validDims[testDim] = false;
+                    //System.err.println("WARN: Skipping attribute " + testDim);
+                }
+            }
+
+            if (dim == -1){
+                //System.err.println("ERR: No attribute to partition on");
+                node.bucket = new Bucket();
+                node.bucket.setEstimatedNumTuples(1.0 * sample.size() / rt.sample.size() * tableInfo.numTuples);
+                node.bucket.setSample(sample);
+                node.updated = true;
+                node.fullAccessed = true;
+            } else {
+                node.attribute = dim;
+                node.type = this.tableInfo.getTypeArray()[dim];
+                node.value = halves.first.getLast(dim); // Need to traverse up for range.
+
+                setJoinAttribute(joinAttribute, node.leftChild, halves.first, allocations, depth + 1);
+                setJoinAttribute(joinAttribute, node.rightChild, halves.second, allocations, depth + 1);
+            }
+        }
+    }
+    private void setJoinAttribute(int joinAttribute){
+
+        // grab all samples
+        ParsedTupleList collector = new ParsedTupleList(tableInfo.getTypeArray());
+        getAllSamples(rt.getRoot(), collector);
+
+        // Computes log(this.maxBuckets)
+        int maxDepth = 31 - Integer.numberOfLeadingZeros(this.rt.maxBuckets);
+        double allocationPerAttribute = Math.pow(this.rt.maxBuckets, 1.0 / this.rt.numAttributes);
+
+        double[] allocations = new double[this.rt.numAttributes];
+        for (int i = 0; i < this.rt.numAttributes; i++) {
+            allocations[i] = allocationPerAttribute;
+        }
+
+        // set join attributes
+        setJoinAttribute(joinAttribute, rt.getRoot(), collector, allocations, 1);
+    }
+
     public PartitionSplit[] buildPlan(JoinQuery q) {
         this.queryWindow.add(q);
 
@@ -142,20 +265,28 @@ public class JoinOptimizer {
 
         //System.out.println("total tuple: " + totalTuple + " total sample: " + rt.sample.size());
 
+        int curJoinAttribute = getJoinAttribute(rt.getRoot(), 1);
+        int numJoinAttributes = getNumJoinAttributes(q.getJoinAttribute());
+
+        // the current join attribute is different and the number of queries which have the same joinAttributes is large
+
+        if (curJoinAttribute != q.getJoinAttribute() && numJoinAttributes * 2 >= queryWindow.size() && rt.joinAttributeDepth > 0) {
+            System.out.println("Data is going to be fully repartitioned!");
+            setJoinAttribute(q.getJoinAttribute());
+            populateBucketEstimates(rt.getRoot());
+        }
+
+        //rt.printTree();
+
+        adjustJoinRobustTree(choices, q);
+
         JRNode root = rt.getRoot();
 
         double count = getNumTuplesAccessed(root, q);
 
         System.out.println("Accessed tuple counts: " + count);
 
-        adjustJoinRobustTree(choices, q);
-
-
-        int depth = minFullyAccessedDepth(root, 0);
-
-
-
-        System.out.println("plan.cost: " + root.cost + " plan.benefit: " + root.benefit + " min depth: " + depth);
+        System.out.println("plan.cost: " + root.cost + " plan.benefit: " + root.benefit);
 
         //rt.printTree(); /////////
 
@@ -212,10 +343,8 @@ public class JoinOptimizer {
     private void adjustJoinRobustTree(List<Predicate> choices, JoinQuery q) {
         Predicate[] ps = q.getPredicates();
         for (Predicate p : ps) {
-            adjustJoinRobustTreeForPredicate(rt.getRoot(), p, ps);
+            adjustJoinRobustTreeForPredicate(rt.getRoot(), p, ps, 1);
         }
-        //adjustJoinRobustTreeForJoinAttribute(rt.getRoot(), q, 0);
-
     }
 
 
@@ -294,6 +423,7 @@ public class JoinOptimizer {
     private void populateBucketEstimates(JRNode n, ParsedTupleList sample) {
         if (n.bucket != null) {
             n.bucket.setEstimatedNumTuples(1.0 * sample.size() / rt.sample.size() * tableInfo.numTuples);
+            n.bucket.setSample(sample);
         } else {
             // By sorting we avoid memory allocation
             // Will most probably be faster
@@ -431,6 +561,8 @@ public class JoinOptimizer {
             } else {
                 old.parent.leftChild = r;
             }
+        } else{
+            this.rt.setRoot(r);
         }
 
         r.leftChild = old.leftChild;
@@ -535,65 +667,14 @@ public class JoinOptimizer {
         partitionSubTreeByJoinAttribute(node.rightChild, joinAttribute, halves.second);
     }
 
-    private void adjustJoinRobustTreeForJoinAttribute(JRNode node, JoinQuery q, int depth) {
-        // attributes are from the queryWindow
-        if (node.bucket != null) {
-            // Leaf
-            return;
-        } else {
-            // Check if both sides are accessed
-            //boolean goLeft = checkIfGoLeft(node, ps);
-            //boolean goRight = checkIfGoRight(node, ps);
-            if (node.fullAccessed) {
-                // maybe some other condition
-                ParsedTupleList collector = null;
-                // populate the sample
 
-                LinkedList<JRNode> stack = new LinkedList<JRNode>();
-                stack.add(node);
-
-                while (stack.size() > 0) {
-                    JRNode n = stack.removeLast();
-                    if (n.bucket != null) {
-                        ParsedTupleList bucketSample = n.bucket.getSample();
-                        if (collector == null) {
-                            collector = new ParsedTupleList(bucketSample.getTypes());
-                        }
-                        collector.addValues(bucketSample.getValues());
-                    } else {
-                        stack.add(n.rightChild);
-                        stack.add(n.leftChild);
-                    }
-                }
-                // partition the tree by join attributes
-
-                double totalTuplesAccess = getNumTuplesAccessed(node);
-                double totalTuplesAccessWithoutPredicates = getNumTuplesAccessedWithoutPredicates(node, collector.size());
-
-
-                if (totalTuplesAccessWithoutPredicates < PARTITION_MULTIPLIER * totalTuplesAccess && node.attribute != q.getJoinAttribute()) { // attributes below are not helpful, change them to join attributes
-                    System.out.println("depth:" + depth + " totalTuplesAccess: " + totalTuplesAccess + " totalTuplesAccessWithoutPredicates: " + totalTuplesAccessWithoutPredicates);
-                    partitionSubTreeByJoinAttribute(node, q.getJoinAttribute(), collector);
-
-                } else {
-                    adjustJoinRobustTreeForJoinAttribute(node.leftChild, q, depth + 1);
-                    adjustJoinRobustTreeForJoinAttribute(node.rightChild, q, depth + 1);
-                }
-            } else {
-
-                adjustJoinRobustTreeForJoinAttribute(node.leftChild, q, depth + 1);
-                adjustJoinRobustTreeForJoinAttribute(node.rightChild, q, depth + 1);
-            }
-        }
-
-    }
 
     private boolean isBottomLevelNode(JRNode node) {
         return node.leftChild.bucket != null && node.rightChild.bucket != null;
     }
 
 
-    private void adjustJoinRobustTreeForPredicate(JRNode node, Predicate choice, Predicate[] ps) {
+    private void adjustJoinRobustTreeForPredicate(JRNode node, Predicate choice, Predicate[] ps, int depth) {
         // Option Index
         // 1 => Replace
         // 2 => Swap down X
@@ -609,58 +690,56 @@ public class JoinOptimizer {
             boolean goRight = checkIfGoRight(node, ps);
 
             if (goLeft) {
-                adjustJoinRobustTreeForPredicate(node.leftChild, choice, ps);
+                adjustJoinRobustTreeForPredicate(node.leftChild, choice, ps, depth + 1);
             }
 
             if (goRight) {
-                adjustJoinRobustTreeForPredicate(node.rightChild, choice, ps);
+                adjustJoinRobustTreeForPredicate(node.rightChild, choice, ps, depth + 1);
             }
 
-            if (isBottomLevelNode(node)) {
-                if (node.leftChild.fullAccessed && node.rightChild.fullAccessed) {
-                    node.fullAccessed = true;
+            if (depth > this.rt.joinAttributeDepth){
+                if (isBottomLevelNode(node)) {
+                    if (node.leftChild.fullAccessed && node.rightChild.fullAccessed) {
+                        node.fullAccessed = true;
 
-                    // When trying to replace by predicate;
-                    // Replace by testVal, not the actual predicate value
-                    Object testVal = p.getHelpfulCutpoint();
+                        // When trying to replace by predicate;
+                        // Replace by testVal, not the actual predicate value
+                        Object testVal = p.getHelpfulCutpoint();
 
-                    // replace attribute by one in the predicate
-
-
-                    // If we traverse to root and see that there is no node with
-                    // cutoff point less than
-                    // that of predicate, we can do this
-
-                    double numAccessedOld = getNumTuplesAccessed(node);
-
-                    JRNode r = node.clone();
-                    r.attribute = p.attribute;
-                    r.type = p.type;
-                    r.value = testVal;
-                    replaceInTree(node, r);
-
-                    populateBucketEstimates(r);
-                    double numAcccessedNew = getNumTuplesAccessed(r);
-                    double benefit = numAccessedOld - numAcccessedNew;
-                    double cost = this.computeCost(r); // Note that buckets
+                        // replace attribute by one in the predicate
 
 
-                    if (benefit < cost) {
-                        // Restore ??
-                        replaceInTree(r, node);
-                        populateBucketEstimates(node);
-                    } else {
-                        r.leftChild.updated = true;
-                        r.rightChild.updated = true;
-                        r.benefit = benefit;
-                        r.cost = cost;
+                        // If we traverse to root and see that there is no node with
+                        // cutoff point less than
+                        // that of predicate, we can do this
+
+                        double numAccessedOld = getNumTuplesAccessed(node);
+
+                        JRNode r = node.clone();
+                        r.attribute = p.attribute;
+                        r.type = p.type;
+                        r.value = testVal;
+                        replaceInTree(node, r);
+
+                        populateBucketEstimates(r);
+                        double numAcccessedNew = getNumTuplesAccessed(r);
+                        double benefit = numAccessedOld - numAcccessedNew;
+                        double cost = this.computeCost(r); // Note that buckets
+
+
+                        if (benefit < cost) {
+                            // Restore ??
+                            replaceInTree(r, node);
+                            populateBucketEstimates(node);
+                        } else {
+                            r.leftChild.updated = true;
+                            r.rightChild.updated = true;
+                            r.benefit = benefit;
+                            r.cost = cost;
+                        }
                     }
-                }
-            } else {
-                // Swap down the attribute and bring p above
-
-                if (node.leftChild.fullAccessed && node.rightChild.fullAccessed) {
-                    node.fullAccessed = true;
+                } else {
+                    // Swap down the attribute and bring p above
 
                     if (node.leftChild.attribute == node.rightChild.attribute &&
                             node.leftChild.value.equals(node.rightChild.value)) {
@@ -696,10 +775,16 @@ public class JoinOptimizer {
                         node.rightChild.type = type;
 
                     }
+
+
+                    if (node.leftChild.fullAccessed && node.rightChild.fullAccessed) {
+                        node.fullAccessed = true;
+
+                    }
                 }
-                node.benefit = node.leftChild.benefit + node.rightChild.benefit;
-                node.cost = node.leftChild.cost + node.rightChild.cost;
             }
+            node.benefit = node.leftChild.benefit + node.rightChild.benefit;
+            node.cost = node.leftChild.cost + node.rightChild.cost;
         }
     }
 
