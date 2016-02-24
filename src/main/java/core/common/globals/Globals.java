@@ -11,6 +11,12 @@ import java.util.Map;
  *
  */
 public class Globals {
+    // Re-partition cost multiplier.
+    static public final int c = 2;
+
+    // Query window size.
+    static public final int ws = 25;
+
 	static Map<String, TableInfo> tableInfos = new HashMap<String, TableInfo>();
 
     public static TableInfo getTableInfo(String tableName) {

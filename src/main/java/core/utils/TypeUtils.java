@@ -5,7 +5,7 @@ import java.util.Comparator;
 import java.util.GregorianCalendar;
 
 public class TypeUtils {
-	public static enum TYPE {
+	public enum TYPE {
 		BOOLEAN, INT, LONG, DOUBLE, STRING, DATE, VARCHAR
 	};
 

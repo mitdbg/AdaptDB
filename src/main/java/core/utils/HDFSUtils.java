@@ -13,8 +13,6 @@ import java.util.List;
 
 public class HDFSUtils {
 
-	public static final int WRITE_BUFFER_SIZE = 64 * 1024 * 1024;
-
 	public static class HDFSData {
 		protected static FileSystem fs;
 		protected String hadoopConfDir;

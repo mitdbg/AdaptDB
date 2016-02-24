@@ -7,6 +7,7 @@ import core.adapt.iterator.PartitionIterator;
 import core.adapt.iterator.PostFilterIterator;
 import core.adapt.iterator.RepartitionIterator;
 import core.adapt.spark.SparkQueryConf;
+import core.common.globals.Globals;
 import core.common.globals.TableInfo;
 import core.common.index.MDIndex.Bucket;
 import core.common.index.RNode;
@@ -135,6 +136,7 @@ public class Optimizer {
 	 * @return
 	 */
 	public PartitionSplit[] buildMultiPredicatePlan(final Query q) {
+		System.out.println("INFO: Running query " + q.toString());
 		this.queryWindow.add(q);
 		
 		Predicate[] ps = q.getPredicates();
@@ -149,6 +151,7 @@ public class Optimizer {
 		List<RNode> buckets = rt.getMatchingBuckets(ps);
 		
 		// Till we get no better plan, try to add a predicate into the tree.
+		List<Predicate> predicatesInserted = new ArrayList<>();
 		while(true) {
 			Plan best = getBestPlan(choices, ps);	
 			Predicate inserted = getPredicateInserted(best);
@@ -158,14 +161,16 @@ public class Optimizer {
 				benefit += best.benefit;
 				this.updateIndex(best, q.getPredicates());	
 				choices.remove(inserted);
+				predicatesInserted.add(inserted);
 			}
 		}
 		
 		List<RNode> newBuckets = rt.getMatchingBuckets(ps);
 		double cost = 0;
-		List<Integer> modifiedBuckets = new ArrayList<Integer>();
-		List<Integer> unmodifiedBuckets = new ArrayList<Integer>();
-		
+		List<Integer> modifiedBuckets = new ArrayList<>();
+		List<Integer> unmodifiedBuckets = new ArrayList<>();
+
+		// TODO: Maybe just sort ?
 		for (RNode r: buckets) {
 			boolean found = false;
 			for (RNode s: newBuckets) {
@@ -180,13 +185,14 @@ public class Optimizer {
 			} else {
 				modifiedBuckets.add(r.bucket.getBucketId());
 				// TODO: Multiplier.
-				cost += r.bucket.getEstimatedNumTuples();
+				cost += Globals.c * r.bucket.getEstimatedNumTuples();
 			}
 		}
 
 		FileSystem fs = HDFSUtils.getFSByHadoopHome(hadoopHome);
 		this.persistQueryToDisk(fs, q);
-		List<PartitionSplit> lps = new ArrayList<PartitionSplit>();
+		List<PartitionSplit> lps = new ArrayList<>();
+		System.out.println("INFO: Benefit " + benefit + " Cost " + cost);
 		if (benefit > cost) {
 			if (unmodifiedBuckets.size() > 0) {
 				PartitionIterator pi = new PostFilterIterator(q);
@@ -210,6 +216,11 @@ public class Optimizer {
 				}
 				PartitionSplit psplit = new PartitionSplit(bids, pi);
 				lps.add(psplit);
+
+				System.out.println("INFO: Predicates inserted: " + predicatesInserted.toString());
+
+                System.out.println("INFO: Index being updated");
+                this.persistIndexToDisk(fs);
 			}
 		} else {
 			PartitionIterator pi = new PostFilterIterator(q);
@@ -293,7 +304,7 @@ public class Optimizer {
 			int[] bids = psplits[i].getPartitions();
 			double numTuplesAccessed = 0;
 			for (int j = 0; j < bids.length; j++) {
-				numTuplesAccessed += Bucket.getEstimatedNumTuples(bids[j]);
+				numTuplesAccessed += Globals.c * Bucket.getEstimatedNumTuples(bids[j]);
 			}
 
 			totalCostOfQuery += numTuplesAccessed;
@@ -306,13 +317,13 @@ public class Optimizer {
 			System.out.println("INFO: Index being updated");
 			this.updateIndex(best, q.getPredicates());
 			this.persistIndexToDisk(fs);
-			for (int i = 0; i < psplits.length; i++) {
-                if (psplits[i].getIterator().getClass() == RepartitionIterator.class) {
-					psplits[i] = new PartitionSplit(
-							psplits[i].getPartitions(),
-							new RepartitionIterator(q));
-				}
-			}
+//			for (int i = 0; i < psplits.length; i++) {
+//                if (psplits[i].getIterator().getClass() == RepartitionIterator.class) {
+//					psplits[i] = new PartitionSplit(
+//							psplits[i].getPartitions(),
+//							new RepartitionIterator(q));
+//				}
+//			}
 		} else {
 			System.out.println("INFO: No index update");
 		}
