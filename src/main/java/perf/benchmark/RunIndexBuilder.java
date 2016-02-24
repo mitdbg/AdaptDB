@@ -2,6 +2,7 @@ package perf.benchmark;
 
 import core.common.globals.Globals;
 import core.common.globals.TableInfo;
+import core.common.index.JoinRobustTree;
 import core.common.index.RobustTree;
 import core.common.key.ParsedTupleList;
 import core.common.key.RawIndexKey;
@@ -53,6 +54,12 @@ public class RunIndexBuilder {
 
 	// Number of buckets in the index.
 	int numBuckets = -1;
+
+	// depth of join attribute
+	int joinAttributeDepth = 0;
+
+	// join attribute
+	int joinAttribute = 0;
 
 	// Directory corresponding to table on HDFS.
 	String tableHDFSDir;
@@ -167,25 +174,12 @@ public class RunIndexBuilder {
 		ParsedTupleList sample = readSampleFiles();
 		writeOutSample(fs, sample);
 
-		//lineitem
-
-		//int[] dim = {0,0,0,0,0,0,0,0,12,12,12,12,12,14,14,14};
-
-		//int[] dim = {1,1,1,1,1,1,1,1,1,1,1,10,10,10,10,10};
-		// orders
-
-		//int[] dim = {0,0,0,0,0,0,0,0,0,0,0};
-
-		// part
-
-		int[] dim = {0,0,0,0,0,0,0,0, 0};
-
-
 		// Construct the index from the sample.
-		RobustTree index = new RobustTree(tableInfo);
+		JoinRobustTree index = new JoinRobustTree(tableInfo);
+		index.joinAttributeDepth = this.joinAttributeDepth;
 		builder.buildJoinIndexFromSample(
 				sample,
-				numBuckets,dim,
+				numBuckets,joinAttribute,
 				index,
 				getHDFSWriter(tableHDFSDir,
 						cfg.getHDFS_REPLICATION_FACTOR()));
@@ -245,6 +239,14 @@ public class RunIndexBuilder {
 				break;
 			case "--numBuckets":
 				numBuckets = Integer.parseInt(args[counter + 1]);
+				counter += 2;
+				break;
+			case "--joinAttribute":
+				joinAttribute = Integer.parseInt(args[counter + 1]);
+				counter += 2;
+				break;
+			case "--joinAttributeDepth":
+				joinAttributeDepth = Integer.parseInt(args[counter + 1]);
 				counter += 2;
 				break;
 			default:

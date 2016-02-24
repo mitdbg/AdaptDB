@@ -130,7 +130,7 @@ public interface MDIndex {
 	 */
 	public void initProbe();
 
-	public void initProbe(int[] dims);
+	public void initProbe(int joinAttribute);
 
 	/**
 	 * Get the bucket id, for a given key, from an existing index.
