@@ -40,9 +40,6 @@ public class JRNode {
     public boolean updated;
     public boolean fullAccessed;
 
-    public double benefit;
-    public double cost;
-
     public Bucket bucket;
 
     public Map<Integer, BucketInfo> rangesByAttribute;
@@ -58,9 +55,6 @@ public class JRNode {
 
         updated = false;
         fullAccessed = false;
-
-        benefit = 0;
-        cost = 0;
 
         bucket = null;
 
@@ -80,9 +74,6 @@ public class JRNode {
 
         r.updated = this.updated;
         r.fullAccessed = this.fullAccessed;
-
-        r.benefit = this.benefit;
-        r.cost = this.cost;
 
         r.bucket = this.bucket;
         return r;
