@@ -37,6 +37,16 @@ public class Predicate {
 		this.predtype = PREDTYPE.valueOf(tokens[3]);
 	}
 
+	public void normalizePredicate() {
+		if (this.predtype == PREDTYPE.GEQ) {
+			this.predtype = PREDTYPE.GT;
+			this.value = getHelpfulCutpoint();
+		} else if (this.predtype == PREDTYPE.LT) {
+			this.predtype = PREDTYPE.LEQ;
+			this.value = getHelpfulCutpoint();
+		}
+	}
+
 	/**
 	 * Check if tuple with value for attribute is accepted (true) or rejected
 	 * (false) by predicate

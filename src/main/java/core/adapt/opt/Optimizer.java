@@ -153,7 +153,11 @@ public class Optimizer {
 		// Till we get no better plan, try to add a predicate into the tree.
 		List<Predicate> predicatesInserted = new ArrayList<>();
 		while(true) {
-			Plan best = getBestPlan(choices, ps);	
+			Plan best = getBestPlan(choices, ps);
+			if (best == null) {
+				break;
+			}
+
 			Predicate inserted = getPredicateInserted(best);
 			if (inserted == null) {
 				break;
@@ -317,13 +321,6 @@ public class Optimizer {
 			System.out.println("INFO: Index being updated");
 			this.updateIndex(best, q.getPredicates());
 			this.persistIndexToDisk(fs);
-//			for (int i = 0; i < psplits.length; i++) {
-//                if (psplits[i].getIterator().getClass() == RepartitionIterator.class) {
-//					psplits[i] = new PartitionSplit(
-//							psplits[i].getPartitions(),
-//							new RepartitionIterator(q));
-//				}
-//			}
 		} else {
 			System.out.println("INFO: No index update");
 		}
@@ -332,10 +329,8 @@ public class Optimizer {
 	}
 
 	private Plan getBestPlan(List<Predicate> choices, Predicate[] ps) {
-		// TODO: Multiple predicates seem to complicate the simple idea we had;
-		// think more :-/
 		Plan plan = null;
-		for (Predicate p: ps) {
+		for (Predicate p: choices) {
 			Plan option = getBestPlanForPredicate(p, ps);
 			if (plan == null) {
 				plan = option;
@@ -650,7 +645,7 @@ public class Optimizer {
 	static float getNumTuplesAccessed(RNode changed, Query q) {
 		// First traverse to parent to see if query accesses node
 		// If yes, find the number of tuples accessed.
-		Predicate[] ps = ((Query) q).getPredicates();
+		Predicate[] ps = q.getPredicates();
 
 		RNode node = changed;
 		boolean accessed = true;
@@ -683,7 +678,7 @@ public class Optimizer {
 							break;
 						case LT:
 							if (TypeUtils.compareTo(p.value, node.parent.value,
-									node.parent.type) < 0)
+									node.parent.type) <= 0)
 								accessed = false;
 							break;
 						default:
@@ -870,8 +865,8 @@ public class Optimizer {
 					replaceInTree(node, r);
 
 					populateBucketEstimates(r);
-					double numAcccessedNew = getNumTuplesAccessed(r);
-					double benefit = numAccessedOld - numAcccessedNew;
+					double numAccessedNew = getNumTuplesAccessed(r);
+					double benefit = numAccessedOld - numAccessedNew;
 
 					if (benefit > 0) {
 						// TODO: Better cost model ?

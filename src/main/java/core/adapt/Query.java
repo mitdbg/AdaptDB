@@ -33,7 +33,22 @@ public class Query implements Serializable {
                 this.predicates[i] = new Predicate(predParts[i]);
             }
 		} else {
-			this.predicates = new Predicate[0];
+			String msg = "Received a bad query string " + queryString;
+			System.err.println(msg);
+			throw new RuntimeException(msg);
+		}
+
+		normalizeQuery();
+	}
+
+	/**
+	 * The partitioning tree with node A_p splits data as
+	 * A <= p and A > p. Things become simpler if predicates are also
+	 * <= or >.
+	 */
+	public void normalizeQuery() {
+		for (Predicate p: predicates) {
+			p.normalizePredicate();
 		}
 	}
 	
