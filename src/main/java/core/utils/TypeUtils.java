@@ -5,7 +5,7 @@ import java.util.Comparator;
 import java.util.GregorianCalendar;
 
 public class TypeUtils {
-	public static enum TYPE {
+	public enum TYPE {
 		BOOLEAN, INT, LONG, DOUBLE, STRING, DATE, VARCHAR
 	};
 
@@ -47,9 +47,10 @@ public class TypeUtils {
 		// Though expensive to create the calendar and find out, it works.
 		// Infrequent operation, not worth optimizing.
 		public SimpleDate oneDayLess() {
-			Calendar c = new GregorianCalendar(year, month, day);
+			// Month in the gregorian calendar class is 0 based.
+			Calendar c = new GregorianCalendar(year, month - 1, day);
 			c.add(Calendar.DAY_OF_MONTH, -1);
-			return new SimpleDate(c.get(Calendar.YEAR), c.get(Calendar.MONTH),
+			return new SimpleDate(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1,
 					c.get(Calendar.DAY_OF_MONTH));
 		}
 

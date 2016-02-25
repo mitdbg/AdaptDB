@@ -79,15 +79,9 @@ public class Simulator {
 			q.setTable(simName);
             PartitionSplit[] splits = opt.buildMultiPredicatePlan(q);
 
-            // Check if there was an index update. If yes, we need
-            // to reload the index.
-            for (PartitionSplit p: splits) {
-                if (p.getIterator().getClass() == RepartitionIterator.class) {
-                    System.out.println("INFO: Reloading index ..");
-                    opt.loadIndex(Globals.getTableInfo(simName));
-                    break;
-                }
-            }
+			// When using the multi-predicate plan builder, the rt gets dirtied
+			// We need to reload for every query.
+            opt.loadIndex(Globals.getTableInfo(simName));
 		}
 	}
 }
