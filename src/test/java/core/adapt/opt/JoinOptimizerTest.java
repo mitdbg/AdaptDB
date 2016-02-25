@@ -15,6 +15,8 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.spark.api.java.JavaPairRDD;
 
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.Random;
 
 /**
@@ -44,12 +46,47 @@ public class JoinOptimizerTest {
         rand.setSeed(0);
     }
 
+    private static JoinQuery tpch3() {
+
+        int rand_3 = rand.nextInt(mktSegmentVals.length);
+        String c_mktsegment = mktSegmentVals[rand_3];
+        Calendar c = new GregorianCalendar();
+        int dateOffset = (int) (rand.nextFloat() * (31 + 28 + 31));
+        c.set(1995, Calendar.MARCH, 01);
+        c.add(Calendar.DAY_OF_MONTH, dateOffset);
+        TypeUtils.SimpleDate d3 = new TypeUtils.SimpleDate(c.get(Calendar.YEAR),
+                c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
+
+
+        Predicate p3_3 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TypeUtils.TYPE.DATE, d3, Predicate.PREDTYPE.GT);
+
+        JoinQuery q_c = null;
+        JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_orderkey"), new Predicate[]{p3_3});
+        return q_l;
+    }
+
+    private static JoinQuery tpch10() {
+
+        String l_returnflag_10 = "R";
+        String l_returnflag_prev_10 = "N";
+        int year_10 = 1993;
+        int monthOffset = rand.nextInt(24);
+        TypeUtils.SimpleDate d10_1 = new TypeUtils.SimpleDate(year_10 + monthOffset / 12, monthOffset % 12 + 1, 1);
+        monthOffset = monthOffset + 3;
+        TypeUtils.SimpleDate d10_2 = new TypeUtils.SimpleDate(year_10 + monthOffset / 12, monthOffset % 12 + 1, 1);
+        Predicate p1_10 = new Predicate(schemaLineitem.getAttributeId("l_returnflag"), TypeUtils.TYPE.STRING, l_returnflag_10, Predicate.PREDTYPE.LEQ);
+        Predicate p4_10 = new Predicate(schemaLineitem.getAttributeId("l_returnflag"), TypeUtils.TYPE.STRING, l_returnflag_prev_10, Predicate.PREDTYPE.GT);
+
+        JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_orderkey"), new Predicate[]{p1_10, p4_10});
+        return q_l;
+    }
+
     private static JoinQuery tpch12() {
         int rand_12 = rand.nextInt(shipModeVals.length);
         String shipmode_12 = shipModeVals[rand_12];
         int year_12 = 1993 + rand.nextInt(5);
         TypeUtils.SimpleDate d12_1 = new TypeUtils.SimpleDate(year_12, 1, 1);
-        TypeUtils.SimpleDate d12_2 = new TypeUtils.SimpleDate(1997, 2, 24);
+        TypeUtils.SimpleDate d12_2 = new TypeUtils.SimpleDate(year_12 + 1, 1, 1);
         Predicate p1_12 = new Predicate(schemaLineitem.getAttributeId("l_shipmode"), TypeUtils.TYPE.STRING, shipmode_12, Predicate.PREDTYPE.LEQ);
         Predicate p2_12 = new Predicate(schemaLineitem.getAttributeId("l_receiptdate"), TypeUtils.TYPE.DATE, d12_1, Predicate.PREDTYPE.GEQ);
         Predicate p3_12 = new Predicate(schemaLineitem.getAttributeId("l_receiptdate"), TypeUtils.TYPE.DATE, d12_2, Predicate.PREDTYPE.LT);
@@ -60,10 +97,8 @@ public class JoinOptimizerTest {
             String shipmode_prev_12 = shipModeVals[rand_12 - 1];
             Predicate p4_12 = new Predicate(schemaLineitem.getAttributeId("l_shipmode"), TypeUtils.TYPE.STRING, shipmode_prev_12, Predicate.PREDTYPE.GT);
             q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_orderkey"), new Predicate[]{p1_12, p2_12, p3_12, p4_12});
-            //q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_orderkey"), new Predicate[]{p3_12});
         } else {
             q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_orderkey"), new Predicate[]{p1_12, p2_12, p3_12});
-            //q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_orderkey"), new Predicate[]{p3_12});
         }
 
         System.out.println("INFO: Query_lineitem:" + q_l.toString());
@@ -72,7 +107,7 @@ public class JoinOptimizerTest {
 
     }
 
-    private static JoinQuery tpch14(){
+    private static JoinQuery tpch14() {
         int year_14 = 1993;
         int monthOffset_14 = rand.nextInt(60);
         TypeUtils.SimpleDate d14_1 = new TypeUtils.SimpleDate(year_14 + monthOffset_14 / 12, monthOffset_14 % 12 + 1, 1);
@@ -81,6 +116,22 @@ public class JoinOptimizerTest {
         Predicate p1_14 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TypeUtils.TYPE.DATE, d14_1, Predicate.PREDTYPE.GEQ);
         Predicate p2_14 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TypeUtils.TYPE.DATE, d14_2, Predicate.PREDTYPE.LT);
         JoinQuery q_l = new JoinQuery(lineitem,  schemaLineitem.getAttributeId("l_partkey"), new Predicate[]{p1_14, p2_14});
+        return q_l;
+    }
+
+    private static JoinQuery tpch19() {
+
+        String brand_19 = "Brand#" + (rand.nextInt(5) + 1) + "" + (rand.nextInt(5) + 1);
+        String shipInstruct_19 = "DELIVER IN PERSON";
+        double quantity_19 = rand.nextInt(10) + 1;
+        Predicate p1_19 = new Predicate(schemaLineitem.getAttributeId("l_shipinstruct"), TypeUtils.TYPE.STRING, shipInstruct_19, Predicate.PREDTYPE.EQ);
+        Predicate p4_19 = new Predicate(schemaLineitem.getAttributeId("l_quantity"), TypeUtils.TYPE.DOUBLE, quantity_19, Predicate.PREDTYPE.GT);
+        quantity_19 += 10;
+        Predicate p5_19 = new Predicate(schemaLineitem.getAttributeId("l_quantity"), TypeUtils.TYPE.DOUBLE, quantity_19, Predicate.PREDTYPE.LEQ);
+        Predicate p8_19 = new Predicate(schemaLineitem.getAttributeId("l_shipmode"), TypeUtils.TYPE.STRING, "AIR", Predicate.PREDTYPE.LEQ);
+
+        JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_partkey"), new Predicate[]{p1_19, p4_19, p5_19, p8_19});
+
         return q_l;
     }
 
@@ -93,33 +144,79 @@ public class JoinOptimizerTest {
         TableInfo tableInfo = Globals.getTableInfo(lineitem);
 
 
+
+        JoinRobustTree.randGenerator.setSeed(0);
+
+/*
+        for (int i = 0; i < 10; i++) {
+
+            JoinQuery q = tpch3();
+            System.out.printf("TPCH3 Query %d: %s\n", i, q);
+            // Load table info.
+
+            JoinOptimizer opt = new JoinOptimizer(cfg);
+            opt.loadIndex(tableInfo);
+            opt.loadQueries(tableInfo);
+            PartitionSplit[] split = opt.buildPlan(q);
+
+        }
+
+        for (int i = 0; i < 10; i++) {
+
+            JoinQuery q = tpch10();
+            System.out.printf("TPCH10 Query %d: %s\n", i, q);
+            // Load table info.
+
+            JoinOptimizer opt = new JoinOptimizer(cfg);
+            opt.loadIndex(tableInfo);
+            opt.loadQueries(tableInfo);
+            PartitionSplit[] split = opt.buildPlan(q);
+
+        }
+
+*/
+
+
+
+/*
+
+        for (int i = 0; i < 10; i++) {
+
+            JoinQuery q = tpch12();
+            System.out.printf("TPCH12 Query %d: %s\n", i, q);
+            // Load table info.
+
+            JoinOptimizer opt = new JoinOptimizer(cfg);
+            opt.loadIndex(tableInfo);
+            opt.loadQueries(tableInfo);
+            PartitionSplit[] split = opt.buildPlan(q);
+
+        }
+
+*/
+
+        for (int i = 0; i < 1; i++) {
+
+            JoinQuery q = tpch19();
+            System.out.printf("TPCH19 Query %d: %s\n", i, q);
+            // Load table info.
+
+            JoinOptimizer opt = new JoinOptimizer(cfg);
+            opt.loadIndex(tableInfo);
+            opt.loadQueries(tableInfo);
+            PartitionSplit[] split = opt.buildPlan(q);
+
+        }
+
         JoinQuery[] qs = new JoinQuery[5];
-        for (int i = 0; i < 5; i++) {
+
+        for(int i= 0 ;i < 5;i  ++){
             qs[i] = tpch14();
         }
 
-
-        JoinRobustTree.randGenerator.setSeed(0);
-/*
-        for (int i = 0; i < 10; i++) {
-            for (int k = 0; k < 1; k++) {
-                JoinQuery q = qs[k];
-                System.out.printf("Query %d: %s\n", k, q);
-                // Load table info.
-
-                JoinOptimizer opt = new JoinOptimizer(cfg);
-                opt.loadIndex(tableInfo);
-                opt.loadQueries(tableInfo);
-                PartitionSplit[] split = opt.buildPlan(q);
-
-            }
-        }
-*/
-
-        for (int i = 0; i < 50; i++) {
-
-            JoinQuery q = tpch14();
-            System.out.printf("Query %d: %s\n", i, q);
+        for (int i = 0; i < 30; i++) {
+            JoinQuery q = qs[i/5];
+            System.out.printf("TPCH14 Query %d: %s\n", i, q);
             // Load table info.
 
             JoinOptimizer opt = new JoinOptimizer(cfg);

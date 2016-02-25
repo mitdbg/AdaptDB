@@ -194,7 +194,7 @@ public class RobustTree implements MDIndex {
 
 	// TODO: Add capacity
 	static List<Integer> leastAllocated = new ArrayList<>(20);
-	static Random randGenerator = new Random();
+	public static Random randGenerator = new Random();
 
 	/**
 	 * Return the dimension which has the maximum allocation unfulfilled
