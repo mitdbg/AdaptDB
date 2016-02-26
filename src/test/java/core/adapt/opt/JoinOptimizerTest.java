@@ -194,11 +194,12 @@ public class JoinOptimizerTest {
         }
 
 */
+/*
 
         for (int i = 0; i < 1; i++) {
 
-            JoinQuery q = tpch19();
-            System.out.printf("TPCH19 Query %d: %s\n", i, q);
+            JoinQuery q = tpch14();
+            System.out.printf("TPCH3 Query %d: %s\n", i, q);
             // Load table info.
 
             JoinOptimizer opt = new JoinOptimizer(cfg);
@@ -208,15 +209,11 @@ public class JoinOptimizerTest {
 
         }
 
-        JoinQuery[] qs = new JoinQuery[5];
-
-        for(int i= 0 ;i < 5;i  ++){
-            qs[i] = tpch14();
-        }
+*/
 
         for (int i = 0; i < 30; i++) {
-            JoinQuery q = qs[i/5];
-            System.out.printf("TPCH14 Query %d: %s\n", i, q);
+            JoinQuery q = tpch19();
+            System.out.printf("TPCH12 Query %d: %s\n", i, q);
             // Load table info.
 
             JoinOptimizer opt = new JoinOptimizer(cfg);
