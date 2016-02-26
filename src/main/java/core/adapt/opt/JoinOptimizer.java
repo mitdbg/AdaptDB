@@ -380,7 +380,9 @@ public class JoinOptimizer {
 
     private void adjustJoinRobustTree(List<Predicate> choices, JoinQuery q) {
         Predicate[] ps = q.getPredicates();
-        for (Predicate p : ps) {
+        Collections.shuffle(choices);
+
+        for (Predicate p : choices) {
             JRNode node = adjustJoinRobustTreeForPredicate(rt.getRoot(), p, ps, 1);
             rt.setRoot(node);
         }
