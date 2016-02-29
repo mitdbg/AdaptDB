@@ -116,8 +116,8 @@ confs = {
                 'SCHEMASUPPLIER': 's_suppkey long, s_name string, s_address string, s_phone string, s_acctbal double, s_nation string, s_region string',
                 'SCHEMACUSTOMER': 'c_custkey long, c_name string, c_address string, c_phone string, c_acctbal double, c_mktsegment string, c_nation string, c_region string',
                 'USER' : 'mdindex',
-                'HOSTS' : ['istc2.csail.mit.edu', 'istc5.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu',  'istc9.csail.mit.edu', 'istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
-                'ROLEDEFS' : { 'master': ['istc2.csail.mit.edu'] },
+                'HOSTS' : ['istc1.csail.mit.edu', 'istc4.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu',  'istc9.csail.mit.edu', 'istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
+                'ROLEDEFS' : { 'master': ['istc13.csail.mit.edu'] },
                 },
         "join_lineitem" : {
                 'JAR' : '/home/mdindex/yilu/mdindex/build/libs/mdindex-all.jar',
@@ -134,8 +134,8 @@ confs = {
                 'NUMFIELDS' : '15',
                 'SCHEMA': 'l_orderkey long, l_partkey long, l_suppkey long, l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, l_tax double, l_returnflag string,  l_linestatus string, l_shipdate date, l_commitdate date, l_receiptdate date, l_shipinstruct string, l_shipmode string',
                 'USER' : 'mdindex',
-                'HOSTS' : ['istc2.csail.mit.edu', 'istc5.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu', 'istc9.csail.mit.edu', 'istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
-                'ROLEDEFS' : { 'master': ['istc2.csail.mit.edu'] },
+                'HOSTS' : ['istc1.csail.mit.edu', 'istc4.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu', 'istc9.csail.mit.edu', 'istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
+                'ROLEDEFS' : { 'master': ['istc13.csail.mit.edu'] },
                 },
         "join_orders" : {
                 'JAR' : '/home/mdindex/yilu/mdindex/build/libs/mdindex-all.jar',
@@ -152,8 +152,8 @@ confs = {
                 'NUMFIELDS' : '8',
                 'SCHEMA': 'o_orderkey long, o_custkey long, o_orderstatus string, o_totalprice double, o_orderdate date, o_orderpriority string, o_clerk string, o_shippriority int',
                 'USER' : 'mdindex',
-                'HOSTS' : ['istc2.csail.mit.edu', 'istc5.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu', 'istc9.csail.mit.edu','istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
-                'ROLEDEFS' : { 'master': ['istc2.csail.mit.edu'] },
+                'HOSTS' : ['istc1.csail.mit.edu', 'istc4.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu', 'istc9.csail.mit.edu','istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
+                'ROLEDEFS' : { 'master': ['istc13.csail.mit.edu'] },
                 },
         "join_part" : {
                 'JAR' : '/home/mdindex/yilu/mdindex/build/libs/mdindex-all.jar',
@@ -170,8 +170,8 @@ confs = {
                 'NUMFIELDS' : '8',
                 'SCHEMA': 'p_partkey long, p_name string, p_mfgr string, p_brand string, p_type string, p_size int, p_container string, p_retailprice double',
                 'USER' : 'mdindex',
-                'HOSTS' : ['istc2.csail.mit.edu', 'istc5.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu', 'istc9.csail.mit.edu','istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
-                'ROLEDEFS' : { 'master': ['istc2.csail.mit.edu'] },
+                'HOSTS' : ['istc1.csail.mit.edu', 'istc4.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu', 'istc9.csail.mit.edu','istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
+                'ROLEDEFS' : { 'master': ['istc13.csail.mit.edu'] },
                 },
         "join_supplier" : {
                 'JAR' : '/home/mdindex/yilu/mdindex/build/libs/mdindex-all.jar',
@@ -188,8 +188,8 @@ confs = {
                 'NUMFIELDS' : '7',
                 'SCHEMA': 's_suppkey long, s_name string, s_address string, s_phone string, s_acctbal double, s_nation string, s_region string',
                 'USER' : 'mdindex',
-                'HOSTS' : ['istc2.csail.mit.edu', 'istc5.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu', 'istc9.csail.mit.edu','istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
-                'ROLEDEFS' : { 'master': ['istc2.csail.mit.edu'] },
+                'HOSTS' : ['istc1.csail.mit.edu', 'istc4.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu', 'istc9.csail.mit.edu','istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
+                'ROLEDEFS' : { 'master': ['istc13.csail.mit.edu'] },
                 },
         "join_customer" : {
                 'JAR' : '/home/mdindex/yilu/mdindex/build/libs/mdindex-all.jar',
@@ -206,8 +206,8 @@ confs = {
                 'NUMFIELDS' : '8',
                 'SCHEMA': 'c_custkey long, c_name string, c_address string, c_phone string, c_acctbal double, c_mktsegment string, c_nation string, c_region string',
                 'USER' : 'mdindex',
-                'HOSTS' : ['istc2.csail.mit.edu', 'istc5.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu', 'istc9.csail.mit.edu','istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
-                'ROLEDEFS' : { 'master': ['istc2.csail.mit.edu'] },
+                'HOSTS' : ['istc1.csail.mit.edu', 'istc4.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu', 'istc9.csail.mit.edu','istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
+                'ROLEDEFS' : { 'master': ['istc13.csail.mit.edu'] },
                 },
 
         "localjoin_lineitem" : {
