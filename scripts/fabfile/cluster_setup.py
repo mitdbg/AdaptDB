@@ -16,46 +16,48 @@ def untar():
 
 @parallel
 def configure_systems():
-    global hdfssite, coresite, sparkenv
     with cd('/home/mdindex/hadoop-2.6.0/etc/hadoop'):
         run('rm -f core-site.xml')
+        run('rm -f hadoop-env.sh')
         run('rm -f hdfs-site.xml')
-        put('hdfs-site.xml', '~/hadoop-2.6.0/etc/hadoop/hdfs-site.xml')
-        run('wget http://anilshanbhag.in/confs/core-site.xml')
+        put('server/hdfs-site.xml', '~/hadoop-2.6.0/etc/hadoop/hdfs-site.xml')
+        put('server/hadoop-env.sh', '~/hadoop-2.6.0/etc/hadoop/hadoop-env.sh')
+        put('server/core-site.xml', '~/hadoop-2.6.0/etc/hadoop/core-site.xml')
 
-    with cd('/home/mdindex/spark-1.3.1-bin-hadoop2.6/conf'):
+    with cd('/home/mdindex/spark-1.6.0-bin-hadoop2.6/conf'):
         run('rm -f spark-env.sh')
-        run('wget http://anilshanbhag.in/confs/spark-env.sh')
+        run('rm -f spark-defaults.conf')
+        put('server/spark-env.sh', '~/spark-1.6.0-bin-hadoop2.6/conf/spark-env.sh')
+        put('server/spark-defaults.conf', '~/spark-1.6.0-bin-hadoop2.6/conf/spark-defaults.conf')
 
     with cd('/data/mdindex'):
         run('rm -f -R dfs')
         run('rm -f -R data')
+        run('rm -f -R iotmp')
         run('mkdir dfs')
         run('mkdir data')
+        run('mkdir iotmp')
 
     with cd('/home/mdindex'):
-        java_home = "export JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64"
-        run('echo "%s" > .bashrc' % java_home)
+        put('server/.bashrc', '~/')
+        put('server/.bash_profile', '~/')
+
 
 @roles('master')
 def copy_scripts():
     run('mkdir -p /home/mdindex/scripts/')
-    put('/Users/anil/Dev/repos/mdindex/scripts/config.sh.server', '/home/mdindex/scripts/config.sh')
-    put('/Users/anil/Dev/repos/mdindex/scripts/startSystems.sh', '/home/mdindex/scripts/startSystems.sh')
-    put('/Users/anil/Dev/repos/mdindex/scripts/stopSystems.sh', '/home/mdindex/scripts/stopSystems.sh')
-    put('/Users/anil/Dev/repos/mdindex/scripts/startZookeeper.sh', '/home/mdindex/scripts/startZookeeper.sh')
-    put('/Users/anil/Dev/repos/mdindex/scripts/stopZookeeper.sh', '/home/mdindex/scripts/stopZookeeper.sh')
+    put('server/config.sh.server', '/home/mdindex/scripts/config.sh')
+    put('startSystems.sh', '/home/mdindex/scripts/startSystems.sh')
+    put('stopSystems.sh', '/home/mdindex/scripts/stopSystems.sh')
     with cd('/home/mdindex/scripts/'):
         run('chmod +x config.sh')
         run('chmod +x startSystems.sh')
         run('chmod +x stopSystems.sh')
-        run('chmod +x startZookeeper.sh')
-        run('chmod +x stopZookeeper.sh')
 
 @parallel
 def copy_ssh_key():
     # ssh_key = """ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDgIXPk37ALKlI3aYWeB2wQEVm+LHgJuH9rdZYdTG+YIzbaVamlS+MIVkP+9GJtM5uutyR20Ovk1fJa7Ofpt/KakodQiMxUC0S8AUh+il6t1C+VkUyX5Ejj1HEn2IiuBIHV78PL1Z2vhCRV2J3dRQVSEjVky7B4Uu2qn+DQ2FkXT2WSf8I7+Si0v/XWr/jjCQplNEfSQ2jgXVzKqFFTLIyqQ4Ak9mIcGPHCBwJLFvwcE0spG7RPtpcB6naCTHkYm6ppX5b7cBHU6hM4xU97H7JSswcTV4hmCBw3HMPsFRgYJwSyOzsB1MOpdtyoJXo2mMz1pDWzfNqDUnw0pwLVADVv anil@Anils-MacBook-Pro.local"""
-    ssh_key = """ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCpmp3vtuzuW30PGEEb55mNUDxHUvtqeJLCowVVq1YD4d5+KcSevrEVQg256HXfu1fF/t9IhW+/+OlVeUiHXSmScX4KYRRzTdLD+PTDIYjA779vOoLFW4nRrehBoVGUJPb8TWdbyW/ieNllSiVpKam6WJyiGLn7XwU03HFh1tetd1gwKk5FIrGqVhv5hqkdhhRxlBo4ngR0O26xvtC54V77iEYAn5yzvtGVdPaHiG2P14wstAXGXp30grqMjAe3YMzr/aKzWTW89beUrO2bx7ZSM80lSL1N3ToEEVSNl1zzarMFwgdUBsraFX7naCfrnKaSmMmjDoKDdP5SFe6/eptgpXsdEaYewbaJL9/jgywcjcoqZsM+LD7AgzpDrq643VXTMld4cc0Qc09tPJC2BI0qfi5hHIgoIUcKmXdMPcDNMaJ7bhsV4b/WALKGSz0eRvIBY4jAKJoq4GHPgmj103w8kYcqYTR0pkvc2CaAkDEoF6wv9BFS5O/36CY2wBym6BUK6DkJdOtIp5VVTlS03qVLus+Uhs85iJwnHnyJ6lyni+yOD/j3Pm5AkFfuZsRoBUt5KsaZsT/nTCRNARdVf1K8jfcrFuXhtsxc3tTMV3D22qdcx61xwHM5s07La9cy91dIlDFfgz+3/LRSAB+/uAO7CUniimjXmzoVB2zcPW4zXQ== luyi0619@outlook.com"""
+    ssh_key = """ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDFPm1eudGSNwlKjkEPMj77A/dhx3eNF3WKZN38SRNPeO/Is0LQ7nH+qakocw8UJintpplu8MNt+DmirfvPbLY+Umm7ADXVCsP5jaAOcqbza98b2zVLer1WrL1HsikFiOlIwIb5rPmtO3v8574GOQ+Plj5mkFx0ppJZGuDrg7ZKzViXGmkJcgUhHV0eJIy3boRq5TWMYtQdQ4D+Wt+EJF7zb4oBhiwikZ0MUf2WEZU6Pjdy4HC4cphdbrxdSTozz6x9CrfoErs0fFlbLyu1acIZV2km28FeR0zw0irkuwa3cy4slkYjEpn2sMf312o2T9vSQav7hQfstQ9tZA5f6zoP mdindex@istc13"""
     run('echo "%s" >> ~/.ssh/authorized_keys' % ssh_key)
 
 
