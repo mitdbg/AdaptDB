@@ -9,7 +9,8 @@ val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 import sqlContext.implicits._
 import org.apache.spark.sql.SaveMode
 
-val PATH = "hdfs://istc2.csail.mit.edu:9000/user/mdindex/tpch100"
+val PATH = "hdfs://istc13.csail.mit.edu:9000/user/mdindex/tpch100-raw"
+val DEST_PATH = "hdfs://istc13.csail.mit.edu:9000/user/mdindex/tpchd100"
 
 // Create part table.
 sqlContext.sql(s"""CREATE TEMPORARY TABLE part (p_partkey int, p_name string, p_mfgr string, p_brand string,
@@ -95,7 +96,7 @@ FROM
 
 lopsc.registerTempTable("lopsc")
 
-lopsc.save("com.databricks.spark.csv", SaveMode.ErrorIfExists, Map("path" -> "$PATH/lopsc", "delimiter" -> "|"))
+lopsc.save("com.databricks.spark.csv", SaveMode.ErrorIfExists, Map("path" -> "$DEST_PATH", "delimiter" -> "|"))
 
 // A quick set of ops that can be done on a Dataframe
 // df.show()
@@ -106,22 +107,11 @@ lopsc.save("com.databricks.spark.csv", SaveMode.ErrorIfExists, Map("path" -> "$P
 // df.filter(df("name") > 21).show()
 // df.groupBy("age").count().show()
 
-var lopscSample = lopsc.takeSample(false, num)
+// var lopscSample = lopsc.takeSample(false, num)
 
-lopscSample.registerTempTable("lopscSample")
+// lopscSample.registerTempTable("lopscSample")
 
 // lopsc num tuples = 600037902 == num tuples in lineitem
 
-val p = sqlContext.sql(s"SELECT COUNT(*) AS T FROM lineItem")
+// val p = sqlContext.sql(s"SELECT COUNT(*) AS T FROM lineItem")
 
-
-/* ######################################
-We shall have 8 TPC-H queries
-3: Tricky; atleast 50%
-5: 1/5 *
-6:
-8:
-10:
-12:
-14:
-19:
