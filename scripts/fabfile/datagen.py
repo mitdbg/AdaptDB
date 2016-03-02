@@ -50,7 +50,7 @@ def tpch_gen_100():
     run('nohup /data/mdindex/tpch-dbgen/data_gen.sh >> /tmp/xxx 2>&1 < /dev/null &', pty=False)
 
 @serial
-def create_script_move_data():
+def script_move_data_tpch():
     # Create directory on HDFS first.
     global counter
     with cd('/data/mdindex/tpch100/'):
@@ -65,11 +65,31 @@ def create_script_move_data():
     counter += 1
 
 @parallel
-def move_data():
+def move_data_tpch():
     run('nohup /data/mdindex/tpch100/move_data.sh >> /tmp/xxx 2>&1 < /dev/null &', pty=False)
 
 # Next run
 # ./spark-shell --master spark://128.30.77.86:7077 --packages com.databricks:spark-csv_2.11:1.2.0 --driver-memory 4G --executor-memory 100G -i <path to>/tpch.scala
+
+@serial
+def script_move_data_cmt():
+    # Create directory on HDFS first.
+    with cd('/data/mdindex/yilu/cmt100000000'):
+        script = "#!/bin/bash\n"
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -copyFromLocal " + \
+            "/data/mdindex/yilu/cmt100000000/*.txt.* /user/mdindex/cmt100-raw/\n"
+        run('echo "%s" > move_data.sh' % script)
+        run('chmod +x move_data.sh')
+
+@parallel
+def move_data_cmt():
+    run('nohup /data/mdindex/yilu/cmt100000000/move_data.sh >> /tmp/xxx 2>&1 < /dev/null &', pty=False)
+
+# Next run
+# ./spark-shell --master spark://128.30.77.86:7077 --packages com.databricks:spark-csv_2.11:1.2.0 --driver-memory 4G --executor-memory 100G -i <path to>/tpch.scala
+
+
+
 
 @parallel
 def create_script_stop_dbgen():

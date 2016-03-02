@@ -25,13 +25,15 @@ def run_tpch_queries():
 
 @roles('master')
 def print_tpch_queries():
+    print "Num Queries: "
+    num_queries = int(raw_input())
     with cd(env.conf['HADOOPBIN']):
         submit_script_path = "/Users/anil/Dev/tools/spark-1.6.0-bin-hadoop2.6/bin/spark-submit"
         #submit_script_path = "/Users/ylu/Documents/workspace/spark-1.3.1-bin-hadoop2.6/bin/spark-submit"
         #cmd = submit_script_path + ' --class perf.benchmark.TPCHWorkload --deploy-mode client --master spark://128.30.77.88:7077 $JAR ' + \
         cmd = submit_script_path + ' --class perf.benchmark.TPCHWorkload --deploy-mode client --master spark://localhost:7077 $JAR ' + \
             ' --conf $CONF' + \
-            ' --numQueries 40' + \
+            ' --numQueries %d' % num_queries + \
             ' --method 2 > ~/logs/tpch_queries.log'
         cmd = fill_cmd(cmd)
         run(cmd)
