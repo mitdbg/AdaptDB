@@ -84,7 +84,7 @@ public class SparkJoinQuery {
         queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
         queryConf.setHadoopHome(cfg.getHADOOP_HOME());
         queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
-        queryConf.setMaxSplitSize(1L * 1024 * 1024 * 1024); // 8 GB
+        queryConf.setMaxSplitSize(1L * 1024 * 1024 * 1024); // 1 GB
 
 
     }
@@ -199,6 +199,15 @@ public class SparkJoinQuery {
         queryConf.setWorkingDir(hdfsPath);
 
         Configuration conf = ctx.hadoopConfiguration();
+
+
+        conf.set("DATASET1", dataset);
+        conf.set("DATASET1_QUERY", q.toString());
+        conf.set("PARTITION_KEY", "0") ;
+        conf.set("JOINALGO", joinStrategy);
+        conf.set("DELIMITER", Delimiter);
+
+
         FileSystem fs = HDFSUtils.getFSByHadoopHome(queryConf.getHadoopHome());
 
 
@@ -280,6 +289,7 @@ public class SparkJoinQuery {
         // set conf input;
         conf.set("DATASETFLAG", "1");
         conf.set("DATASETINFO", input);
+
 
         JavaPairRDD<LongWritable, Text> rdd = createSingleTableRDD(hdfsPath, q);
 
