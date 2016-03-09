@@ -301,7 +301,7 @@ public class JoinOptimizer {
 
         byte[] oldJoinRobustTree = rt.marshall();
 
-        if (curJoinAttribute != q.getJoinAttribute() && numJoinAttributes * 2 >= queryWindow.size()) {
+        if ( (curJoinAttribute != q.getJoinAttribute() && numJoinAttributes * 2 >= queryWindow.size()) || q.getForceRepartition()) {
             System.out.println("Data is going to be fully repartitioned!");
             double numAccessed = getNumTuplesAccessed(rt.getRoot(), q);
             setJoinAttribute(q);

@@ -21,6 +21,7 @@ public class JoinQuery implements Serializable {
     private Predicate[] predicates;
     private String table;
     private int joinAttribute;
+    private boolean forceRepartition;
 
     public JoinQuery(String queryString) {
         String[] parts = queryString.split("\\|");
@@ -42,6 +43,7 @@ public class JoinQuery implements Serializable {
         this.table = table;
         this.joinAttribute = joinAttribute;
         this.predicates = predicates;
+        this.forceRepartition = false;
     }
 
     public Predicate[] getPredicates() {
@@ -64,6 +66,13 @@ public class JoinQuery implements Serializable {
         Text.writeString(out, toString());
     }
 
+    public void setForceRepartition(boolean flag){
+        this.forceRepartition = flag;
+    }
+
+    public boolean getForceRepartition(){
+        return this.forceRepartition;
+    }
 
     @Override
     public String toString() {

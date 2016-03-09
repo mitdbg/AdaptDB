@@ -44,7 +44,7 @@ public class TPCHJoinWorkload {
 
     private Schema schemaCustomer, schemaLineitem, schemaOrders, schemaPart, schemaSupplier;
     private String stringCustomer, stringLineitem, stringOrders, stringPart, stringSupplier;
-    private int    sizeCustomer, sizeLineitem, sizeOrders, sizePart, sizeSupplier;
+    private int sizeCustomer, sizeLineitem, sizeOrders, sizePart, sizeSupplier;
     private TableInfo tableLineitem, tableCustomer, tableOrders, tableSupplier, tablePart;
     private ArrayList<Long> c_custkey_keys, l_orderkey_keys, s_suppkey_keys, p_partkey_keys;
 
@@ -88,13 +88,13 @@ public class TPCHJoinWorkload {
 
         String workingDir = cfg.getHDFS_WORKING_DIR();
 
-        c_custkey_keys = RangePartitionerUtils.getKeys(cfg, tableCustomer, workingDir + "/"  + customer + "/sample", schemaCustomer.getAttributeId("c_custkey"));
-        l_orderkey_keys = RangePartitionerUtils.getKeys(cfg, tableLineitem, workingDir + "/"  + lineitem + "/sample", schemaLineitem.getAttributeId("l_orderkey"));
-        s_suppkey_keys = RangePartitionerUtils.getKeys(cfg, tableSupplier, workingDir + "/"  + supplier + "/sample", schemaSupplier.getAttributeId("s_suppkey"));
-        p_partkey_keys = RangePartitionerUtils.getKeys(cfg, tablePart, workingDir + "/"  + part + "/sample", schemaPart.getAttributeId("p_partkey"));
+        c_custkey_keys = RangePartitionerUtils.getKeys(cfg, tableCustomer, workingDir + "/" + customer + "/sample", schemaCustomer.getAttributeId("c_custkey"));
+        l_orderkey_keys = RangePartitionerUtils.getKeys(cfg, tableLineitem, workingDir + "/" + lineitem + "/sample", schemaLineitem.getAttributeId("l_orderkey"));
+        s_suppkey_keys = RangePartitionerUtils.getKeys(cfg, tableSupplier, workingDir + "/" + supplier + "/sample", schemaSupplier.getAttributeId("s_suppkey"));
+        p_partkey_keys = RangePartitionerUtils.getKeys(cfg, tablePart, workingDir + "/" + part + "/sample", schemaPart.getAttributeId("p_partkey"));
     }
 
-    public void garbageCollect(){
+    public void garbageCollect() {
         FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 
         tableLineitem.gc(cfg.getHDFS_WORKING_DIR(), fs);
@@ -232,7 +232,7 @@ public class TPCHJoinWorkload {
         (lineitem ⋈ orders) ⋈ customer
      */
 
-    public void tpch3() {
+    public void tpch3(boolean forceRepartition) {
 
         int rand_3 = rand.nextInt(mktSegmentVals.length);
         String c_mktsegment = mktSegmentVals[rand_3];
@@ -258,12 +258,17 @@ public class TPCHJoinWorkload {
             Predicate p4_3 = new Predicate(schemaCustomer.getAttributeId("c_mktsegment"), TYPE.STRING, c_mktsegment_prev, PREDTYPE.GT);
             q_c = new JoinQuery(customer, schemaCustomer.getAttributeId("c_custkey"), new Predicate[]{p1_3, p4_3});
         } else {
-            q_c = new JoinQuery(customer,  schemaCustomer.getAttributeId("c_custkey"), new Predicate[]{p1_3});
+            q_c = new JoinQuery(customer, schemaCustomer.getAttributeId("c_custkey"), new Predicate[]{p1_3});
         }
 
         System.out.println("INFO: Query_cutomer:" + q_c.toString());
         System.out.println("INFO: Query_orders:" + q_o.toString());
         System.out.println("INFO: Query_lineitem:" + q_l.toString());
+
+
+        q_c.setForceRepartition(forceRepartition);
+        q_o.setForceRepartition(forceRepartition);
+        q_l.setForceRepartition(forceRepartition);
 
 
         long start;
@@ -325,7 +330,7 @@ public class TPCHJoinWorkload {
         ((customer ⋈ orders) ⋈ (lineitem ⋈ supplier))
      */
 
-    public void tpch5() {
+    public void tpch5(boolean forceRepartition) {
         int rand_5 = rand.nextInt(regionNameVals.length);
         String r_name_5 = regionNameVals[rand_5];
         int year_5 = 1993 + rand.nextInt(5);
@@ -340,13 +345,15 @@ public class TPCHJoinWorkload {
         JoinQuery q_s = null;
         JoinQuery q_c = null;
         JoinQuery q_o = new JoinQuery(orders, schemaOrders.getAttributeId("o_custkey"), new Predicate[]{p3_5, p4_5});
+        JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_partkey"), EmptyPredicates);
+
 
         if (rand_5 > 0) {
             String r_name_prev_5 = regionNameVals[rand_5 - 1];
             Predicate p5_5 = new Predicate(schemaCustomer.getAttributeId("c_region"), TYPE.STRING, r_name_prev_5, PREDTYPE.GT);
             Predicate p6_5 = new Predicate(schemaSupplier.getAttributeId("s_region"), TYPE.STRING, r_name_prev_5, PREDTYPE.GT);
-            q_s = new JoinQuery(supplier, schemaSupplier.getAttributeId("s_suppkey"),new Predicate[]{p2_5, p6_5});
-            q_c = new JoinQuery(customer, schemaCustomer.getAttributeId("c_custkey"),new Predicate[]{p1_5, p5_5});
+            q_s = new JoinQuery(supplier, schemaSupplier.getAttributeId("s_suppkey"), new Predicate[]{p2_5, p6_5});
+            q_c = new JoinQuery(customer, schemaCustomer.getAttributeId("c_custkey"), new Predicate[]{p1_5, p5_5});
         } else {
             q_s = new JoinQuery(supplier, schemaSupplier.getAttributeId("s_suppkey"), new Predicate[]{p2_5});
             q_c = new JoinQuery(customer, schemaCustomer.getAttributeId("c_custkey"), new Predicate[]{p1_5});
@@ -356,6 +363,11 @@ public class TPCHJoinWorkload {
         System.out.println("INFO: Query_orders:" + q_o.toString());
         System.out.println("INFO: Query_supplier:" + q_s.toString());
 
+
+        q_s.setForceRepartition(forceRepartition);
+        q_c.setForceRepartition(forceRepartition);
+        q_o.setForceRepartition(forceRepartition);
+        q_l.setForceRepartition(forceRepartition);
 
         long start;
 
@@ -371,8 +383,8 @@ public class TPCHJoinWorkload {
         Schema schemaLineitem_join_Supplier = Schema.createSchema(stringLineitem_join_Supplier);
 
 
-        JavaPairRDD<LongWritable, Text> customer_join_orders_rdd = sq.createJoinRDD(customer, q_c, "NULL", orders, q_o,"NULL",schemaCustomer_join_Orders.getAttributeId("o_orderkey"));
-        JavaPairRDD<LongWritable, Text> lineitem_join_supplier_rdd =sq.createJoinRDD(lineitem, new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_partkey"), EmptyPredicates), "NULL", supplier, q_s, "NULL", schemaLineitem_join_Supplier.getAttributeId("l_orderkey"));
+        JavaPairRDD<LongWritable, Text> customer_join_orders_rdd = sq.createJoinRDD(customer, q_c, "NULL", orders, q_o, "NULL", schemaCustomer_join_Orders.getAttributeId("o_orderkey"));
+        JavaPairRDD<LongWritable, Text> lineitem_join_supplier_rdd = sq.createJoinRDD(lineitem, q_l, "NULL", supplier, q_s, "NULL", schemaLineitem_join_Supplier.getAttributeId("l_orderkey"));
 
         JavaPairRDD<LongWritable, Tuple2<Text, Text>> rdd = customer_join_orders_rdd.join(lineitem_join_supplier_rdd);
 
@@ -393,7 +405,7 @@ public class TPCHJoinWorkload {
             and l_quantity < [QUANTITY];
      */
 
-    public void tpch6() {
+    public void tpch6(boolean forceRepartition) {
         int year_6 = 1993 + rand.nextInt(5);
         SimpleDate d6_1 = new SimpleDate(year_6, 1, 1);
         SimpleDate d6_2 = new SimpleDate(year_6 + 1, 1, 1);
@@ -404,8 +416,10 @@ public class TPCHJoinWorkload {
         Predicate p3_6 = new Predicate(schemaLineitem.getAttributeId("l_discount"), TYPE.DOUBLE, discount - 0.01, PREDTYPE.GT);
         Predicate p4_6 = new Predicate(schemaLineitem.getAttributeId("l_discount"), TYPE.DOUBLE, discount + 0.01, PREDTYPE.LEQ);
         Predicate p5_6 = new Predicate(schemaLineitem.getAttributeId("l_quantity"), TYPE.DOUBLE, quantity, PREDTYPE.LEQ);
-        JoinQuery q_l = new JoinQuery(lineitem, -1,  new Predicate[]{p1_6, p2_6, p3_6, p4_6, p5_6});
+        JoinQuery q_l = new JoinQuery(lineitem, -1, new Predicate[]{p1_6, p2_6, p3_6, p4_6, p5_6});
 
+
+        q_l.setForceRepartition(forceRepartition);
 
         //System.out.println("INFO: Query_lineitem:" + q_l.toString());
 
@@ -437,7 +451,7 @@ public class TPCHJoinWorkload {
         (lineitem ⋈ part) ⋈  (orders ⋈ customer)
     */
 
-    public void tpch8() {
+    public void tpch8(boolean forceRepartition) {
 
         int rand_8_1 = rand.nextInt(regionNameVals.length);
         String r_name_8 = regionNameVals[rand_8_1];
@@ -452,6 +466,7 @@ public class TPCHJoinWorkload {
         JoinQuery q_o = new JoinQuery(orders, schemaOrders.getAttributeId("o_custkey"), new Predicate[]{p2_8, p3_8});
         JoinQuery q_p = new JoinQuery(part, schemaPart.getAttributeId("p_partkey"), new Predicate[]{p4_8});
         JoinQuery q_c = null;
+        JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_partkey"), EmptyPredicates);
 
         if (rand_8_1 > 0) {
             String r_name_prev_8 = regionNameVals[rand_8_1 - 1];
@@ -465,6 +480,10 @@ public class TPCHJoinWorkload {
         System.out.println("INFO: Query_orders:" + q_o.toString());
         System.out.println("INFO: Query_part:" + q_p.toString());
 
+        q_o.setForceRepartition(forceRepartition);
+        q_p.setForceRepartition(forceRepartition);
+        q_c.setForceRepartition(forceRepartition);
+        q_l.setForceRepartition(forceRepartition);
 
         long start;
 
@@ -488,7 +507,7 @@ public class TPCHJoinWorkload {
         Schema schemaLineitem_join_Part = Schema.createSchema(stringLineitem_join_Part);
 
 
-        JavaPairRDD<LongWritable, Text> lineitem_join_part_rdd = sq.createJoinRDD(lineitem, new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_partkey"), EmptyPredicates), "NULL", part, q_p, "NULL", schemaLineitem_join_Part.getAttributeId("l_orderkey"));
+        JavaPairRDD<LongWritable, Text> lineitem_join_part_rdd = sq.createJoinRDD(lineitem, q_l, "NULL", part, q_p, "NULL", schemaLineitem_join_Part.getAttributeId("l_orderkey"));
 
 
         JavaPairRDD<LongWritable, Tuple2<Text, Text>> rdd = orders_join_customer_rdd.join(lineitem_join_part_rdd);
@@ -518,7 +537,7 @@ public class TPCHJoinWorkload {
      */
 
 
-    public void tpch10() {
+    public void tpch10(boolean forceRepartition) {
 
         String l_returnflag_10 = "R";
         String l_returnflag_prev_10 = "N";
@@ -533,11 +552,17 @@ public class TPCHJoinWorkload {
         Predicate p3_10 = new Predicate(schemaOrders.getAttributeId("o_orderdate"), TYPE.DATE, d10_2, PREDTYPE.LT);
 
         JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_orderkey"), new Predicate[]{p1_10, p4_10});
-        JoinQuery q_o = new JoinQuery(orders,schemaOrders.getAttributeId("o_orderkey"), new Predicate[]{p2_10, p3_10});
-
+        JoinQuery q_o = new JoinQuery(orders, schemaOrders.getAttributeId("o_orderkey"), new Predicate[]{p2_10, p3_10});
+        JoinQuery q_c = new JoinQuery(customer, schemaCustomer.getAttributeId("c_custkey"), EmptyPredicates);
 
         System.out.println("INFO: Query_lineitem:" + q_l.toString());
         System.out.println("INFO: Query_orders:" + q_o.toString());
+
+
+        q_l.setForceRepartition(forceRepartition);
+        q_o.setForceRepartition(forceRepartition);
+        q_c.setForceRepartition(forceRepartition);
+
 
         long start, end;
 
@@ -571,7 +596,7 @@ public class TPCHJoinWorkload {
 
         postProcessing(dest, lineitem_join_orders, schemaLineitem_join_Orders);
 
-        rdd = sq.createJoinRDD(customer, new JoinQuery(customer, schemaCustomer.getAttributeId("c_custkey"), EmptyPredicates), "NULL", lineitem_join_orders, new JoinQuery(lineitem_join_orders, schemaLineitem_join_Orders.getAttributeId("o_custkey"),EmptyPredicates), cutPoints,0);
+        rdd = sq.createJoinRDD(customer, q_c, "NULL", lineitem_join_orders, new JoinQuery(lineitem_join_orders, schemaLineitem_join_Orders.getAttributeId("o_custkey"), EmptyPredicates), cutPoints, 0);
 
         result = rdd.count();
 
@@ -595,7 +620,7 @@ public class TPCHJoinWorkload {
         lineitem ⋈ orders
      */
 
-    public void tpch12() {
+    public void tpch12(boolean forceRepartition) {
         int rand_12 = rand.nextInt(shipModeVals.length);
         String shipmode_12 = shipModeVals[rand_12];
         int year_12 = 1993 + rand.nextInt(5);
@@ -606,6 +631,7 @@ public class TPCHJoinWorkload {
         Predicate p3_12 = new Predicate(schemaLineitem.getAttributeId("l_receiptdate"), TYPE.DATE, d12_2, PREDTYPE.LT);
 
         JoinQuery q_l = null;
+        JoinQuery q_o = new JoinQuery(orders, schemaOrders.getAttributeId("o_orderkey"), EmptyPredicates);
 
         if (rand_12 > 0) {
             String shipmode_prev_12 = shipModeVals[rand_12 - 1];
@@ -617,6 +643,9 @@ public class TPCHJoinWorkload {
 
         System.out.println("INFO: Query_lineitem:" + q_l.toString());
 
+        q_l.setForceRepartition(forceRepartition);
+        q_o.setForceRepartition(forceRepartition);
+
 
         long start;
         start = System.currentTimeMillis();
@@ -626,7 +655,7 @@ public class TPCHJoinWorkload {
         String lineitem = "lineitem";
         String orders = "orders";
 
-        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", orders, new JoinQuery(orders, schemaOrders.getAttributeId("o_orderkey"), EmptyPredicates), "NULL",0);
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", orders, q_o, "NULL", 0);
 
         long result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
@@ -647,7 +676,7 @@ public class TPCHJoinWorkload {
         lineitem ⋈ part
      */
 
-    public void tpch14() {
+    public void tpch14(boolean forceRepartition) {
 
         int year_14 = 1993;
         int monthOffset_14 = rand.nextInt(60);
@@ -656,9 +685,15 @@ public class TPCHJoinWorkload {
         SimpleDate d14_2 = new SimpleDate(year_14 + monthOffset_14 / 12, monthOffset_14 % 12 + 1, 1);
         Predicate p1_14 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TYPE.DATE, d14_1, PREDTYPE.GEQ);
         Predicate p2_14 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TYPE.DATE, d14_2, PREDTYPE.LT);
-        JoinQuery q_l = new JoinQuery(lineitem,  schemaLineitem.getAttributeId("l_partkey"), new Predicate[]{p1_14, p2_14});
+
+        JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_partkey"), new Predicate[]{p1_14, p2_14});
+        JoinQuery q_p = new JoinQuery(part, schemaPart.getAttributeId("p_partkey"), EmptyPredicates);
 
         System.out.println("INFO: Query_lineitem:" + q_l.toString());
+
+
+        q_l.setForceRepartition(forceRepartition);
+        q_p.setForceRepartition(forceRepartition);
 
         long start;
 
@@ -669,7 +704,7 @@ public class TPCHJoinWorkload {
         String lineitem = "lineitem";
         String part = "part";
 
-        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", part, new JoinQuery(part, schemaPart.getAttributeId("p_partkey"), EmptyPredicates), "NULL", 0);
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", part, q_p, "NULL", 0);
 
         long result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
@@ -694,7 +729,7 @@ public class TPCHJoinWorkload {
         lineitem ⋈ part
      */
 
-    public void tpch19() {
+    public void tpch19(boolean forceRepartition) {
 
         String brand_19 = "Brand#" + (rand.nextInt(5) + 1) + "" + (rand.nextInt(5) + 1);
         String shipInstruct_19 = "DELIVER IN PERSON";
@@ -709,11 +744,14 @@ public class TPCHJoinWorkload {
         Predicate p7_19 = new Predicate(schemaPart.getAttributeId("p_size"), TYPE.INT, 5, PREDTYPE.LEQ);
         Predicate p8_19 = new Predicate(schemaLineitem.getAttributeId("l_shipmode"), TYPE.STRING, "AIR", PREDTYPE.LEQ);
 
-        JoinQuery q_l = new JoinQuery(lineitem,  schemaLineitem.getAttributeId("l_partkey"),new Predicate[]{p1_19, p4_19, p5_19, p8_19});
-        JoinQuery q_p = new JoinQuery(part,  schemaPart.getAttributeId("p_partkey"), new Predicate[]{p2_19, p3_19, p6_19, p7_19});
+        JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_partkey"), new Predicate[]{p1_19, p4_19, p5_19, p8_19});
+        JoinQuery q_p = new JoinQuery(part, schemaPart.getAttributeId("p_partkey"), new Predicate[]{p2_19, p3_19, p6_19, p7_19});
 
         System.out.println("INFO: Query_lineitem:" + q_l.toString());
         System.out.println("INFO: Query_part:" + q_p.toString());
+
+        q_l.setForceRepartition(forceRepartition);
+        q_p.setForceRepartition(forceRepartition);
 
 
         long start;
@@ -731,36 +769,130 @@ public class TPCHJoinWorkload {
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
     }
 
-    public void runWorkload(int numQueries) {
-        int queries[] = {3, 5, 8, 10, 12, 14, 19};
-
-        for (int i = 0; i < numQueries; i++) {
-            int q = queries[rand.nextInt(queries.length)];
-            System.out.println("INFO: Running query " + q );
-            switch (q) {
-                case 3:
-                    tpch3();
-                    break;
-                case 5:
-                    tpch5();
-                    break;
-                case 8:
-                    tpch8();
-                    break;
-                case 10:
-                    tpch10();
-                    break;
-                case 12:
-                    tpch12();
-                    break;
-                case 14:
-                    tpch14();
-                    break;
-                case 19:
-                    tpch19();
-                    break;
+    public void runSwitchingWorkload() {
+        for (int i = 0; i < 160; i++) {
+            if (i < 20) {
+                System.out.println("INFO: Running query TPC-H q3");
+                tpch3(i == 5);
+            } else if (i < 40) {
+                System.out.println("INFO: Running query TPC-H q5");
+                tpch5(i == 25);
+            } else if (i < 60) {
+                System.out.println("INFO: Running query TPC-H q6");
+                tpch6(i == 45);
+            } else if (i < 80) {
+                System.out.println("INFO: Running query TPC-H q8");
+                tpch8(i == 65);
+            } else if (i < 100) {
+                System.out.println("INFO: Running query TPC-H q10");
+                tpch10(i == 85);
+            } else if (i < 120) {
+                System.out.println("INFO: Running query TPC-H q12");
+                tpch12(i == 105);
+            } else if (i < 140) {
+                System.out.println("INFO: Running query TPC-H q14");
+                tpch14(i == 125);
+            } else {
+                System.out.println("INFO: Running query TPC-H q19");
+                tpch19(i == 145);
             }
         }
+    }
+
+    public void runShiftingWorkload() {
+
+        int[] numQueries = new int[20];
+
+        for (int i = 0; i < 160; i++) {
+            if (i < 20) {
+                double p = (20 - i) / 20.0;
+                if (rand.nextDouble() <= p) {
+                    System.out.println("INFO: Running query TPC-H q3");
+                    numQueries[3]++;
+                    tpch3(numQueries[3] == 5);
+                } else {
+                    System.out.println("INFO: Running query TPC-H q5");
+                    numQueries[5]++;
+                    tpch5(numQueries[5] == 5);
+                }
+            } else if (i < 40) {
+                double p = (40 - i) / 20.0;
+                if (rand.nextDouble() <= p) {
+                    System.out.println("INFO: Running query TPC-H q5");
+                    numQueries[5]++;
+                    tpch5(numQueries[5] == 5);
+                } else {
+                    System.out.println("INFO: Running query TPC-H q6");
+                    numQueries[6]++;
+                    tpch6(numQueries[6] == 5);
+                }
+
+            } else if (i < 60) {
+
+                double p = (60 - i) / 20.0;
+                if (rand.nextDouble() <= p) {
+                    System.out.println("INFO: Running query TPC-H q6");
+                    numQueries[6]++;
+                    tpch6(numQueries[6] == 5);
+                } else {
+                    System.out.println("INFO: Running query TPC-H q8");
+                    numQueries[8]++;
+                    tpch8(numQueries[8] == 5);
+                }
+            } else if (i < 80) {
+
+                double p = (80 - i) / 20.0;
+                if (rand.nextDouble() <= p) {
+                    System.out.println("INFO: Running query TPC-H q8");
+                    numQueries[8]++;
+                    tpch8(numQueries[8] == 5);
+                } else {
+                    System.out.println("INFO: Running query TPC-H q10");
+                    numQueries[10]++;
+                    tpch10(numQueries[10] == 5);
+                }
+            } else if (i < 100) {
+                double p = (100 - i) / 20.0;
+                if (rand.nextDouble() <= p) {
+                    System.out.println("INFO: Running query TPC-H q10");
+                    numQueries[10]++;
+                    tpch10(numQueries[10] == 5);
+                } else {
+                    System.out.println("INFO: Running query TPC-H q12");
+                    numQueries[12]++;
+                    tpch12(numQueries[12] == 5);
+                }
+
+            } else if (i < 120) {
+                double p = (120 - i) / 20.0;
+                if (rand.nextDouble() <= p) {
+                    System.out.println("INFO: Running query TPC-H q12");
+                    numQueries[12]++;
+                    tpch12(numQueries[12] == 5);
+                } else {
+                    System.out.println("INFO: Running query TPC-H q14");
+                    numQueries[14]++;
+                    tpch14(numQueries[14] == 5);
+                }
+
+            } else if (i < 140) {
+                double p = (140 - i) / 20.0;
+                if (rand.nextDouble() <= p) {
+                    System.out.println("INFO: Running query TPC-H q14");
+                    numQueries[14]++;
+                    tpch14(numQueries[14] == 5);
+                } else {
+                    System.out.println("INFO: Running query TPC-H q19");
+                    numQueries[19]++;
+                    tpch19(numQueries[19] == 5);
+                }
+            } else {
+
+                System.out.println("INFO: Running query TPC-H q19");
+                tpch19(numQueries[19] == 5);
+            }
+        }
+
     }
 
     public static void main(String[] args) {
@@ -775,53 +907,11 @@ public class TPCHJoinWorkload {
 
         switch (t.method) {
             case 1:
-                System.out.println("Num Queries: " + t.numQueries);
-                t.runWorkload(t.numQueries);
+                t.runSwitchingWorkload();
                 break;
             case 2:
-
-                System.out.println("Run TPCH-5");
-                t.rand.setSeed(0);
-                t.tpch5();
-
-                /*
-
-
-                System.out.println("Run TPCH-3");
-                t.rand.setSeed(0);
-                t.tpch3();
-
-                System.out.println("Run TPCH-5");
-                t.rand.setSeed(0);
-                t.tpch5();
-
-                System.out.println("Run TPCH-6");
-                t.rand.setSeed(0);
-                t.tpch6();
-
-
-
-                System.out.println("Run TPCH-8");
-                t.rand.setSeed(0);
-                t.tpch8();
-
-                System.out.println("Run TPCH-10");
-                t.rand.setSeed(0);
-                t.tpch10();
-
-                System.out.println("Run TPCH-12");
-                t.rand.setSeed(0);
-                t.tpch12();
-                System.out.println("Run TPCH-14");
-                t.rand.setSeed(0);
-                t.tpch14();
-
-                System.out.println("Run TPCH-19");
-                t.rand.setSeed(0);
-                t.tpch19();
-                */
-
-
+                t.runShiftingWorkload();
+                break;
             default:
                 break;
         }
