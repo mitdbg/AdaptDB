@@ -282,6 +282,9 @@ public class JoinOptimizer {
     }
 
     public PartitionSplit[] buildPlan(JoinQuery q) {
+
+        System.out.println("building a plan");
+
         this.queryWindow.add(q);
 
         Predicate[] ps = q.getPredicates();

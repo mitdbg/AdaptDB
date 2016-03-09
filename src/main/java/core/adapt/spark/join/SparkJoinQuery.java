@@ -101,7 +101,7 @@ public class SparkJoinQuery {
 
     public JavaPairRDD<LongWritable, Text> createJoinRDD(String hdfsPath) {
         queryConf.setReplicaId(0);
-        queryConf.setJustAccess(true);
+
         return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath,
                 SparkJoinInputFormat.class, LongWritable.class,
                 Text.class, ctx.hadoopConfiguration());
@@ -118,7 +118,7 @@ public class SparkJoinQuery {
         String hdfsPath = cfg.getHDFS_WORKING_DIR();
 
         queryConf.setWorkingDir(hdfsPath);
-        queryConf.setJustAccess(true);
+        queryConf.setJustAccess(false);
 
         Configuration conf = ctx.hadoopConfiguration();
 
@@ -182,7 +182,7 @@ public class SparkJoinQuery {
                                                                 JoinQuery q) {
         queryConf.setWorkingDir(hdfsPath);
         queryConf.setJoinQuery(q);
-        queryConf.setJustAccess(true);
+
         return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath + "/" + q.getTable() + "/data",
                 SparkScanInputFormat.class, LongWritable.class,
                 Text.class, ctx.hadoopConfiguration());
