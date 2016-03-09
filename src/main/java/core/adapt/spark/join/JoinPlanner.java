@@ -100,7 +100,7 @@ public class JoinPlanner {
         }
         dataset1_hpinput = new HPJoinInput(dataset1_MDIndex);
         String input_dir = workingDir + "/" + dataset1 + "/data";
-        dataset1_hpinput.initialize(listStatus(input_dir), dataset1_am);
+        dataset1_hpinput.initialize(listStatus(fs, input_dir), dataset1_am);
 
 
         JoinAccessMethod dataset2_am = new JoinAccessMethod();
@@ -114,7 +114,7 @@ public class JoinPlanner {
         }
         dataset2_hpinput = new HPJoinInput(dataset2_MDIndex);
         input_dir = workingDir + "/" + dataset2 + "/data";
-        dataset2_hpinput.initialize(listStatus(input_dir), dataset2_am);
+        dataset2_hpinput.initialize(listStatus(fs, input_dir), dataset2_am);
 
         init_bucketInfo(conf, dataset1_int_splits, dataset1_am, dataset2_int_splits, dataset2_am);
 
@@ -163,7 +163,7 @@ public class JoinPlanner {
         HashMap<Integer, Integer> rightCounters = new HashMap<Integer, Integer>();
 
 
-        for (int i = 0; i < dataset1_splits.length; i++) {
+        for (int i = 0; i < splits.length; i++) {
             PartitionSplit split = splits[i];
             int[] bids = split.getPartitions();
 
@@ -196,7 +196,7 @@ public class JoinPlanner {
         }
 
         if (hyperjoin) {
-            for (int i = 0; i < dataset1_splits.length; i++) {
+            for (int i = 0; i < splits.length; i++) {
                 PartitionSplit split = splits[i];
                 int[] bids = split.getPartitions();
 
@@ -217,7 +217,7 @@ public class JoinPlanner {
                 }
             }
         } else {
-            for (int i = 0; i < dataset1_splits.length; i++) {
+            for (int i = 0; i < splits.length; i++) {
                 PartitionSplit split = splits[i];
                 int[] bids = split.getPartitions();
 
@@ -420,7 +420,7 @@ public class JoinPlanner {
     }
 
 
-    private List<FileStatus> listStatus(String path) {
+    public static List<FileStatus> listStatus(FileSystem fs, String path) {
         ArrayList<FileStatus> input = new ArrayList<FileStatus>();
         FileStatus[] input_array = null;
         try {
@@ -434,7 +434,7 @@ public class JoinPlanner {
         return input;
     }
 
-    private int[] expandPartitionSplit(PartitionSplit[] splits) {
+    public static int[] expandPartitionSplit(PartitionSplit[] splits) {
         int totalLength = 0;
         for (int i = 0; i < splits.length; i++) {
             totalLength += splits[i].getPartitions().length;
@@ -581,7 +581,7 @@ public class JoinPlanner {
     }
 
 
-    private ArrayList<PartitionSplit> resizeSplits(PartitionIterator partitionIter, int[] bids, Map<Integer, Long> partitionSizes, long maxSplitSize) {
+    public static ArrayList<PartitionSplit> resizeSplits(PartitionIterator partitionIter, int[] bids, Map<Integer, Long> partitionSizes, long maxSplitSize) {
         ArrayList<PartitionSplit> resizedSplits = new ArrayList<PartitionSplit>();
         int it = 0;
         long totalsize = 0;

@@ -1,10 +1,15 @@
 package core.adapt.spark.join;
 
 
+import core.adapt.AccessMethod.PartitionSplit;
 import core.adapt.JoinQuery;
+import core.adapt.iterator.PartitionIterator;
+import core.adapt.iterator.PostFilterIterator;
+import core.utils.HDFSUtils;
 import core.utils.RangePartitionerUtils;
 import core.utils.SparkUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -16,6 +21,7 @@ import org.apache.spark.api.java.function.PairFunction;
 
 import scala.Tuple2;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -180,5 +186,103 @@ public class SparkJoinQuery {
         return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath + "/" + q.getTable() + "/data",
                 SparkScanInputFormat.class, LongWritable.class,
                 Text.class, ctx.hadoopConfiguration());
+    }
+
+    /* for tpch 6 */
+
+    public JavaPairRDD<LongWritable, Text> createScanRDD(String dataset, JoinQuery q) {
+
+        // set SparkQuery conf
+
+        String hdfsPath = cfg.getHDFS_WORKING_DIR();
+
+        queryConf.setWorkingDir(hdfsPath);
+
+        Configuration conf = ctx.hadoopConfiguration();
+        FileSystem fs = HDFSUtils.getFSByHadoopHome(queryConf.getHadoopHome());
+
+
+        String workingDir = queryConf.getWorkingDir();
+        //System.out.println("INFO working dir: " + workingDir);
+
+        JoinAccessMethod dataset1_am = new JoinAccessMethod();
+        queryConf.setJoinQuery(q);
+
+        PartitionSplit[] dataset_splits;
+        dataset1_am.init(queryConf);
+
+
+        HPJoinInput dataset_hpinput = new HPJoinInput(true);
+        String input_dir = workingDir + "/" + dataset + "/data";
+        dataset_hpinput.initialize(JoinPlanner.listStatus(fs, input_dir), dataset1_am);
+
+        // optimize for the JoinRobustTree
+
+        System.out.println("Optimizing dataset");
+
+        dataset_splits = dataset_hpinput.getIndexScan(queryConf.getJustAccess(), q);
+
+        ArrayList<PartitionSplit> shuffleJoinSplit = new  ArrayList<PartitionSplit>();
+
+        for (int i = 0; i < dataset_splits.length; i++) {
+            PartitionSplit split = dataset_splits[i];
+            int[] bids = split.getPartitions();
+
+            ArrayList<Integer> shuffle_ids = new ArrayList<Integer>();
+
+            for (int j = 0; j < bids.length; j++) {
+                shuffle_ids.add(bids[j]);
+            }
+
+            if (shuffle_ids.size() > 0) {
+                int[] shuffle_ids_int = new int[shuffle_ids.size()];
+                for (int j = 0; j < shuffle_ids_int.length; j++) {
+                    shuffle_ids_int[j] = shuffle_ids.get(j);
+                }
+                ArrayList<PartitionSplit> shuffle_splits = JoinPlanner.resizeSplits(split.getIterator(), shuffle_ids_int, dataset_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize());
+                for (PartitionSplit hs : shuffle_splits) {
+                    shuffleJoinSplit.add(hs);
+                }
+            }
+        }
+
+
+        StringBuilder sb = new StringBuilder();
+
+        for (PartitionSplit split : shuffleJoinSplit) {
+            if (sb.length() > 0) {
+                sb.append(";");
+            }
+
+            PartitionIterator iter = split.getIterator();
+            if (iter instanceof PostFilterIterator) {
+                sb.append(1 + ",");
+            } else {
+                sb.append(2 + ",");
+            }
+
+            int[] bucketIds = split.getPartitions();
+
+            long[] bucket_lens = dataset_hpinput.getLengths(bucketIds);
+
+            for (int i = 0; i < bucketIds.length; i++) {
+                if (i > 0) {
+                    sb.append(",");
+                }
+                sb.append(bucketIds[i] + ":" + bucket_lens[i]);
+            }
+        }
+
+        String input = sb.toString();
+
+        System.out.println("shuffleInput: " + input);
+
+        // set conf input;
+        conf.set("DATASETFLAG", "1");
+        conf.set("DATASETINFO", input);
+
+        JavaPairRDD<LongWritable, Text> rdd = createSingleTableRDD(hdfsPath, q);
+
+        return rdd;
     }
 }

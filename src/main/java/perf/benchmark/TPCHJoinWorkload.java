@@ -425,7 +425,8 @@ public class TPCHJoinWorkload {
 
         long start = System.currentTimeMillis();
 
-        JavaPairRDD<LongWritable, Text> rdd = sq.createSingleTableRDD(cfg.getHDFS_WORKING_DIR(), q_l);
+
+        JavaPairRDD<LongWritable, Text> rdd = sq.createScanRDD(lineitem, q_l);
         long result = rdd.count();
         long end = System.currentTimeMillis();
         System.out.println("RES: Time Taken: " + (end - start) + "; Result: " + result);
