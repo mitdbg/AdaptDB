@@ -48,6 +48,6 @@ def cmt_move_data_100000000():
     run('mkdir /data/mdindex/yilu/cmt100000000')
     run('mv /data/mdindex/yilu/cmt-dbgen/src/mapmatch_history.txt.* /data/mdindex/yilu/cmt100000000')
     run('mv /data/mdindex/yilu/cmt-dbgen/src/mapmatch_history_latest.txt.* /data/mdindex/yilu/cmt100000000')
-    run('mv /data/mdindex/yilu/cmt-dbgen/src/sf_datasets.txt.9.* /data/mdindex/yilu/cmt100000000')
+    run('mv /data/mdindex/yilu/cmt-dbgen/src/sf_datasets.txt.* /data/mdindex/yilu/cmt100000000')
     run('rm -rf /data/mdindex/yilu/cmt-dbgen/src/*txt*')
     

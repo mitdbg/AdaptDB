@@ -328,14 +328,14 @@ public class TPCHSparkJoinWorkload {
         long start = System.currentTimeMillis();
 
         System.out.println("SELECT * "
-                + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
-                + "JOIN customer ON c_custkey = o_custkey "
+                + "FROM customer JOIN orders ON c_custkey = o_custkey "
+                + "JOIN lineitem ON l_orderkey = o_orderkey"
                 + "JOIN part ON l_partkey = p_partkey "
                 + "WHERE " + customerPredicate + " and " + ordersPredicate + " and " +  partPredicate);
 
         DataFrame df = sqlContext.sql("SELECT * "
-                + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
-                + "JOIN customer ON c_custkey = o_custkey "
+                + "FROM customer JOIN orders ON c_custkey = o_custkey "
+                + "JOIN lineitem ON l_orderkey = o_orderkey"
                 + "JOIN part ON l_partkey = p_partkey "
                 + "WHERE " + customerPredicate + " and " + ordersPredicate + " and " +  partPredicate);
 

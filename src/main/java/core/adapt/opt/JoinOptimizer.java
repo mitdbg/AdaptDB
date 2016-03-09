@@ -122,7 +122,7 @@ public class JoinOptimizer {
         return getTotalSampleSize(node.leftChild) + getTotalSampleSize(node.rightChild);
     }
 
-    private int getJoinAttribute(JRNode node, int depth){
+    public int getJoinAttribute(JRNode node, int depth){
         if (node.bucket != null){
             return -1; // in case joinAttributesDepth >= tree's height
         }
@@ -301,7 +301,7 @@ public class JoinOptimizer {
 
         byte[] oldJoinRobustTree = rt.marshall();
 
-        if (curJoinAttribute != q.getJoinAttribute() && numJoinAttributes * 2 >= queryWindow.size() && rt.joinAttributeDepth > 0) {
+        if (curJoinAttribute != q.getJoinAttribute() && numJoinAttributes * 2 >= queryWindow.size()) {
             System.out.println("Data is going to be fully repartitioned!");
             double numAccessed = getNumTuplesAccessed(rt.getRoot(), q);
             setJoinAttribute(q);
@@ -854,9 +854,9 @@ public class JoinOptimizer {
                     queryWindow.add(f);
                 }
 
-                if (queryWindow.size() > 5){
+                if (queryWindow.size() > 10){
                     // set windows size
-                    queryWindow = queryWindow.subList(queryWindow.size() - 5, queryWindow.size());
+                    queryWindow = queryWindow.subList(queryWindow.size() - 10, queryWindow.size());
                 }
 
 

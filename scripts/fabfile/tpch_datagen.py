@@ -147,7 +147,7 @@ def create_script_download_data_100():
     counter += 1
 
 @serial
-def create_script_download_data():
+def create_script_download_data_1000():
     if exists('/data/mdindex/yilu/tpch1000'):
         run('rm -rf /data/mdindex/yilu/tpch1000')
 

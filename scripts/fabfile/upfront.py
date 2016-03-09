@@ -63,6 +63,8 @@ def create_join_robust_tree():
             ' --method 3 ' + \
             ' --numReplicas 1' + \
             ' --numBuckets $NUMBUCKETS' + \
+            ' --joinAttribute $ATTRIBUTE' + \
+            ' --joinAttributeDepth $DEPTH' + \
             ' > ~/logs/create_tree.log'
         cmd = fill_cmd(cmd)
         run(cmd)
@@ -75,6 +77,20 @@ def write_partitions():
             ' --tableName $TABLENAME' + \
             ' --inputsDir $INPUTSDIR' + \
             ' --method 4 ' + \
+            ' --numReplicas 1' + \
+            ' --numBuckets $NUMBUCKETS' + \
+            ' > ~/logs/write_partitions.log'
+        cmd = fill_cmd(cmd)
+        run(cmd)
+
+@parallel
+def write_join_partitions():
+    with cd(env.conf['HADOOPBIN']):
+        cmd = './hadoop jar $JAR perf.benchmark.RunIndexBuilder' + \
+            ' --conf $CONF' + \
+            ' --tableName $TABLENAME' + \
+            ' --inputsDir $INPUTSDIR' + \
+            ' --method 7 ' + \
             ' --numReplicas 1' + \
             ' --numBuckets $NUMBUCKETS' + \
             ' > ~/logs/write_partitions.log'
