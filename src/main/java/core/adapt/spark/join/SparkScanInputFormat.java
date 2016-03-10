@@ -1,7 +1,12 @@
 package core.adapt.spark.join;
 
+import core.adapt.JoinQuery;
 import core.adapt.Query;
+import core.adapt.iterator.JoinRepartitionIterator;
+import core.adapt.iterator.PartitionIterator;
+import core.adapt.iterator.PostFilterIterator;
 import core.adapt.spark.SparkQueryConf;
+import core.utils.ReflectionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -28,7 +33,7 @@ public class SparkScanInputFormat extends FileInputFormat<LongWritable, Text> im
 
     private String dataset;
 
-    private int flag; // 1 for split, 2 for data bucket id
+
     private Configuration conf;
     private SparkQueryConf queryConf;
 
@@ -37,36 +42,34 @@ public class SparkScanInputFormat extends FileInputFormat<LongWritable, Text> im
             Serializable {
         private static final long serialVersionUID = 1L;
 
-        private int[] types;
+        private PartitionIterator iter;
+
         public SparkScanFileSplit() {
         }
 
-        public SparkScanFileSplit(Path[] files, long[] lengths, int[] types) {
+        public SparkScanFileSplit(Path[] files, long[] lengths, PartitionIterator iter) {
             super(files, lengths);
-            this.types = types;
+            this.iter = iter;
         }
-        public int[] getTypes(){
-            return types;
+
+        public PartitionIterator getIterator() {
+            return iter;
         }
 
         @Override
         public void write(DataOutput out) throws IOException {
             super.write(out);
 
-            out.writeInt(types.length);
-            for(int i = 0; i < types.length; i ++){
-                out.writeInt(types[i]);
-            }
+            Text.writeString(out, iter.getClass().getName());
+            iter.write(out);
         }
 
         @Override
         public void readFields(DataInput in) throws IOException {
             super.readFields(in);
-            int length = in.readInt();
-            types = new int[length];
-            for(int i = 0 ;i < length; i ++){
-                types[i] = in.readInt();
-            }
+            String type = Text.readString(in);
+            iter = (PartitionIterator) ReflectionUtils.getInstance(type);
+            iter.readFields(in);
         }
 
         public static SparkScanFileSplit read(DataInput in) throws IOException {
@@ -87,17 +90,12 @@ public class SparkScanInputFormat extends FileInputFormat<LongWritable, Text> im
 
         queryConf = new SparkQueryConf(conf);
 
-        flag =  Integer.parseInt(conf.get("DATASETFLAG"));
-
-        if (flag == 1) {
-            dataset = conf.get("DATASET1");
-        } else {
-            dataset = conf.get("DATASET2");
-        }
-
         String dataset_info = conf.get("DATASETINFO");
+        JoinQuery jq =  new JoinQuery(conf.get("DATASET_QUERY"));;
 
-        if(dataset_info.length() == 0){
+        dataset = conf.get("DATASET");
+
+        if (dataset_info.length() == 0) {
             return finalSplits;
         }
 
@@ -105,48 +103,38 @@ public class SparkScanInputFormat extends FileInputFormat<LongWritable, Text> im
         String hdfsDefaultName = conf.get("fs.default.name");
         String workingDir = queryConf.getWorkingDir();
 
+        PartitionIterator iter;
 
         String[] splits = dataset_info.split(";");
 
-        if(flag == 1){
-            // handling split
-            for(int i = 0 ;i < splits.length; i ++){
-                String[] subsplits = splits[i].split(",");
-                int iter_type = Integer.parseInt(subsplits[0]);
+        for (int i = 0; i < splits.length; i++) {
+            String[] subsplits = splits[i].split(",");
+            int iter_type = Integer.parseInt(subsplits[0]);
 
-                Path[] path = new Path[subsplits.length - 1];
-                long[] len = new long[subsplits.length - 1];
-                int[] types = new int[subsplits.length - 1];
-                for(int j = 0 ;j < path.length; j ++){
-                    String[] ss = subsplits[j+1].split(":");
-                    int id = Integer.parseInt(ss[0]);
-                    long length =  Long.parseLong(ss[1]);
-                    path[j] = new Path(hdfsDefaultName + workingDir + "/" + dataset + "/data/" + id);
-                    len[j] = length;
-                    types[j] = iter_type;
-                }
+            if (iter_type == 1) {
+                iter = new PostFilterIterator(jq.castToQuery());
 
-                SparkScanFileSplit split = new SparkScanFileSplit(path, len, types);
-                finalSplits.add(split);
+            } else {
+                iter = new JoinRepartitionIterator(jq.castToQuery());
+                ((JoinRepartitionIterator) iter).setZookeeper(queryConf.getZookeeperHosts());
             }
-        } else {
-            // handling bucketID
 
-            for(int i = 0 ;i < splits.length; i ++){
-                Path[] path = new Path[1];
-                long[] len = new long[1];
-                int[] types = new int[1];
-                String[] subsplits = splits[i].split(":");
-                int id = Integer.parseInt(subsplits[0]);
-                long length = Long.parseLong(subsplits[1]);
-                int type = Integer.parseInt(subsplits[2]);
-                path[0] = new Path(hdfsDefaultName + workingDir + "/" + dataset + "/data/" + id);
-                len[0] = length;
-                types[0] = type;
-                SparkScanFileSplit split = new SparkScanFileSplit(path, len, types);
-                finalSplits.add(split);
+
+            Path[] path = new Path[subsplits.length - 1];
+            long[] len = new long[subsplits.length - 1];
+
+            for (int j = 0; j < path.length; j++) {
+                String[] ss = subsplits[j + 1].split(":");
+                int id = Integer.parseInt(ss[0]);
+                long length = Long.parseLong(ss[1]);
+                path[j] = new Path(hdfsDefaultName + workingDir + "/" + dataset + "/data/" + id);
+                len[j] = length;
             }
+
+            SparkScanFileSplit split = new SparkScanFileSplit(path, len, iter);
+            finalSplits.add(split);
         }
+
 
         job.getConfiguration().setLong(NUM_INPUT_FILES, finalSplits.size());
         System.out.println("done with getting splits");

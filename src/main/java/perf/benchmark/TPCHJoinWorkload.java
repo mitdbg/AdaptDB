@@ -295,6 +295,7 @@ public class TPCHJoinWorkload {
 
         JavaRDD<Text> rdd_lineitem_join_orders = rdd.partitionBy(partitioner).values();
 
+
         String dest = cfg.getHDFS_WORKING_DIR() + "/" + lineitem_join_orders;
 
         rdd_lineitem_join_orders.saveAsTextFile(dest + "/data");
@@ -308,6 +309,7 @@ public class TPCHJoinWorkload {
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
         cleanup(dest);
+
     }
 
     /*

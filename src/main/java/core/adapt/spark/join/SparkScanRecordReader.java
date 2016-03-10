@@ -58,16 +58,6 @@ public class SparkScanRecordReader extends
                 client);
         partition.loadNext(); // ???
 
-        if(currentFile > 0){
-            iter.finish();
-        }
-        if(types[currentFile] == 1){
-            iter = new PostFilterIterator(query);
-        } else {
-            iter = new JoinRepartitionIterator(query);
-            ((JoinRepartitionIterator) iter).setZookeeper(queryConf.getZookeeperHosts());
-        }
-
         iter.setPartition(partition);
 
     }
@@ -82,14 +72,8 @@ public class SparkScanRecordReader extends
 
         sparkSplit = (SparkScanFileSplit) split;
 
-        JoinQuery jq = null;
-        int flag = Integer.parseInt(conf.get("DATASETFLAG"));
-        if(flag == 1){
-            jq = new JoinQuery(conf.get("DATASET1_QUERY"));
+        JoinQuery jq =  new JoinQuery(conf.get("DATASET_QUERY"));;
 
-        } else {
-            jq = new JoinQuery(conf.get("DATASET2_QUERY"));
-        }
         query =  jq.castToQuery();
         join_attr = jq.getJoinAttribute();
 
@@ -99,7 +83,7 @@ public class SparkScanRecordReader extends
 
         tupleCountInTable = 0;
 
-        types = sparkSplit.getTypes();
+        iter = sparkSplit.getIterator();
 
         currentFile = 0;
         setPartitionToIterator(sparkSplit.getPath(currentFile));

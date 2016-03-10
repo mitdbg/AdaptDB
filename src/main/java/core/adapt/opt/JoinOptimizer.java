@@ -177,19 +177,32 @@ public class JoinOptimizer {
             return;
         }
 
-
         if (depth <= this.rt.joinAttributeDepth){
             Pair<ParsedTupleList, ParsedTupleList> halves = sample.sortAndSplit(joinAttribute);
 
-            node.attribute = joinAttribute;
-            node.type = tableInfo.getTypeArray()[joinAttribute]; // should be LONG
-            node.value = halves.first.getLast(joinAttribute); // should equals to median
-            node.fullAccessed = true;
+            if (halves.first.size() > 0 &&  halves.second.size() > 0){
 
-            allocations[joinAttribute] -= 2.0 / Math.pow(2, depth - 1);
+                node.attribute = joinAttribute;
+                node.type = tableInfo.getTypeArray()[joinAttribute]; // should be LONG
+                node.value = halves.first.getLast(joinAttribute); // should equals to median
+                node.fullAccessed = true;
 
-            setJoinAttribute(q, node.leftChild, halves.first, allocations,  depth + 1);
-            setJoinAttribute(q, node.rightChild, halves.second, allocations,  depth + 1);
+                allocations[joinAttribute] -= 2.0 / Math.pow(2, depth - 1);
+
+                setJoinAttribute(q, node.leftChild, halves.first, allocations,  depth + 1);
+                setJoinAttribute(q, node.rightChild, halves.second, allocations,  depth + 1);
+
+            } else {
+                //System.err.println("ERR: No attribute to partition on");
+                node.bucket = new Bucket();
+                node.bucket.setEstimatedNumTuples(1.0 * sample.size() / rt.sample.size() * tableInfo.numTuples);
+                node.bucket.setSample(sample);
+                node.updated = true;
+                node.fullAccessed = true;
+                node.leftChild = null;
+                node.rightChild = null;
+            }
+
         } else {
             node.fullAccessed = true;
 
@@ -252,6 +265,8 @@ public class JoinOptimizer {
                 node.bucket.setSample(sample);
                 node.updated = true;
                 node.fullAccessed = true;
+                node.leftChild = null;
+                node.rightChild = null;
             } else {
                 node.attribute = dim;
                 node.type = this.tableInfo.getTypeArray()[dim];
@@ -281,9 +296,8 @@ public class JoinOptimizer {
         setJoinAttribute(q, rt.getRoot(), collector, allocations, 1);
     }
 
-    public PartitionSplit[] buildPlan(JoinQuery q) {
 
-        System.out.println("building a plan");
+    public PartitionSplit[] buildPlan(JoinQuery q) {
 
         this.queryWindow.add(q);
 
@@ -309,9 +323,7 @@ public class JoinOptimizer {
             double numAccessed = getNumTuplesAccessed(rt.getRoot(), q);
             setJoinAttribute(q);
             populateBucketEstimates(rt.getRoot());
-            adjustJoinRobustTree(choices, q);
             updated = true;
-
             System.out.println("Accessed tuple counts: " + numAccessed);
 
         } else {

@@ -158,14 +158,16 @@ public class SparkJoinQuery {
             System.out.println("shuffleInput2: " + input2);
 
             // set conf input;
-            conf.set("DATASETFLAG", "1");
+            conf.set("DATASET_QUERY", dataset1_query.toString());
             conf.set("DATASETINFO", input1);
+            conf.set("DATASET", dataset1);
 
             JavaPairRDD<LongWritable, Text> dataset1RDD = createSingleTableRDD(hdfsPath, dataset1_query);
 
             // set conf input;
-            conf.set("DATASETFLAG", "2");
+            conf.set("DATASET_QUERY", dataset2_query.toString());
             conf.set("DATASETINFO", input2);
+            conf.set("DATASET", dataset2);
 
             JavaPairRDD<LongWritable, Text> dataset2RDD = createSingleTableRDD(hdfsPath, dataset2_query);
 

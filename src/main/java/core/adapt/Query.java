@@ -33,9 +33,8 @@ public class Query implements Serializable {
                 this.predicates[i] = new Predicate(predParts[i]);
             }
 		} else {
-			String msg = "Received a bad query string " + queryString;
-			System.err.println(msg);
-			throw new RuntimeException(msg);
+			// could be empty
+			this.predicates = new Predicate[0];
 		}
 
 		normalizeQuery();

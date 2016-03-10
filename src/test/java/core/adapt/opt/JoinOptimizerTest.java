@@ -7,6 +7,7 @@ import core.common.globals.Globals;
 import core.common.globals.Schema;
 import core.common.globals.TableInfo;
 import core.common.index.JoinRobustTree;
+import core.common.key.RawIndexKey;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils;
@@ -202,14 +203,16 @@ public class JoinOptimizerTest {
             System.out.printf("TPCH3 Query %d: %s\n", i, q);
             // Load table info.
 
+            q.setForceRepartition(true);
             JoinOptimizer opt = new JoinOptimizer(cfg);
             opt.loadIndex(tableInfo);
+
             opt.loadQueries(tableInfo);
-            PartitionSplit[] split = opt.buildPlan(q);
+            opt.buildPlan(q);
 
         }
 
-
+/*
 
         for (int i = 0; i < 30; i++) {
             JoinQuery q = tpch12();
@@ -222,7 +225,7 @@ public class JoinOptimizerTest {
             PartitionSplit[] split = opt.buildPlan(q);
 
         }
-
+*/
     }
 
 }

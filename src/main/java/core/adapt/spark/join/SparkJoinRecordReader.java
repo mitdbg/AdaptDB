@@ -49,7 +49,7 @@ public class SparkJoinRecordReader extends
     private String delimiter, splitter;
 
     protected PartitionIterator iter1;
-    protected PartitionIterator iter2;
+    protected PartitionIterator iter2, pf_iter, jr_iter;
     protected int[] types;
     protected JoinQuery dataset1_joinquery, dataset2_joinquery;
     protected Query dataset2_query;
@@ -102,7 +102,16 @@ public class SparkJoinRecordReader extends
             splitter = delimiter;
 
         hashTable = ArrayListMultimap.create();
+
+
         iter1 = sparkSplit.getIterator();
+
+        pf_iter = new PostFilterIterator(dataset2_query);
+        jr_iter = new JoinRepartitionIterator(dataset2_query);
+        ((JoinRepartitionIterator) jr_iter).setZookeeper(queryConf.getZookeeperHosts());
+
+
+
         types = sparkSplit.getTypes();
 
         key = new LongWritable();
@@ -143,13 +152,12 @@ public class SparkJoinRecordReader extends
         partition.loadNext(); // ???
 
         if(currentFile > numFilesinDataset1){
-            iter2.finish();
+            iter1.finish();
         }
         if(types[currentFile- numFilesinDataset1] == 1){
-            iter2 = new PostFilterIterator(dataset2_query);
+            iter2 = pf_iter;
         } else {
-            iter2 = new JoinRepartitionIterator(dataset2_query);
-            ((JoinRepartitionIterator) iter2).setZookeeper(queryConf.getZookeeperHosts());
+            iter2 = jr_iter;
         }
 
         iter2.setPartition(partition);
@@ -266,7 +274,8 @@ public class SparkJoinRecordReader extends
     @Override
     public void close() throws IOException {
 
-        iter2.finish(); // write out partitions
+        pf_iter.finish();
+        jr_iter.finish(); // write out partitions
 
         System.out.println("There are " + tupleCountInTable1 + " tuples from the first input!");
         System.out.println("There are " + tupleCountInTable2 + " tuples from the second input!");
