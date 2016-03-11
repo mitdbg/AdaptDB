@@ -222,7 +222,8 @@ public class JoinOptimizerTest {
 
 
         for (int i = 0; i < 5; i++) {
-            JoinQuery q = tpch12();
+            //JoinQuery q = tpch3();
+            JoinQuery q = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_partkey"), new Predicate[]{});
             System.out.printf("TPCH12 Query %d: %s\n", i, q);
             // Load table info.
 
@@ -236,7 +237,7 @@ public class JoinOptimizerTest {
 
             //opt.printBucketID(opt.getIndex().getRoot());
 
-            PartitionSplit[] split = opt.buildPlan(q);
+            opt.buildPlan(q);
 
            //opt.populateBucketEstimates(opt.getIndex().getRoot());
 

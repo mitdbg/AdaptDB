@@ -279,7 +279,7 @@ public class JoinPlanner {
 
     private void init_iteratorType(PartitionSplit[] splits) {
         // 1 for PostFilterIterator, 2 for JoinRepartitionIterator
-        System.out.println("Bucket Iterator type: ");
+        //System.out.println("Bucket Iterator type: ");
         iteratorType = new HashMap<Integer, Integer>();
         for (int i = 0; i < splits.length; i++) {
             int[] bids = splits[i].getPartitions();
@@ -291,7 +291,7 @@ public class JoinPlanner {
                 type = 2;
             }
             for (int j = 0; j < bids.length; j++) {
-                System.out.println("bucket: " + bids[j] + " type: " + type);
+                //System.out.println("bucket: " + bids[j] + " type: " + type);
                 iteratorType.put(bids[j], type);
             }
         }
@@ -501,6 +501,7 @@ public class JoinPlanner {
             splits2.add(dataset2_splits[i]);
         }
 
+        /*
         System.out.println("from data 1");
         for (int i : dataset1_bucketInfo.keySet()) {
             System.out.println(i + " " + dataset1_bucketInfo.get(i));
@@ -510,7 +511,7 @@ public class JoinPlanner {
         for (int i : dataset2_bucketInfo.keySet()) {
             System.out.println(i + " " + dataset2_bucketInfo.get(i));
         }
-
+        */
 
         for (Integer i : dataset1_bucketInfo.keySet()) {
             if (splits1.contains(i) == false) continue;
@@ -543,7 +544,7 @@ public class JoinPlanner {
         overlap_chunks = new HashMap<Integer, ArrayList<Integer>>();
 
 
-        System.out.println("Populate dataset1_bucketInfo");
+        //System.out.println("Populate dataset1_bucketInfo");
 
         if (dataset1_MDIndex) {
             read_index(dataset1_bucketInfo, jam1.opt.getIndex(), dataset1_query.getJoinAttribute());
@@ -553,7 +554,7 @@ public class JoinPlanner {
 
         //Globals.schema =  Schema.createSchema(dataset2_schema);
 
-        System.out.println("Populate dataset2_bucketInfo");
+        //System.out.println("Populate dataset2_bucketInfo");
 
         if (dataset2_MDIndex) {
             read_index(dataset2_bucketInfo, jam2.opt.getIndex(), dataset2_query.getJoinAttribute());
@@ -678,9 +679,7 @@ public class JoinPlanner {
                     offset++;
                 }
                 int bucket = buckets.get(best_offset);
-                if(partitionSizes.get(bucket) == null){
-                    System.out.println("bucket " + bucket + " is null");
-                }
+
                 splitAvailableSize -= partitionSizes.get(bucket);
 
                 if (splitAvailableSize >= 0) {
@@ -709,10 +708,7 @@ public class JoinPlanner {
 
     private long getPartitionSplitSize(PartitionSplit split,
                                        Map<Integer, Long> partitionIdSizeMap) {
-        if (partitionIdSizeMap == null) {
-            System.err.println("partition size map is null");
-            System.exit(0);
-        }
+
         long size = 0;
         for (int pid : split.getPartitions()) {
             if (partitionIdSizeMap.containsKey(pid))
