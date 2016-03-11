@@ -15,6 +15,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.spark.api.java.JavaPairRDD;
+import scala.Tuple2;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -65,6 +66,19 @@ public class JoinOptimizerTest {
         JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_orderkey"), new Predicate[]{p3_3});
         return q_l;
     }
+
+    public static JoinQuery tpch5() {
+        int rand_5 = rand.nextInt(regionNameVals.length);
+        String r_name_5 = regionNameVals[rand_5];
+        int year_5 = 1993 + rand.nextInt(5);
+        TypeUtils.SimpleDate d5_1 = new TypeUtils.SimpleDate(year_5, 1, 1);
+        TypeUtils.SimpleDate d5_2 = new TypeUtils.SimpleDate(year_5 + 1, 1, 1);
+        JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_suppkey"), new Predicate[]{});
+
+        return q_l;
+
+    }
+
 
     private static JoinQuery tpch10() {
 
@@ -221,10 +235,11 @@ public class JoinOptimizerTest {
 
 
 
-        for (int i = 0; i < 5; i++) {
-            //JoinQuery q = tpch3();
-            JoinQuery q = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_partkey"), new Predicate[]{});
-            System.out.printf("TPCH12 Query %d: %s\n", i, q);
+        for (int k = 0; k < 1; k++) {
+            JoinQuery q = tpch5();
+            System.out.printf("TPCH5 Query %d: %s\n", k, q);
+
+            q.setForceRepartition(true);
             // Load table info.
 
             JoinOptimizer opt = new JoinOptimizer(cfg);
@@ -234,29 +249,19 @@ public class JoinOptimizerTest {
 
             //System.out.println("check " + opt.assertNotEmpty(opt.getIndex().getRoot()));
             opt.loadQueries(tableInfo);
+            //opt.printTree();
 
             //opt.printBucketID(opt.getIndex().getRoot());
 
-            opt.buildPlan(q);
+            PartitionSplit[] splits = opt.buildPlan(q);
 
-           //opt.populateBucketEstimates(opt.getIndex().getRoot());
-
-
-            //opt.printBucketID(opt.getIndex().getRoot());
-
-            //opt.populateBucketEstimates(opt.getIndex().getRoot());
-
-            //System.out.println("check " + opt.assertNotEmpty(opt.getIndex().getRoot()));
-
-            /*
-            System.out.println("PreOrder");
-
-            opt.preOrder(opt.getIndex().getRoot());
-
-            System.out.println("InOrder");
-
-            opt.inOrder(opt.getIndex().getRoot());
-*/
+            for(int i = 0; i< splits.length; i ++){
+                int[] bids = splits[i].getPartitions();
+                for (int j = 0; j < bids.length; j ++){
+                    System.out.println(bids[j] + " ");
+                }
+            }
+            System.out.println();
         }
 
     }

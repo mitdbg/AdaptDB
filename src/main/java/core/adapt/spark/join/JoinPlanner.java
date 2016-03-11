@@ -501,7 +501,7 @@ public class JoinPlanner {
             splits2.add(dataset2_splits[i]);
         }
 
-        /*
+/*
         System.out.println("from data 1");
         for (int i : dataset1_bucketInfo.keySet()) {
             System.out.println(i + " " + dataset1_bucketInfo.get(i));
@@ -511,7 +511,7 @@ public class JoinPlanner {
         for (int i : dataset2_bucketInfo.keySet()) {
             System.out.println(i + " " + dataset2_bucketInfo.get(i));
         }
-        */
+*/
 
         for (Integer i : dataset1_bucketInfo.keySet()) {
             if (splits1.contains(i) == false) continue;
