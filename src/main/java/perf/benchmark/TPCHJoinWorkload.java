@@ -802,6 +802,36 @@ public class TPCHJoinWorkload {
         }
     }
 
+    public void runSmallSwitchingWorkload() {
+        for (int i = 0; i < 80; i++) {
+            if (i < 10) {
+                System.out.println("INFO: Running query TPC-H q3");
+                tpch3(false);
+            } else if (i < 20) {
+                System.out.println("INFO: Running query TPC-H q5");
+                tpch5(i == 15);
+            } else if (i < 30) {
+                System.out.println("INFO: Running query TPC-H q6");
+                tpch6(i == 25);
+            } else if (i < 40) {
+                System.out.println("INFO: Running query TPC-H q8");
+                tpch8(i == 35);
+            } else if (i < 50) {
+                System.out.println("INFO: Running query TPC-H q10");
+                tpch10(i == 45);
+            } else if (i < 60) {
+                System.out.println("INFO: Running query TPC-H q12");
+                tpch12(i == 55);
+            } else if (i < 70) {
+                System.out.println("INFO: Running query TPC-H q14");
+                tpch14(i == 65);
+            } else {
+                System.out.println("INFO: Running query TPC-H q19");
+                tpch19(i == 75);
+            }
+        }
+    }
+
     public void runShiftingWorkload() {
 
         int[] numQueries = new int[20];
@@ -964,6 +994,9 @@ public class TPCHJoinWorkload {
                 break;
             case 3:
                 t.runUpfrontWorkload();
+                break;
+            case 4:
+                t.runSmallSwitchingWorkload();
                 break;
             default:
                 break;

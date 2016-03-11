@@ -195,37 +195,69 @@ public class JoinOptimizerTest {
         }
 
 */
+/*
 
-
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 5; i++) {
 
             JoinQuery q = tpch3();
             System.out.printf("TPCH3 Query %d: %s\n", i, q);
             // Load table info.
 
-            q.setForceRepartition(true);
+            //q.setForceRepartition(i == 0);
             JoinOptimizer opt = new JoinOptimizer(cfg);
             opt.loadIndex(tableInfo);
-
-            opt.loadQueries(tableInfo);
+            //opt.test();
+            //opt.loadQueries(tableInfo);
+            opt.test();
+            System.out.println("build a plan");
             opt.buildPlan(q);
-
+            //opt.test();
         }
+        System.out.println("---------------------");
+        //JoinOptimizer opt = new JoinOptimizer(cfg);
+        //opt.loadIndex(tableInfo);
+        //opt.test();
+*/
 
-/*
 
-        for (int i = 0; i < 30; i++) {
+
+        for (int i = 0; i < 5; i++) {
             JoinQuery q = tpch12();
             System.out.printf("TPCH12 Query %d: %s\n", i, q);
             // Load table info.
 
             JoinOptimizer opt = new JoinOptimizer(cfg);
             opt.loadIndex(tableInfo);
+            //opt.test();
+
+
+            //System.out.println("check " + opt.assertNotEmpty(opt.getIndex().getRoot()));
             opt.loadQueries(tableInfo);
+
+            //opt.printBucketID(opt.getIndex().getRoot());
+
             PartitionSplit[] split = opt.buildPlan(q);
 
-        }
+           //opt.populateBucketEstimates(opt.getIndex().getRoot());
+
+
+            //opt.printBucketID(opt.getIndex().getRoot());
+
+            //opt.populateBucketEstimates(opt.getIndex().getRoot());
+
+            //System.out.println("check " + opt.assertNotEmpty(opt.getIndex().getRoot()));
+
+            /*
+            System.out.println("PreOrder");
+
+            opt.preOrder(opt.getIndex().getRoot());
+
+            System.out.println("InOrder");
+
+            opt.inOrder(opt.getIndex().getRoot());
 */
+        }
+
     }
 
 }

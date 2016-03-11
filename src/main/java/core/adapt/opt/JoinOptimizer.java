@@ -296,7 +296,6 @@ public class JoinOptimizer {
         setJoinAttribute(q, rt.getRoot(), collector, allocations, 1);
     }
 
-
     public PartitionSplit[] buildPlan(JoinQuery q) {
 
         this.queryWindow.add(q);
@@ -398,8 +397,7 @@ public class JoinOptimizer {
         Collections.shuffle(choices);
 
         for (Predicate p : choices) {
-            JRNode node = adjustJoinRobustTreeForPredicate(rt.getRoot(), p, ps, 1);
-            rt.setRoot(node);
+            adjustJoinRobustTreeForPredicate(rt.getRoot(), p, ps, 1);
         }
     }
 
@@ -448,7 +446,7 @@ public class JoinOptimizer {
      *
      * @param changed
      */
-    private void populateBucketEstimates(JRNode changed) {
+    public void populateBucketEstimates(JRNode changed) {
         ParsedTupleList collector = null;
         double numTuples = 0;
         int numSamples = 0;
@@ -688,7 +686,7 @@ public class JoinOptimizer {
     }
 
 
-    private JRNode adjustJoinRobustTreeForPredicate(JRNode node, Predicate choice, Predicate[] ps, int depth) {
+    private void adjustJoinRobustTreeForPredicate(JRNode node, Predicate choice, Predicate[] ps, int depth) {
         // Option Index
         // 1 => Replace
         // 2 => Swap down X
@@ -696,7 +694,6 @@ public class JoinOptimizer {
         if (node.bucket != null) {
             // Leaf
             node.fullAccessed = true;
-            return node;
         } else {
             Predicate p = choice;
 
@@ -705,11 +702,11 @@ public class JoinOptimizer {
             boolean goRight = checkIfGoRight(node, ps);
 
             if (goLeft) {
-                node.leftChild = adjustJoinRobustTreeForPredicate(node.leftChild, choice, ps, depth + 1);
+                adjustJoinRobustTreeForPredicate(node.leftChild, choice, ps, depth + 1);
             }
 
             if (goRight) {
-                node.rightChild = adjustJoinRobustTreeForPredicate(node.rightChild, choice, ps, depth + 1);
+                adjustJoinRobustTreeForPredicate(node.rightChild, choice, ps, depth + 1);
             }
 
             if (depth > this.rt.joinAttributeDepth){
@@ -722,7 +719,6 @@ public class JoinOptimizer {
                         Object testVal = p.getHelpfulCutpoint();
 
                         // replace attribute by one in the predicate
-
 
                         // If we traverse to root and see that there is no node with
                         // cutoff point less than
@@ -742,7 +738,7 @@ public class JoinOptimizer {
                         double numAcccessedNew = getNumTuplesAccessed(node);
                         double benefit = numAccessedOld - numAcccessedNew;
 
-                        if (benefit > 0 ) {
+                        if (benefit > 0 && node.leftChild.bucket.getSample().size() !=0 && node.rightChild.bucket.getSample().size() != 0) {
                             node.leftChild.updated = true;
                             node.rightChild.updated = true;
                         } else {
@@ -753,11 +749,9 @@ public class JoinOptimizer {
                             node.value = value;
 
                             populateBucketEstimates(node);
-                            return node;
                         }
-
                     }
-                    return node;
+
                 } else {
                     // Swap down the attribute and bring p above
 
@@ -768,7 +762,6 @@ public class JoinOptimizer {
 
                     if (node.leftChild.attribute == node.rightChild.attribute &&
                             node.leftChild.value.equals(node.rightChild.value)) {
-
 
                         int attribute = node.attribute;
                         Object value = node.value;
@@ -802,9 +795,10 @@ public class JoinOptimizer {
                         node.rightChild.value = value;
                         node.rightChild.type = type;
 
-                        return node;
+                        populateBucketEstimates(node);
 
                     }
+
                     /*
                     else if (node.rightChild.attribute == node.attribute){ // left rotate
 
@@ -828,7 +822,7 @@ public class JoinOptimizer {
                         return l;
                     }
                     */
-                    return node;
+
 
                 }
             } else
@@ -836,7 +830,6 @@ public class JoinOptimizer {
                 if (node.leftChild.fullAccessed && node.rightChild.fullAccessed) {
                     node.fullAccessed = true;
                 }
-                return node;
             }
         }
     }
