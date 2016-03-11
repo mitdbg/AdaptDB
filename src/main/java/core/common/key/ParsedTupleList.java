@@ -240,27 +240,41 @@ public class ParsedTupleList {
 
 		Comparator<Object> comp = TypeUtils.getComparatorForType(sortType);
 
-		// Finds the least k such that k >= value
+		// Finds the least k such that k > value
 		int lo = 0;
 		int hi = values.size() - 1;
-		while (lo < hi) {
-			int mid = lo + (hi - lo) / 2;
+		int res = -1;
+		while (lo <= hi) {
+			int mid = (lo + hi) / 2;
 			Object midVal = this.values.get(mid)[attributeIdx];
 			try {
-				if (comp.compare(value, midVal) < 0)
-					hi = mid;
+				if (comp.compare(midVal, value) > 0) {
+					res = mid;
+					hi = mid - 1;
+				}
 				else
+				{
 					lo = mid + 1;
+				}
+
 			} catch (Exception e) {
 				System.out.println(midVal.toString() + " " + value.toString() + " " + attributeIdx + " " + value.getClass().getSimpleName() + " " + midVal.getClass().getSimpleName());
 				e.printStackTrace();
 			}
 		}
 
-		ParsedTupleList k1 = new ParsedTupleList(
-				values.subList(0, lo), types);
-		ParsedTupleList k2 = new ParsedTupleList(values.subList(lo,
-				values.size()), types);
+		ParsedTupleList k1, k2;
+
+		if(res == -1){ // every value is larger than the given value
+			k1 = new ParsedTupleList(values.subList(0, 0), types);
+			k2 = new ParsedTupleList(values.subList(0, values.size()), types);
+		}else{
+			k1 = new ParsedTupleList(
+					values.subList(0, res), types);
+			k2 = new ParsedTupleList(values.subList(res, values.size()), types);
+		}
+
+
 		return new Pair<ParsedTupleList, ParsedTupleList>(k1, k2);
 	}
 
