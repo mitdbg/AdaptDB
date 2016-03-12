@@ -220,12 +220,34 @@ public class ParsedTupleList {
 	public Pair<ParsedTupleList, ParsedTupleList> splitByMedian(
 			int attributeIdx) {
 		Object medianVal = values.get(values.size() / 2)[attributeIdx];
-		int firstIndex = getFirstIndexOfAttributeVal(attributeIdx,
-				types[attributeIdx], medianVal, values, 0);
+		Comparator<Object> comp = TypeUtils.getComparatorForType(types[attributeIdx]);
+
+		int lo = 0;
+		int hi = values.size() - 1;
+		int res = -1;
+		while (lo <= hi) {
+			int mid = (lo + hi) / 2;
+			Object midVal = this.values.get(mid)[attributeIdx];
+			try {
+				if (comp.compare(midVal, medianVal) >= 0) {
+					res = mid;
+					hi = mid - 1;
+				}
+				else
+				{
+					lo = mid + 1;
+				}
+
+			} catch (Exception e) {
+				System.out.println(midVal.toString() + " " + medianVal.toString() + " " + attributeIdx + " " + medianVal.getClass().getSimpleName() + " " + midVal.getClass().getSimpleName());
+				e.printStackTrace();
+			}
+		}
+
 		ParsedTupleList k1 = new ParsedTupleList(values.subList(0,
-				firstIndex), types);
+				res), types);
 		ParsedTupleList k2 = new ParsedTupleList(values.subList(
-				firstIndex, values.size()), types);
+				res, values.size()), types);
 		return new Pair<ParsedTupleList, ParsedTupleList>(k1, k2);
 	}
 
@@ -243,7 +265,7 @@ public class ParsedTupleList {
 		// Finds the least k such that k > value
 		int lo = 0;
 		int hi = values.size() - 1;
-		int res = -1;
+		int res = values.size(); // assume every value is smaller than or equal to the given value
 		while (lo <= hi) {
 			int mid = (lo + hi) / 2;
 			Object midVal = this.values.get(mid)[attributeIdx];
@@ -263,69 +285,11 @@ public class ParsedTupleList {
 			}
 		}
 
-		ParsedTupleList k1, k2;
 
-		if(res == -1){ // every value is larger than the given value
-			k1 = new ParsedTupleList(values.subList(0, 0), types);
-			k2 = new ParsedTupleList(values.subList(0, values.size()), types);
-		}else{
-			k1 = new ParsedTupleList(
-					values.subList(0, res), types);
-			k2 = new ParsedTupleList(values.subList(res, values.size()), types);
-		}
-
+		ParsedTupleList	k1 = new ParsedTupleList(values.subList(0, res), types);
+		ParsedTupleList	k2 = new ParsedTupleList(values.subList(res, values.size()), types);
 
 		return new Pair<ParsedTupleList, ParsedTupleList>(k1, k2);
-	}
-
-	private static int getFirstIndexOfAttributeVal(int attributeIdx, TYPE type,
-			Object val, List<Object[]> sublist, int start) {
-		if (sublist.size() == 0) {
-			return -1;
-		}
-		Object middle = sublist.get(sublist.size() / 2)[attributeIdx];
-		int comparison;
-		switch (type) {
-		case INT:
-			comparison = ((Integer) middle).compareTo((Integer) val);
-			break;
-		case LONG:
-			comparison = ((Long) middle).compareTo((Long) val);
-			break;
-		case DOUBLE:
-			comparison = ((Double) middle).compareTo((Double) val);
-			break;
-		case DATE:
-			comparison = ((SimpleDate) middle).compareTo((SimpleDate) val);
-			break;
-		case STRING:
-			comparison = ((String) middle).compareTo((String) val);
-			break;
-		case VARCHAR:
-			throw new RuntimeException("sorting over varchar is not supported"); // skip
-																					// partitioning
-																					// on
-																					// varchar
-																					// attribute
-		default:
-			throw new RuntimeException("Unknown dimension type: " + type);
-		}
-		if (comparison == 0) {
-			int firstIndex = getFirstIndexOfAttributeVal(attributeIdx, type,
-					val, sublist.subList(0, sublist.size() / 2), start);
-			if (firstIndex == -1) {
-				return start + sublist.size() / 2;
-			} else {
-				return firstIndex;
-			}
-		} else if (comparison > 0) {
-			return getFirstIndexOfAttributeVal(attributeIdx, type, val,
-					sublist.subList(0, sublist.size() / 2), start);
-		} else {
-			return getFirstIndexOfAttributeVal(attributeIdx, type, val,
-					sublist.subList(sublist.size() / 2 + 1, sublist.size()),
-					start + sublist.size() / 2 + 1);
-		}
 	}
 
 	/**

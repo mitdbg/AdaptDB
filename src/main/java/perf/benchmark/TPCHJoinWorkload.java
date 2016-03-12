@@ -802,36 +802,49 @@ public class TPCHJoinWorkload {
         }
     }
 
+    public void runSmallSwitchingWorkloadOnlyRepartition() {
+        rand.setSeed(0);
+        tpch3(true);
+        tpch5(true);
+        tpch6(true);
+        tpch8(true);
+        tpch10(true);
+        tpch12(true);
+        tpch14(true);
+        tpch19(true);
+    }
+
+
     public void runSmallSwitchingWorkload() {
-        for (int i = 0; i < 80; i++) {
-            if (i < 10) {
+        rand.setSeed(0);
+        for (int i = 0; i < 16; i++) {
+            if (i < 2) {
                 System.out.println("INFO: Running query TPC-H q3");
                 tpch3(false);
-            } else if (i < 20) {
+            } else if (i < 4) {
                 System.out.println("INFO: Running query TPC-H q5");
-                tpch5(i == 15);
-            } else if (i < 30) {
+                tpch5(i == 2);
+            } else if (i < 6) {
                 System.out.println("INFO: Running query TPC-H q6");
-                tpch6(i == 25);
-            } else if (i < 40) {
+                tpch6(i == 4);
+            } else if (i < 8) {
                 System.out.println("INFO: Running query TPC-H q8");
-                tpch8(i == 35);
-            } else if (i < 50) {
+                tpch8(i == 6);
+            } else if (i < 10) {
                 System.out.println("INFO: Running query TPC-H q10");
-                tpch10(i == 45);
-            } else if (i < 60) {
+                tpch10(i == 8);
+            } else if (i < 12) {
                 System.out.println("INFO: Running query TPC-H q12");
-                tpch12(i == 55);
-            } else if (i < 70) {
+                tpch12(i == 10);
+            } else if (i < 14) {
                 System.out.println("INFO: Running query TPC-H q14");
-                tpch14(i == 65);
+                tpch14(i == 12);
             } else {
                 System.out.println("INFO: Running query TPC-H q19");
-                tpch19(i == 75);
+                tpch19(i == 14);
             }
         }
     }
-
     public void runShiftingWorkload() {
 
         int[] numQueries = new int[20];
@@ -997,6 +1010,9 @@ public class TPCHJoinWorkload {
                 break;
             case 4:
                 t.runSmallSwitchingWorkload();
+                break;
+            case 5:
+                t.runSmallSwitchingWorkloadOnlyRepartition();
                 break;
             default:
                 break;

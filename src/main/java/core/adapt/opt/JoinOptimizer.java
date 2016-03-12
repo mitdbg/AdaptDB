@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.*;
 
 import core.adapt.JoinQuery;
+import core.adapt.iterator.JoinRepartitionIterator;
 import core.adapt.spark.join.SparkJoinQueryConf;
 import core.common.globals.TableInfo;
 import core.common.index.JRNode;
@@ -320,6 +321,7 @@ public class JoinOptimizer {
         markUpdatedBucket(node.leftChild);
         markUpdatedBucket(node.rightChild);
     }
+    
 
     public PartitionSplit[] buildPlan(JoinQuery q) {
 
@@ -343,9 +345,13 @@ public class JoinOptimizer {
         byte[] oldJoinRobustTree = rt.marshall();
 
         List<JRNode> nodes = rt.getRoot().search(q.getPredicates());
+        List<JRNode> allNodes = rt.getRoot().search(new Predicate[]{}); // get all nodes;
+
+        boolean fullRepartition = false;
 
         if ((curJoinAttribute != q.getJoinAttribute() && numJoinAttributes * 2 >= queryWindow.size()) || q.getForceRepartition()) {
             System.out.println("Data is going to be fully repartitioned!");
+            fullRepartition = true;
             double numAccessed = getNumTuplesAccessed(rt.getRoot(), q);
             setJoinAttribute(q);
 
@@ -356,8 +362,9 @@ public class JoinOptimizer {
         } else {
             double totalAccessedOld = getNumTuplesAccessed(rt.getRoot());
             double Accessed = getNumTuplesAccessed(rt.getRoot(), q);
-            markAccessedBucket(rt.getRoot(), q);
+
             adjustJoinRobustTree(choices, q);
+            populateBucketEstimates(rt.getRoot());
             double totalAccessedNew = getNumTuplesAccessed(rt.getRoot(), q);
             System.out.println("Accessed tuple counts: " + Accessed + " what if update?: " + totalAccessedNew);
 
@@ -373,10 +380,17 @@ public class JoinOptimizer {
             }
         }
 
+
         PartitionSplit[] psplits;
 
         if (updated) {
-            psplits = this.getPartitionSplits(q, nodes);
+            if(fullRepartition){
+                psplits = this.getPartitionSplits(q, allNodes);
+            }
+            else {
+                psplits = this.getPartitionSplits(q, nodes);
+            }
+
         } else {
             psplits = this.buildAccessPlan(q);
         }
@@ -468,7 +482,7 @@ public class JoinOptimizer {
         for (int i = 0; i < modifiedBucketsIds.length; i++) {
             modifiedBucketsIds[i] = modifiedBuckets.get(i);
         }
-        PartitionIterator pj = new RepartitionIterator(q.castToQuery());
+        PartitionIterator pj = new JoinRepartitionIterator(q.castToQuery());
         splits[1] = new PartitionSplit(modifiedBucketsIds, pj);
 
         return splits;
@@ -676,7 +690,7 @@ public class JoinOptimizer {
                         break;
                     case LT:
                         if (TypeUtils
-                                .compareTo(pd.value, node.value, node.type) < 0)
+                                .compareTo(pd.value, node.value, node.type) <= 0)
                             goRight = false;
                         break;
                     case EQ:
@@ -737,6 +751,10 @@ public class JoinOptimizer {
         boolean goLeft = checkIfGoLeft(node, ps);
         boolean goRight = checkIfGoRight(node, ps);
 
+
+
+        //System.out.println("attribute: " + node.attribute + " value: " + node.value + " goleft: " + goLeft + " goRight: " + goRight);
+
         if (goLeft) {
             adjustJoinRobustTreeForPredicate(node.leftChild, choice, ps, depth + 1);
         }
@@ -775,8 +793,10 @@ public class JoinOptimizer {
                     double benefit = numAccessedOld - numAcccessedNew;
 
                     if (benefit > 0 && node.leftChild.bucket.getSample().size() != 0 && node.rightChild.bucket.getSample().size() != 0) {
+
                         node.leftChild.updated = true;
                         node.rightChild.updated = true;
+
                     } else {
                         // Restore ??
 
@@ -867,6 +887,20 @@ public class JoinOptimizer {
             }
         }
 
+    }
+
+    public void checkNotEmpty(JRNode r){
+        if(r.bucket !=null){
+            if (r.bucket.getSample().size() == 0){
+                throw  new RuntimeException();
+            }
+            if(r.bucket.getBucketId() == 8929){
+                System.out.println(r.bucket.getSample().size());
+            }
+            return;
+        }
+        checkNotEmpty(r.leftChild);
+        checkNotEmpty(r.rightChild);
     }
 
     private double computeCost(JRNode r) {

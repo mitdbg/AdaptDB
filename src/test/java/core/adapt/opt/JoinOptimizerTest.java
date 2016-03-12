@@ -45,6 +45,14 @@ public class JoinOptimizerTest {
     private static void setup() {
         stringLineitem = "l_orderkey long, l_partkey long, l_suppkey long, l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, l_tax double, l_returnflag string,  l_linestatus string, l_shipdate date, l_commitdate date, l_receiptdate date, l_shipinstruct string, l_shipmode string";
         schemaLineitem = Schema.createSchema(stringLineitem);
+        stringOrders = "o_orderkey long, o_custkey long, o_orderstatus string, o_totalprice double, o_orderdate date, o_orderpriority string, o_clerk string, o_shippriority int";
+        schemaOrders = Schema.createSchema(stringOrders);
+        stringCustomer = "c_custkey long, c_name string, c_address string, c_phone string, c_acctbal double, c_mktsegment string, c_nation string, c_region string";
+        schemaCustomer = Schema.createSchema(stringCustomer);
+        stringSupplier = "s_suppkey long, s_name string, s_address string, s_phone string, s_acctbal double, s_nation string, s_region string";
+        schemaSupplier = Schema.createSchema(stringSupplier);
+        stringPart = "p_partkey long, p_name string, p_mfgr string, p_brand string, p_type string, p_size int, p_container string, p_retailprice double";
+        schemaPart = Schema.createSchema(stringPart);
         rand.setSeed(0);
     }
 
@@ -60,25 +68,94 @@ public class JoinOptimizerTest {
                 c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
 
 
+        Predicate p1_3 = new Predicate(schemaCustomer.getAttributeId("c_mktsegment"), TypeUtils.TYPE.STRING, c_mktsegment, Predicate.PREDTYPE.LEQ);
+        Predicate p2_3 = new Predicate(schemaOrders.getAttributeId("o_orderdate"), TypeUtils.TYPE.DATE, d3, Predicate.PREDTYPE.LT);
         Predicate p3_3 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TypeUtils.TYPE.DATE, d3, Predicate.PREDTYPE.GT);
 
         JoinQuery q_c = null;
+        JoinQuery q_o = new JoinQuery(orders, schemaOrders.getAttributeId("o_orderkey"), new Predicate[]{p2_3});
         JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_orderkey"), new Predicate[]{p3_3});
+
+
+        if (rand_3 > 0) {
+            String c_mktsegment_prev = mktSegmentVals[rand_3 - 1];
+            Predicate p4_3 = new Predicate(schemaCustomer.getAttributeId("c_mktsegment"), TypeUtils.TYPE.STRING, c_mktsegment_prev, Predicate.PREDTYPE.GT);
+            q_c = new JoinQuery(customer, schemaCustomer.getAttributeId("c_custkey"), new Predicate[]{p1_3, p4_3});
+        } else {
+            q_c = new JoinQuery(customer, schemaCustomer.getAttributeId("c_custkey"), new Predicate[]{p1_3});
+        }
         return q_l;
     }
 
     public static JoinQuery tpch5() {
+
         int rand_5 = rand.nextInt(regionNameVals.length);
         String r_name_5 = regionNameVals[rand_5];
         int year_5 = 1993 + rand.nextInt(5);
         TypeUtils.SimpleDate d5_1 = new TypeUtils.SimpleDate(year_5, 1, 1);
         TypeUtils.SimpleDate d5_2 = new TypeUtils.SimpleDate(year_5 + 1, 1, 1);
+        Predicate p1_5 = new Predicate(schemaCustomer.getAttributeId("c_region"), TypeUtils.TYPE.STRING, r_name_5, Predicate.PREDTYPE.LEQ);
+        Predicate p2_5 = new Predicate(schemaSupplier.getAttributeId("s_region"), TypeUtils.TYPE.STRING, r_name_5, Predicate.PREDTYPE.LEQ);
+        Predicate p3_5 = new Predicate(schemaOrders.getAttributeId("o_orderdate"), TypeUtils.TYPE.DATE, d5_1, Predicate.PREDTYPE.GEQ);
+        Predicate p4_5 = new Predicate(schemaOrders.getAttributeId("o_orderdate"), TypeUtils.TYPE.DATE, d5_2, Predicate.PREDTYPE.LT);
+
+
+        JoinQuery q_s = null;
+        JoinQuery q_c = null;
+        JoinQuery q_o = new JoinQuery(orders, schemaOrders.getAttributeId("o_custkey"), new Predicate[]{p3_5, p4_5});
         JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_suppkey"), new Predicate[]{});
+
+
+        if (rand_5 > 0) {
+            String r_name_prev_5 = regionNameVals[rand_5 - 1];
+            Predicate p5_5 = new Predicate(schemaCustomer.getAttributeId("c_region"), TypeUtils.TYPE.STRING, r_name_prev_5, Predicate.PREDTYPE.GT);
+            Predicate p6_5 = new Predicate(schemaSupplier.getAttributeId("s_region"), TypeUtils.TYPE.STRING, r_name_prev_5, Predicate.PREDTYPE.GT);
+            q_s = new JoinQuery(supplier, schemaSupplier.getAttributeId("s_suppkey"), new Predicate[]{p2_5, p6_5});
+            q_c = new JoinQuery(customer, schemaCustomer.getAttributeId("c_custkey"), new Predicate[]{p1_5, p5_5});
+        } else {
+            q_s = new JoinQuery(supplier, schemaSupplier.getAttributeId("s_suppkey"), new Predicate[]{p2_5});
+            q_c = new JoinQuery(customer, schemaCustomer.getAttributeId("c_custkey"), new Predicate[]{p1_5});
+        }
+        return q_l;
+
+    }
+
+
+    private static JoinQuery tpch6(){
+        int year_6 = 1993 + rand.nextInt(5);
+        TypeUtils.SimpleDate d6_1 = new TypeUtils.SimpleDate(year_6, 1, 1);
+        TypeUtils.SimpleDate d6_2 = new TypeUtils.SimpleDate(year_6 + 1, 1, 1);
+        double discount = rand.nextDouble() * 0.07 + 0.02;
+        double quantity = rand.nextInt(2) + 24.0;
+        Predicate p1_6 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TypeUtils.TYPE.DATE, d6_1, Predicate.PREDTYPE.GEQ);
+        Predicate p2_6 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TypeUtils.TYPE.DATE, d6_2, Predicate.PREDTYPE.LT);
+        Predicate p3_6 = new Predicate(schemaLineitem.getAttributeId("l_discount"), TypeUtils.TYPE.DOUBLE, discount - 0.01, Predicate.PREDTYPE.GT);
+        Predicate p4_6 = new Predicate(schemaLineitem.getAttributeId("l_discount"), TypeUtils.TYPE.DOUBLE, discount + 0.01, Predicate.PREDTYPE.LEQ);
+        Predicate p5_6 = new Predicate(schemaLineitem.getAttributeId("l_quantity"), TypeUtils.TYPE.DOUBLE, quantity, Predicate.PREDTYPE.LEQ);
+        JoinQuery q_l = new JoinQuery(lineitem, 0, new Predicate[]{p1_6, p2_6, p3_6, p4_6, p5_6});
 
         return q_l;
 
     }
 
+    private static JoinQuery tpch8(){
+        int rand_8_1 = rand.nextInt(regionNameVals.length);
+        String r_name_8 = regionNameVals[rand_8_1];
+        TypeUtils.SimpleDate d8_1 = new TypeUtils.SimpleDate(1995, 1, 1);
+        TypeUtils.SimpleDate d8_2 = new TypeUtils.SimpleDate(1996, 12, 31);
+        String p_type_8 = partTypeVals[rand.nextInt(partTypeVals.length)];
+        Predicate p1_8 = new Predicate(schemaCustomer.getAttributeId("c_region"), TypeUtils.TYPE.STRING, r_name_8, Predicate.PREDTYPE.LEQ);
+        Predicate p2_8 = new Predicate(schemaOrders.getAttributeId("o_orderdate"), TypeUtils.TYPE.DATE, d8_1, Predicate.PREDTYPE.GEQ);
+        Predicate p3_8 = new Predicate(schemaOrders.getAttributeId("o_orderdate"), TypeUtils.TYPE.DATE, d8_2, Predicate.PREDTYPE.LEQ);
+        Predicate p4_8 = new Predicate(schemaPart.getAttributeId("p_type"), TypeUtils.TYPE.STRING, p_type_8, Predicate.PREDTYPE.EQ);
+
+        JoinQuery q_o = new JoinQuery(orders, schemaOrders.getAttributeId("o_custkey"), new Predicate[]{p2_8, p3_8});
+        JoinQuery q_p = new JoinQuery(part, schemaPart.getAttributeId("p_partkey"), new Predicate[]{p4_8});
+        JoinQuery q_c = null;
+        JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_partkey"), new Predicate[]{});
+
+        return  q_l;
+    }
 
     private static JoinQuery tpch10() {
 
@@ -162,107 +239,83 @@ public class JoinOptimizerTest {
 
         JoinRobustTree.randGenerator.setSeed(0);
 
-/*
-        for (int i = 0; i < 10; i++) {
+
+
+
+        for (int i = 0; i < 2; i++) {
 
             JoinQuery q = tpch3();
             System.out.printf("TPCH3 Query %d: %s\n", i, q);
             // Load table info.
-
-            JoinOptimizer opt = new JoinOptimizer(cfg);
-            opt.loadIndex(tableInfo);
-            opt.loadQueries(tableInfo);
-            PartitionSplit[] split = opt.buildPlan(q);
-
-        }
-
-        for (int i = 0; i < 10; i++) {
-
-            JoinQuery q = tpch10();
-            System.out.printf("TPCH10 Query %d: %s\n", i, q);
-            // Load table info.
-
-            JoinOptimizer opt = new JoinOptimizer(cfg);
-            opt.loadIndex(tableInfo);
-            opt.loadQueries(tableInfo);
-            PartitionSplit[] split = opt.buildPlan(q);
-
-        }
-
-*/
-
-
-
-/*
-
-        for (int i = 0; i < 10; i++) {
-
-            JoinQuery q = tpch12();
-            System.out.printf("TPCH12 Query %d: %s\n", i, q);
-            // Load table info.
-
-            JoinOptimizer opt = new JoinOptimizer(cfg);
-            opt.loadIndex(tableInfo);
-            opt.loadQueries(tableInfo);
-            PartitionSplit[] split = opt.buildPlan(q);
-
-        }
-
-*/
-/*
-
-        for (int i = 0; i < 5; i++) {
-
-            JoinQuery q = tpch3();
-            System.out.printf("TPCH3 Query %d: %s\n", i, q);
-            // Load table info.
-
-            //q.setForceRepartition(i == 0);
-            JoinOptimizer opt = new JoinOptimizer(cfg);
-            opt.loadIndex(tableInfo);
-            //opt.test();
-            //opt.loadQueries(tableInfo);
-            opt.test();
-            System.out.println("build a plan");
-            opt.buildPlan(q);
-            //opt.test();
-        }
-        System.out.println("---------------------");
-        //JoinOptimizer opt = new JoinOptimizer(cfg);
-        //opt.loadIndex(tableInfo);
-        //opt.test();
-*/
-
-
-
-        for (int k = 0; k < 1; k++) {
-            JoinQuery q = tpch5();
-            System.out.printf("TPCH5 Query %d: %s\n", k, q);
-
-            q.setForceRepartition(true);
-            // Load table info.
-
-            JoinOptimizer opt = new JoinOptimizer(cfg);
-            opt.loadIndex(tableInfo);
-            //opt.test();
-
-
-            //System.out.println("check " + opt.assertNotEmpty(opt.getIndex().getRoot()));
-            opt.loadQueries(tableInfo);
-            //opt.printTree();
-
-            //opt.printBucketID(opt.getIndex().getRoot());
-
-            PartitionSplit[] splits = opt.buildPlan(q);
-
-            for(int i = 0; i< splits.length; i ++){
-                int[] bids = splits[i].getPartitions();
-                for (int j = 0; j < bids.length; j ++){
-                    System.out.println(bids[j] + " ");
-                }
+            if(i==0){
+                q.setForceRepartition(true);
             }
-            System.out.println();
+
+            JoinOptimizer opt = new JoinOptimizer(cfg);
+            opt.loadIndex(tableInfo);
+
+            opt.checkNotEmpty(opt.getIndex().getRoot());
+
+            opt.loadQueries(tableInfo);
+            opt.buildPlan(q);
+
         }
+
+
+        for (int i = 0; i < 2; i++) {
+
+            JoinQuery q = tpch5();
+            System.out.printf("TPCH5 Query %d: %s\n", i, q);
+            // Load table info.
+            if(i==0){
+                q.setForceRepartition(true);
+            }
+
+            JoinOptimizer opt = new JoinOptimizer(cfg);
+            opt.loadIndex(tableInfo);
+
+            opt.checkNotEmpty(opt.getIndex().getRoot());
+            opt.loadQueries(tableInfo);
+            opt.buildPlan(q);
+
+        }
+
+        for (int i = 0; i < 2; i++) {
+
+            JoinQuery q = tpch6();
+            System.out.printf("TPCH6 Query %d: %s\n", i, q);
+            // Load table info.
+            if(i==0){
+                q.setForceRepartition(true);
+            }
+
+            JoinOptimizer opt = new JoinOptimizer(cfg);
+            opt.loadIndex(tableInfo);
+
+            opt.checkNotEmpty(opt.getIndex().getRoot());
+            opt.loadQueries(tableInfo);
+            opt.buildPlan(q);
+
+        }
+
+        for (int i = 0; i < 2; i++) {
+
+            JoinQuery q = tpch8();
+            System.out.printf("TPCH8 Query %d: %s\n", i, q);
+            // Load table info.
+            if(i==0){
+                q.setForceRepartition(true);
+            }
+
+            JoinOptimizer opt = new JoinOptimizer(cfg);
+            opt.loadIndex(tableInfo);
+
+            opt.checkNotEmpty(opt.getIndex().getRoot());
+            opt.loadQueries(tableInfo);
+            opt.buildPlan(q);
+
+        }
+
 
     }
 

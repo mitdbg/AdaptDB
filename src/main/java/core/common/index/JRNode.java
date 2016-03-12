@@ -194,6 +194,7 @@ public class JRNode {
                 }
             }
 
+
             List<JRNode> ret = null;
             if (goLeft) {
                 ret = leftChild.search(ps);

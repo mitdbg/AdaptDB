@@ -152,9 +152,7 @@ public class SparkJoinRecordReader extends
                 client);
         partition.loadNext(); // ???
 
-        if(currentFile > numFilesinDataset1){
-            iter1.finish();
-        }
+
         if(types[currentFile- numFilesinDataset1] == 1){
             iter2 = pf_iter;
         } else {

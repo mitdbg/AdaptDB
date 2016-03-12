@@ -197,14 +197,14 @@ public class SparkJoinQuery {
         // set SparkQuery conf
 
         String hdfsPath = cfg.getHDFS_WORKING_DIR();
-
+        queryConf.setJustAccess(false);
         queryConf.setWorkingDir(hdfsPath);
 
         Configuration conf = ctx.hadoopConfiguration();
 
 
-        conf.set("DATASET1", dataset);
-        conf.set("DATASET1_QUERY", q.toString());
+        conf.set("DATASET", dataset);
+        conf.set("DATASET_QUERY", q.toString());
         conf.set("PARTITION_KEY", "0") ;
         conf.set("JOINALGO", joinStrategy);
         conf.set("DELIMITER", Delimiter);
@@ -235,61 +235,13 @@ public class SparkJoinQuery {
 
         ArrayList<PartitionSplit> shuffleJoinSplit = new  ArrayList<PartitionSplit>();
 
-        for (int i = 0; i < dataset_splits.length; i++) {
-            PartitionSplit split = dataset_splits[i];
-            int[] bids = split.getPartitions();
 
-            ArrayList<Integer> shuffle_ids = new ArrayList<Integer>();
+        JoinPlanner.extractShuffleJoin(dataset_splits,dataset_hpinput.getPartitionIdSizeMap(),shuffleJoinSplit,queryConf.getMaxSplitSize()  );
 
-            for (int j = 0; j < bids.length; j++) {
-                shuffle_ids.add(bids[j]);
-            }
-
-            if (shuffle_ids.size() > 0) {
-                int[] shuffle_ids_int = new int[shuffle_ids.size()];
-                for (int j = 0; j < shuffle_ids_int.length; j++) {
-                    shuffle_ids_int[j] = shuffle_ids.get(j);
-                }
-                ArrayList<PartitionSplit> shuffle_splits = JoinPlanner.resizeSplits(split.getIterator(), shuffle_ids_int, dataset_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize());
-                for (PartitionSplit hs : shuffle_splits) {
-                    shuffleJoinSplit.add(hs);
-                }
-            }
-        }
-
-
-        StringBuilder sb = new StringBuilder();
-
-        for (PartitionSplit split : shuffleJoinSplit) {
-            if (sb.length() > 0) {
-                sb.append(";");
-            }
-
-            PartitionIterator iter = split.getIterator();
-            if (iter instanceof PostFilterIterator) {
-                sb.append(1 + ",");
-            } else {
-                sb.append(2 + ",");
-            }
-
-            int[] bucketIds = split.getPartitions();
-
-            long[] bucket_lens = dataset_hpinput.getLengths(bucketIds);
-
-            for (int i = 0; i < bucketIds.length; i++) {
-                if (i > 0) {
-                    sb.append(",");
-                }
-                sb.append(bucketIds[i] + ":" + bucket_lens[i]);
-            }
-        }
-
-        String input = sb.toString();
+        String input = JoinPlanner.getShuffleJoinInputHelper(shuffleJoinSplit, dataset_hpinput);
 
         System.out.println("shuffleInput: " + input);
 
-        // set conf input;
-        conf.set("DATASETFLAG", "1");
         conf.set("DATASETINFO", input);
 
 
