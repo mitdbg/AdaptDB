@@ -271,45 +271,24 @@ public class TPCHJoinWorkload {
         q_l.setForceRepartition(forceRepartition);
 
 
-        long start;
-
-
-        start = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
 
 
         // (lineitem ⋈ orders) ⋈ customer
 
-
-        String lineitem_join_orders = "lineitem_join_orders";
-
         String stringLineitem_join_Orders = stringLineitem + ", " + stringOrders;
         Schema schemaLineitem_join_Orders = Schema.createSchema(stringLineitem_join_Orders);
 
-        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", orders, q_o, "NULL", schemaLineitem_join_Orders.getAttributeId("o_custkey"));
+        JavaPairRDD<LongWritable, Text> lineitem_join_orders_rdd = sq.createJoinRDD(lineitem, q_l, "NULL", orders, q_o, "NULL", schemaLineitem_join_Orders.getAttributeId("o_custkey"));
+        JavaPairRDD<LongWritable, Text> customer_rdd = sq.createScanRDD(customer, q_c);
+        JavaPairRDD<LongWritable, Tuple2<Text, Text>> rdd = lineitem_join_orders_rdd.join(customer_rdd);
 
         long result = rdd.count();
 
-        String cutPoints = RangePartitionerUtils.getCutPoints(c_custkey_keys, sizeLineitem + sizeOrders, result);
-
-        Partitioner partitioner = new RangePartitioner(cutPoints);
-
-        JavaRDD<Text> rdd_lineitem_join_orders = rdd.partitionBy(partitioner).values();
-
-
-        String dest = cfg.getHDFS_WORKING_DIR() + "/" + lineitem_join_orders;
-
-        rdd_lineitem_join_orders.saveAsTextFile(dest + "/data");
-
-        postProcessing(dest, lineitem_join_orders, schemaLineitem_join_Orders);
-
-        rdd = sq.createJoinRDD(customer, q_c, "NULL", lineitem_join_orders, new JoinQuery(lineitem_join_orders, schemaLineitem_join_Orders.getAttributeId("o_custkey"), EmptyPredicates), cutPoints, 0);
-
-        result = rdd.count();
-
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-        cleanup(dest);
 
+        garbageCollect();
     }
 
     /*
@@ -371,9 +350,7 @@ public class TPCHJoinWorkload {
         q_o.setForceRepartition(forceRepartition);
         q_l.setForceRepartition(forceRepartition);
 
-        long start;
-
-        start = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
 
 
         // ((customer ⋈ orders) ⋈ (lineitem ⋈ supplier))
@@ -392,6 +369,7 @@ public class TPCHJoinWorkload {
 
         long result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
+        garbageCollect();
     }
 
 
@@ -432,7 +410,7 @@ public class TPCHJoinWorkload {
         long result = rdd.count();
         long end = System.currentTimeMillis();
         System.out.println("RES: Time Taken: " + (end - start) + "; Result: " + result);
-
+        garbageCollect();
     }
 
     /*
@@ -488,38 +466,28 @@ public class TPCHJoinWorkload {
         q_c.setForceRepartition(forceRepartition);
         q_l.setForceRepartition(forceRepartition);
 
-        long start;
-
-        start = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
 
 
         // (lineitem ⋈ (orders ⋈ customer)) ⋈ part
 
-        String lineitem = "lineitem";
-        String part = "part";
-        String orders = "orders";
-        String customer = "customer";
 
         String stringOrders_join_Customer = stringOrders + ", " + stringCustomer;
         Schema schemaOrders_join_Customer = Schema.createSchema(stringOrders_join_Customer);
-
-        JavaPairRDD<LongWritable, Text> orders_join_customer_rdd = sq.createJoinRDD(orders, q_o, "NULL", customer, q_c, "NULL", schemaOrders_join_Customer.getAttributeId("o_orderkey"));
-
-
         String stringLineitem_join_Part = stringLineitem + ", " + stringPart;
         Schema schemaLineitem_join_Part = Schema.createSchema(stringLineitem_join_Part);
 
 
+        JavaPairRDD<LongWritable, Text> orders_join_customer_rdd = sq.createJoinRDD(orders, q_o, "NULL", customer, q_c, "NULL", schemaOrders_join_Customer.getAttributeId("o_orderkey"));
+
         JavaPairRDD<LongWritable, Text> lineitem_join_part_rdd = sq.createJoinRDD(lineitem, q_l, "NULL", part, q_p, "NULL", schemaLineitem_join_Part.getAttributeId("l_orderkey"));
-
-
         JavaPairRDD<LongWritable, Tuple2<Text, Text>> rdd = orders_join_customer_rdd.join(lineitem_join_part_rdd);
 
         long result = rdd.count();
 
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-
+        garbageCollect();
     }
 
     /*
@@ -570,42 +538,20 @@ public class TPCHJoinWorkload {
         long start, end;
 
 
-        String lineitem = "lineitem";
-        String orders = "orders";
-        String customer = "customer";
-
-        String lineitem_join_orders = "lineitem_join_orders";
-
         String stringLineitem_join_Orders = stringLineitem + ", " + stringOrders;
         Schema schemaLineitem_join_Orders = Schema.createSchema(stringLineitem_join_Orders);
 
         start = System.currentTimeMillis();
 
-        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", orders, q_o, "NULL", schemaLineitem_join_Orders.getAttributeId("o_custkey"));
+        JavaPairRDD<LongWritable, Text> lineitem_join_orders_rdd = sq.createJoinRDD(lineitem, q_l, "NULL", orders, q_o, "NULL", schemaLineitem_join_Orders.getAttributeId("o_custkey"));
+        JavaPairRDD<LongWritable, Text> customer_rdd = sq.createScanRDD(customer, q_c);
+        JavaPairRDD<LongWritable, Tuple2<Text, Text>> rdd = lineitem_join_orders_rdd.join(customer_rdd);
 
         long result = rdd.count();
 
-        String cutPoints = RangePartitionerUtils.getCutPoints(c_custkey_keys, sizeLineitem + sizeOrders, result); // long[] = {1, 2, 3};
-
-        Partitioner partitioner = new RangePartitioner(cutPoints);
-
-
-        JavaRDD<Text> rdd_lineitem_join_orders = rdd.partitionBy(partitioner).values();
-
-        String dest = cfg.getHDFS_WORKING_DIR() + "/" + lineitem_join_orders;
-
-        rdd_lineitem_join_orders.saveAsTextFile(dest + "/data");
-
-
-        postProcessing(dest, lineitem_join_orders, schemaLineitem_join_Orders);
-
-        rdd = sq.createJoinRDD(customer, q_c, "NULL", lineitem_join_orders, new JoinQuery(lineitem_join_orders, schemaLineitem_join_Orders.getAttributeId("o_custkey"), EmptyPredicates), cutPoints, 0);
-
-        result = rdd.count();
-
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-        cleanup(dest);
+        garbageCollect();
     }
 
     /*
@@ -650,19 +596,16 @@ public class TPCHJoinWorkload {
         q_o.setForceRepartition(forceRepartition);
 
 
-        long start;
-        start = System.currentTimeMillis();
+        long start=  System.currentTimeMillis();
 
         // lineitem ⋈ orders
 
-        String lineitem = "lineitem";
-        String orders = "orders";
 
         JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", orders, q_o, "NULL", 0);
 
         long result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
-
+        garbageCollect();
     }
 
     /*
@@ -698,19 +641,15 @@ public class TPCHJoinWorkload {
         q_l.setForceRepartition(forceRepartition);
         q_p.setForceRepartition(forceRepartition);
 
-        long start;
-
-        start = System.currentTimeMillis();
+        long start=  System.currentTimeMillis();
 
         // lineitem ⋈ part
-
-        String lineitem = "lineitem";
-        String part = "part";
 
         JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", part, q_p, "NULL", 0);
 
         long result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
+        garbageCollect();
     }
 
     /*
@@ -757,44 +696,41 @@ public class TPCHJoinWorkload {
         q_p.setForceRepartition(forceRepartition);
 
 
-        long start;
-
-        start = System.currentTimeMillis();
+        long start= System.currentTimeMillis();
 
         // lineitem ⋈ part
 
-        String lineitem = "lineitem";
-        String part = "part";
 
         JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", part, q_p, "NULL", 0);
 
         long result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
+        garbageCollect();
     }
 
     public void runSwitchingWorkload() {
         for (int i = 0; i < 160; i++) {
             if (i < 20) {
                 System.out.println("INFO: Running query TPC-H q3");
-                tpch3(i == 5);
+                tpch3(i == 4);
             } else if (i < 40) {
                 System.out.println("INFO: Running query TPC-H q5");
-                tpch5(i == 25);
+                tpch5(i == 24);
             } else if (i < 60) {
                 System.out.println("INFO: Running query TPC-H q6");
-                tpch6(i == 45);
+                tpch6(i == 44);
             } else if (i < 80) {
                 System.out.println("INFO: Running query TPC-H q8");
-                tpch8(i == 65);
+                tpch8(i == 64);
             } else if (i < 100) {
                 System.out.println("INFO: Running query TPC-H q10");
-                tpch10(i == 85);
+                tpch10(i == 84);
             } else if (i < 120) {
                 System.out.println("INFO: Running query TPC-H q12");
-                tpch12(i == 105);
+                tpch12(i == 104);
             } else if (i < 140) {
                 System.out.println("INFO: Running query TPC-H q14");
-                tpch14(i == 125);
+                tpch14(i == 124);
             } else {
                 System.out.println("INFO: Running query TPC-H q19");
                 tpch19(i == 145);
@@ -1018,6 +954,6 @@ public class TPCHJoinWorkload {
                 break;
         }
 
-        //t.garbageCollect();
+        t.garbageCollect();
     }
 }

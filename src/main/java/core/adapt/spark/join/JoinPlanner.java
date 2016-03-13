@@ -122,7 +122,7 @@ public class JoinPlanner {
             if(dataset2_MDIndex){
                 JoinRobustTree jrt2 = dataset2_am.getIndex();
                 int joinAttribute2 = dataset2_am.opt.getJoinAttribute(jrt2.getRoot(), jrt2.joinAttributeDepth);
-                hyperjoin = joinAttribute1 ==  dataset1_query.getJoinAttribute() && joinAttribute2 == dataset1_query.getJoinAttribute();
+                hyperjoin = joinAttribute1 ==  dataset1_query.getJoinAttribute() && joinAttribute2 == dataset2_query.getJoinAttribute();
             }
             else{
                 hyperjoin = joinAttribute1 == dataset1_query.getJoinAttribute();

@@ -321,7 +321,7 @@ public class JoinOptimizer {
         markUpdatedBucket(node.leftChild);
         markUpdatedBucket(node.rightChild);
     }
-    
+
 
     public PartitionSplit[] buildPlan(JoinQuery q) {
 
@@ -349,7 +349,7 @@ public class JoinOptimizer {
 
         boolean fullRepartition = false;
 
-        if ((curJoinAttribute != q.getJoinAttribute() && numJoinAttributes * 2 >= queryWindow.size()) || q.getForceRepartition()) {
+        if (q.getForceRepartition()) {
             System.out.println("Data is going to be fully repartitioned!");
             fullRepartition = true;
             double numAccessed = getNumTuplesAccessed(rt.getRoot(), q);

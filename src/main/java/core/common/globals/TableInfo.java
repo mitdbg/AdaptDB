@@ -1,5 +1,6 @@
 package core.common.globals;
 
+import core.common.index.JoinRobustTree;
 import core.common.index.RobustTree;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils;
@@ -86,7 +87,7 @@ public class TableInfo {
 		String pathToData = path + "/data";
 		String pathToIndex = path + "/index";
 		byte[] indexBytes = HDFSUtils.readFile(fs, pathToIndex);
-		RobustTree rt = new RobustTree(this);
+		JoinRobustTree rt = new JoinRobustTree(this);
 		rt.unmarshall(indexBytes);
 		int[] bids = rt.getAllBuckets();
 		HashSet<Integer> buckets = new HashSet<Integer>();
