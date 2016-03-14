@@ -78,7 +78,7 @@ def run_tpchjoin():
 @roles('master')
 def run_cmtjoin():
     with cd(env.conf['HADOOPBIN']):
-        submit_script_path = "/home/mdindex/spark-1.3.1-bin-hadoop2.6/bin/spark-submit"
+        submit_script_path = "/home/mdindex/spark-1.6.0-bin-hadoop2.6/bin/spark-submit"
         cmd = submit_script_path + ' --class perf.benchmark.CMTJoinWorkload --deploy-mode client --master spark://128.30.77.88:7077 $JAR ' + \
             ' --schemaMH  "$SCHEMAMH"'  + \
             ' --schemaMHL "$SCHEMAMHL"'  + \

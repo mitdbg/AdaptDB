@@ -19,6 +19,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
+import scala.Tuple2;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -206,7 +207,8 @@ public class CMTJoinWorkload {
     public ArrayList<ArrayList<JoinQuery>> generateWorkload() {
         byte[] stringBytes = HDFSUtils.readFile(
                 HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
-                "/user/mdindex/cmt_queries.log");
+                "/user/yilu/cmt100000000/cmt_queries.log");
+
         String queriesString = new String(stringBytes);
         String[] queries = queriesString.split("\n");
         ArrayList<ArrayList<JoinQuery>> ret = new ArrayList<ArrayList<JoinQuery>>();
@@ -247,15 +249,22 @@ public class CMTJoinWorkload {
     // sf ⋈ (mhl ⋈ mh)
     public void runWorkload(){
 
-        ArrayList<ArrayList<JoinQuery>> queries = generateWorkload();
 
+        ArrayList<ArrayList<JoinQuery>> queries = generateWorkload();
         SparkJoinQuery sq = new SparkJoinQuery(cfg);
-        sq.setDelimiter(";");
+        int iters = 0;
 
         for (ArrayList<JoinQuery> q: queries) {
 
             JoinQuery q_mh = q.get(0);
             JoinQuery q_sf = q.get(1);
+            JoinQuery q_mhl = new JoinQuery(MHL, schemaMHL.getAttributeId("mhl_mapmatch_history_id"), EmptyPredicates);
+
+            if(++iters == 5){
+                q_mh.setForceRepartition(true);
+                q_sf.setForceRepartition(true);
+                q_mhl.setForceRepartition(true);
+            }
 
             System.out.println("INFO: Query_MH:" + q_mh.toString());
             System.out.println("INFO: Query_sf:" + q_sf.toString());
@@ -263,35 +272,17 @@ public class CMTJoinWorkload {
 
             long start = System.currentTimeMillis();
 
-            String mhl_join_mh = "mhl_join_mh";
+            String stringMH_join_MHL = stringMH + ", " + stringMHL;
+            Schema schemaMH_join_MHL = Schema.createSchema(stringMH_join_MHL);
 
-            String stringMHL_join_MH = stringMHL + ", " + stringMH;
-            Schema schemaMHL_join_MH = Schema.createSchema(stringMHL_join_MH);
-
-            JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(MHL, new JoinQuery(MHL, schemaMHL.getAttributeId("mhl_mapmatch_history_id"), EmptyPredicates), "NULL", MH, q_mh, "NULL",schemaMHL_join_MH.getAttributeId("mhl_dataset_id"));
-
+            JavaPairRDD<LongWritable, Text> mh_join_mhl_rdd = sq.createJoinRDD(MH, q_mh, "NULL",MHL, q_mhl, "NULL",  schemaMH_join_MHL.getAttributeId("mhl_dataset_id"));
+            JavaPairRDD<LongWritable, Text> sf_rdd = sq.createScanRDD(SF, q_sf);
+            JavaPairRDD<LongWritable, Tuple2<Text, Text>> rdd = mh_join_mhl_rdd.join(sf_rdd);
             long result = rdd.count();
-
-            String cutPoints = RangePartitionerUtils.getCutPoints(sf_id_keys,  sizeMHL + sizeMH, result);
-
-            Partitioner partitioner = new RangePartitioner(cutPoints);
-
-            JavaRDD<Text> rdd_mhl_join_ml = rdd.partitionBy(partitioner).values();
-
-            String dest = cfg.getHDFS_WORKING_DIR() + "/" + mhl_join_mh;
-
-            rdd_mhl_join_ml.saveAsTextFile(dest + "/data");
-
-            postProcessing(dest, mhl_join_mh, schemaMHL_join_MH);
-
-            rdd = sq.createJoinRDD(SF, q_sf , "NULL", mhl_join_mh, new JoinQuery(mhl_join_mh,schemaMHL_join_MH.getAttributeId("mhl_dataset_id"), EmptyPredicates), cutPoints,0);
-
-            result = rdd.count();
 
             System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-            cleanup(dest);
-
+            garbageCollect();
         }
     }
 
@@ -311,7 +302,5 @@ public class CMTJoinWorkload {
             default:
                 break;
         }
-
-        t.garbageCollect();
     }
 }

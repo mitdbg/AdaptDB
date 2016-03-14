@@ -733,7 +733,7 @@ public class TPCHJoinWorkload {
                 tpch14(i == 124);
             } else {
                 System.out.println("INFO: Running query TPC-H q19");
-                tpch19(i == 145);
+                tpch19(i == 144);
             }
         }
     }
@@ -785,13 +785,12 @@ public class TPCHJoinWorkload {
 
         int[] numQueries = new int[20];
 
-        for (int i = 0; i < 160; i++) {
+        for (int i = 0; i < 140; i++) {
             if (i < 20) {
                 double p = (20 - i) / 20.0;
                 if (rand.nextDouble() <= p) {
                     System.out.println("INFO: Running query TPC-H q3");
-                    numQueries[3]++;
-                    tpch3(numQueries[3] == 5);
+                    tpch3(false);
                 } else {
                     System.out.println("INFO: Running query TPC-H q5");
                     numQueries[5]++;
@@ -868,11 +867,6 @@ public class TPCHJoinWorkload {
                     numQueries[19]++;
                     tpch19(numQueries[19] == 5);
                 }
-            } else {
-
-                System.out.println("INFO: Running query TPC-H q19");
-                numQueries[19]++;
-                tpch19(numQueries[19] == 5);
             }
         }
 

@@ -41,13 +41,15 @@ def cmt_gen():
     run('nohup /data/mdindex/yilu/cmt-dbgen/data_gen.sh  > /dev/null 2>&1 < /dev/null &', pty=False)
 
 
-@serial
+@parallel
 def cmt_move_data_100000000():
     if exists('/data/mdindex/yilu'):
         run('rm -rf /data/mdindex/yilu/cmt100000000')
-    run('mkdir /data/mdindex/yilu/cmt100000000')
-    run('mv /data/mdindex/yilu/cmt-dbgen/src/mapmatch_history.txt.* /data/mdindex/yilu/cmt100000000')
-    run('mv /data/mdindex/yilu/cmt-dbgen/src/mapmatch_history_latest.txt.* /data/mdindex/yilu/cmt100000000')
-    run('mv /data/mdindex/yilu/cmt-dbgen/src/sf_datasets.txt.* /data/mdindex/yilu/cmt100000000')
+    run('mkdir -p /data/mdindex/yilu/cmt100000000/mh')
+    run('mkdir -p /data/mdindex/yilu/cmt100000000/mhl')
+    run('mkdir -p /data/mdindex/yilu/cmt100000000/sf')
+    run('mv /data/mdindex/yilu/cmt-dbgen/src/mapmatch_history.txt.* /data/mdindex/yilu/cmt100000000/mh')
+    run('mv /data/mdindex/yilu/cmt-dbgen/src/mapmatch_history_latest.txt.* /data/mdindex/yilu/cmt100000000/mhl')
+    run('mv /data/mdindex/yilu/cmt-dbgen/src/sf_datasets.txt.* /data/mdindex/yilu/cmt100000000/sf')
     run('rm -rf /data/mdindex/yilu/cmt-dbgen/src/*txt*')
     
