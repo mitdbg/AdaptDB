@@ -340,6 +340,8 @@ public class JoinOptimizer {
 
         // the current join attribute is different and the number of queries which have the same joinAttributes is large
 
+        JoinRobustTree.randGenerator.setSeed(0);
+
         boolean updated = false;
 
         byte[] oldJoinRobustTree = rt.marshall();
@@ -361,12 +363,12 @@ public class JoinOptimizer {
 
         } else {
             double totalAccessedOld = getNumTuplesAccessed(rt.getRoot());
-            double Accessed = getNumTuplesAccessed(rt.getRoot(), q);
-
+            double AccessedOld = getNumTuplesAccessed(rt.getRoot(), q);
             adjustJoinRobustTree(choices, q);
             populateBucketEstimates(rt.getRoot());
-            double totalAccessedNew = getNumTuplesAccessed(rt.getRoot(), q);
-            System.out.println("Accessed tuple counts: " + Accessed + " what if update?: " + totalAccessedNew);
+            double totalAccessedNew = getNumTuplesAccessed(rt.getRoot());
+            double AccessedNew = getNumTuplesAccessed(rt.getRoot(), q);
+            System.out.println("Accessed tuple counts: " + AccessedOld + " what if update?: " + AccessedNew);
 
             double benefit = totalAccessedOld - totalAccessedNew;
             double cost = this.computeCost(rt.getRoot()) * WRITE_MULTIPLIER;
@@ -893,9 +895,6 @@ public class JoinOptimizer {
         if(r.bucket !=null){
             if (r.bucket.getSample().size() == 0){
                 throw  new RuntimeException();
-            }
-            if(r.bucket.getBucketId() == 8929){
-                System.out.println(r.bucket.getSample().size());
             }
             return;
         }

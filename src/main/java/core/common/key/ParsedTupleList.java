@@ -70,7 +70,7 @@ public class ParsedTupleList {
 				keyValues[i] = key.getDateAttribute(i, new SimpleDate(0, 0, 0));
 				break;
 			case STRING:
-				keyValues[i] = key.getStringAttribute(i, 20);
+				keyValues[i] = key.getStringAttribute(i);
 				break;
 			case VARCHAR:
 				break; // skip partitioning on varchar attribute
@@ -403,7 +403,6 @@ public class ParsedTupleList {
 	public void unmarshall(byte[] bytes, char delimiter) {
 		RawIndexKey record = new RawIndexKey(delimiter);
 		int offset = 0, previous = 0;
-
 		for (; offset < bytes.length; offset++) {
 			if (bytes[offset] == '\n') {
 				byte[] lineBytes = ArrayUtils.subarray(bytes, previous, offset);

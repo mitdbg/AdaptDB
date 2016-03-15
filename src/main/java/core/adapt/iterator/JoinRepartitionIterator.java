@@ -124,7 +124,7 @@ public class JoinRepartitionIterator extends PartitionIterator {
     @Override
     protected boolean isRelevant(IteratorRecord record) {
         int id = newIndexTree.getBucketId(record);
-
+        
         Partition p;
         if (newPartitions.containsKey(id)) {
             p = newPartitions.get(id);

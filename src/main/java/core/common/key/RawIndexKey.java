@@ -83,7 +83,7 @@ public class RawIndexKey implements Cloneable {
         return new String(bytes, offset, length);
     }
 
-    public String getStringAttribute(int index, int maxSize) {
+    public String getStringAttribute(int index) {
         int off = attributeOffsets[index];
         int strSize;
         if (index < attributeOffsets.length - 1)
@@ -91,95 +91,44 @@ public class RawIndexKey implements Cloneable {
         else
             strSize = offset + length - off;
 
-        return new String(bytes, off, Math.min(strSize, maxSize));
+        return new String(bytes, off, strSize);
     }
 
     public int getIntAttribute(int index) {
         int off = attributeOffsets[index];
         int len;
         if (index < attributeOffsets.length - 1)
-            len = attributeOffsets[index + 1] - off - 1;
+            len = attributeOffsets[index + 1] - attributeOffsets[index]  - 1;
         else
-            len = offset + length - off;
+            len = length - off;
 
-        // Check for a sign.
-        int num = 0;
-        int sign = -1;
-        final char ch = (char) bytes[off];
-        if (ch == '-')
-            sign = 1;
-        else
-            num = '0' - ch;
+        int ret = Integer.parseInt(new String(bytes, attributeOffsets[index], len));
 
-        // Build the number.
-        int i = off + 1;
-        while (i < off + len)
-            num = num * 10 + '0' - (char) bytes[i++];
-
-        return sign * num;
+        return ret;
     }
 
     public long getLongAttribute(int index) {
         int off = attributeOffsets[index];
         int len;
         if (index < attributeOffsets.length - 1)
-            len = attributeOffsets[index + 1] - off - 1;
+            len = attributeOffsets[index + 1] - attributeOffsets[index]  - 1;
         else
-            len = offset + length - off;
+            len = length - off;
 
-        // Check for a sign.
-        long num = 0;
-        int sign = -1;
-        final char ch = (char) bytes[off];
-        if (ch == '-')
-            sign = 1;
-        else
-            num = '0' - ch;
+        long ret = Long.parseLong(new String(bytes, attributeOffsets[index], len));
 
-        // Build the number.
-        int i = off + 1;
-        while (i < off + len)
-            num = num * 10 + '0' - (char) bytes[i++];
-
-        return sign * num;
+        return ret;
     }
 
     public double getDoubleAttribute(int index) {
         int off = attributeOffsets[index];
         int len;
         if (index < attributeOffsets.length - 1)
-            len = attributeOffsets[index + 1] - 1;
+            len = attributeOffsets[index + 1] - attributeOffsets[index]  - 1;
         else
-            len = offset + length;
+            len = length - off;
 
-        double ret = 0d; // return value
-        long part = 0; // the current part (int, float and sci parts of the
-        // number)
-        boolean neg = false; // true if part is a negative number
-
-        // sign
-        if ((char) bytes[off] == '-') {
-            neg = true;
-            off++;
-        }
-
-        // integer part
-        while (off < len && (char) bytes[off] != '.')
-            part = part * 10 + ((char) bytes[off++] - '0');
-        ret = neg ? (double) (part * -1) : (double) part;
-
-        // float part
-        if (off < len) {
-            off++;
-            long mul = 1;
-            part = 0;
-            while (off < len) {
-                part = part * 10 + ((char) bytes[off++] - '0');
-                mul *= 10;
-            }
-            ret = neg ? ret - (double) part / (double) mul : ret + (double) part
-                    / (double) mul;
-        }
+        double ret = Double.parseDouble(new String(bytes, attributeOffsets[index], len));
 
         return ret;
     }

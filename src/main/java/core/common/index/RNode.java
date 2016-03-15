@@ -96,7 +96,7 @@ public class RNode {
 		case DATE:
 			return key.getDateAttribute(dimension);
 		case STRING:
-			return key.getStringAttribute(dimension, 20);
+			return key.getStringAttribute(dimension);
 		default:
 			throw new RuntimeException("Unknown dimension type: " + type);
 		}
@@ -115,8 +115,7 @@ public class RNode {
 			return ((SimpleDate) value).compareTo(key
 					.getDateAttribute(dimension));
 		case STRING:
-			return ((String) value).compareTo(key.getStringAttribute(dimension,
-					20));
+			return ((String) value).compareTo(key.getStringAttribute(dimension));
 		default:
 			throw new RuntimeException("Unknown dimension type: " + type);
 		}

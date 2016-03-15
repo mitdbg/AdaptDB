@@ -106,12 +106,10 @@ public class Query implements Serializable {
 				qualify &= p.isRelevant(record.getDateAttribute(attrIdx));
 				break;
 			case STRING:
-				qualify &= p.isRelevant(record.getStringAttribute(attrIdx,
-						20));
+				qualify &= p.isRelevant(record.getStringAttribute(attrIdx));
 				break;
 			case VARCHAR:
-				qualify &= p.isRelevant(record.getStringAttribute(attrIdx,
-						100));
+				qualify &= p.isRelevant(record.getStringAttribute(attrIdx));
 				break;
 			default:
 				throw new RuntimeException("Invalid data type!");

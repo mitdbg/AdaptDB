@@ -687,6 +687,10 @@ public class JoinPlanner {
                 }
                 int bucket = buckets.get(best_offset);
 
+                if(partitionSizes.get(bucket) == null){
+                    System.out.println(bucket + " is empty!");
+                }
+
                 splitAvailableSize -= partitionSizes.get(bucket);
 
                 if (splitAvailableSize >= 0) {
