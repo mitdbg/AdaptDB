@@ -260,9 +260,7 @@ public class CMTJoinWorkload {
             JoinQuery q_sf = q.get(1);
             JoinQuery q_mhl = new JoinQuery(MHL, schemaMHL.getAttributeId("mhl_mapmatch_history_id"), EmptyPredicates);
 
-
-
-            if(++iters == 1){
+            if(++iters == 5){
                 q_mh.setForceRepartition(true);
                 q_sf.setForceRepartition(true);
                 q_mhl.setForceRepartition(true);
@@ -271,7 +269,7 @@ public class CMTJoinWorkload {
             System.out.println("INFO: Query_MH:" + q_mh.toString());
             System.out.println("INFO: Query_sf:" + q_sf.toString());
 
-/*
+
             long start = System.currentTimeMillis();
 
             String stringMH_join_MHL = stringMH + ", " + stringMHL;
@@ -280,10 +278,6 @@ public class CMTJoinWorkload {
             JavaPairRDD<LongWritable, Text> mh_join_mhl_rdd = sq.createJoinRDD(MH, q_mh, "NULL",MHL, q_mhl, "NULL",  schemaMH_join_MHL.getAttributeId("mhl_dataset_id"));
             JavaPairRDD<LongWritable, Text> sf_rdd = sq.createScanRDD(SF, q_sf);
             JavaPairRDD<LongWritable, Tuple2<Text, Text>> rdd = mh_join_mhl_rdd.join(sf_rdd);
-            long result = rdd.count();
-*/
-            long start = System.currentTimeMillis();
-            JavaPairRDD<LongWritable, Text> rdd = sq.createScanRDD(MH, q_mh);
             long result = rdd.count();
 
             System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);

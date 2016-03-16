@@ -894,7 +894,7 @@ public class JoinOptimizer {
     public void checkNotEmpty(JRNode r){
         if(r.bucket !=null){
             if (r.bucket.getSample().size() == 0){
-                throw  new RuntimeException();
+                System.out.println(r.bucket.getBucketId());
             }
             return;
         }

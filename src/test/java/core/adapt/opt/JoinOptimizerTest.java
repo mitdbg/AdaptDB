@@ -426,6 +426,12 @@ public class JoinOptimizerTest {
 
         int iters = 0;
 
+        RawIndexKey key = new RawIndexKey('|');
+        byte[] sampleBytes = HDFSUtils.readFile(fs, "/user/yilu/mh/sample");
+
+        String samples = new String(sampleBytes);
+        String[] keys = samples.split("\n");
+
         for (ArrayList<JoinQuery> q: queries) {
 
             JoinQuery q_mh = q.get(0);
@@ -441,17 +447,41 @@ public class JoinOptimizerTest {
             JoinOptimizer opt = new JoinOptimizer(cfg);
 
             opt.loadIndex(tableInfo);
+
+
+            HashSet<Integer> bids = new HashSet<Integer>();
+
+            for(int i = 0 ;i < keys.length; i ++){
+                key.setBytes(keys[i].getBytes());
+                int bid = (int) opt.getIndex().getBucketId(key);
+                bids.add(bid);
+                if(bid == 3520){
+                    System.out.println(keys[i]);
+                }
+            }
+            int a = bids.size();
+
+            System.out.println("NUM of data blocks: " + opt.getIndex().getAllBuckets().length);
             opt.checkNotEmpty(opt.getIndex().getRoot());
             opt.loadQueries(tableInfo);
             opt.buildPlan(q_mh);
 
+            if(iters == 2) break;
         }
 
     }
 
     public static void main(String[] args) {
-        testCMT();
+        RawIndexKey key = new RawIndexKey('|');
 
+        String s = "0|1";
+
+        key.setBytes(s.getBytes());
+
+        long a = key.getLongAttribute(0);
+        long b = key.getLongAttribute(1);
+
+        System.out.println();
     }
 
 }

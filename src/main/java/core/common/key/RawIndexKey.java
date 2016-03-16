@@ -98,11 +98,11 @@ public class RawIndexKey implements Cloneable {
         int off = attributeOffsets[index];
         int len;
         if (index < attributeOffsets.length - 1)
-            len = attributeOffsets[index + 1] - attributeOffsets[index]  - 1;
+            len = attributeOffsets[index + 1] - off - 1;
         else
-            len = length - off;
+            len = offset + length - off;
 
-        int ret = Integer.parseInt(new String(bytes, attributeOffsets[index], len));
+        int ret = Integer.parseInt(new String(bytes, off, len));
 
         return ret;
     }
@@ -111,11 +111,11 @@ public class RawIndexKey implements Cloneable {
         int off = attributeOffsets[index];
         int len;
         if (index < attributeOffsets.length - 1)
-            len = attributeOffsets[index + 1] - attributeOffsets[index]  - 1;
+            len = attributeOffsets[index + 1] - off - 1;
         else
-            len = length - off;
+            len = offset + length - off;
 
-        long ret = Long.parseLong(new String(bytes, attributeOffsets[index], len));
+        long ret = Long.parseLong(new String(bytes, off, len));
 
         return ret;
     }
@@ -124,12 +124,11 @@ public class RawIndexKey implements Cloneable {
         int off = attributeOffsets[index];
         int len;
         if (index < attributeOffsets.length - 1)
-            len = attributeOffsets[index + 1] - attributeOffsets[index]  - 1;
+            len = attributeOffsets[index + 1] - off - 1;
         else
-            len = length - off;
+            len = offset + length - off;
 
-        double ret = Double.parseDouble(new String(bytes, attributeOffsets[index], len));
-
+        double ret = Double.parseDouble(new String(bytes, off, len));
         return ret;
     }
 
