@@ -70,13 +70,13 @@ sqlContext.sql(s"""CREATE TEMPORARY TABLE mapmatch_history (mh_id int, mh_datase
 		mh_raw_sampling_mode string, mh_data_count_magnetometer_samples string, 
 		mh_location_disabled_date string)
 USING com.databricks.spark.csv
-OPTIONS (path "/user/mdindex/cmt100/mapmatch_history.txt", header "false", delimiter "|")""")
+OPTIONS (path "/user/backup/cmt100000000/mh/data/*", header "false", delimiter "|")""")
 
 
 sqlContext.sql(s"""CREATE TEMPORARY TABLE mapmatch_history_latest (mhl_dataset_id int, mhl_mapmatch_history_id int
 		)
 USING com.databricks.spark.csv
-OPTIONS (path "/user/mdindex/cmt100/mapmatch_history_latest.txt", header "false", delimiter "|")""")
+OPTIONS (path "/user/backup/cmt100000000/mhl/data/*", header "false", delimiter "|")""")
 
 
 sqlContext.sql(s"""CREATE TEMPORARY TABLE sf_datasets (sf_id int, sf_uploadtime string, 
@@ -97,7 +97,7 @@ sqlContext.sql(s"""CREATE TEMPORARY TABLE sf_datasets (sf_id int, sf_uploadtime 
 		sf_gps_points_lsh_key_2 string, sf_gps_points_lsh_key_3 string, 
 		sf_hidden_by_support string)
 USING com.databricks.spark.csv
-OPTIONS (path "/user/mdindex/cmt100/sf_datasets.txt", header "false", delimiter "|")""")
+OPTIONS (path "/user/backup/cmt100000000/sf/data/*", header "false", delimiter "|")""")
 
 
 val table = sqlContext.sql(s"""SELECT mh_id, 

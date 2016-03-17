@@ -82,7 +82,7 @@ public class JoinPlanner {
         dataset1_MDIndex = dataset1_cutpoints == null;
         dataset2_MDIndex = dataset2_cutpoints == null;
 
-        System.out.println("dataset1_MDIndex? " + dataset1_MDIndex + " dataset2_MDIndex? " + dataset2_MDIndex) ;
+        System.out.println("dataset1_MDIndex? " + dataset1_MDIndex + " dataset2_MDIndex? " + dataset2_MDIndex);
 
         hyperJoinSplit = new ArrayList<PartitionSplit>();
         shuffleJoinSplit1 = new ArrayList<PartitionSplit>();
@@ -116,24 +116,22 @@ public class JoinPlanner {
         init_bucketInfo(dataset1_am, dataset2_am);
 
 
-        if (dataset1_MDIndex){
+        if (dataset1_MDIndex) {
             JoinRobustTree jrt1 = dataset1_am.getIndex();
             int joinAttribute1 = dataset1_am.opt.getJoinAttribute(jrt1.getRoot(), jrt1.joinAttributeDepth);
-            if(dataset2_MDIndex){
+            if (dataset2_MDIndex) {
                 JoinRobustTree jrt2 = dataset2_am.getIndex();
                 int joinAttribute2 = dataset2_am.opt.getJoinAttribute(jrt2.getRoot(), jrt2.joinAttributeDepth);
-                hyperjoin = joinAttribute1 ==  dataset1_query.getJoinAttribute() && joinAttribute2 == dataset2_query.getJoinAttribute();
-            }
-            else{
+                hyperjoin = joinAttribute1 == dataset1_query.getJoinAttribute() && joinAttribute2 == dataset2_query.getJoinAttribute();
+            } else {
                 hyperjoin = joinAttribute1 == dataset1_query.getJoinAttribute();
             }
-        }else{
-            if(dataset2_MDIndex){
+        } else {
+            if (dataset2_MDIndex) {
                 JoinRobustTree jrt2 = dataset2_am.getIndex();
                 int joinAttribute2 = dataset2_am.opt.getJoinAttribute(jrt2.getRoot(), jrt2.joinAttributeDepth);
                 hyperjoin = dataset2_query.getJoinAttribute() == joinAttribute2;
-            }
-            else{
+            } else {
                 hyperjoin = true;
             }
         }
@@ -175,7 +173,7 @@ public class JoinPlanner {
     }
 
 
-    public static void extractShuffleJoin(PartitionSplit[] splits, Map<Integer, Long> partitionSizes, ArrayList<PartitionSplit> shuffleJoinSplit, long maxSplitSize){
+    public static void extractShuffleJoin(PartitionSplit[] splits, Map<Integer, Long> partitionSizes, ArrayList<PartitionSplit> shuffleJoinSplit, long maxSplitSize) {
         for (int i = 0; i < splits.length; i++) {
             PartitionSplit split = splits[i];
             int[] bids = split.getPartitions();
@@ -197,7 +195,7 @@ public class JoinPlanner {
                     shuffleJoinSplit.add(hs);
                     total += hs.getPartitions().length;
                 }
-                if(total != shuffle_ids_int.length){
+                if (total != shuffle_ids_int.length) {
                     throw new RuntimeException("some partition is lost");
                 }
             }
@@ -244,7 +242,6 @@ public class JoinPlanner {
         }
 
 
-
         if (hyperjoin) {
             for (int i = 0; i < dataset1_splits.length; i++) {
                 PartitionSplit split = dataset1_splits[i];
@@ -268,15 +265,15 @@ public class JoinPlanner {
                         total += hs.getPartitions().length;
                     }
 
-                    if(total != hyper_ids_int.length){
+                    if (total != hyper_ids_int.length) {
                         throw new RuntimeException("some partition is lost");
                     }
                 }
             }
         } else {
 
-            extractShuffleJoin(dataset1_splits,dataset1_partitionSizes,shuffleJoinSplit1,  maxSplitSize );
-            extractShuffleJoin(dataset2_splits,dataset2_partitionSizes, shuffleJoinSplit2, maxSplitSize );
+            extractShuffleJoin(dataset1_splits, dataset1_partitionSizes, shuffleJoinSplit1, maxSplitSize);
+            extractShuffleJoin(dataset2_splits, dataset2_partitionSizes, shuffleJoinSplit2, maxSplitSize);
         }
     }
 
@@ -353,7 +350,7 @@ public class JoinPlanner {
         return sb.toString();
     }
 
-    public static String getShuffleJoinInputHelper(ArrayList<PartitionSplit> shuffleJoinSplit, HPJoinInput hpinput){
+    public static String getShuffleJoinInputHelper(ArrayList<PartitionSplit> shuffleJoinSplit, HPJoinInput hpinput) {
         // iter,1:100,2:120; ...
 
         StringBuilder sb = new StringBuilder();
@@ -492,7 +489,7 @@ public class JoinPlanner {
     }
 
 
-    private void init_overlap(int[] dataset1_splits,int[] dataset2_splits){
+    private void init_overlap(int[] dataset1_splits, int[] dataset2_splits) {
         // filtering
 
         HashSet<Integer> splits1 = new HashSet<Integer>();
@@ -603,17 +600,24 @@ public class JoinPlanner {
 
 
     public static ArrayList<PartitionSplit> resizeSplits(PartitionIterator partitionIter, int[] bids, Map<Integer, Long> partitionSizes, long maxSplitSize) {
+
+        // the size of a split could be larger than maxSplitSize, just in case a singel file is largen than this.
+
         ArrayList<PartitionSplit> resizedSplits = new ArrayList<PartitionSplit>();
         int it = 0;
         long totalsize = 0;
         ArrayList<Integer> cur_split = new ArrayList<Integer>();
 
         while (it < bids.length) {
-            if(partitionSizes.get(bids[it]) == null){
+            if (partitionSizes.get(bids[it]) == null) {
                 System.out.println(bids[it] + " is empty!");
             }
             long cur_size = partitionSizes.get(bids[it]);
-            if (totalsize + cur_size > maxSplitSize) {
+
+            totalsize += cur_size;
+            cur_split.add(bids[it]);
+
+            if (totalsize >= maxSplitSize) {
                 int[] split_bids = new int[cur_split.size()];
                 for (int i = 0; i < split_bids.length; i++) {
                     split_bids[i] = cur_split.get(i);
@@ -621,12 +625,7 @@ public class JoinPlanner {
                 PartitionSplit split = new PartitionSplit(split_bids, partitionIter);
                 resizedSplits.add(split);
                 cur_split = new ArrayList<Integer>();
-                cur_split.add(bids[it]);
-                totalsize = cur_size;
-
-            } else {
-                totalsize += cur_size;
-                cur_split.add(bids[it]);
+                totalsize = 0;
             }
             it++;
         }
@@ -663,7 +662,7 @@ public class JoinPlanner {
         while (size > 0) {
             ArrayList<Integer> cur_split = new ArrayList<Integer>();
             HashSet<Integer> chunks = new HashSet<Integer>();
-            long splitAvailableSize = maxSplitSize, totalSize = 0;
+            long splitAvailableSize = maxSplitSize;
             while (size > 0 && splitAvailableSize > 0) {
                 int maxIntersection = -1;
                 int best_offset = -1;
@@ -687,21 +686,20 @@ public class JoinPlanner {
                 }
                 int bucket = buckets.get(best_offset);
 
-                if(partitionSizes.get(bucket) == null){
+                if (partitionSizes.get(bucket) == null) {
                     System.out.println(bucket + " is empty!");
                 }
 
                 splitAvailableSize -= partitionSizes.get(bucket);
 
-                if (splitAvailableSize >= 0) {
-                    totalSize += partitionSizes.get(bucket);
-                    cur_split.add(bucket);
-                    for (int rhs : overlap_chunks.get(bucket)) {
-                        chunks.add(rhs);
-                    }
-                    buckets.remove(best_offset);
-                    size--;
+
+                cur_split.add(bucket);
+                for (int rhs : overlap_chunks.get(bucket)) {
+                    chunks.add(rhs);
                 }
+                buckets.remove(best_offset);
+                size--;
+
             }
 
             int[] split_bids = new int[cur_split.size()];
