@@ -211,6 +211,47 @@ public class ParsedTupleList {
 		return new Pair<ParsedTupleList, ParsedTupleList>(k1, k2);
 	}
 
+
+	/**
+	 * Split this key set by the median on the specified attribute. All keys
+	 * with the specified attribute larger than the median go in the second set.
+	 *
+	 * @return
+	 */
+	public Pair<ParsedTupleList, ParsedTupleList> splitByMedianLarger(
+			int attributeIdx) {
+		Object medianVal = values.get(values.size() / 2)[attributeIdx];
+		Comparator<Object> comp = TypeUtils.getComparatorForType(types[attributeIdx]);
+
+		int lo = 0;
+		int hi = values.size() - 1;
+		int res = -1;
+		while (lo <= hi) {
+			int mid = (lo + hi) / 2;
+			Object midVal = this.values.get(mid)[attributeIdx];
+			try {
+				if (comp.compare(midVal, medianVal) > 0) {
+					res = mid;
+					hi = mid - 1;
+				}
+				else
+				{
+					lo = mid + 1;
+				}
+
+			} catch (Exception e) {
+				System.out.println(midVal.toString() + " " + medianVal.toString() + " " + attributeIdx + " " + medianVal.getClass().getSimpleName() + " " + midVal.getClass().getSimpleName());
+				e.printStackTrace();
+			}
+		}
+
+		ParsedTupleList k1 = new ParsedTupleList(values.subList(0,
+				res), types);
+		ParsedTupleList k2 = new ParsedTupleList(values.subList(
+				res, values.size()), types);
+		return new Pair<ParsedTupleList, ParsedTupleList>(k1, k2);
+	}
+
 	/**
 	 * Split this key set by the median on the specified attribute. All keys
 	 * with the specified attribute equal to the median go in the second set.
@@ -301,7 +342,13 @@ public class ParsedTupleList {
 	public Pair<ParsedTupleList, ParsedTupleList> sortAndSplit(
 			final int attributeIdx) {
 		sort(attributeIdx);
-		return splitByMedian(attributeIdx);
+
+		Pair<ParsedTupleList, ParsedTupleList> halves = splitByMedian(attributeIdx);
+
+		if (halves.first.size() == 0 && !halves.second.getFirst(attributeIdx).equals(halves.second.getLast(attributeIdx))){
+			halves = splitByMedianLarger(attributeIdx);
+		}
+		return halves;
 	}
 
 	public List<Object[]> getValues() {
