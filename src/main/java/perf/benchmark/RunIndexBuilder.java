@@ -216,6 +216,24 @@ public class RunIndexBuilder {
 					cfg.getHDFS_REPLICATION_FACTOR()));
 	}
 
+	public void writePartitionsFromJoinIndex() {
+		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
+		byte[] indexBytes = HDFSUtils.readFile(fs, tableHDFSDir + "/index");
+
+		// Just load the index. For this we don't need to load the samples.
+		JoinRobustTree index = new JoinRobustTree(tableInfo);
+		index.unmarshall(indexBytes);
+
+		String dataDir = "/data";
+		builder.buildDistributedFromIndex(
+				index,
+				key,
+				inputsDir,
+				getHDFSWriter(
+						cfg.getHDFS_WORKING_DIR() + "/" + tableName + dataDir,
+						cfg.getHDFS_REPLICATION_FACTOR()));
+	}
+
 	public void loadSettings(String[] args) {
 		int counter = 0;
 
@@ -323,6 +341,9 @@ public class RunIndexBuilder {
 			break;
 		case 6:
 			t.writeOutSampleFile();
+			break;
+		case 7:
+			t.writePartitionsFromJoinIndex();
 			break;
 		default:
 			System.out.println("Unknown method " + t.method + " chosen");

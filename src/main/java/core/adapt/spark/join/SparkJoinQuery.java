@@ -1,10 +1,15 @@
 package core.adapt.spark.join;
 
 
+import core.adapt.AccessMethod.PartitionSplit;
 import core.adapt.JoinQuery;
+import core.adapt.iterator.PartitionIterator;
+import core.adapt.iterator.PostFilterIterator;
+import core.utils.HDFSUtils;
 import core.utils.RangePartitionerUtils;
 import core.utils.SparkUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -16,6 +21,7 @@ import org.apache.spark.api.java.function.PairFunction;
 
 import scala.Tuple2;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -78,7 +84,7 @@ public class SparkJoinQuery {
         queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
         queryConf.setHadoopHome(cfg.getHADOOP_HOME());
         queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
-        queryConf.setMaxSplitSize(1L * 1024 * 1024 * 1024); // 8 GB
+        queryConf.setMaxSplitSize(1L * 1024 * 1024 * 1024); // 1 GB
 
 
     }
@@ -112,7 +118,7 @@ public class SparkJoinQuery {
         String hdfsPath = cfg.getHDFS_WORKING_DIR();
 
         queryConf.setWorkingDir(hdfsPath);
-        queryConf.setJustAccess(true);
+        queryConf.setJustAccess(false);
 
         Configuration conf = ctx.hadoopConfiguration();
 
@@ -133,40 +139,41 @@ public class SparkJoinQuery {
 
         JoinPlanner planner = new JoinPlanner(conf);
 
-        // hyper join
+        JavaPairRDD<LongWritable, Text> rdd = null;
 
-        String hyperJoinInput = planner.getHyperJoinInput();
+        if (planner.hyperjoin){
+            // hyper join
+            String hyperJoinInput = planner.getHyperJoinInput();
+            System.out.println("hyperJoinInput: " + hyperJoinInput);
+            conf.set("DATASETINFO",hyperJoinInput);
+            rdd = createJoinRDD(hdfsPath);
 
-        System.out.println("hyperJoinInput: " + hyperJoinInput);
+        } else {
+            // shuffle join
 
-        conf.set("DATASETINFO",hyperJoinInput);
+            String input1 = planner.getShuffleJoinInput1();
+            String input2 = planner.getShuffleJoinInput2();
 
-        JavaPairRDD<LongWritable, Text> hyperjoinRDD = createJoinRDD(hdfsPath);
+            System.out.println("shuffleInput1: " + input1);
+            System.out.println("shuffleInput2: " + input2);
 
+            // set conf input;
+            conf.set("DATASET_QUERY", dataset1_query.toString());
+            conf.set("DATASETINFO", input1);
+            conf.set("DATASET", dataset1);
 
-        // shuffle join
+            JavaPairRDD<LongWritable, Text> dataset1RDD = createSingleTableRDD(hdfsPath, dataset1_query);
 
-        String input1 = planner.getShuffleJoinInput1();
-        String input2 = planner.getShuffleJoinInput2();
+            // set conf input;
+            conf.set("DATASET_QUERY", dataset2_query.toString());
+            conf.set("DATASETINFO", input2);
+            conf.set("DATASET", dataset2);
 
-        System.out.println("shuffleInput1: " + input1);
-        System.out.println("shuffleInput2: " + input2);
+            JavaPairRDD<LongWritable, Text> dataset2RDD = createSingleTableRDD(hdfsPath, dataset2_query);
 
-        // set conf input;
-        conf.set("DATASETFLAG", "1");
-        conf.set("DATASETINFO", input1);
+            rdd = dataset1RDD.join(dataset2RDD).mapToPair(new Mapper(Delimiter, partitionKey));
 
-        JavaPairRDD<LongWritable, Text> dataset1RDD = createSingleTableRDD(hdfsPath, dataset1_query);
-
-        // set conf input;
-        conf.set("DATASETFLAG", "2");
-        conf.set("DATASETINFO", input2);
-
-        JavaPairRDD<LongWritable, Text> dataset2RDD = createSingleTableRDD(hdfsPath, dataset2_query);
-
-        JavaPairRDD<LongWritable, Text> shufflejoinRDD = dataset1RDD.join(dataset2RDD).mapToPair(new Mapper(Delimiter, partitionKey));
-
-        JavaPairRDD<LongWritable, Text> rdd = hyperjoinRDD.union(shufflejoinRDD);
+        }
 
         return rdd;
     }
@@ -177,8 +184,69 @@ public class SparkJoinQuery {
                                                                 JoinQuery q) {
         queryConf.setWorkingDir(hdfsPath);
         queryConf.setJoinQuery(q);
+
         return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + hdfsPath + "/" + q.getTable() + "/data",
                 SparkScanInputFormat.class, LongWritable.class,
                 Text.class, ctx.hadoopConfiguration());
+    }
+
+    /* for tpch 6 */
+
+    public JavaPairRDD<LongWritable, Text> createScanRDD(String dataset, JoinQuery q) {
+
+        // set SparkQuery conf
+
+        String hdfsPath = cfg.getHDFS_WORKING_DIR();
+        queryConf.setJustAccess(false);
+        queryConf.setWorkingDir(hdfsPath);
+
+        Configuration conf = ctx.hadoopConfiguration();
+
+
+        conf.set("DATASET", dataset);
+        conf.set("DATASET_QUERY", q.toString());
+        conf.set("PARTITION_KEY", "0") ;
+        conf.set("JOINALGO", joinStrategy);
+        conf.set("DELIMITER", Delimiter);
+
+
+        FileSystem fs = HDFSUtils.getFSByHadoopHome(queryConf.getHadoopHome());
+
+
+        String workingDir = queryConf.getWorkingDir();
+        //System.out.println("INFO working dir: " + workingDir);
+
+        JoinAccessMethod dataset1_am = new JoinAccessMethod();
+        queryConf.setJoinQuery(q);
+
+        PartitionSplit[] dataset_splits;
+        dataset1_am.init(queryConf);
+
+
+        HPJoinInput dataset_hpinput = new HPJoinInput(true);
+        String input_dir = workingDir + "/" + dataset + "/data";
+        dataset_hpinput.initialize(JoinPlanner.listStatus(fs, input_dir), dataset1_am);
+
+        // optimize for the JoinRobustTree
+
+        System.out.println("Optimizing dataset");
+
+        dataset_splits = dataset_hpinput.getIndexScan(queryConf.getJustAccess(), q);
+
+        ArrayList<PartitionSplit> shuffleJoinSplit = new  ArrayList<PartitionSplit>();
+
+
+        JoinPlanner.extractShuffleJoin(dataset_splits,dataset_hpinput.getPartitionIdSizeMap(),shuffleJoinSplit,queryConf.getMaxSplitSize()  );
+
+        String input = JoinPlanner.getShuffleJoinInputHelper(shuffleJoinSplit, dataset_hpinput);
+
+        System.out.println("shuffleInput: " + input);
+
+        conf.set("DATASETINFO", input);
+
+
+        JavaPairRDD<LongWritable, Text> rdd = createSingleTableRDD(hdfsPath, q);
+
+        return rdd;
     }
 }

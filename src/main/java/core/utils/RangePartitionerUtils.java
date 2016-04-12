@@ -63,14 +63,14 @@ public class RangePartitionerUtils {
         for(int j = 0; j < small; j ++){
             pj += m / n;
             if(pi < cutpoints.length){
-                cutpoints[pi ++ ] = (int)keys[pj];
+                cutpoints[pi ++ ] = keys[pj];
             }
 
         }
         for(int j = 0; j < large; j ++){
             pj += m / n + 1;
             if(pi < cutpoints.length){
-                cutpoints[pi ++ ] = (int)keys[pj];
+                cutpoints[pi ++ ] = keys[pj];
             }
         }
 

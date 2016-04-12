@@ -49,7 +49,7 @@ public class RawIndexKeyTest extends TestCase {
 		key.setBytes(tuple1.getBytes());
 		// key.detectTypes();
 		String expected = tuple1.split("\\|")[8];
-		assertEquals(expected, key.getStringAttribute(8, 20));
+		assertEquals(expected, key.getStringAttribute(8));
 	}
 
 	public void testGetIntAttribute() {

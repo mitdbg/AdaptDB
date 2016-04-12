@@ -360,14 +360,18 @@ public class JoinRobustTree implements MDIndex {
 
     public static void printNode(JRNode node) {
         if (node.bucket != null) {
-            System.out.format("B");
+            System.out.println("B " + node.bucket.getBucketId());
         } else {
+            /*
             System.out.format("Node: %d %s { ", node.attribute,
                     node.value.toString());
             printNode(node.leftChild);
             System.out.print(" }{ ");
             printNode(node.rightChild);
             System.out.print(" }");
+            */
+            printNode(node.leftChild);
+            printNode(node.rightChild);
         }
     }
 

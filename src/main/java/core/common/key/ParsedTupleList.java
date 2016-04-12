@@ -70,7 +70,7 @@ public class ParsedTupleList {
 				keyValues[i] = key.getDateAttribute(i, new SimpleDate(0, 0, 0));
 				break;
 			case STRING:
-				keyValues[i] = key.getStringAttribute(i, 20);
+				keyValues[i] = key.getStringAttribute(i);
 				break;
 			case VARCHAR:
 				break; // skip partitioning on varchar attribute
@@ -211,6 +211,47 @@ public class ParsedTupleList {
 		return new Pair<ParsedTupleList, ParsedTupleList>(k1, k2);
 	}
 
+
+	/**
+	 * Split this key set by the median on the specified attribute. All keys
+	 * with the specified attribute larger than the median go in the second set.
+	 *
+	 * @return
+	 */
+	public Pair<ParsedTupleList, ParsedTupleList> splitByMedianLarger(
+			int attributeIdx) {
+		Object medianVal = values.get(values.size() / 2)[attributeIdx];
+		Comparator<Object> comp = TypeUtils.getComparatorForType(types[attributeIdx]);
+
+		int lo = 0;
+		int hi = values.size() - 1;
+		int res = -1;
+		while (lo <= hi) {
+			int mid = (lo + hi) / 2;
+			Object midVal = this.values.get(mid)[attributeIdx];
+			try {
+				if (comp.compare(midVal, medianVal) > 0) {
+					res = mid;
+					hi = mid - 1;
+				}
+				else
+				{
+					lo = mid + 1;
+				}
+
+			} catch (Exception e) {
+				System.out.println(midVal.toString() + " " + medianVal.toString() + " " + attributeIdx + " " + medianVal.getClass().getSimpleName() + " " + midVal.getClass().getSimpleName());
+				e.printStackTrace();
+			}
+		}
+
+		ParsedTupleList k1 = new ParsedTupleList(values.subList(0,
+				res), types);
+		ParsedTupleList k2 = new ParsedTupleList(values.subList(
+				res, values.size()), types);
+		return new Pair<ParsedTupleList, ParsedTupleList>(k1, k2);
+	}
+
 	/**
 	 * Split this key set by the median on the specified attribute. All keys
 	 * with the specified attribute equal to the median go in the second set.
@@ -220,12 +261,34 @@ public class ParsedTupleList {
 	public Pair<ParsedTupleList, ParsedTupleList> splitByMedian(
 			int attributeIdx) {
 		Object medianVal = values.get(values.size() / 2)[attributeIdx];
-		int firstIndex = getFirstIndexOfAttributeVal(attributeIdx,
-				types[attributeIdx], medianVal, values, 0);
+		Comparator<Object> comp = TypeUtils.getComparatorForType(types[attributeIdx]);
+
+		int lo = 0;
+		int hi = values.size() - 1;
+		int res = -1;
+		while (lo <= hi) {
+			int mid = (lo + hi) / 2;
+			Object midVal = this.values.get(mid)[attributeIdx];
+			try {
+				if (comp.compare(midVal, medianVal) >= 0) {
+					res = mid;
+					hi = mid - 1;
+				}
+				else
+				{
+					lo = mid + 1;
+				}
+
+			} catch (Exception e) {
+				System.out.println(midVal.toString() + " " + medianVal.toString() + " " + attributeIdx + " " + medianVal.getClass().getSimpleName() + " " + midVal.getClass().getSimpleName());
+				e.printStackTrace();
+			}
+		}
+
 		ParsedTupleList k1 = new ParsedTupleList(values.subList(0,
-				firstIndex), types);
+				res), types);
 		ParsedTupleList k2 = new ParsedTupleList(values.subList(
-				firstIndex, values.size()), types);
+				res, values.size()), types);
 		return new Pair<ParsedTupleList, ParsedTupleList>(k1, k2);
 	}
 
@@ -240,78 +303,34 @@ public class ParsedTupleList {
 
 		Comparator<Object> comp = TypeUtils.getComparatorForType(sortType);
 
-		// Finds the least k such that k >= value
+		// Finds the least k such that k > value
 		int lo = 0;
 		int hi = values.size() - 1;
-		while (lo < hi) {
-			int mid = lo + (hi - lo) / 2;
+		int res = values.size(); // assume every value is smaller than or equal to the given value
+		while (lo <= hi) {
+			int mid = (lo + hi) / 2;
 			Object midVal = this.values.get(mid)[attributeIdx];
 			try {
-				if (comp.compare(value, midVal) < 0)
-					hi = mid;
+				if (comp.compare(midVal, value) > 0) {
+					res = mid;
+					hi = mid - 1;
+				}
 				else
+				{
 					lo = mid + 1;
+				}
+
 			} catch (Exception e) {
 				System.out.println(midVal.toString() + " " + value.toString() + " " + attributeIdx + " " + value.getClass().getSimpleName() + " " + midVal.getClass().getSimpleName());
 				e.printStackTrace();
 			}
 		}
 
-		ParsedTupleList k1 = new ParsedTupleList(
-				values.subList(0, lo), types);
-		ParsedTupleList k2 = new ParsedTupleList(values.subList(lo,
-				values.size()), types);
-		return new Pair<ParsedTupleList, ParsedTupleList>(k1, k2);
-	}
 
-	private static int getFirstIndexOfAttributeVal(int attributeIdx, TYPE type,
-			Object val, List<Object[]> sublist, int start) {
-		if (sublist.size() == 0) {
-			return -1;
-		}
-		Object middle = sublist.get(sublist.size() / 2)[attributeIdx];
-		int comparison;
-		switch (type) {
-		case INT:
-			comparison = ((Integer) middle).compareTo((Integer) val);
-			break;
-		case LONG:
-			comparison = ((Long) middle).compareTo((Long) val);
-			break;
-		case DOUBLE:
-			comparison = ((Double) middle).compareTo((Double) val);
-			break;
-		case DATE:
-			comparison = ((SimpleDate) middle).compareTo((SimpleDate) val);
-			break;
-		case STRING:
-			comparison = ((String) middle).compareTo((String) val);
-			break;
-		case VARCHAR:
-			throw new RuntimeException("sorting over varchar is not supported"); // skip
-																					// partitioning
-																					// on
-																					// varchar
-																					// attribute
-		default:
-			throw new RuntimeException("Unknown dimension type: " + type);
-		}
-		if (comparison == 0) {
-			int firstIndex = getFirstIndexOfAttributeVal(attributeIdx, type,
-					val, sublist.subList(0, sublist.size() / 2), start);
-			if (firstIndex == -1) {
-				return start + sublist.size() / 2;
-			} else {
-				return firstIndex;
-			}
-		} else if (comparison > 0) {
-			return getFirstIndexOfAttributeVal(attributeIdx, type, val,
-					sublist.subList(0, sublist.size() / 2), start);
-		} else {
-			return getFirstIndexOfAttributeVal(attributeIdx, type, val,
-					sublist.subList(sublist.size() / 2 + 1, sublist.size()),
-					start + sublist.size() / 2 + 1);
-		}
+		ParsedTupleList	k1 = new ParsedTupleList(values.subList(0, res), types);
+		ParsedTupleList	k2 = new ParsedTupleList(values.subList(res, values.size()), types);
+
+		return new Pair<ParsedTupleList, ParsedTupleList>(k1, k2);
 	}
 
 	/**
@@ -323,7 +342,13 @@ public class ParsedTupleList {
 	public Pair<ParsedTupleList, ParsedTupleList> sortAndSplit(
 			final int attributeIdx) {
 		sort(attributeIdx);
-		return splitByMedian(attributeIdx);
+
+		Pair<ParsedTupleList, ParsedTupleList> halves = splitByMedian(attributeIdx);
+
+		if (halves.first.size() == 0 && !halves.second.getFirst(attributeIdx).equals(halves.second.getLast(attributeIdx))){
+			halves = splitByMedianLarger(attributeIdx);
+		}
+		return halves;
 	}
 
 	public List<Object[]> getValues() {
@@ -425,7 +450,6 @@ public class ParsedTupleList {
 	public void unmarshall(byte[] bytes, char delimiter) {
 		RawIndexKey record = new RawIndexKey(delimiter);
 		int offset = 0, previous = 0;
-
 		for (; offset < bytes.length; offset++) {
 			if (bytes[offset] == '\n') {
 				byte[] lineBytes = ArrayUtils.subarray(bytes, previous, offset);

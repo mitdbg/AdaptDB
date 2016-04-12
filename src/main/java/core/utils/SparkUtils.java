@@ -15,7 +15,9 @@ public class SparkUtils {
                 .set("spark.hadoop.cloneConf", "false")
                 .set("spark.executor.memory", cfg.getSPARK_EXECUTOR_MEMORY())
                 .set("spark.driver.memory", cfg.getSPARK_DRIVER_MEMORY())
-                .set("spark.task.cpus", cfg.getSPARK_TASK_CPUS());
+                .set("spark.task.cpus", cfg.getSPARK_TASK_CPUS())
+                .set("spark.hadoop.dfs.replication", "1");
+
         return sconf;
     }
 }

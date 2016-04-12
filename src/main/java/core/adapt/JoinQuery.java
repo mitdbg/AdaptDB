@@ -21,13 +21,15 @@ public class JoinQuery implements Serializable {
     private Predicate[] predicates;
     private String table;
     private int joinAttribute;
+    private boolean forceRepartition;
 
     public JoinQuery(String queryString) {
         String[] parts = queryString.split("\\|");
         this.table = parts[0];
         this.joinAttribute = Integer.parseInt(parts[1]);
-        if (parts.length > 2) {
-            String predString = parts[2].trim();
+        this.forceRepartition = Boolean.parseBoolean(parts[2]);
+        if (parts.length > 3) {
+            String predString = parts[3].trim();
             String[] predParts = predString.split(";");
             this.predicates = new Predicate[predParts.length];
             for (int i = 0; i < predParts.length; i++) {
@@ -42,6 +44,7 @@ public class JoinQuery implements Serializable {
         this.table = table;
         this.joinAttribute = joinAttribute;
         this.predicates = predicates;
+        this.forceRepartition = false;
     }
 
     public Predicate[] getPredicates() {
@@ -64,12 +67,19 @@ public class JoinQuery implements Serializable {
         Text.writeString(out, toString());
     }
 
+    public void setForceRepartition(boolean flag){
+        this.forceRepartition = flag;
+    }
+
+    public boolean getForceRepartition(){
+        return this.forceRepartition;
+    }
 
     @Override
     public String toString() {
         String stringPredicates = "";
         if (predicates.length != 0)
             stringPredicates = Joiner.on(";").join(predicates);
-        return table + "|" + joinAttribute + "|" + stringPredicates;
+        return table + "|" + joinAttribute + "|" + forceRepartition + "|" +  stringPredicates;
     }
 }

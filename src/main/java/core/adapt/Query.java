@@ -33,9 +33,8 @@ public class Query implements Serializable {
                 this.predicates[i] = new Predicate(predParts[i]);
             }
 		} else {
-			String msg = "Received a bad query string " + queryString;
-			System.err.println(msg);
-			throw new RuntimeException(msg);
+			// could be empty
+			this.predicates = new Predicate[0];
 		}
 
 		normalizeQuery();
@@ -107,12 +106,10 @@ public class Query implements Serializable {
 				qualify &= p.isRelevant(record.getDateAttribute(attrIdx));
 				break;
 			case STRING:
-				qualify &= p.isRelevant(record.getStringAttribute(attrIdx,
-						20));
+				qualify &= p.isRelevant(record.getStringAttribute(attrIdx));
 				break;
 			case VARCHAR:
-				qualify &= p.isRelevant(record.getStringAttribute(attrIdx,
-						100));
+				qualify &= p.isRelevant(record.getStringAttribute(attrIdx));
 				break;
 			default:
 				throw new RuntimeException("Invalid data type!");

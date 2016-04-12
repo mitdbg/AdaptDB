@@ -328,14 +328,14 @@ public class TPCHSparkJoinWorkload {
         long start = System.currentTimeMillis();
 
         System.out.println("SELECT * "
-                + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
-                + "JOIN customer ON c_custkey = o_custkey "
+                + "FROM customer JOIN orders ON c_custkey = o_custkey "
+                + "JOIN lineitem ON l_orderkey = o_orderkey "
                 + "JOIN part ON l_partkey = p_partkey "
                 + "WHERE " + customerPredicate + " and " + ordersPredicate + " and " +  partPredicate);
 
         DataFrame df = sqlContext.sql("SELECT * "
-                + "FROM lineitem JOIN orders ON  l_orderkey = o_orderkey "
-                + "JOIN customer ON c_custkey = o_custkey "
+                + "FROM customer JOIN orders ON c_custkey = o_custkey "
+                + "JOIN lineitem ON l_orderkey = o_orderkey "
                 + "JOIN part ON l_partkey = p_partkey "
                 + "WHERE " + customerPredicate + " and " + ordersPredicate + " and " +  partPredicate);
 
@@ -515,39 +515,31 @@ public class TPCHSparkJoinWorkload {
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start)  + "; Result: " + result);
     }
 
-    public void runWorkload(int numQueries) {
-        int queries[] = {3, 5, 6, 8, 10, 12, 14, 19};
-
-        for (int i = 0; i < numQueries; i++) {
-            int q = queries[rand.nextInt(queries.length)];
-            System.out.println("INFO: Running query " + q);
-            switch (q) {
-                case 3:
-                    tpch3();
-                    break;
-                case 5:
-                    tpch5();
-                    break;
-                case 6:
-                    tpch6();
-                    break;
-                case 8:
-                    tpch8();
-                    break;
-                case 10:
-                    tpch10();
-                    break;
-                case 12:
-                    tpch12();
-                    break;
-                case 14:
-                    tpch14();
-                    break;
-                case 19:
-                    tpch19();
-                    break;
-            }
-        }
+    public void runWorkload() {
+        System.out.println("Run TPCH-3");
+        rand.setSeed(0);
+        tpch3();
+        System.out.println("Run TPCH-5");
+        rand.setSeed(0);
+        tpch5();
+        System.out.println("Run TPCH-6");
+        rand.setSeed(0);
+        tpch6();
+        System.out.println("Run TPCH-8");
+        rand.setSeed(0);
+        tpch8();
+        System.out.println("Run TPCH-10");
+        rand.setSeed(0);
+        tpch10();
+        System.out.println("Run TPCH-12");
+        rand.setSeed(0);
+        tpch12();
+        System.out.println("Run TPCH-14");
+        rand.setSeed(0);
+        tpch14();
+        System.out.println("Run TPCH-19");
+        rand.setSeed(0);
+        tpch19();
     }
 
     public static void main(String[] args) {
@@ -561,34 +553,9 @@ public class TPCHSparkJoinWorkload {
 
         switch (t.method) {
             case 1:
-                System.out.println("Num Queries: " + t.numQueries);
-                t.runWorkload(t.numQueries);
+                t.runWorkload();
                 break;
-            case 2:
-                System.out.println("Run TPCH-3");
-                t.rand.setSeed(0);
-                t.tpch3();
-                System.out.println("Run TPCH-5");
-                t.rand.setSeed(0);
-                t.tpch5();
-                System.out.println("Run TPCH-6");
-                t.rand.setSeed(0);
-                t.tpch6();
-                System.out.println("Run TPCH-8");
-                t.rand.setSeed(0);
-                t.tpch8();
-                System.out.println("Run TPCH-10");
-                t.rand.setSeed(0);
-                t.tpch10();
-                System.out.println("Run TPCH-12");
-                t.rand.setSeed(0);
-                t.tpch12();
-                System.out.println("Run TPCH-14");
-                t.rand.setSeed(0);
-                t.tpch14();
-                System.out.println("Run TPCH-19");
-                t.rand.setSeed(0);
-                t.tpch19();
+
             default:
                 break;
         }

@@ -121,9 +121,6 @@ public class Predicate {
 		case GT:
 		case LEQ:
 			return value;
-
-			// TODO: LT is still wrong in this implementation
-			// Avoid using LT anywhere in the evaluation
 		case GEQ:
 			return TypeUtils.deltaLess(value, type);
 

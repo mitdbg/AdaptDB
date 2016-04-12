@@ -122,7 +122,7 @@ public class JRNode {
             case DATE:
                 return key.getDateAttribute(dimension);
             case STRING:
-                return key.getStringAttribute(dimension, 20);
+                return key.getStringAttribute(dimension);
             default:
                 throw new RuntimeException("Unknown dimension type: " + type);
         }
@@ -141,8 +141,7 @@ public class JRNode {
                 return ((SimpleDate) value).compareTo(key
                         .getDateAttribute(dimension));
             case STRING:
-                return ((String) value).compareTo(key.getStringAttribute(dimension,
-                        20));
+                return ((String) value).compareTo(key.getStringAttribute(dimension));
             default:
                 throw new RuntimeException("Unknown dimension type: " + type);
         }
@@ -193,6 +192,7 @@ public class JRNode {
                     }
                 }
             }
+
 
             List<JRNode> ret = null;
             if (goLeft) {

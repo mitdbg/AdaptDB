@@ -4,8 +4,9 @@ package core.adapt.iterator;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import core.common.globals.Globals;
 import core.common.index.JRNode;
@@ -37,11 +38,25 @@ import core.utils.HDFSUtils;
  * @author yil
  */
 public class JoinRepartitionIterator extends PartitionIterator {
+
+    /*
+    class PartitionStoreThread extends Thread {
+        Partition p;
+        PartitionStoreThread(Partition p){
+            this.p = p;
+        }
+        public void run() {
+            System.out.println("storing partition id " + p.getPartitionId());
+            p.store(true);
+        }
+    }
+    */
+
     private JRNode newIndexTree;
     protected String zookeeperHosts;
 
     protected Map<Integer, Partition> newPartitions = new HashMap<Integer, Partition>();
-    protected Map<Integer, Partition> oldPartitions = new HashMap<Integer, Partition>();
+    //protected Map<Integer, Partition> oldPartitions = new HashMap<Integer, Partition>();
 
     public JoinRepartitionIterator() {
     }
@@ -103,12 +118,13 @@ public class JoinRepartitionIterator extends PartitionIterator {
             tree.unmarshall(indexBytes);
             newIndexTree = tree.getRoot();
         }
-        oldPartitions.put(partition.getPartitionId(), partition);
+        //oldPartitions.put(partition.getPartitionId(), partition);
     }
 
     @Override
     protected boolean isRelevant(IteratorRecord record) {
         int id = newIndexTree.getBucketId(record);
+
         Partition p;
         if (newPartitions.containsKey(id)) {
             p = newPartitions.get(id);
@@ -125,10 +141,12 @@ public class JoinRepartitionIterator extends PartitionIterator {
     @Override
     public void finish() {
         if (zookeeperHosts != null) {
+
             for (Partition p : newPartitions.values()) {
                 System.out.println("storing partition id " + p.getPartitionId());
                 p.store(true);
             }
+
             /*
             for (Partition p : oldPartitions.values()) {
                 System.out.println("dropping old partition id "
@@ -136,7 +154,19 @@ public class JoinRepartitionIterator extends PartitionIterator {
                 p.drop();
             }
             */
-            oldPartitions = Maps.newHashMap();
+
+            /*
+
+            ExecutorService pool = Executors.newFixedThreadPool(20);
+
+            for (Partition p : newPartitions.values()) {
+                pool.submit( new PartitionStoreThread(p));
+            }
+
+            pool.shutdown();
+            */
+
+            //oldPartitions = Maps.newHashMap();
             newPartitions = Maps.newHashMap();
         } else {
             System.out.println("INFO: Zookeeper Hosts NULL");
