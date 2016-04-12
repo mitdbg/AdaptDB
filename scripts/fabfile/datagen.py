@@ -86,10 +86,26 @@ def move_data_cmt():
     run('nohup /data/mdindex/yilu/cmt100000000/move_data.sh >> /tmp/xxx 2>&1 < /dev/null &', pty=False)
 
 # Next run
-# ./spark-shell --master spark://128.30.77.86:7077 --packages com.databricks:spark-csv_2.11:1.2.0 --driver-memory 4G --executor-memory 100G -i <path to>/tpch.scala
+# ./spark-shell --master spark://128.30.77.86:7077 --packages com.databricks:spark-csv_2.11:1.2.0 --driver-memory 4G --executor-memory 100G -i <path to>/cmt.scala
 
+@serial
+def script_download_data_cmt():
+    global counter
+    run('rm -rf /data/mdindex/cmtd100')
+    run('mkdir /data/mdindex/cmtd100')
 
+    with cd('/data/mdindex/cmtd100'):
+        script = "#!/bin/bash\n"
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -get " + \
+            "/user/mdindex/cmt100/part-*%d /data/mdindex/cmtd100/\n" % counter
+        run('echo "%s" > download_data.sh' % script)
+        run('chmod +x download_data.sh')
 
+    counter += 1
+
+@parallel
+def download_data_cmt():
+    run('nohup /data/mdindex/cmtd100/download_data.sh >> /tmp/xxx 2>&1 < /dev/null &', pty=False)
 
 @parallel
 def create_script_stop_dbgen():

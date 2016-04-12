@@ -5,6 +5,9 @@ import core.common.globals.TableInfo;
 import core.utils.TypeUtils;
 import core.utils.TypeUtils.TYPE;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Predicate {
 	public enum PREDTYPE {
 		LEQ, GEQ, GT, LT, EQ
@@ -45,6 +48,31 @@ public class Predicate {
 			this.predtype = PREDTYPE.LEQ;
 			this.value = getHelpfulCutpoint();
 		}
+	}
+
+	public List<Predicate> getNormalizedPredicates() {
+		List<Predicate> preds = new ArrayList<Predicate>();
+		if (this.type == TYPE.INT || this.type == TYPE.DATE) {
+            if (this.predtype == PREDTYPE.GEQ) {
+                this.predtype = PREDTYPE.GT;
+				this.value = TypeUtils.deltaLess(value, type);
+				preds.add(this);
+            } else if (this.predtype == PREDTYPE.LT) {
+                this.predtype = PREDTYPE.LEQ;
+				this.value = TypeUtils.deltaLess(value, type);
+				preds.add(this);
+            } else if (this.predtype == PREDTYPE.EQ) {
+				Predicate pred1 = new Predicate(this.attribute, this.type, this.value, PREDTYPE.LEQ);
+				Predicate pred2 = new Predicate(this.attribute, this.type, TypeUtils.deltaLess(value, type), PREDTYPE.GT);
+				preds.add(pred1);
+				preds.add(pred2);
+			} else {
+				preds.add(this);
+			}
+		} else {
+			preds.add(this);
+		}
+		return preds;
 	}
 
 	/**
@@ -91,7 +119,6 @@ public class Predicate {
 		switch (this.predtype) {
 		case EQ:
 		case GT:
-		case LT:
 		case LEQ:
 			return value;
 
@@ -99,6 +126,12 @@ public class Predicate {
 			// Avoid using LT anywhere in the evaluation
 		case GEQ:
 			return TypeUtils.deltaLess(value, type);
+
+        case LT:
+			if (type == TYPE.INT || type == TYPE.DATE)
+				return TypeUtils.deltaLess(value, type);
+			else
+				return value;
 		default:
 			break;
 		}

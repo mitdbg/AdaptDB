@@ -171,6 +171,7 @@ public class Optimizer {
 		
 		List<RNode> newBuckets = rt.getMatchingBuckets(ps);
 		double cost = 0;
+		double tcost = 0;
 		List<Integer> modifiedBuckets = new ArrayList<>();
 		List<Integer> unmodifiedBuckets = new ArrayList<>();
 
@@ -186,17 +187,18 @@ public class Optimizer {
 			
 			if (found) {
 				unmodifiedBuckets.add(r.bucket.getBucketId());
+				tcost += r.bucket.getEstimatedNumTuples();
 			} else {
 				modifiedBuckets.add(r.bucket.getBucketId());
-				// TODO: Multiplier.
 				cost += Globals.c * r.bucket.getEstimatedNumTuples();
+				tcost += r.bucket.getEstimatedNumTuples();
 			}
 		}
 
 		FileSystem fs = HDFSUtils.getFSByHadoopHome(hadoopHome);
 		this.persistQueryToDisk(fs, q);
 		List<PartitionSplit> lps = new ArrayList<>();
-		System.out.println("INFO: Benefit " + benefit + " Cost " + cost);
+		System.out.println("INFO: Benefit " + benefit + " Cost " + cost + " Total Cost " + tcost);
 		if (benefit > cost) {
 			if (unmodifiedBuckets.size() > 0) {
 				PartitionIterator pi = new PostFilterIterator(q);
@@ -582,8 +584,6 @@ public class Optimizer {
 	 */
 	private void populateBucketEstimates(RNode changed) {
 		ParsedTupleList collector = null;
-		double numTuples = 0;
-		int numSamples = 0;
 
 		LinkedList<RNode> stack = new LinkedList<RNode>();
 		stack.add(changed);
@@ -596,8 +596,6 @@ public class Optimizer {
 					collector = new ParsedTupleList(bucketSample.getTypes());
 				}
 
-				numSamples += bucketSample.getValues().size();
-				numTuples += n.bucket.getEstimatedNumTuples();
 				collector.addValues(bucketSample.getValues());
 			} else {
 				stack.add(n.rightChild);
@@ -605,21 +603,21 @@ public class Optimizer {
 			}
 		}
 
-		populateBucketEstimates(changed, collector, numTuples / numSamples);
+		populateBucketEstimates(changed, collector);
 	}
 
-	private void populateBucketEstimates(RNode n, ParsedTupleList sample,
-			double scaleFactor) {
+	private void populateBucketEstimates(RNode n, ParsedTupleList sample) {
 		if (n.bucket != null) {
-			n.bucket.setEstimatedNumTuples(sample.size() * scaleFactor);
+			n.bucket.setEstimatedNumTuples(((1.0 * sample.size()) / rt.sample.size()) * rt.tableInfo.numTuples);
+            n.bucket.setSample(sample);
 		} else {
 			// By sorting we avoid memory allocation
 			// Will most probably be faster
 			sample.sort(n.attribute);
 			Pair<ParsedTupleList, ParsedTupleList> halves = sample
 					.splitAt(n.attribute, n.value);
-			populateBucketEstimates(n.leftChild, halves.first, scaleFactor);
-			populateBucketEstimates(n.rightChild, halves.second, scaleFactor);
+			populateBucketEstimates(n.leftChild, halves.first);
+			populateBucketEstimates(n.rightChild, halves.second);
 		}
 	}
 
@@ -634,7 +632,8 @@ public class Optimizer {
 		// If yes, find the number of tuples accessed.
 		double numTuples = 0;
 
-		for (int i = queryWindow.size() - 1; i >= 0; i--) {
+		// Access the last 20 queries at max.
+		for (int i = queryWindow.size() - 1; i >= Math.max(queryWindow.size() - Globals.window_size, 0); i--) {
 			Query q = queryWindow.get(i);
 			numTuples += getNumTuplesAccessed(changed, q);
 		}
