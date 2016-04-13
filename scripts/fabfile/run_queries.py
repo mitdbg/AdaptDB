@@ -4,8 +4,7 @@ from env_setup import *
 @roles('master')
 def shell():
     global conf
-    submit_script_path = "/Users/anil/Dev/tools/spark-1.6.0-bin-hadoop2.6/bin/spark-submit"
-    cmd = submit_script_path + ' --class perf.benchmark.Shell --deploy-mode client --master spark://localhost:7077 $JAR ' + \
+    cmd = '$SPARKSUBMIT --class perf.benchmark.Shell --deploy-mode client --master spark://localhost:7077 $JAR ' + \
         ' --conf $CONF '
     cmd = fill_cmd(cmd)
     run(cmd)
@@ -13,8 +12,7 @@ def shell():
 @roles('master')
 def run_tpch_queries():
     with cd(env.conf['HADOOPBIN']):
-        submit_script_path = "/Users/anil/Dev/tools/spark-1.6.0-bin-hadoop2.6/bin/spark-submit"
-        cmd = submit_script_path + ' --class perf.benchmark.TPCHWorkload --deploy-mode client --master spark://localhost:7077 $JAR ' + \
+        cmd = '$SPARKSUBMIT --class perf.benchmark.TPCHWorkload --deploy-mode client --master spark://localhost:7077 $JAR ' + \
             ' --conf $CONF' + \
             ' --numQueries 1' + \
             ' --method 1 > ~/logs/tpch_workload.log'
@@ -26,8 +24,7 @@ def print_tpch_queries():
     print "Num Queries: "
     num_queries = int(raw_input())
     with cd(env.conf['HADOOPBIN']):
-        submit_script_path = "/Users/anil/Dev/tools/spark-1.6.0-bin-hadoop2.6/bin/spark-submit"
-        cmd = submit_script_path + ' --class perf.benchmark.TPCHWorkload --deploy-mode client --master spark://localhost:7077 $JAR ' + \
+        cmd = '$SPARKSUBMIT --class perf.benchmark.TPCHWorkload --deploy-mode client --master spark://localhost:7077 $JAR ' + \
             ' --conf $CONF' + \
             ' --numQueries %d' % num_queries + \
             ' --method 2 > ~/logs/tpch_queries.log'
@@ -97,8 +94,7 @@ def run_cmtjoin():
 @roles('master')
 def run_cmt_queries():
     with cd(env.conf['HADOOPBIN']):
-        submit_script_path = "/Users/anil/Dev/tools/spark-1.6.0-bin-hadoop2.6/bin/spark-submit"
-        cmd = submit_script_path + ' --class perf.benchmark.CMTWorkload --deploy-mode client --master spark://localhost:7077 $JAR ' + \
+        cmd = '$SPARKSUBMIT --class perf.benchmark.CMTWorkload --deploy-mode client --master spark://localhost:7077 $JAR ' + \
             ' --conf $CONF' + \
             ' --schema "$SCHEMA"'  + \
             ' --numFields $NUMFIELDS' + \
@@ -110,8 +106,7 @@ def run_cmt_queries():
 @roles('master')
 def test_cmt_queries():
     with cd(env.conf['HADOOPBIN']):
-        submit_script_path = "/Users/anil/Dev/tools/spark-1.6.0-bin-hadoop2.6/bin/spark-submit"
-        cmd = submit_script_path + ' --class perf.benchmark.CMTWorkload --deploy-mode client --master spark://localhost:7077 $JAR ' + \
+        cmd = '$SPARKSUBMIT --class perf.benchmark.CMTWorkload --deploy-mode client --master spark://localhost:7077 $JAR ' + \
             ' --conf $CONF' + \
             ' --schema "$SCHEMA"'  + \
             ' --numFields $NUMFIELDS' + \
