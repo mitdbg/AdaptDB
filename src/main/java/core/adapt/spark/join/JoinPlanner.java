@@ -166,14 +166,14 @@ public class JoinPlanner {
 
         System.out.println("Input size: data1 " + dataset1_int_splits.length + " data2 " + dataset2_int_splits.length);
 
-        extractJoin(dataset1_splits, dataset1_hpinput.getPartitionIdSizeMap(), dataset2_splits, dataset2_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize());
+        extractJoin(dataset1_query, dataset1_splits, dataset1_hpinput.getPartitionIdSizeMap(), dataset2_query, dataset2_splits, dataset2_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize());
 
         System.out.println("done with JoinPlanner constructor");
 
     }
 
 
-    public static void extractShuffleJoin(PartitionSplit[] splits, Map<Integer, Long> partitionSizes, ArrayList<PartitionSplit> shuffleJoinSplit, long maxSplitSize) {
+    public static void extractShuffleJoin(JoinQuery dataset_query, PartitionSplit[] splits, Map<Integer, Long> partitionSizes, ArrayList<PartitionSplit> shuffleJoinSplit, long maxSplitSize, int worker_num) {
         for (int i = 0; i < splits.length; i++) {
             PartitionSplit split = splits[i];
             int[] bids = split.getPartitions();
@@ -190,7 +190,7 @@ public class JoinPlanner {
                     shuffle_ids_int[j] = shuffle_ids.get(j);
                 }
                 int total = 0;
-                ArrayList<PartitionSplit> shuffle_splits = resizeSplits(split.getIterator(), shuffle_ids_int, partitionSizes, maxSplitSize);
+                ArrayList<PartitionSplit> shuffle_splits = resizeSplits(split.getIterator(), shuffle_ids_int, partitionSizes, maxSplitSize, dataset_query, worker_num);
                 for (PartitionSplit hs : shuffle_splits) {
                     shuffleJoinSplit.add(hs);
                     total += hs.getPartitions().length;
@@ -202,7 +202,7 @@ public class JoinPlanner {
         }
     }
 
-    private void extractJoin(PartitionSplit[] dataset1_splits, Map<Integer, Long> dataset1_partitionSizes, PartitionSplit[] dataset2_splits, Map<Integer, Long> dataset2_partitionSizes, long maxSplitSize) {
+    private void extractJoin(JoinQuery dataset1_query, PartitionSplit[] dataset1_splits, Map<Integer, Long> dataset1_partitionSizes, JoinQuery dataset2_query, PartitionSplit[] dataset2_splits, Map<Integer, Long> dataset2_partitionSizes, long maxSplitSize) {
         // TODO: the threshold should be on the number of blocks on LHS, not RHS, since we are building hashtable on LHS
 
         HashMap<Integer, Integer> rightCounters = new HashMap<Integer, Integer>();
@@ -252,6 +252,7 @@ public class JoinPlanner {
                 for (int j = 0; j < bids.length; j++) {
                     hyper_ids.add(bids[j]);
                 }
+
                 if (hyper_ids.size() > 0) {
                     int[] hyper_ids_int = new int[hyper_ids.size()];
                     for (int j = 0; j < hyper_ids_int.length; j++) {
@@ -272,8 +273,8 @@ public class JoinPlanner {
             }
         } else {
 
-            extractShuffleJoin(dataset1_splits, dataset1_partitionSizes, shuffleJoinSplit1, maxSplitSize);
-            extractShuffleJoin(dataset2_splits, dataset2_partitionSizes, shuffleJoinSplit2, maxSplitSize);
+            extractShuffleJoin(dataset1_query, dataset1_splits, dataset1_partitionSizes, shuffleJoinSplit1, maxSplitSize, queryConf.getWorkerNum());
+            extractShuffleJoin(dataset2_query, dataset2_splits, dataset2_partitionSizes, shuffleJoinSplit2, maxSplitSize, queryConf.getWorkerNum());
         }
     }
 
@@ -599,46 +600,86 @@ public class JoinPlanner {
     }
 
 
-    public static ArrayList<PartitionSplit> resizeSplits(PartitionIterator partitionIter, int[] bids, Map<Integer, Long> partitionSizes, long maxSplitSize) {
+    public static ArrayList<PartitionSplit> resizeSplits(PartitionIterator partitionIter, int[] bids, Map<Integer, Long> partitionSizes, long maxSplitSize, JoinQuery dataset_query, int worker_num) {
 
         // the size of a split could be larger than maxSplitSize, just in case a singel file is largen than this.
 
         ArrayList<PartitionSplit> resizedSplits = new ArrayList<PartitionSplit>();
-        int it = 0;
-        long totalsize = 0;
-        ArrayList<Integer> cur_split = new ArrayList<Integer>();
 
-        while (it < bids.length) {
-            if (partitionSizes.get(bids[it]) == null) {
-                System.out.println(bids[it] + " is empty!");
+        if (dataset_query.getForceRepartition()) {
+            // split input into WORKER_NUM splits
+
+            ArrayList<ArrayList<Integer>> array_bids = new ArrayList<ArrayList<Integer>>();
+
+            for (int i = 0; i < worker_num; i++) {
+                array_bids.add(new ArrayList<Integer>());
             }
-            long cur_size = partitionSizes.get(bids[it]);
 
-            totalsize += cur_size;
-            cur_split.add(bids[it]);
+            for (int i = 0; i < bids.length; i++) {
+                array_bids.get(i % worker_num).add(bids[i]);
+            }
 
-            if (totalsize >= maxSplitSize) {
+            for (int i = 0; i < worker_num; i++) {
+
+                ArrayList<Integer> array_bid = array_bids.get(i);
+
+                int[] split_bids = new int[array_bid.size()];
+                for (int j = 0; j < array_bid.size(); j++) {
+                    split_bids[j] = array_bid.get(j);
+                }
+                PartitionSplit split = new PartitionSplit(split_bids, partitionIter);
+                resizedSplits.add(split);
+            }
+            return resizedSplits;
+        } else {
+            int it = 0;
+            long totalsize = 0;
+            ArrayList<Integer> cur_split = new ArrayList<Integer>();
+
+            while (it < bids.length) {
+                if (partitionSizes.get(bids[it]) == null) {
+                    System.out.println(bids[it] + " is empty!");
+                }
+                long cur_size = partitionSizes.get(bids[it]);
+
+                totalsize += cur_size;
+                cur_split.add(bids[it]);
+
+                if (totalsize >= maxSplitSize) {
+                    int[] split_bids = new int[cur_split.size()];
+                    for (int i = 0; i < split_bids.length; i++) {
+                        split_bids[i] = cur_split.get(i);
+                    }
+                    PartitionSplit split = new PartitionSplit(split_bids, partitionIter);
+                    resizedSplits.add(split);
+                    cur_split = new ArrayList<Integer>();
+                    totalsize = 0;
+                }
+                it++;
+            }
+
+            if (cur_split.size() > 0) {
                 int[] split_bids = new int[cur_split.size()];
                 for (int i = 0; i < split_bids.length; i++) {
                     split_bids[i] = cur_split.get(i);
                 }
                 PartitionSplit split = new PartitionSplit(split_bids, partitionIter);
                 resizedSplits.add(split);
-                cur_split = new ArrayList<Integer>();
-                totalsize = 0;
             }
-            it++;
+
+            int sum = 0;
+
+            for (PartitionSplit split : resizedSplits) {
+                sum += split.getPartitions().length;
+            }
+
+            if (sum != bids.length) {
+                throw new RuntimeException("miss some data blocks in resizeSplits");
+            }
+
+            return resizedSplits;
         }
 
-        if (cur_split.size() > 0) {
-            int[] split_bids = new int[cur_split.size()];
-            for (int i = 0; i < split_bids.length; i++) {
-                split_bids[i] = cur_split.get(i);
-            }
-            PartitionSplit split = new PartitionSplit(split_bids, partitionIter);
-            resizedSplits.add(split);
-        }
-        return resizedSplits;
     }
 
 
@@ -711,6 +752,18 @@ public class JoinPlanner {
             resizedSplits.add(split);
             //System.out.println("split size: " + totalSize + " " + Arrays.toString(split_bids));
         }
+
+        int sum = 0;
+
+        for (PartitionSplit split : resizedSplits) {
+            sum += split.getPartitions().length;
+        }
+
+        if (sum != bids.length) {
+            throw new RuntimeException("miss some data blocks in groupSplits");
+        }
+
+
         return resizedSplits;
     }
 

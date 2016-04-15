@@ -120,30 +120,45 @@ public class HDFSPartition extends Partition {
 		InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client,
 				"/partition-lock-" + path.hashCode() + "-" + partitionId);
 		System.out.println("LOCK: acquired lock,  " + "path=" + path
-				+ " , partition id=" + partitionId);
+				+ " , partition id=" + partitionId + " ,size= " + offset );
 
-		try {
-			String storePath = path + "/" + partitionId;
-			if (!path.startsWith("hdfs"))
-				storePath = "/" + storePath;
 
-			Path e = new Path(storePath);
-			FSDataOutputStream os;
-			if (append && hdfs.exists(e)) {
+		String storePath = path + "/" + partitionId;
+		if (!path.startsWith("hdfs"))
+			storePath = "/" + storePath;
+
+		Path e = new Path(storePath);
+
+		FSDataOutputStream os = null;
+
+		boolean shouldAppend = false;
+
+		try{
+			boolean overwrite = !append;
+			os = hdfs.create(e, overwrite, hdfs.getConf().getInt("io.file.buffer.size", 4096),
+					replication, hdfs.getDefaultBlockSize(e));
+
+			System.out.println("created partition " + partitionId);
+		}
+		catch(IOException ex){
+			shouldAppend = true;
+		}
+
+		try{
+			if(shouldAppend){
 				os = hdfs.append(e);
-			} else {
-				os = hdfs.create(new Path(storePath), replication);
-				System.out.println("created partition " + partitionId);
 			}
 			os.write(bytes, 0, offset);
 			os.flush();
 			os.close();
 			recordCount = 0;
-		} catch (IOException ex) {
+		}
+		catch(IOException ex){
 			System.out.println("exception: "
 					+ (new Timestamp(System.currentTimeMillis())));
-			throw new RuntimeException(ex.getMessage());
-		} finally {
+			//throw new RuntimeException(ex.getMessage());
+		}
+		finally {
 			CuratorUtils.releaseLock(l);
 			System.out.println("LOCK: released lock " + partitionId);
 		}

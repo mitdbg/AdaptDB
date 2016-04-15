@@ -78,7 +78,7 @@ public class SparkScanRecordReader extends
         join_attr = jq.getJoinAttribute();
 
 
-        key = new LongWritable();
+        key = new LongWritable(0);
         value = new Text();
 
         tupleCountInTable = 0;

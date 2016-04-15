@@ -46,8 +46,6 @@ public class TPCHJoinWorkload {
     private String stringCustomer, stringLineitem, stringOrders, stringPart, stringSupplier;
     private int sizeCustomer, sizeLineitem, sizeOrders, sizePart, sizeSupplier;
     private TableInfo tableLineitem, tableCustomer, tableOrders, tableSupplier, tablePart;
-    private ArrayList<Long> c_custkey_keys, l_orderkey_keys, s_suppkey_keys, p_partkey_keys;
-
 
     private String lineitem = "lineitem", orders = "orders", customer = "customer", supplier = "supplier", part = "part";
     private Predicate[] EmptyPredicates = {};
@@ -87,11 +85,6 @@ public class TPCHJoinWorkload {
         tablePart = new TableInfo(part, 0, '|', schemaPart);
 
         String workingDir = cfg.getHDFS_WORKING_DIR();
-
-        c_custkey_keys = RangePartitionerUtils.getKeys(cfg, tableCustomer, workingDir + "/" + customer + "/sample", schemaCustomer.getAttributeId("c_custkey"));
-        l_orderkey_keys = RangePartitionerUtils.getKeys(cfg, tableLineitem, workingDir + "/" + lineitem + "/sample", schemaLineitem.getAttributeId("l_orderkey"));
-        s_suppkey_keys = RangePartitionerUtils.getKeys(cfg, tableSupplier, workingDir + "/" + supplier + "/sample", schemaSupplier.getAttributeId("s_suppkey"));
-        p_partkey_keys = RangePartitionerUtils.getKeys(cfg, tablePart, workingDir + "/" + part + "/sample", schemaPart.getAttributeId("p_partkey"));
     }
 
     public void garbageCollect() {
@@ -232,7 +225,7 @@ public class TPCHJoinWorkload {
         (lineitem ⋈ orders) ⋈ customer
      */
 
-    public void tpch3(boolean forceRepartition) {
+    public void tpch3(boolean r_lineitem, boolean r_orders, boolean r_customer) {
 
         int rand_3 = rand.nextInt(mktSegmentVals.length);
         String c_mktsegment = mktSegmentVals[rand_3];
@@ -266,9 +259,9 @@ public class TPCHJoinWorkload {
         System.out.println("INFO: Query_lineitem:" + q_l.toString());
 
 
-        q_c.setForceRepartition(forceRepartition);
-        q_o.setForceRepartition(forceRepartition);
-        q_l.setForceRepartition(forceRepartition);
+        q_c.setForceRepartition(r_customer);
+        q_o.setForceRepartition(r_orders);
+        q_l.setForceRepartition(r_lineitem);
 
 
         long start = System.currentTimeMillis();
@@ -288,7 +281,7 @@ public class TPCHJoinWorkload {
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
 
-        garbageCollect();
+        //garbageCollect();
     }
 
     /*
@@ -311,7 +304,7 @@ public class TPCHJoinWorkload {
         ((customer ⋈ orders) ⋈ (lineitem ⋈ supplier))
      */
 
-    public void tpch5(boolean forceRepartition) {
+    public void tpch5(boolean r_customer, boolean r_orders, boolean r_lineitem, boolean r_supplier) {
         int rand_5 = rand.nextInt(regionNameVals.length);
         String r_name_5 = regionNameVals[rand_5];
         int year_5 = 1993 + rand.nextInt(5);
@@ -345,10 +338,10 @@ public class TPCHJoinWorkload {
         System.out.println("INFO: Query_supplier:" + q_s.toString());
 
 
-        q_s.setForceRepartition(forceRepartition);
-        q_c.setForceRepartition(forceRepartition);
-        q_o.setForceRepartition(forceRepartition);
-        q_l.setForceRepartition(forceRepartition);
+        q_s.setForceRepartition(r_supplier);
+        q_c.setForceRepartition(r_customer);
+        q_o.setForceRepartition(r_orders);
+        q_l.setForceRepartition(r_lineitem);
 
         long start = System.currentTimeMillis();
 
@@ -369,7 +362,8 @@ public class TPCHJoinWorkload {
 
         long result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
-        garbageCollect();
+
+        //garbageCollect();
     }
 
 
@@ -385,7 +379,7 @@ public class TPCHJoinWorkload {
             and l_quantity < [QUANTITY];
      */
 
-    public void tpch6(boolean forceRepartition) {
+    public void tpch6(boolean r_lineitem) {
         int year_6 = 1993 + rand.nextInt(5);
         SimpleDate d6_1 = new SimpleDate(year_6, 1, 1);
         SimpleDate d6_2 = new SimpleDate(year_6 + 1, 1, 1);
@@ -399,7 +393,7 @@ public class TPCHJoinWorkload {
         JoinQuery q_l = new JoinQuery(lineitem, 0, new Predicate[]{p1_6, p2_6, p3_6, p4_6, p5_6});
 
 
-        q_l.setForceRepartition(forceRepartition);
+        q_l.setForceRepartition(r_lineitem);
 
         //System.out.println("INFO: Query_lineitem:" + q_l.toString());
 
@@ -410,7 +404,8 @@ public class TPCHJoinWorkload {
         long result = rdd.count();
         long end = System.currentTimeMillis();
         System.out.println("RES: Time Taken: " + (end - start) + "; Result: " + result);
-        garbageCollect();
+
+        //garbageCollect();
     }
 
     /*
@@ -432,7 +427,7 @@ public class TPCHJoinWorkload {
         (lineitem ⋈ part) ⋈  (orders ⋈ customer)
     */
 
-    public void tpch8(boolean forceRepartition) {
+    public void tpch8(boolean r_lineitem, boolean r_part, boolean r_orders, boolean r_customer) {
 
         int rand_8_1 = rand.nextInt(regionNameVals.length);
         String r_name_8 = regionNameVals[rand_8_1];
@@ -461,10 +456,10 @@ public class TPCHJoinWorkload {
         System.out.println("INFO: Query_orders:" + q_o.toString());
         System.out.println("INFO: Query_part:" + q_p.toString());
 
-        q_o.setForceRepartition(forceRepartition);
-        q_p.setForceRepartition(forceRepartition);
-        q_c.setForceRepartition(forceRepartition);
-        q_l.setForceRepartition(forceRepartition);
+        q_o.setForceRepartition(r_orders);
+        q_p.setForceRepartition(r_part);
+        q_c.setForceRepartition(r_customer);
+        q_l.setForceRepartition(r_lineitem);
 
         long start = System.currentTimeMillis();
 
@@ -487,7 +482,7 @@ public class TPCHJoinWorkload {
 
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-        garbageCollect();
+        //garbageCollect();
     }
 
     /*
@@ -508,7 +503,7 @@ public class TPCHJoinWorkload {
      */
 
 
-    public void tpch10(boolean forceRepartition) {
+    public void tpch10(boolean r_lineitem, boolean r_orders, boolean r_customer) {
 
         String l_returnflag_10 = "R";
         String l_returnflag_prev_10 = "N";
@@ -530,9 +525,9 @@ public class TPCHJoinWorkload {
         System.out.println("INFO: Query_orders:" + q_o.toString());
 
 
-        q_l.setForceRepartition(forceRepartition);
-        q_o.setForceRepartition(forceRepartition);
-        q_c.setForceRepartition(forceRepartition);
+        q_l.setForceRepartition(r_lineitem);
+        q_o.setForceRepartition(r_orders);
+        q_c.setForceRepartition(r_customer);
 
 
         long start, end;
@@ -551,7 +546,7 @@ public class TPCHJoinWorkload {
 
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-        garbageCollect();
+        //garbageCollect();
     }
 
     /*
@@ -569,7 +564,7 @@ public class TPCHJoinWorkload {
         lineitem ⋈ orders
      */
 
-    public void tpch12(boolean forceRepartition) {
+    public void tpch12(boolean r_lineitem, boolean r_orders) {
         int rand_12 = rand.nextInt(shipModeVals.length);
         String shipmode_12 = shipModeVals[rand_12];
         int year_12 = 1993 + rand.nextInt(5);
@@ -592,8 +587,8 @@ public class TPCHJoinWorkload {
 
         System.out.println("INFO: Query_lineitem:" + q_l.toString());
 
-        q_l.setForceRepartition(forceRepartition);
-        q_o.setForceRepartition(forceRepartition);
+        q_l.setForceRepartition(r_lineitem);
+        q_o.setForceRepartition(r_orders);
 
 
         long start=  System.currentTimeMillis();
@@ -605,7 +600,8 @@ public class TPCHJoinWorkload {
 
         long result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
-        garbageCollect();
+
+        //garbageCollect();
     }
 
     /*
@@ -622,7 +618,7 @@ public class TPCHJoinWorkload {
         lineitem ⋈ part
      */
 
-    public void tpch14(boolean forceRepartition) {
+    public void tpch14(boolean r_lineitem, boolean r_part) {
 
         int year_14 = 1993;
         int monthOffset_14 = rand.nextInt(60);
@@ -638,8 +634,8 @@ public class TPCHJoinWorkload {
         System.out.println("INFO: Query_lineitem:" + q_l.toString());
 
 
-        q_l.setForceRepartition(forceRepartition);
-        q_p.setForceRepartition(forceRepartition);
+        q_l.setForceRepartition(r_lineitem);
+        q_p.setForceRepartition(r_part);
 
         long start=  System.currentTimeMillis();
 
@@ -649,7 +645,8 @@ public class TPCHJoinWorkload {
 
         long result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
-        garbageCollect();
+
+        //garbageCollect();
     }
 
     /*
@@ -671,7 +668,7 @@ public class TPCHJoinWorkload {
         lineitem ⋈ part
      */
 
-    public void tpch19(boolean forceRepartition) {
+    public void tpch19(boolean r_lineitem, boolean r_part) {
 
         String brand_19 = "Brand#" + (rand.nextInt(5) + 1) + "" + (rand.nextInt(5) + 1);
         String shipInstruct_19 = "DELIVER IN PERSON";
@@ -692,8 +689,8 @@ public class TPCHJoinWorkload {
         System.out.println("INFO: Query_lineitem:" + q_l.toString());
         System.out.println("INFO: Query_part:" + q_p.toString());
 
-        q_l.setForceRepartition(forceRepartition);
-        q_p.setForceRepartition(forceRepartition);
+        q_l.setForceRepartition(r_lineitem);
+        q_p.setForceRepartition(r_part);
 
 
         long start= System.currentTimeMillis();
@@ -705,84 +702,44 @@ public class TPCHJoinWorkload {
 
         long result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
-        garbageCollect();
+
+        //garbageCollect();
     }
 
     public void runSwitchingWorkload() {
         for (int i = 0; i < 160; i++) {
             if (i < 20) {
                 System.out.println("INFO: Running query TPC-H q3");
-                tpch3(i == 4);
+                tpch3(i == 4, i==4, i == 4);
             } else if (i < 40) {
                 System.out.println("INFO: Running query TPC-H q5");
-                tpch5(i == 24);
+                tpch5(false, i==24, i ==24, i==24);
             } else if (i < 60) {
                 System.out.println("INFO: Running query TPC-H q6");
-                tpch6(i == 44);
+                tpch6(false);
             } else if (i < 80) {
                 System.out.println("INFO: Running query TPC-H q8");
-                tpch8(i == 64);
+                tpch8(i == 64, i ==64, false, false);
             } else if (i < 100) {
                 System.out.println("INFO: Running query TPC-H q10");
-                tpch10(i == 84);
+                tpch10(i == 84, i ==84, false);
             } else if (i < 120) {
                 System.out.println("INFO: Running query TPC-H q12");
-                tpch12(i == 104);
+                tpch12(false, false);
             } else if (i < 140) {
                 System.out.println("INFO: Running query TPC-H q14");
-                tpch14(i == 124);
+                tpch14(i == 124, false);
             } else {
                 System.out.println("INFO: Running query TPC-H q19");
-                tpch19(i == 144);
+                tpch19(false, false);
             }
         }
     }
 
-    public void runSmallSwitchingWorkloadOnlyRepartition() {
-        rand.setSeed(0);
-        tpch3(true);
-        tpch5(true);
-        tpch6(true);
-        tpch8(true);
-        tpch10(true);
-        tpch12(true);
-        tpch14(true);
-        tpch19(true);
-    }
 
-
-    public void runSmallSwitchingWorkload() {
-        rand.setSeed(0);
-        for (int i = 0; i < 16; i++) {
-            if (i < 2) {
-                System.out.println("INFO: Running query TPC-H q3");
-                tpch3(false);
-            } else if (i < 4) {
-                System.out.println("INFO: Running query TPC-H q5");
-                tpch5(i == 2);
-            } else if (i < 6) {
-                System.out.println("INFO: Running query TPC-H q6");
-                tpch6(i == 4);
-            } else if (i < 8) {
-                System.out.println("INFO: Running query TPC-H q8");
-                tpch8(i == 6);
-            } else if (i < 10) {
-                System.out.println("INFO: Running query TPC-H q10");
-                tpch10(i == 8);
-            } else if (i < 12) {
-                System.out.println("INFO: Running query TPC-H q12");
-                tpch12(i == 10);
-            } else if (i < 14) {
-                System.out.println("INFO: Running query TPC-H q14");
-                tpch14(i == 12);
-            } else {
-                System.out.println("INFO: Running query TPC-H q19");
-                tpch19(i == 14);
-            }
-        }
-    }
     public void runShiftingWorkload() {
 
+        //int skipuntil = 13;
         int[] numQueries = new int[20];
 
         for (int i = 0; i < 140; i++) {
@@ -790,35 +747,35 @@ public class TPCHJoinWorkload {
                 double p = (20 - i) / 20.0;
                 if (rand.nextDouble() <= p) {
                     System.out.println("INFO: Running query TPC-H q3");
-                    tpch3(false);
+                    numQueries[3]++;
+                    tpch3(numQueries[3] == 5, numQueries[3] == 5, numQueries[3] == 5);
                 } else {
                     System.out.println("INFO: Running query TPC-H q5");
                     numQueries[5]++;
-                    tpch5(numQueries[5] == 5);
+                    tpch5(numQueries[3] + numQueries[5] == 5, numQueries[5] == 5, numQueries[5] == 5, numQueries[5] == 5);
                 }
             } else if (i < 40) {
                 double p = (40 - i) / 20.0;
                 if (rand.nextDouble() <= p) {
                     System.out.println("INFO: Running query TPC-H q5");
                     numQueries[5]++;
-                    tpch5(numQueries[5] == 5);
+                    tpch5(numQueries[3] + numQueries[5] == 5, numQueries[5] == 5, numQueries[5] == 5, numQueries[5] == 5);
                 } else {
                     System.out.println("INFO: Running query TPC-H q6");
                     numQueries[6]++;
-                    tpch6(numQueries[6] == 5);
+                    tpch6(false);
                 }
-
             } else if (i < 60) {
 
                 double p = (60 - i) / 20.0;
                 if (rand.nextDouble() <= p) {
                     System.out.println("INFO: Running query TPC-H q6");
                     numQueries[6]++;
-                    tpch6(numQueries[6] == 5);
+                    tpch6(false);
                 } else {
                     System.out.println("INFO: Running query TPC-H q8");
                     numQueries[8]++;
-                    tpch8(numQueries[8] == 5);
+                    tpch8(numQueries[8] == 5, numQueries[8] == 5, false, false);
                 }
             } else if (i < 80) {
 
@@ -826,22 +783,22 @@ public class TPCHJoinWorkload {
                 if (rand.nextDouble() <= p) {
                     System.out.println("INFO: Running query TPC-H q8");
                     numQueries[8]++;
-                    tpch8(numQueries[8] == 5);
+                    tpch8(numQueries[8] == 5, numQueries[8] == 5, false, false);
                 } else {
                     System.out.println("INFO: Running query TPC-H q10");
                     numQueries[10]++;
-                    tpch10(numQueries[10] == 5);
+                    tpch10(numQueries[10] == 5, numQueries[10] == 5,false);
                 }
             } else if (i < 100) {
                 double p = (100 - i) / 20.0;
                 if (rand.nextDouble() <= p) {
                     System.out.println("INFO: Running query TPC-H q10");
                     numQueries[10]++;
-                    tpch10(numQueries[10] == 5);
+                    tpch10(numQueries[10] == 5, numQueries[10] == 5,false);
                 } else {
                     System.out.println("INFO: Running query TPC-H q12");
                     numQueries[12]++;
-                    tpch12(numQueries[12] == 5);
+                    tpch12(false, false);
                 }
 
             } else if (i < 120) {
@@ -849,11 +806,11 @@ public class TPCHJoinWorkload {
                 if (rand.nextDouble() <= p) {
                     System.out.println("INFO: Running query TPC-H q12");
                     numQueries[12]++;
-                    tpch12(numQueries[12] == 5);
+                    tpch12(false, false);
                 } else {
                     System.out.println("INFO: Running query TPC-H q14");
                     numQueries[14]++;
-                    tpch14(numQueries[14] == 5);
+                    tpch14(numQueries[14] == 5, false);
                 }
 
             } else if (i < 140) {
@@ -861,11 +818,11 @@ public class TPCHJoinWorkload {
                 if (rand.nextDouble() <= p) {
                     System.out.println("INFO: Running query TPC-H q14");
                     numQueries[14]++;
-                    tpch14(numQueries[14] == 5);
+                    tpch14(numQueries[14] == 5, false);
                 } else {
                     System.out.println("INFO: Running query TPC-H q19");
                     numQueries[19]++;
-                    tpch19(numQueries[19] == 5);
+                    tpch19(false, false);
                 }
             }
         }
@@ -878,12 +835,12 @@ public class TPCHJoinWorkload {
         rand.setSeed(0);
         for(int i = 0; i< 10; i ++){
             System.out.println("INFO: Running query TPC-H q3");
-            tpch3(false);
+            tpch3(false, false, false);
         }
         rand.setSeed(0);
         for(int i = 0; i< 10; i ++){
             System.out.println("INFO: Running query TPC-H q5");
-            tpch5(false);
+            tpch5(false, false, false, false);
         }
         rand.setSeed(0);
         for(int i = 0; i< 10; i ++){
@@ -893,29 +850,84 @@ public class TPCHJoinWorkload {
         rand.setSeed(0);
         for(int i = 0; i< 10; i ++){
             System.out.println("INFO: Running query TPC-H q8");
-            tpch8(false);
+            tpch8(false, false, false,false);
         }
         rand.setSeed(0);
         for(int i = 0; i< 10; i ++){
             System.out.println("INFO: Running query TPC-H q10");
-            tpch10(false);
+            tpch10(false, false, false);
         }
         rand.setSeed(0);
         for(int i = 0; i< 10; i ++){
             System.out.println("INFO: Running query TPC-H q12");
-            tpch12(false);
+            tpch12(false, false);
         }
         rand.setSeed(0);
         for(int i = 0; i< 10; i ++){
             System.out.println("INFO: Running query TPC-H q14");
-            tpch14(false);
+            tpch14(false, false);
         }
         rand.setSeed(0);
         for(int i = 0; i< 10; i ++){
             System.out.println("INFO: Running query TPC-H q19");
-            tpch19(false);
+            tpch19(false, false);
         }
 
+    }
+
+
+    public void runTest3(){
+
+        for(int i = 0 ;i <10 ;i ++){
+            tpch3(i == 0, i == 0, i == 0);
+        }
+    }
+
+    public void runTest5(){
+
+        for(int i = 0 ;i <10 ;i ++){
+            tpch5(i == 0, i == 0, i == 0, i == 0);
+        }
+    }
+
+    public void runTest6(){
+
+        for(int i = 0 ;i <10 ;i ++){
+            tpch6(i == 0);
+        }
+    }
+
+    public void runTest8(){
+
+        for(int i = 0 ;i <10 ;i ++){
+            tpch8(i == 0, i == 0, i == 0, i == 0);
+        }
+    }
+
+
+    public void runTest10(){
+
+        for(int i = 0 ;i <10 ;i ++){
+            tpch10(i == 0, i == 0, i == 0);
+        }
+    }
+    public void runTest12(){
+
+        for(int i = 0 ;i <10 ;i ++){
+            tpch12(i == 0, i == 0);
+        }
+    }
+    public void runTest14(){
+
+        for(int i = 0 ;i <10 ;i ++){
+            tpch14(i == 0, i == 0);
+        }
+    }
+    public void runTest19(){
+
+        for(int i = 0 ;i <10 ;i ++){
+            tpch19(i == 0, i == 0);
+        }
     }
 
     public static void main(String[] args) {
@@ -939,15 +951,37 @@ public class TPCHJoinWorkload {
                 t.runUpfrontWorkload();
                 break;
             case 4:
-                t.runSmallSwitchingWorkload();
+                t.runTest3();
                 break;
             case 5:
-                t.runSmallSwitchingWorkloadOnlyRepartition();
+                t.runTest5();
                 break;
+            case 6:
+                t.runTest6();
+                break;
+            case 7:
+                t.runTest8();
+                break;
+            case 8:
+                t.runTest10();
+                break;
+            case 9:
+                t.runTest12();
+                break;
+            case 10:
+                t.runTest14();
+                break;
+            case 11:
+                t.runTest19();
+                break;
+            case 12:
+                t.garbageCollect();
+                break;
+
             default:
                 break;
         }
 
-        t.garbageCollect();
+        //t.garbageCollect();
     }
 }

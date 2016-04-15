@@ -9,6 +9,7 @@ import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.SQLContext;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 
@@ -128,7 +129,7 @@ public class CMTSparkJoinWorkload {
                 + "mh_raw_sampling_mode string, mh_data_count_magnetometer_samples string, "
                 + " mh_location_disabled_date string) "
                 + "USING com.databricks.spark.csv "
-                + "OPTIONS (path \"" + mhPath + "\", header \"false\", delimiter \";\")");
+                + "OPTIONS (path \"" + mhPath + "\", header \"false\", delimiter \"|\")");
 
         // Create MHL table
         String mhlPath = cfg.getHDFS_WORKING_DIR() + "/" + MHL + "/data";
@@ -136,7 +137,7 @@ public class CMTSparkJoinWorkload {
         sqlContext.sql("CREATE TEMPORARY TABLE mapmatch_history_latest (mhl_dataset_id int, "
                 + "mhl_mapmatch_history_id int) "
                 + "USING com.databricks.spark.csv "
-                + "OPTIONS (path \"" + mhlPath + "\", header \"false\", delimiter \";\")");
+                + "OPTIONS (path \"" + mhlPath + "\", header \"false\", delimiter \"|\")");
 
         // Create SF table
         String sfPath = cfg.getHDFS_WORKING_DIR() + "/" + SF + "/data";
@@ -159,7 +160,7 @@ public class CMTSparkJoinWorkload {
                 + " sf_gps_points_lsh_key_2 string, sf_gps_points_lsh_key_3 string, "
                 + " sf_hidden_by_support string) "
                 + "USING com.databricks.spark.csv "
-                + "OPTIONS (path \"" + sfPath + "\", header \"false\", delimiter \";\")");
+                + "OPTIONS (path \"" + sfPath + "\", header \"false\", delimiter \"|\")");
 
     }
 
@@ -188,7 +189,7 @@ public class CMTSparkJoinWorkload {
     public ArrayList<String> generateWorkload() {
         byte[] stringBytes = HDFSUtils.readFile(
                 HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
-                "/user/mdindex/cmt_queries.log");
+                "/user/yilu/cmt100000000/cmt_queries.log");
         String queriesString = new String(stringBytes);
         String[] queries = queriesString.split("\n");
         ArrayList<String> ret = new ArrayList<String>();
@@ -206,7 +207,7 @@ public class CMTSparkJoinWorkload {
 
         int cnt = 0;
 
-        ArrayList<String> queries = generateWorkload();
+        List<String> queries = generateWorkload();
 
         for (String q : queries) {
 
@@ -225,7 +226,6 @@ public class CMTSparkJoinWorkload {
             String result = df.collect()[0].toString();
             System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
 
-            if (++cnt == 5) break;
         }
     }
 

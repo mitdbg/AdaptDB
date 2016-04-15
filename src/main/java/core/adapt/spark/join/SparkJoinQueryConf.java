@@ -20,6 +20,7 @@ public class SparkJoinQueryConf {
     public final static String HDFS_REPLICATION_FACTOR = "HDFS_REPLICATION_FACTOR";
     public final static String SCHEMA = "SCHEMA";
     public final static String CARTILAGE_PROPERTIES = "CARTILAGE_PROPERTIES";
+    public final static String WORKER_NUM = "WORKER_NUM";
 
     private Configuration conf;
 
@@ -72,8 +73,18 @@ public class SparkJoinQueryConf {
         return Long.parseLong(conf.get(MAX_SPLIT_SIZE));
     }
 
+
+
     public void setMinSplitSize(long minSplitSize) {
         conf.set(MIN_SPLIT_SIZE, "" + minSplitSize);
+    }
+
+    public void setWorkerNum(int num){
+        conf.set(WORKER_NUM, "" + num);
+    }
+
+    public int getWorkerNum(){
+        return Integer.parseInt(conf.get(WORKER_NUM));
     }
 
     public long getMinSplitSize() {

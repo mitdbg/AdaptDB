@@ -75,6 +75,10 @@ public class Partition implements Cloneable, Serializable {
 		return path;
 	}
 
+	public int size(){
+		return offset;
+	}
+
 	public boolean load() {
 		if (path == null || path.equals(""))
 			return false;

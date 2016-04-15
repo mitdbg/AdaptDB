@@ -84,9 +84,8 @@ public class SparkJoinQuery {
         queryConf.setHDFSReplicationFactor(cfg.getHDFS_REPLICATION_FACTOR());
         queryConf.setHadoopHome(cfg.getHADOOP_HOME());
         queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
-        queryConf.setMaxSplitSize(1L * 1024 * 1024 * 1024); // 1 GB
-
-
+        queryConf.setMaxSplitSize(4L * 1024 * 1024 * 1024); // 4 GB
+        queryConf.setWorkerNum(9);
     }
 
     public void setDelimiter(String delimiter) {
@@ -171,7 +170,15 @@ public class SparkJoinQuery {
 
             JavaPairRDD<LongWritable, Text> dataset2RDD = createSingleTableRDD(hdfsPath, dataset2_query);
 
-            rdd = dataset1RDD.join(dataset2RDD).mapToPair(new Mapper(Delimiter, partitionKey));
+            int numPartitions = 200;
+
+            if(dataset1_query.getForceRepartition() || dataset2_query.getForceRepartition()){
+                numPartitions = 2000;
+            }
+
+            JavaPairRDD<LongWritable, Tuple2<Text,Text> > join_rdd = dataset1RDD.join(dataset2RDD, numPartitions);
+
+            rdd = join_rdd.mapToPair(new Mapper(Delimiter, partitionKey));
 
         }
 
@@ -236,14 +243,13 @@ public class SparkJoinQuery {
         ArrayList<PartitionSplit> shuffleJoinSplit = new  ArrayList<PartitionSplit>();
 
 
-        JoinPlanner.extractShuffleJoin(dataset_splits,dataset_hpinput.getPartitionIdSizeMap(),shuffleJoinSplit,queryConf.getMaxSplitSize()  );
+        JoinPlanner.extractShuffleJoin(q, dataset_splits,dataset_hpinput.getPartitionIdSizeMap(),shuffleJoinSplit,queryConf.getMaxSplitSize(), queryConf.getWorkerNum() );
 
         String input = JoinPlanner.getShuffleJoinInputHelper(shuffleJoinSplit, dataset_hpinput);
 
         System.out.println("shuffleInput: " + input);
 
         conf.set("DATASETINFO", input);
-
 
         JavaPairRDD<LongWritable, Text> rdd = createSingleTableRDD(hdfsPath, q);
 

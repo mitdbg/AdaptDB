@@ -135,6 +135,12 @@ public class JoinRepartitionIterator extends PartitionIterator {
         }
 
         p.write(record.getBytes(), 0, record.getBytes().length);
+
+        if (p.size() > 2 * 1024 * 1024 ){ // 2mb
+            p.store(true);
+            newPartitions.remove(id);
+        }
+
         return query.qualifies(record);
     }
 

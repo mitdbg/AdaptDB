@@ -17,7 +17,7 @@ public class CuratorUtils {
 	 */
 	private static int baseSleepTimeMills = 10000;
 	private static int maxRetries = 4;
-	private static int waitTimeSeconds = 1000;
+	private static int waitTimeSeconds = 10000;
 
 	private static int sessionTimeout = 200000;
 	private static int connectionTimeout = 20000;

@@ -329,10 +329,31 @@ public class JoinOptimizerTest {
         TableInfo tableInfo = Globals.getTableInfo(lineitem);
 
 
-
         JoinRobustTree.randGenerator.setSeed(0);
 
 
+        for (int i = 0; i < 100; i++) {
+
+            JoinQuery q = tpch10();
+            System.out.printf("TPCH12 Query %d: %s\n", i, q);
+            // Load table info.
+
+            if(i==0){
+                q.setForceRepartition(true);
+            }
+
+
+            JoinOptimizer opt = new JoinOptimizer(cfg);
+            opt.loadIndex(tableInfo);
+
+            opt.checkNotEmpty(opt.getIndex().getRoot());
+
+            opt.loadQueries(tableInfo);
+            opt.buildPlan(q);
+
+        }
+
+/*
         for (int i = 0; i < 2; i++) {
 
             JoinQuery q = tpch3();
@@ -406,7 +427,7 @@ public class JoinOptimizerTest {
             opt.buildPlan(q);
 
         }
-
+*/
     }
 
     public static void testCMT(){
@@ -472,16 +493,7 @@ public class JoinOptimizerTest {
     }
 
     public static void main(String[] args) {
-        RawIndexKey key = new RawIndexKey('|');
-
-        String s = "0|1";
-
-        key.setBytes(s.getBytes());
-
-        long a = key.getLongAttribute(0);
-        long b = key.getLongAttribute(1);
-
-        System.out.println();
+        testTPCH();
     }
 
 }
