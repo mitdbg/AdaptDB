@@ -24,7 +24,7 @@ def simulator_multipred():
             ' --tableName $TABLENAME' + \
             ' --mode 1' + \
             ' --simName sim' + \
-            ' --queriesFile /Users/anil/Dev/repos/mdindex/scripts/queries.log' + \
+            ' --queriesFile ~/queries.log' + \
             ' > ~/logs/sim_multipred.log'
         cmd = fill_cmd(cmd)
         run(cmd)

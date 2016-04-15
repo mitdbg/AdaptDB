@@ -12,10 +12,10 @@ import java.util.Map;
  */
 public class Globals {
     // Re-partition cost multiplier.
-    static public final int c = 2;
+    static public final int c = 4;
 
     // Query window size.
-    static public final int ws = 25;
+    static public final int window_size = 20;
 
 	static Map<String, TableInfo> tableInfos = new HashMap<String, TableInfo>();
 

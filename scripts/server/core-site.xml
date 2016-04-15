@@ -18,10 +18,14 @@
 <configuration>
    <property>
        <name>fs.default.name</name>
-       <value>hdfs://istc2:9000</value>
+       <value>hdfs://istc13.csail.mit.edu:9000</value>
    </property>
   <property>
     <name>hadoop.tmp.dir</name>
     <value>/data/mdindex/dfs</value>
   </property>
+   <property>
+       <name>fs.hdfs.impl</name>
+       <value>org.apache.hadoop.hdfs.DistributedFileSystem</value>
+   </property> 
 </configuration>

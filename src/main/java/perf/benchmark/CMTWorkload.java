@@ -29,6 +29,8 @@ public class CMTWorkload {
     TableInfo tableInfo;
 
 	public void setUp() {
+		tableName = "cmt";
+
 		cfg = new ConfUtils(BenchmarkSettings.conf);
 		FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
 
@@ -36,11 +38,6 @@ public class CMTWorkload {
 		Globals.loadTableInfo(tableName, cfg.getHDFS_WORKING_DIR(), fs);
 		tableInfo = Globals.getTableInfo(tableName);
 		assert tableInfo != null;
-
-		// delete query history
-		// Cleanup queries file - to remove past query workload
-		//HDFSUtils.deleteFile(HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME()),
-		//		cfg.getHDFS_WORKING_DIR() + "/queries", false);
 	}
 
 	public Predicate getPredicate(String pred) {
@@ -88,18 +85,29 @@ public class CMTWorkload {
 		String[] queries = queriesString.split("\n");
 		List<Query> ret = new ArrayList<Query>();
 		for (int i=0; i<queries.length; i++) {
-			String query = queries[i];
-			String[] predicates = query.split(";");
+			String queryString = queries[i];
+			String[] parts = queryString.split("\\|");
+			String[] predicates = parts[1].split(";");
 			List<Predicate> queryPreds = new ArrayList<Predicate>();
 			for (int j=0; j<predicates.length; j++) {
 				Predicate p = getPredicate(predicates[j]);
-				queryPreds.add(p);
+				List<Predicate> preds = p.getNormalizedPredicates();
+				queryPreds.addAll(preds);
 			}
 			Predicate[] predArray = queryPreds.toArray(new Predicate[queryPreds.size()]);
 			ret.add(new Query(tableName, predArray));
 		}
 
 		return ret;
+	}
+
+    public void testWorkload() {
+		long start, end;
+		SparkQuery sq = new SparkQuery(cfg);
+		List<Query> queries = generateWorkload();
+		for (Query q: queries) {
+			System.out.println("INFO: Query:" + q.toString());
+		}
 	}
 
 	public void runWorkload() {
@@ -155,6 +163,9 @@ public class CMTWorkload {
 		switch (t.method) {
 		case 1:
 			t.runWorkload();
+			break;
+        case 2:
+        	t.testWorkload();
 			break;
 		default:
 			break;

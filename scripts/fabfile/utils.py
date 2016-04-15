@@ -48,19 +48,19 @@ def build_jar():
 
 @parallel
 def update_jar():
-    if not exists('/home/mdindex/yilu/mdindex/build/libs'):
-        run('mkdir -p /home/mdindex/yilu/mdindex/build/libs')
-    put('/Users/ylu/Documents/workspace/mdindex/build/libs/mdindex-all.jar', '/home/mdindex/yilu/mdindex/build/libs/mdindex-all.jar')
+    if not exists('/data/mdindex/jars'):
+        run('mkdir -p /data/mdindex/jars')
+    put('../build/libs/mdindex-all.jar', '/data/mdindex/jars/')
 
 @roles('master')
 def update_master_jar():
-    if not exists('/home/mdindex/yilu/mdindex/build/libs'):
-        run('mkdir -p /home/mdindex/yilu/mdindex/build/libs')
-    put('/Users/ylu/Documents/workspace/mdindex/build/libs/mdindex-all.jar', '/home/mdindex/yilu/mdindex/build/libs/mdindex-all.jar')
+    if not exists('/data/mdindex/jars'):
+        run('mkdir -p /data/mdindex/jars')
+    put('../build/libs/mdindex-all.jar', '/data/mdindex/jars/')
 
 @serial
 def update_config():
     global counter
-    put('/Users/ylu/Documents/workspace/mdindex/conf/tpch.properties', '/home/mdindex/yilu/mdindex/conf/tpch.properties')
-    run('echo "MACHINE_ID = %d" >> /home/mdindex/yilu/mdindex/conf/tpch.properties' % counter)
+    put('server/server.properties', '/home/mdindex/amoeba.properties')
+    run('echo "MACHINE_ID = %d" >> /home/mdindex/amoeba.properties' % counter)
     counter += 1

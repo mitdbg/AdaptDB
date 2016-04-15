@@ -21,4 +21,7 @@
 # - SPARK_WORKER_DIR, to set the working directory of worker processes
 
 export HADOOP_CONF_DIR=/home/mdindex/hadoop-2.6.0/etc/hadoop/
-export MASTER=spark://istc2:7077
+export MASTER=spark://128.30.77.86:7077
+export SPARK_MASTER_IP=128.30.77.86
+export SPARK_JAVA_OPTS+=" -Dspark.local.dir=/data/mdindex/tmp -Dhadoop.tmp.dir=/data/mdindex/dfs"
+export SPARK_LOCAL_DIRS='/data/mdindex/tmp'
