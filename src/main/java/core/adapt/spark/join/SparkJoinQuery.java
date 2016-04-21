@@ -88,6 +88,10 @@ public class SparkJoinQuery {
         queryConf.setWorkerNum(9);
     }
 
+    public void setBufferSize(long size){
+        queryConf.setMaxSplitSize(size);
+    }
+
     public void setDelimiter(String delimiter) {
         Delimiter = delimiter;
     }
