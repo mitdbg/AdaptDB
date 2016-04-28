@@ -93,6 +93,7 @@ public class TPCHCopartitionedWorkload {
         tableLineitem = new TableInfo(lineitem, 0, '|', schemaLineitem);
         tableOrders = new TableInfo(orders, 0, '|', schemaOrders);
 
+
     }
 
     public void garbageCollect() {
@@ -133,7 +134,17 @@ public class TPCHCopartitionedWorkload {
     public void cleanup(String path) {
         FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
         try {
-            fs.delete(new Path(path), true);
+
+            fs.delete(new Path(path + "/_SUCCESS"), false);
+            FileStatus[] fileStatus = fs.listStatus(new Path(path));
+
+            for (int i = 0; i < fileStatus.length; i++) {
+                String oldPath = fileStatus[i].getPath().toString();
+                String baseName = FilenameUtils.getBaseName(oldPath);
+                String dir = oldPath.substring(0, oldPath.length() - baseName.length());
+                String newPath = dir + Integer.parseInt(baseName.substring(baseName.indexOf('-') + 1));
+                fs.rename(new Path(oldPath), new Path(newPath));
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -159,7 +170,7 @@ public class TPCHCopartitionedWorkload {
                 org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
 
 
-
+    
         JavaRDD<String> lineitem_text = ctx.textFile(cfg.getHDFS_WORKING_DIR() + "/lineitem/data");
         JavaRDD<String> orders_text = ctx.textFile(cfg.getHDFS_WORKING_DIR() + "/orders/data");
 
@@ -168,6 +179,8 @@ public class TPCHCopartitionedWorkload {
         JavaPairRDD<Long, String> orders_records = orders_text.mapToPair(new Mapper("|", schemaOrders.getAttributeId("o_orderkey")));
 
         HashPartitioner partitioner = new HashPartitioner(200);
+
+
         JavaPairRDD<Long, String> lineitem_records_partitioned = lineitem_records.partitionBy(partitioner);
         JavaPairRDD<Long, String> orders_records_partitioned = orders_records.partitionBy(partitioner);
 
@@ -175,6 +188,9 @@ public class TPCHCopartitionedWorkload {
         lineitem_records_partitioned.values().saveAsTextFile(cfg.getHDFS_WORKING_DIR() + "/lineitem_co");
         orders_records_partitioned.values().saveAsTextFile(cfg.getHDFS_WORKING_DIR() + "/orders_co");
 
+
+        cleanup(cfg.getHDFS_WORKING_DIR() + "/lineitem_co");
+        cleanup(cfg.getHDFS_WORKING_DIR() + "/orders_co");
 
         Configuration conf = ctx.hadoopConfiguration();
 
@@ -190,6 +206,10 @@ public class TPCHCopartitionedWorkload {
         conf.set("PARTITION_NUM", "200");
         conf.set("PARTITION_KEY", "0");
 
+        conf.set("WORKING_DIR", cfg.getHDFS_WORKING_DIR());
+        conf.set("HADOOP_HOME",cfg.getHADOOP_HOME());
+        conf.set("ZOOKEEPER_HOSTS",cfg.getZOOKEEPER_HOSTS());
+        conf.setInt("HDFS_REPLICATION_FACTOR",cfg.getHDFS_REPLICATION_FACTOR());
         conf.set("DELIMITER", "|");
 
         JavaPairRDD<LongWritable, Text> rdd = ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + cfg.getHDFS_WORKING_DIR(),

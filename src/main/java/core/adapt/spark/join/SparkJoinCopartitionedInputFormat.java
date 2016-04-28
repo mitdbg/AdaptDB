@@ -72,6 +72,7 @@ public class SparkJoinCopartitionedInputFormat extends
             String type = Text.readString(in);
             iter1 = (PartitionIterator) ReflectionUtils.getInstance(type);
             iter1.readFields(in);
+            type = Text.readString(in);
             iter2 = (PartitionIterator) ReflectionUtils.getInstance(type);
             iter2.readFields(in);
 
@@ -97,8 +98,8 @@ public class SparkJoinCopartitionedInputFormat extends
         SparkQueryConf queryConf = new SparkQueryConf(conf);
 
 
-        JoinQuery jq1 =  new JoinQuery(conf.get("DATASET_QUERY_1"));
-        JoinQuery jq2 =  new JoinQuery(conf.get("DATASET_QUERY_2"));;
+        JoinQuery jq1 =  new JoinQuery(conf.get("DATASET1_QUERY"));
+        JoinQuery jq2 =  new JoinQuery(conf.get("DATASET2_QUERY"));;
 
         String dataset1 = conf.get("DATASET1");
         String dataset2 = conf.get("DATASET2");

@@ -93,16 +93,16 @@ public class SparkJoinCopartitionedReader extends
         hashTable = ArrayListMultimap.create();
 
         iter1 = sparkSplit.getIterator1();
-        iter2 = sparkSplit.getIterator1();
+        iter2 = sparkSplit.getIterator2();
 
         key = new LongWritable();
         value = new Text();
 
-        setPartitionToFirstIterator(sparkSplit.getPath(0));
 
         build_hashtable();
 
         setPartitionToSecondIterator(sparkSplit.getPath(1));
+
 
     }
 
@@ -162,14 +162,12 @@ public class SparkJoinCopartitionedReader extends
 
                 IteratorRecord r = iter2.next();
                 long key = r.getLongAttribute(join_attr2);
-
                 tupleCountInTable2++;
-
                 if (hashTable.containsKey(key)) {
                     firstRecords = hashTable.get(key).iterator();
                     secondRecord = r.getBytes();
                     hasNext = true;
-                    break;
+                    return;
                 }
             }
             hasNext = false;
