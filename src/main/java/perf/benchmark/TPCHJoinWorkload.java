@@ -1058,6 +1058,9 @@ public class TPCHJoinWorkload {
                 t.runVaryingWindowWorkload();
                 break;
             case 7:
+                t.joinLineitemWithOrders(false);
+                break;
+            case 8:
                 t.garbageCollect();
                 break;
 
