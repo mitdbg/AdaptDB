@@ -260,12 +260,6 @@ public class CMTJoinWorkload {
             JoinQuery q_sf = q.get(1);
             JoinQuery q_mhl = new JoinQuery(MHL, schemaMHL.getAttributeId("mhl_mapmatch_history_id"), EmptyPredicates);
 
-            if(++iters == 5){
-                q_mh.setForceRepartition(true);
-                q_sf.setForceRepartition(true);
-                q_mhl.setForceRepartition(true);
-            }
-
             System.out.println("INFO: Query_MH:" + q_mh.toString());
             System.out.println("INFO: Query_sf:" + q_sf.toString());
 

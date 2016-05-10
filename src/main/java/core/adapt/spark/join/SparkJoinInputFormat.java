@@ -182,11 +182,11 @@ public class SparkJoinInputFormat extends
             String[] subsplits = splits[i].split(",");
             int iter_type = Integer.parseInt(subsplits[0]);
 
-            if (iter_type == 1) {
+            if (iter_type == -2) {
                 iter = new PostFilterIterator(dataset1_query.castToQuery());
 
             } else {
-                iter = new JoinRepartitionIterator(dataset1_query.castToQuery());
+                iter = new JoinRepartitionIterator(dataset1_query.castToQuery(), iter_type);
                 ((JoinRepartitionIterator) iter).setZookeeper(queryConf.getZookeeperHosts());
             }
 

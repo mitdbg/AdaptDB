@@ -37,7 +37,7 @@ public class JoinAccessMethod {
     /**
      * Initialize hyper-partitioning data access.
      */
-    public void init(SparkJoinQueryConf conf) {
+    public void init(SparkJoinQueryConf conf, int partition) {
         JoinQuery query = conf.getQuery();
 
         Globals.loadTableInfo(query.getTable(), conf.getWorkingDir(),
@@ -47,7 +47,7 @@ public class JoinAccessMethod {
         key = new RawIndexKey(tableInfo.delimiter);
         opt = new JoinOptimizer(conf);
 
-        opt.loadIndex(tableInfo);
+        opt.loadIndex(tableInfo, partition);
         opt.loadQueries(tableInfo);
     }
 
@@ -80,11 +80,11 @@ public class JoinAccessMethod {
      *
      * @return
      */
-    public PartitionSplit[] getPartitionSplits(JoinQuery q, boolean justAccess) {
+    public PartitionSplit[] getPartitionSplits(JoinQuery q, boolean justAccess, int indexPartition) {
         if (justAccess) {
             return opt.buildAccessPlan(q);
         } else {
-            return opt.buildPlan(q);
+            return opt.buildPlan(q, indexPartition);
         }
     }
 

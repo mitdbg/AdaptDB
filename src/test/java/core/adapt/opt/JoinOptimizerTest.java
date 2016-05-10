@@ -338,8 +338,6 @@ public class JoinOptimizerTest {
 
 
         JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_partkey"), EmptyPredicates);
-        q_l.setForceRepartition(true);
-
 
         JoinOptimizer opt = new JoinOptimizer(cfg);
         opt.loadIndex(tableInfo);
@@ -347,7 +345,7 @@ public class JoinOptimizerTest {
         opt.checkNotEmpty(opt.getIndex().getRoot());
 
         opt.loadQueries(tableInfo);
-        opt.buildPlan(q_l);
+        opt.buildPlan(q_l, q_l.getJoinAttribute());
 
 
         for (int i = 0; i < 10; i++) {
@@ -358,7 +356,7 @@ public class JoinOptimizerTest {
             opt.checkNotEmpty(opt.getIndex().getRoot());
 
             opt.loadQueries(tableInfo);
-            opt.buildPlan(q_l);
+            opt.buildPlan(q_l, q_l.getJoinAttribute());
         }
 
         for (int i = 0; i < 20; i++) {
@@ -376,7 +374,7 @@ public class JoinOptimizerTest {
             opt.checkNotEmpty(opt.getIndex().getRoot());
 
             opt.loadQueries(tableInfo);
-            opt.buildPlan(q_l);
+            opt.buildPlan(q_l, q_l.getJoinAttribute());
         }
 
         for (int i = 0; i < 10; i++) {
@@ -387,7 +385,7 @@ public class JoinOptimizerTest {
             opt.checkNotEmpty(opt.getIndex().getRoot());
 
             opt.loadQueries(tableInfo);
-            opt.buildPlan(q_l);
+            opt.buildPlan(q_l, q_l.getJoinAttribute());
         }
 
         for (int i = 0; i < 20; i++) {
@@ -405,7 +403,7 @@ public class JoinOptimizerTest {
             opt.checkNotEmpty(opt.getIndex().getRoot());
 
             opt.loadQueries(tableInfo);
-            opt.buildPlan(q_l);
+            opt.buildPlan(q_l, q_l.getJoinAttribute());
         }
 
 
@@ -417,7 +415,7 @@ public class JoinOptimizerTest {
             opt.checkNotEmpty(opt.getIndex().getRoot());
 
             opt.loadQueries(tableInfo);
-            opt.buildPlan(q_l);
+            opt.buildPlan(q_l, q_l.getJoinAttribute());
         }
 
 /*
@@ -490,11 +488,6 @@ public class JoinOptimizerTest {
 
             System.out.println(q_mh);
 
-            ++iters;
-
-            if (iters == 1) {
-                q_mh.setForceRepartition(true);
-            }
 
             JoinOptimizer opt = new JoinOptimizer(cfg);
 
@@ -516,7 +509,7 @@ public class JoinOptimizerTest {
             System.out.println("NUM of data blocks: " + opt.getIndex().getAllBuckets().length);
             opt.checkNotEmpty(opt.getIndex().getRoot());
             opt.loadQueries(tableInfo);
-            opt.buildPlan(q_mh);
+            opt.buildPlan(q_mh,q_mh.getJoinAttribute());
 
             if (iters == 2) break;
         }

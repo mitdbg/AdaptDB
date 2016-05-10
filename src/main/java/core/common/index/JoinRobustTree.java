@@ -10,7 +10,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 
+import core.adapt.AccessMethod.PartitionSplit;
+import core.adapt.JoinQuery;
 import core.adapt.Predicate;
+import core.adapt.iterator.JoinRepartitionIterator;
+import core.adapt.iterator.PartitionIterator;
 import core.common.globals.TableInfo;
 import core.common.key.ParsedTupleList;
 import core.common.key.RawIndexKey;
@@ -88,6 +92,90 @@ public class JoinRobustTree implements MDIndex {
         return false;
     }
 
+    public PartitionSplit delete(long delteSize, boolean deleteAll,JoinQuery query, int indexPartition, Map<Integer, Long> partitionIdSizeMap) {
+
+        LinkedList<JRNode> nodeQueue = new LinkedList<JRNode>();
+        LinkedList<JRNode> deleteNodes = new LinkedList<JRNode>();
+
+        List<Integer> bucket_ids = new ArrayList<Integer>();
+
+
+        PartitionIterator pi = new JoinRepartitionIterator(query.castToQuery(), indexPartition);
+
+        // Initialize root with attribute 0
+        nodeQueue.add(this.getRoot());
+
+        while (nodeQueue.size() > 0) {
+            JRNode t = nodeQueue.pollFirst();
+
+            if (t.bucket != null){
+                continue;
+            }
+
+            deleteNodes.add(t);
+
+            nodeQueue.add(t.leftChild);
+            nodeQueue.add(t.rightChild);
+        }
+
+        if (deleteAll){
+
+            int[] buckets = getAllBuckets();
+            PartitionSplit psplit = new PartitionSplit(buckets, pi);
+            return psplit;
+        } else {
+            for (JRNode node: deleteNodes){
+
+                if (delteSize <= 0) break;
+
+                if (node.leftChild.bucket != null || node.rightChild.bucket != null){
+                    throw new RuntimeException();
+                }
+
+                if (node == this.getRoot()){
+
+                    int lbid = node.leftChild.bucket.getBucketId();
+                    int rbid = node.rightChild.bucket.getBucketId();
+                    if (partitionIdSizeMap.containsKey(lbid))
+                    {
+                        delteSize -= partitionIdSizeMap.get(lbid);
+                    }
+                    if (partitionIdSizeMap.containsKey(rbid))
+                    {
+                        delteSize -= partitionIdSizeMap.get(rbid);
+                    }
+
+                    bucket_ids.add(lbid);
+                    bucket_ids.add(rbid);
+
+                } else{
+                    // delete left child
+                    JRNode parent = node.parent;
+                    parent.leftChild = node.rightChild;
+
+                    int bid = node.leftChild.bucket.getBucketId();
+                    if (partitionIdSizeMap.containsKey(bid))
+                    {
+                        delteSize -= partitionIdSizeMap.get(bid);
+                    }
+                    bucket_ids.add(bid);
+
+                }
+            }
+
+            int[] buckets = new int[bucket_ids.size()];
+
+            for(int i =0 ;i < buckets.length; i ++){
+                buckets[i] = bucket_ids.get(i);
+            }
+
+            PartitionSplit psplit = new PartitionSplit(buckets, pi);
+            return psplit;
+
+        }
+
+    }
+
     public class Task {
         JRNode node;
         int depth;
@@ -101,6 +189,7 @@ public class JoinRobustTree implements MDIndex {
     public void initProbe() {
         System.out.println("method not implemented!");
     }
+
 
     @Override
     public void initProbe(int joinAttribute) {
@@ -145,6 +234,7 @@ public class JoinRobustTree implements MDIndex {
             if (t.depth <= this.joinAttributeDepth) {
                 dim = joinAttribute;
                 allocations[dim] -= 2.0 / Math.pow(2, t.depth - 1);
+                halves = t.sample.sortAndSplit(dim);
             } else if (t.depth <= maxDepth) {
 
                 boolean[] validDims = new boolean[numAttributes];
@@ -196,6 +286,131 @@ public class JoinRobustTree implements MDIndex {
         System.out.println("Final Allocations: " + Arrays.toString(allocations));
     }
 
+    public void initProbe(JoinQuery q) {
+        System.out.println(this.sample.size() + " keys inserted");
+
+        int joinAttribute = q.getJoinAttribute();
+
+        // Computes log(this.maxBuckets)
+        int maxDepth = 31 - Integer.numberOfLeadingZeros(this.maxBuckets);
+        double allocationPerAttribute = Math.pow(this.maxBuckets, 1.0 / this.numAttributes);
+
+        double[] allocations = new double[this.numAttributes];
+        for (int i = 0; i < this.numAttributes; i++) {
+            allocations[i] = allocationPerAttribute;
+        }
+
+        /**
+         * Do a level-order traversal
+         */
+        LinkedList<Task> nodeQueue = new LinkedList<Task>();
+        // Initialize root with attribute 0
+        Task initialTask = new Task();
+        initialTask.node = root;
+        initialTask.sample = this.sample;
+        initialTask.depth = 1;
+        nodeQueue.add(initialTask);
+
+        while (nodeQueue.size() > 0) {
+            Task t = nodeQueue.pollFirst();
+
+
+            if (t.depth > maxDepth) {
+                Bucket b = new Bucket();
+                b.setSample(t.sample);
+                t.node.bucket = b;
+                continue;
+            }
+
+            int dim = -1;
+            Pair<ParsedTupleList, ParsedTupleList> halves = null;
+
+            if (t.depth <= this.joinAttributeDepth) {
+                dim = joinAttribute;
+                allocations[dim] -= 2.0 / Math.pow(2, t.depth - 1);
+                halves = t.sample.sortAndSplit(dim);
+            } else if (t.depth <= maxDepth) {
+
+                // use attributes from the query
+
+                int numAttributes = this.numAttributes;
+                boolean[] validDims = new boolean[numAttributes];
+                Arrays.fill(validDims, false);
+
+                Predicate[] ps = q.getPredicates();
+
+                int numPredicates = 0;
+
+                for (int i = 0; i < ps.length; i++) {
+                    if (validDims[ps[i].attribute] == false) {
+                        validDims[ps[i].attribute] = true;
+                        numPredicates++;
+                    }
+
+                }
+
+                dim = -1;
+
+                for (int i = 0; i < numPredicates; i++) {
+                    int testDim = getLeastAllocated(allocations, validDims);
+                    halves = sample.sortAndSplit(testDim);
+                    if (halves.first.size() > 0 && halves.second.size() > 0) {
+                        dim = testDim;
+                        allocations[dim] -= 2.0 / Math.pow(2, t.depth - 1);
+                        break;
+                    } else {
+                        validDims[testDim] = false;
+                    }
+                }
+
+                if (dim == -1) {
+                    Arrays.fill(validDims, true);
+                    for (int i = 0; i < numAttributes; i++) {
+                        int testDim = getLeastAllocated(allocations, validDims);
+                        halves = sample.sortAndSplit(testDim);
+                        if (halves.first.size() > 0 && halves.second.size() > 0) {
+                            dim = testDim;
+                            allocations[dim] -= 2.0 / Math.pow(2, t.depth - 1);
+                            break;
+                        } else {
+                            validDims[testDim] = false;
+                            //System.err.println("WARN: Skipping attribute " + testDim);
+                        }
+                    }
+                }
+
+            }
+
+            if (dim == -1) {
+                System.err.println("ERR: No attribute to partition on");
+                Bucket b = new Bucket();
+                b.setSample(sample);
+                t.node.bucket = b;
+            } else {
+                t.node.attribute = dim;
+                t.node.type = this.dimensionTypes[dim];
+                t.node.value = halves.first.getLast(dim); // Need to traverse up for range.
+
+                t.node.leftChild = new JRNode();
+                t.node.leftChild.parent = t.node;
+                Task tl = new Task();
+                tl.node = t.node.leftChild;
+                tl.depth = t.depth + 1;
+                tl.sample = halves.first;
+                nodeQueue.add(tl);
+
+                t.node.rightChild = new JRNode();
+                t.node.rightChild.parent = t.node;
+                Task tr = new Task();
+                tr.node = t.node.rightChild;
+                tr.depth = t.depth + 1;
+                tr.sample = halves.second;
+                nodeQueue.add(tr);
+            }
+        }
+
+        System.out.println("Final Allocations: " + Arrays.toString(allocations));
+    }
 
     /**
      * Return the dimension which has the maximum allocation unfulfilled

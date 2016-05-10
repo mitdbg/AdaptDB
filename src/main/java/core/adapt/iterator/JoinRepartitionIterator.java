@@ -39,24 +39,11 @@ import core.utils.HDFSUtils;
  */
 public class JoinRepartitionIterator extends PartitionIterator {
 
-    /*
-    class PartitionStoreThread extends Thread {
-        Partition p;
-        PartitionStoreThread(Partition p){
-            this.p = p;
-        }
-        public void run() {
-            System.out.println("storing partition id " + p.getPartitionId());
-            p.store(true);
-        }
-    }
-    */
-
     private JRNode newIndexTree;
     protected String zookeeperHosts;
+    private int indexPartition;
 
     protected Map<Integer, Partition> newPartitions = new HashMap<Integer, Partition>();
-    //protected Map<Integer, Partition> oldPartitions = new HashMap<Integer, Partition>();
 
     public JoinRepartitionIterator() {
     }
@@ -70,13 +57,9 @@ public class JoinRepartitionIterator extends PartitionIterator {
         }
     }
 
-    public JoinRepartitionIterator(Query query) {
+    public JoinRepartitionIterator(Query query, int partition) {
         super(query);
-    }
-
-    public JoinRepartitionIterator(Query query, JRNode tree) {
-        this.query = query;
-        this.newIndexTree = tree;
+        this.indexPartition = partition;
     }
 
     public void setZookeeper(String zookeeperHosts) {
@@ -85,6 +68,10 @@ public class JoinRepartitionIterator extends PartitionIterator {
 
     public Query getQuery() {
         return this.query;
+    }
+
+    public int getIndexPartition(){
+        return indexPartition;
     }
 
     public JRNode getIndexTree() {
@@ -111,14 +98,19 @@ public class JoinRepartitionIterator extends PartitionIterator {
                 path = FilenameUtils.getPathNoEndSeparator(FilenameUtils.getPath(path));
             }
 
-            // Initialize RobustTree.
+            String pathToIndex = path + "/index";
+
+            if (indexPartition != -1){
+                pathToIndex = pathToIndex + "." + indexPartition;
+            }
+
+            // Initialize JoinRobustTree.
             byte[] indexBytes = HDFSUtils.readFile(
-                    ((HDFSPartition) partition).getFS(), path + "/index");
+                    ((HDFSPartition) partition).getFS(), pathToIndex);
             JoinRobustTree tree = new JoinRobustTree(Globals.getTableInfo(query.getTable()));
             tree.unmarshall(indexBytes);
             newIndexTree = tree.getRoot();
         }
-        //oldPartitions.put(partition.getPartitionId(), partition);
     }
 
     @Override
@@ -153,26 +145,6 @@ public class JoinRepartitionIterator extends PartitionIterator {
                 p.store(true);
             }
 
-            /*
-            for (Partition p : oldPartitions.values()) {
-                System.out.println("dropping old partition id "
-                        + p.getPartitionId());
-                p.drop();
-            }
-            */
-
-            /*
-
-            ExecutorService pool = Executors.newFixedThreadPool(20);
-
-            for (Partition p : newPartitions.values()) {
-                pool.submit( new PartitionStoreThread(p));
-            }
-
-            pool.shutdown();
-            */
-
-            //oldPartitions = Maps.newHashMap();
             newPartitions = Maps.newHashMap();
         } else {
             System.out.println("INFO: Zookeeper Hosts NULL");
@@ -183,6 +155,7 @@ public class JoinRepartitionIterator extends PartitionIterator {
     public void write(DataOutput out) throws IOException {
         query.write(out);
         Text.writeString(out, zookeeperHosts);
+        Text.writeString(out, Integer.toString(indexPartition));
     }
 
     @Override
@@ -190,10 +163,11 @@ public class JoinRepartitionIterator extends PartitionIterator {
         String predicateString = Text.readString(in);
         query = new Query(predicateString);
         zookeeperHosts = Text.readString(in);
+        indexPartition = Integer.parseInt(Text.readString(in));
     }
 
-    public static RepartitionIterator read(DataInput in) throws IOException {
-        RepartitionIterator it = new RepartitionIterator();
+    public static JoinRepartitionIterator read(DataInput in) throws IOException {
+        JoinRepartitionIterator it = new JoinRepartitionIterator();
         it.readFields(in);
         return it;
     }

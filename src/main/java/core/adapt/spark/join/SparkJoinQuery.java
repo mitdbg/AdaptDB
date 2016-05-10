@@ -128,9 +128,6 @@ public class SparkJoinQuery {
         conf.set("DATASET1", dataset1);
         conf.set("DATASET2", dataset2);
 
-        conf.set("DATASET1_CUTPOINTS", dataset1_cutpoints);
-        conf.set("DATASET2_CUTPOINTS", dataset2_cutpoints);
-
         conf.set("DATASET1_QUERY", dataset1_query.toString());
         conf.set("DATASET2_QUERY", dataset2_query.toString());
 
@@ -142,51 +139,38 @@ public class SparkJoinQuery {
 
         JoinPlanner planner = new JoinPlanner(conf);
 
-        JavaPairRDD<LongWritable, Text> rdd = null;
+        String hyperJoinInput = planner.hyperjoin;
+        System.out.println("hyperJoinInput: " + hyperJoinInput);
+        conf.set("DATASETINFO",hyperJoinInput);
+        JavaPairRDD<LongWritable, Text> hyperjoin_rdd = createJoinRDD(hdfsPath);
 
-        if (planner.hyperjoin){
-            // hyper join
-            String hyperJoinInput = planner.getHyperJoinInput();
-            System.out.println("hyperJoinInput: " + hyperJoinInput);
-            conf.set("DATASETINFO",hyperJoinInput);
-            rdd = createJoinRDD(hdfsPath);
+        String input1 = planner.shufflejoin1;
+        String input2 = planner.shufflejoin2;
 
-        } else {
-            // shuffle join
+        System.out.println("shuffleInput1: " + input1);
+        System.out.println("shuffleInput2: " + input2);
 
-            String input1 = planner.getShuffleJoinInput1();
-            String input2 = planner.getShuffleJoinInput2();
+        // set conf input;
+        conf.set("DATASET_QUERY", dataset1_query.toString());
+        conf.set("DATASETINFO", input1);
+        conf.set("DATASET", dataset1);
 
-            System.out.println("shuffleInput1: " + input1);
-            System.out.println("shuffleInput2: " + input2);
+        JavaPairRDD<LongWritable, Text> dataset1RDD = createSingleTableRDD(hdfsPath, dataset1_query);
 
-            // set conf input;
-            conf.set("DATASET_QUERY", dataset1_query.toString());
-            conf.set("DATASETINFO", input1);
-            conf.set("DATASET", dataset1);
+        // set conf input;
+        conf.set("DATASET_QUERY", dataset2_query.toString());
+        conf.set("DATASETINFO", input2);
+        conf.set("DATASET", dataset2);
 
-            JavaPairRDD<LongWritable, Text> dataset1RDD = createSingleTableRDD(hdfsPath, dataset1_query);
+        JavaPairRDD<LongWritable, Text> dataset2RDD = createSingleTableRDD(hdfsPath, dataset2_query);
 
-            // set conf input;
-            conf.set("DATASET_QUERY", dataset2_query.toString());
-            conf.set("DATASETINFO", input2);
-            conf.set("DATASET", dataset2);
+        int numPartitions = 1000;
 
-            JavaPairRDD<LongWritable, Text> dataset2RDD = createSingleTableRDD(hdfsPath, dataset2_query);
+        JavaPairRDD<LongWritable, Tuple2<Text,Text> > join_rdd = dataset1RDD.join(dataset2RDD, numPartitions);
 
-            int numPartitions = 200;
+        JavaPairRDD<LongWritable, Text> shufflejoin_rdd = join_rdd.mapToPair(new Mapper(Delimiter, partitionKey));
 
-            if(dataset1_query.getForceRepartition() || dataset2_query.getForceRepartition()){
-                numPartitions = 2000;
-            }
-
-            JavaPairRDD<LongWritable, Tuple2<Text,Text> > join_rdd = dataset1RDD.join(dataset2RDD, numPartitions);
-
-            rdd = join_rdd.mapToPair(new Mapper(Delimiter, partitionKey));
-
-        }
-
-        return rdd;
+        return hyperjoin_rdd.union(shufflejoin_rdd);
     }
 
     /* SingleTableScan  */
@@ -210,6 +194,9 @@ public class SparkJoinQuery {
         String hdfsPath = cfg.getHDFS_WORKING_DIR();
         queryConf.setJustAccess(false);
         queryConf.setWorkingDir(hdfsPath);
+
+
+        /*
 
         Configuration conf = ctx.hadoopConfiguration();
 
@@ -257,6 +244,11 @@ public class SparkJoinQuery {
 
         JavaPairRDD<LongWritable, Text> rdd = createSingleTableRDD(hdfsPath, q);
 
+
+
         return rdd;
+
+        */
+        return null;
     }
 }

@@ -23,19 +23,10 @@ import core.adapt.iterator.RepartitionIterator;
 
 public class HPJoinInput {
 
-    protected JoinAccessMethod am;
     protected Map<Integer, FileStatus> partitionIdFileMap;
     protected Map<Integer, Long> partitionIdSizeMap;
-    protected boolean MDIndexInput;
 
-
-    public HPJoinInput(boolean MDIndexInput){
-        this.MDIndexInput = MDIndexInput;
-    }
-
-    public void initialize(List<FileStatus> files, JoinAccessMethod am) {
-        this.am = am;
-        initialize(files);
+    public HPJoinInput(){
     }
 
     public void initialize(List<FileStatus> files) {
@@ -45,12 +36,7 @@ public class HPJoinInput {
             System.out.println("FILE: " + file.getPath());
             try {
                 String fileName = FilenameUtils.getName(file.getPath().toString());
-                int id = 0;
-                if(MDIndexInput) {
-                    id = Integer.parseInt(fileName);
-                } else {
-                    id = Integer.parseInt(fileName.substring(fileName.indexOf('-') + 1));
-                }
+                int id = Integer.parseInt(fileName);
                 partitionIdFileMap.put(id, file);
                 partitionIdSizeMap.put(id, file.getLen());
             } catch (NumberFormatException e) {
@@ -69,11 +55,6 @@ public class HPJoinInput {
         return new PartitionSplit[]{new PartitionSplit(
                 Ints.toArray(partitionIdFileMap.keySet()),
                 new RepartitionIterator(q.castToQuery()))};
-    }
-
-    public PartitionSplit[] getIndexScan(boolean justAccess,
-                                         JoinQuery q) {
-        return am.getPartitionSplits(q, justAccess);
     }
 
     // utility methods

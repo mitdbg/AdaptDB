@@ -11,7 +11,7 @@ public class JoinQueryTest {
         String lineitem = "l_orderkey int, l_partkey int, l_suppkey int, l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, l_tax double, l_returnflag string,  l_linestatus string, l_shipdate date, l_commitdate date, l_receiptdate date, l_shipinstruct string, l_shipmode string";
         Schema schema = Schema.createSchema(lineitem);
         Predicate p = new Predicate(schema.getAttributeId("l_discount"), TypeUtils.TYPE.DOUBLE, 0.5, Predicate.PREDTYPE.GT);
-        JoinQuery q = new JoinQuery("lineitem",10, new Predicate[]{p});
+        JoinQuery q = new JoinQuery("lineitem", 0, new Predicate[]{p});
         String qs = q.toString();
         System.out.println(qs);
         JoinQuery q2 = new JoinQuery(qs);

@@ -111,11 +111,11 @@ public class SparkScanInputFormat extends FileInputFormat<LongWritable, Text> im
             String[] subsplits = splits[i].split(",");
             int iter_type = Integer.parseInt(subsplits[0]);
 
-            if (iter_type == 1) {
+            if (iter_type == -2) {
                 iter = new PostFilterIterator(jq.castToQuery());
 
             } else {
-                iter = new JoinRepartitionIterator(jq.castToQuery());
+                iter = new JoinRepartitionIterator(jq.castToQuery(), iter_type);
                 ((JoinRepartitionIterator) iter).setZookeeper(queryConf.getZookeeperHosts());
             }
 

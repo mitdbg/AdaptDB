@@ -107,10 +107,8 @@ public class SparkJoinRecordReader extends
         iter1 = sparkSplit.getIterator();
 
         pf_iter = new PostFilterIterator(dataset2_query);
-        jr_iter = new JoinRepartitionIterator(dataset2_query);
+        jr_iter = new JoinRepartitionIterator(dataset2_query, dataset2_joinquery.getJoinAttribute());
         ((JoinRepartitionIterator) jr_iter).setZookeeper(queryConf.getZookeeperHosts());
-
-
 
         types = sparkSplit.getTypes();
 
