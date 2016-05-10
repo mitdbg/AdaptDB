@@ -90,7 +90,8 @@ public class JoinPlannerTest {
         conf.set("ZOOKEEPER_HOSTS","localhost");
         conf.setInt("HDFS_REPLICATION_FACTOR", 1);
 
-
+        conf.set("MAX_SPLIT_SIZE", "" + 64 * 1024 * 1024); // 64 MB
+        conf.set("WORKER_NUM", "9");
         conf.set("DATASET1", lineitem);
         conf.set("DATASET2", orders);
 

@@ -1,14 +1,7 @@
 package core.common.index;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.*;
 
 import core.adapt.AccessMethod.PartitionSplit;
 import core.adapt.JoinQuery;
@@ -118,6 +111,11 @@ public class JoinRobustTree implements MDIndex {
             nodeQueue.add(t.rightChild);
         }
 
+        // reverse deleteNodes
+
+        Collections.reverse(deleteNodes);
+
+
         if (deleteAll){
 
             int[] buckets = getAllBuckets();
@@ -128,7 +126,7 @@ public class JoinRobustTree implements MDIndex {
 
                 if (delteSize <= 0) break;
 
-                if (node.leftChild.bucket != null || node.rightChild.bucket != null){
+                if (node.leftChild.bucket == null || node.rightChild.bucket == null){
                     throw new RuntimeException();
                 }
 
@@ -148,10 +146,17 @@ public class JoinRobustTree implements MDIndex {
                     bucket_ids.add(lbid);
                     bucket_ids.add(rbid);
 
+                    this.root = null;
+
                 } else{
                     // delete left child
                     JRNode parent = node.parent;
-                    parent.leftChild = node.rightChild;
+
+                    if (parent.rightChild == node){
+                        parent.rightChild = node.rightChild;
+                    } else {
+                        parent.leftChild = node.rightChild;
+                    }
 
                     int bid = node.leftChild.bucket.getBucketId();
                     if (partitionIdSizeMap.containsKey(bid))

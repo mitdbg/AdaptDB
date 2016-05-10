@@ -5,6 +5,8 @@ import core.adapt.AccessMethod.PartitionSplit;
 import core.adapt.JoinQuery;
 import core.adapt.iterator.PartitionIterator;
 import core.adapt.iterator.PostFilterIterator;
+import core.common.globals.Globals;
+import core.common.globals.TableInfo;
 import core.utils.HDFSUtils;
 import core.utils.RangePartitionerUtils;
 import core.utils.SparkUtils;
@@ -22,7 +24,9 @@ import org.apache.spark.api.java.function.PairFunction;
 import scala.Tuple2;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by ylu on 1/6/16.
@@ -195,9 +199,6 @@ public class SparkJoinQuery {
         queryConf.setJustAccess(false);
         queryConf.setWorkingDir(hdfsPath);
 
-
-        /*
-
         Configuration conf = ctx.hadoopConfiguration();
 
 
@@ -210,31 +211,21 @@ public class SparkJoinQuery {
 
         FileSystem fs = HDFSUtils.getFSByHadoopHome(queryConf.getHadoopHome());
 
-
         String workingDir = queryConf.getWorkingDir();
         //System.out.println("INFO working dir: " + workingDir);
 
-        JoinAccessMethod dataset1_am = new JoinAccessMethod();
-        queryConf.setJoinQuery(q);
+        List<JoinQuery> dataset_queryWindow = JoinPlanner.loadQueries(dataset, queryConf);
 
-        PartitionSplit[] dataset_splits;
-        dataset1_am.init(queryConf);
+        Globals.loadTableInfo(dataset, queryConf.getWorkingDir(), fs);
+        TableInfo dataset_tableInfo = Globals.getTableInfo(dataset);
+        HPJoinInput dataset_hpinput = new HPJoinInput();
+        Map<Integer, JoinAccessMethod> dataset_am = new HashMap<Integer, JoinAccessMethod>();
+        Map<Integer, Integer> dataset_iterator_type = new HashMap<Integer, Integer>();
+        Map<Integer, ArrayList<Integer>> dataset_scan_blocks = new HashMap<Integer, ArrayList<Integer>>();
 
-
-        HPJoinInput dataset_hpinput = new HPJoinInput(true);
-        String input_dir = workingDir + "/" + dataset + "/data";
-        dataset_hpinput.initialize(JoinPlanner.listStatus(fs, input_dir), dataset1_am);
-
-        // optimize for the JoinRobustTree
-
-        System.out.println("Optimizing dataset");
-
-        dataset_splits = dataset_hpinput.getIndexScan(queryConf.getJustAccess(), q);
-
+        JoinPlanner.speculative_repartition(dataset, q, dataset_queryWindow, dataset_tableInfo, dataset_hpinput, dataset_am, dataset_scan_blocks, dataset_iterator_type, queryConf, fs);
         ArrayList<PartitionSplit> shuffleJoinSplit = new  ArrayList<PartitionSplit>();
-
-
-        JoinPlanner.extractShuffleJoin(q, dataset_splits,dataset_hpinput.getPartitionIdSizeMap(),shuffleJoinSplit,queryConf.getMaxSplitSize(), queryConf.getWorkerNum() );
+        JoinPlanner.extractShuffleJoin(q, shuffleJoinSplit, dataset_scan_blocks, dataset_iterator_type, dataset_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize(), queryConf.getWorkerNum());
 
         String input = JoinPlanner.getShuffleJoinInputHelper(shuffleJoinSplit, dataset_hpinput);
 
@@ -243,12 +234,6 @@ public class SparkJoinQuery {
         conf.set("DATASETINFO", input);
 
         JavaPairRDD<LongWritable, Text> rdd = createSingleTableRDD(hdfsPath, q);
-
-
-
         return rdd;
-
-        */
-        return null;
     }
 }

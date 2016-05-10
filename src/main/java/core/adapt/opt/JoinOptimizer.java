@@ -244,7 +244,7 @@ public class JoinOptimizer {
         if (updated) {
             System.out.println("INFO: persist index to disk");
             updateBucketIds(rt.getRoot());
-            persistIndexToDisk();
+            persistIndexToDisk(indexPartition);
             for (int i = 0; i < psplits.length; i++) {
                 if (psplits[i].getIterator().getClass() == RepartitionIterator.class) {
                     psplits[i] = new PartitionSplit(
@@ -785,8 +785,12 @@ public class JoinOptimizer {
         }
     }
 
-    private void persistIndexToDisk() {
+    private void persistIndexToDisk(int partition) {
         String pathToIndex = this.workingDir + "/" + rt.tableInfo.tableName + "/index";
+        if (partition != -1) {
+            pathToIndex = pathToIndex + "." + partition;
+        }
+
         FileSystem fs = HDFSUtils.getFSByHadoopHome(hadoopHome);
         try {
             if (fs.exists(new Path(pathToIndex))) {
