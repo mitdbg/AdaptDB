@@ -45,7 +45,7 @@ public class SparkScanRecordReader extends
 
     private int currentFile;
 
-    void setPartitionToIterator(Path path) {
+    void setPartitionToIterator(Path path, long size) {
         FileSystem fs = null;
         try {
             fs = path.getFileSystem(conf);
@@ -56,7 +56,8 @@ public class SparkScanRecordReader extends
         HDFSPartition partition = new HDFSPartition(fs, path.toString(),
                 Short.parseShort(conf.get(SparkQueryConf.HDFS_REPLICATION_FACTOR)),
                 client);
-        partition.loadNext(); // ???
+        partition.setTotalSize(size);
+        partition.load();
 
         iter.setPartition(partition);
 
@@ -86,7 +87,7 @@ public class SparkScanRecordReader extends
         iter = sparkSplit.getIterator();
 
         currentFile = 0;
-        setPartitionToIterator(sparkSplit.getPath(currentFile));
+        setPartitionToIterator(sparkSplit.getPath(currentFile), sparkSplit.getLength(currentFile));
 
     }
 
@@ -109,7 +110,7 @@ public class SparkScanRecordReader extends
                     hasNext = false;
                     break;
                 } else {
-                    setPartitionToIterator(sparkSplit.getPath(currentFile));
+                    setPartitionToIterator(sparkSplit.getPath(currentFile), sparkSplit.getLength(currentFile));
                 }
             }
         }

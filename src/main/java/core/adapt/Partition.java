@@ -131,12 +131,6 @@ public class Partition implements Cloneable, Serializable {
 		return bytes;
 	}
 
-	public byte[] getNextBytes() {
-		byte[] r = nextBytesReturned ? null : getBytes();
-		nextBytesReturned = true;
-		return r;
-	}
-
 	@Override
 	public boolean equals(Object p) {
 		return ((Partition) p).path.equals(path)

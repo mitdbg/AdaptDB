@@ -133,11 +133,11 @@ public class SparkJoinRecordReader extends
         build_hashtable();
 
 
-        setPartitionToSecondIterator(sparkSplit.getPath(currentFile));
+        setPartitionToSecondIterator(sparkSplit.getPath(currentFile), sparkSplit.getLength(currentFile));
 
     }
 
-    void setPartitionToSecondIterator(Path path) {
+    void setPartitionToSecondIterator(Path path, long size) {
         FileSystem fs = null;
         try {
             fs = path.getFileSystem(conf);
@@ -148,8 +148,8 @@ public class SparkJoinRecordReader extends
         HDFSPartition partition = new HDFSPartition(fs, path.toString(),
                 Short.parseShort(conf.get(SparkQueryConf.HDFS_REPLICATION_FACTOR)),
                 client);
-        partition.loadNext(); // ???
-
+        partition.setTotalSize(size);
+        partition.load(); // ???
 
         if(types[currentFile- numFilesinDataset1] == 1){
             iter2 = pf_iter;
@@ -160,7 +160,7 @@ public class SparkJoinRecordReader extends
         iter2.setPartition(partition);
     }
 
-    void setPartitionToFirstIterator(Path path) {
+    void setPartitionToFirstIterator(Path path, long size) {
         FileSystem fs = null;
         try {
             fs = path.getFileSystem(conf);
@@ -171,7 +171,8 @@ public class SparkJoinRecordReader extends
         HDFSPartition partition = new HDFSPartition(fs, path.toString(),
                 Short.parseShort(conf.get(SparkQueryConf.HDFS_REPLICATION_FACTOR)),
                 client);
-        partition.loadNext(); // ???
+        partition.setTotalSize(size);
+        partition.load(); // ???
         iter1.setPartition(partition);
     }
 
@@ -188,7 +189,7 @@ public class SparkJoinRecordReader extends
                 break;
             }
 
-            setPartitionToFirstIterator(sparkSplit.getPath(currentFile));
+            setPartitionToFirstIterator(sparkSplit.getPath(currentFile), sparkSplit.getLength(currentFile));
 
             while (iter1.hasNext()) {
 
@@ -227,7 +228,7 @@ public class SparkJoinRecordReader extends
                         hasNext = false;
                         break;
                     } else {
-                        setPartitionToSecondIterator(sparkSplit.getPath(currentFile));
+                        setPartitionToSecondIterator(sparkSplit.getPath(currentFile), sparkSplit.getLength(currentFile));
                     }
                 }
             }

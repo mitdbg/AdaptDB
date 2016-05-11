@@ -62,7 +62,7 @@ public class SparkRecordReader extends
 					client);
 			System.out.println("INFO: Loading path: " + filePath.toString());
 			try {
-				partition.loadNext();
+				partition.load();
 				iterator.setPartition(partition);
 				currentFile++;
 				return true;

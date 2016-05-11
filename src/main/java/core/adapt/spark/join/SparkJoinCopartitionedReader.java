@@ -101,12 +101,12 @@ public class SparkJoinCopartitionedReader extends
 
         build_hashtable();
 
-        setPartitionToSecondIterator(sparkSplit.getPath(1));
+        setPartitionToSecondIterator(sparkSplit.getPath(1), sparkSplit.getLength(1));
 
 
     }
 
-    void setPartitionToFirstIterator(Path path) {
+    void setPartitionToFirstIterator(Path path, long size) {
         FileSystem fs = null;
         try {
             fs = path.getFileSystem(conf);
@@ -117,11 +117,12 @@ public class SparkJoinCopartitionedReader extends
         HDFSPartition partition = new HDFSPartition(fs, path.toString(),
                 Short.parseShort(conf.get(SparkQueryConf.HDFS_REPLICATION_FACTOR)),
                 client);
-        partition.loadNext(); // ???
+        partition.setTotalSize(size);
+        partition.load(); // ???
         iter1.setPartition(partition);
     }
 
-    void setPartitionToSecondIterator(Path path) {
+    void setPartitionToSecondIterator(Path path, long size) {
         FileSystem fs = null;
         try {
             fs = path.getFileSystem(conf);
@@ -132,14 +133,15 @@ public class SparkJoinCopartitionedReader extends
         HDFSPartition partition = new HDFSPartition(fs, path.toString(),
                 Short.parseShort(conf.get(SparkQueryConf.HDFS_REPLICATION_FACTOR)),
                 client);
-        partition.loadNext(); // ???
+        partition.setTotalSize(size);
+        partition.load(); // ???
         iter2.setPartition(partition);
     }
 
 
     private void build_hashtable() {
 
-        setPartitionToFirstIterator(sparkSplit.getPath(currentFile));
+        setPartitionToFirstIterator(sparkSplit.getPath(currentFile), sparkSplit.getLength(currentFile));
 
         while (iter1.hasNext()) {
 

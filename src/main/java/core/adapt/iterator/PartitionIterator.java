@@ -28,7 +28,6 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 
 	protected IteratorRecord record;
 	protected byte[] recordBytes;
-	protected byte[] brokenRecordBytes;
 
 	protected static char newLine = '\n';
 
@@ -73,12 +72,11 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 
 		TableInfo tableInfo = Globals.getTableInfo(query.getTable());
 		record = new IteratorRecord(tableInfo.delimiter);
-		bytes = partition.getNextBytes();
+		bytes = partition.getBytes();
 		// bytesLength = partition.getSize();
 		bytesLength = bytes == null ? 0 : bytes.length;
 		offset = 0;
 		previous = 0;
-		brokenRecordBytes = null;
 	}
 
 	@Override
@@ -87,11 +85,6 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 			if (bytes[offset] == newLine) {
 				// record.setBytes(bytes, previous, offset-previous);
 				recordBytes = ArrayUtils.subarray(bytes, previous, offset);
-				if (brokenRecordBytes != null) {
-					recordBytes = BinaryUtils.concatenate(brokenRecordBytes,
-							recordBytes);
-					brokenRecordBytes = null;
-				}
 
 				try {
 					record.setBytes(recordBytes);
@@ -109,21 +102,7 @@ public class PartitionIterator implements Iterator<IteratorRecord> {
 					continue;
 			}
 		}
-
-		if (previous < bytesLength)
-			brokenRecordBytes = BinaryUtils.getBytes(bytes, previous,
-					bytesLength - previous);
-		else
-			brokenRecordBytes = null;
-
-		bytes = partition == null ? null : partition.getNextBytes();
-		if (bytes != null) {
-			bytesLength = bytes.length;
-			offset = 0;
-			previous = 0;
-			return hasNext();
-		} else
-			return false;
+        return false;
 	}
 
 	protected boolean isRelevant(IteratorRecord record) {

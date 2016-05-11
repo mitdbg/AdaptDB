@@ -18,154 +18,165 @@ import core.utils.CuratorUtils;
 import core.utils.HDFSUtils;
 
 public class HDFSPartition extends Partition {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	protected FileSystem hdfs;
-	protected short replication;
+    protected FileSystem hdfs;
+    protected short replication;
 
-	private FSDataInputStream in;
-	private long totalSize = 0;
-	private long readSize = 0; 
-	private long returnSize = 0;
-	private final static int MAX_READ_SIZE = 1024 * 1024 * 50;
+    private FSDataInputStream in;
+    private long totalSize = 0;
 
-	private CuratorFramework client;
+    private CuratorFramework client;
 
-	public HDFSPartition(String pathAndPartitionId, String propertiesFile,
-			short replication) {
-		super(pathAndPartitionId);
-		ConfUtils conf = new ConfUtils(propertiesFile);
-		String coreSitePath = conf.getHADOOP_HOME()
-				+ "/etc/hadoop/core-site.xml";
-		Configuration e = new Configuration();
-		e.addResource(new Path(coreSitePath));
-		try {
-			this.hdfs = FileSystem.get(e);
-			this.replication = replication;
-		} catch (IOException ex) {
-			throw new RuntimeException("failed to get hdfs filesystem");
-		}
-		client = CuratorUtils.createAndStartClient(
-				conf.getZOOKEEPER_HOSTS());
-	}
+    //private InterProcessSemaphoreMutex read_lock;
 
-	public HDFSPartition(FileSystem hdfs, String pathAndPartitionId,
-			short replication, CuratorFramework client) {
-		super(pathAndPartitionId);
-		this.hdfs = hdfs;
-		this.replication = replication;
-		this.client = client;
-	}
+    public HDFSPartition(String pathAndPartitionId, String propertiesFile,
+                         short replication) {
+        super(pathAndPartitionId);
+        ConfUtils conf = new ConfUtils(propertiesFile);
+        String coreSitePath = conf.getHADOOP_HOME()
+                + "/etc/hadoop/core-site.xml";
+        Configuration e = new Configuration();
+        e.addResource(new Path(coreSitePath));
+        try {
+            this.hdfs = FileSystem.get(e);
+            this.replication = replication;
+        } catch (IOException ex) {
+            throw new RuntimeException("failed to get hdfs filesystem");
+        }
+        client = CuratorUtils.createAndStartClient(
+                conf.getZOOKEEPER_HOSTS());
 
-	@Override
-	public Partition clone() {
-		Partition p = new HDFSPartition(hdfs, path + partitionId, replication, client);
-		p.bytes = new byte[8192];
-		p.state = State.NEW;
-		return p;
-	}
+    }
 
-	public FileSystem getFS() {
-		return hdfs;
-	}
+    public HDFSPartition(FileSystem hdfs, String pathAndPartitionId,
+                         short replication, CuratorFramework client) {
+        super(pathAndPartitionId);
+        this.hdfs = hdfs;
+        this.replication = replication;
+        this.client = client;
+    }
 
-	public boolean loadNext() {
-		try {
-			if (totalSize == 0) {
-				Path p = new Path(path + "/" + partitionId);
-				totalSize = hdfs.getFileStatus(p).getLen();
-				in = hdfs.open(p);
-			}
+    @Override
+    public Partition clone() {
+        Partition p = new HDFSPartition(hdfs, path + partitionId, replication, client);
+        p.bytes = new byte[8192];
+        p.state = State.NEW;
+        return p;
+    }
 
-			if (readSize < totalSize) {
-				bytes = new byte[(int) Math.min(MAX_READ_SIZE, totalSize
-						- readSize)];
-				ByteStreams.readFully(in, bytes);
-				readSize += bytes.length;
-				return true;
-			} else {
-				in.close();
-				readSize = 0;
-				totalSize = 0;
-				return false;
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new RuntimeException("Failed to read file: " + path + "/"
-					+ partitionId);
-		}
-	}
+    public FileSystem getFS() {
+        return hdfs;
+    }
 
-	@Override
-	public boolean load() {
-		if (path == null || path.equals(""))
-			return false;
-		bytes = HDFSUtils.readFile(hdfs, path + "/" + partitionId);
-		return true; // load the physical block for this partition
-	}
+    public void setTotalSize(long size) {
+        this.totalSize = size;
+    }
 
-	@Override
-	public byte[] getNextBytes() {
-		if (readSize <= returnSize) {
-			boolean f = loadNext();
-			if (!f)
-				return null;
-		}
-		returnSize += bytes.length;
-		return bytes;
-	}
+    /*
+    public boolean loadNext() {
+        try {
+            if (totalSize == 0) {
+                Path p = new Path(path + "/" + partitionId);
+                totalSize = hdfs.getFileStatus(p).getLen();
+                in = hdfs.open(p);
+            }
 
-	@Override
-	public void store(boolean append) {
-		InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client,
-				"/partition-lock-" + path.hashCode() + "-" + partitionId);
-		System.out.println("LOCK: acquired lock,  " + "path=" + path
-				+ " , partition id=" + partitionId + " ,size= " + offset );
+            if (readSize < totalSize) {
+                bytes = new byte[(int) Math.min(MAX_READ_SIZE, totalSize
+                        - readSize)];
+                ByteStreams.readFully(in, bytes);
+                readSize += bytes.length;
+                return true;
+            } else {
+                in.close();
+                readSize = 0;
+                totalSize = 0;
+                return false;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to read file: " + path + "/"
+                    + partitionId);
+        }
+    }
+    */
+    @Override
+    public boolean load() {
+        if (path == null || path.equals("")) {
+            throw new RuntimeException();
+        }
+        try {
+
+            InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client,
+                    "/partition-lock-" + path.hashCode() + "-" + partitionId);
+            System.out.println("LOCK: acquired lock,  " + "path=" + path
+                    + " , partition id=" + partitionId + " , for loading.");
+
+            Path p = new Path(path + "/" + partitionId);
+            in = hdfs.open(p);
+            bytes = new byte[(int) totalSize];
+            ByteStreams.readFully(in, bytes);
+            in.close();
+
+            CuratorUtils.releaseLock(l);
+            return true; // load the physical block for this partition
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to read file: " + path + "/"
+                    + partitionId);
+        }
+    }
+
+    @Override
+    public void store(boolean append) {
+
+        InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client,
+                "/partition-lock-" + path.hashCode() + "-" + partitionId);
+        System.out.println("LOCK: acquired lock,  " + "path=" + path
+                + " , partition id=" + partitionId + " ,size= " + offset);
 
 
-		String storePath = path + "/" + partitionId;
-		if (!path.startsWith("hdfs"))
-			storePath = "/" + storePath;
+        String storePath = path + "/" + partitionId;
+        if (!path.startsWith("hdfs"))
+            storePath = "/" + storePath;
 
-		Path e = new Path(storePath);
+        Path e = new Path(storePath);
 
-		FSDataOutputStream os = null;
+        FSDataOutputStream os = null;
 
-		boolean shouldAppend = false;
+        boolean shouldAppend = false;
 
-		try{
-			boolean overwrite = !append;
-			os = hdfs.create(e, overwrite, hdfs.getConf().getInt("io.file.buffer.size", 4096),
-					replication, hdfs.getDefaultBlockSize(e));
+        try {
+            boolean overwrite = !append;
+            os = hdfs.create(e, overwrite, hdfs.getConf().getInt("io.file.buffer.size", 4096),
+                    replication, hdfs.getDefaultBlockSize(e));
 
-			System.out.println("created partition " + partitionId);
-		}
-		catch(IOException ex){
-			shouldAppend = true;
-		}
+            System.out.println("created partition " + partitionId);
+        } catch (IOException ex) {
+            shouldAppend = true;
+        }
 
-		try{
-			if(shouldAppend){
-				os = hdfs.append(e);
-			}
-			os.write(bytes, 0, offset);
-			os.flush();
-			os.close();
-			recordCount = 0;
-		}
-		catch(IOException ex){
-			System.out.println("exception: "
-					+ (new Timestamp(System.currentTimeMillis())));
-			//throw new RuntimeException(ex.getMessage());
-		}
-		finally {
-			CuratorUtils.releaseLock(l);
-			System.out.println("LOCK: released lock " + partitionId);
-		}
-	}
+        try {
+            if (shouldAppend) {
+                os = hdfs.append(e);
+            }
+            os.write(bytes, 0, offset);
+            os.flush();
+            os.close();
+            recordCount = 0;
+        } catch (IOException ex) {
+            System.out.println("exception: "
+                    + (new Timestamp(System.currentTimeMillis())));
+            //throw new RuntimeException(ex.getMessage());
+        } finally {
+            CuratorUtils.releaseLock(l);
+            System.out.println("LOCK: released lock " + partitionId);
+        }
+    }
 
-	@Override
-	public void drop() {
-		// HDFSUtils.deleteFile(hdfs, path + "/" + partitionId, false);
-	}
+    @Override
+    public void drop() {
+        // HDFSUtils.deleteFile(hdfs, path + "/" + partitionId, false);
+    }
 }

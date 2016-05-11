@@ -160,7 +160,7 @@ public class SparkJoinQuery {
         conf.set("DATASET", dataset1);
 
         JavaPairRDD<LongWritable, Text> dataset1RDD = createSingleTableRDD(hdfsPath, dataset1_query);
-
+        
         // set conf input;
         conf.set("DATASET_QUERY", dataset2_query.toString());
         conf.set("DATASETINFO", input2);
