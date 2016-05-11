@@ -1,6 +1,7 @@
 // Load TPC-H tables from the datafiles generated
 // Start the spark shell using
-// ./spark-shell --master spark://localhost:7077 --packages com.databricks:spark-csv_2.11:1.2.0 --executor-memory 4g --driver-memory 1g
+// ./spark-shell --master spark://128.30.77.86:7077 --packages com.databricks:spark-csv_2.11:1.2.0 --driver-memory 4G --executor-memory 100G
+
 // sc is an existing SparkContext.
 val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 
@@ -8,8 +9,8 @@ val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 import sqlContext.implicits._
 import org.apache.spark.sql.SaveMode
 
-val PATH = "hdfs://istc2.csail.mit.edu:9000/user/ylu/tpch"
-val DEST = "hdfs://istc2.csail.mit.edu:9000/user/ylu/tpch100"
+val PATH = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch10-raw"
+val DEST = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch10-spark"
 
 
 // Create nation table.

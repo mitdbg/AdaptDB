@@ -977,6 +977,15 @@ public class TPCHJoinWorkload {
 
     }
 
+    public void runTPCH3() {
+        tpch3();
+    }
+    public void runTPCH5() {
+        tpch5();
+    }
+    public void runTPCH6() {
+        tpch6();
+    }
 
     public static void main(String[] args) {
 
@@ -1013,7 +1022,15 @@ public class TPCHJoinWorkload {
             case 8:
                 t.garbageCollect();
                 break;
-
+            case 9:
+                t.runTPCH3();
+                break;
+            case 10:
+                t.runTPCH5();
+                break;
+            case 11:
+                t.runTPCH6();
+                break;
             default:
                 break;
         }

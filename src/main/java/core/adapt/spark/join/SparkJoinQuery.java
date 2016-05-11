@@ -215,6 +215,9 @@ public class SparkJoinQuery {
         //System.out.println("INFO working dir: " + workingDir);
 
         List<JoinQuery> dataset_queryWindow = JoinPlanner.loadQueries(dataset, queryConf);
+        dataset_queryWindow.add(q);
+
+        JoinPlanner.persistQueryToDisk(q, queryConf);
 
         Globals.loadTableInfo(dataset, queryConf.getWorkingDir(), fs);
         TableInfo dataset_tableInfo = Globals.getTableInfo(dataset);

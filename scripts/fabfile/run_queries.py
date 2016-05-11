@@ -63,13 +63,7 @@ def run_tpchjoin():
             ' --schemaCustomer "$SCHEMACUSTOMER"' + \
             ' --schemaPart "$SCHEMAPART"' + \
             ' --schemaSupplier "$SCHEMASUPPLIER"' + \
-            ' --sizeLineitem 100' + \
-            ' --sizeCustomer 94' + \
-            ' --sizeSupplier 82' + \
-            ' --sizeOrders 64' + \
-            ' --sizePart 90' + \
-            ' --numQueries 10' + \
-            ' --method 1' + \
+            ' --method 11' + \
             ' --conf $CONF  > ~/logs/join_workload.log'
         cmd = fill_cmd(cmd)
         run(cmd)

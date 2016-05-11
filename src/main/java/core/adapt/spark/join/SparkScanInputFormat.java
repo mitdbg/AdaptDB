@@ -119,7 +119,6 @@ public class SparkScanInputFormat extends FileInputFormat<LongWritable, Text> im
                 ((JoinRepartitionIterator) iter).setZookeeper(queryConf.getZookeeperHosts());
             }
 
-
             Path[] path = new Path[subsplits.length - 1];
             long[] len = new long[subsplits.length - 1];
 

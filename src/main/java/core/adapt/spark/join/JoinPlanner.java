@@ -39,8 +39,6 @@ import java.util.*;
  */
 public class JoinPlanner {
 
-    public static int QUERY_WINDOW_SIZE = 1;
-
     private FileSystem fs;
     private SparkJoinQueryConf queryConf;
     private String dataset1, dataset2;
@@ -79,8 +77,8 @@ public class JoinPlanner {
         dataset1_queryWindow.add(dataset1_query);
         dataset2_queryWindow.add(dataset2_query);
 
-        persistQueryToDisk(dataset1_query);
-        persistQueryToDisk(dataset2_query);
+        persistQueryToDisk(dataset1_query, queryConf);
+        persistQueryToDisk(dataset2_query, queryConf);
 
         dataset1_hpinput = new HPJoinInput();
         dataset2_hpinput = new HPJoinInput();
@@ -101,6 +99,10 @@ public class JoinPlanner {
         hyperJoinSplit = new ArrayList<PartitionSplit>();
         shuffleJoinSplit1 = new ArrayList<PartitionSplit>();
         shuffleJoinSplit2 = new ArrayList<PartitionSplit>();
+
+        hyperjoin = "";
+        shufflejoin1 = "";
+        shufflejoin2 = "";
 
         // set up table info and get partitions for each table
         setupTableInfo();
@@ -127,6 +129,8 @@ public class JoinPlanner {
                 multiple_iterator_type = true;
             }
         }
+
+        // separate read-only and repartitioned. Read only go first.
 
         if (IntInArray(dataset1_join_attr, dataset1_partitions) && IntInArray(dataset2_join_attr, dataset2_partitions) && dataset2_partitions.length == 1 && multiple_iterator_type == false) {
             // read_index && init over_lap
@@ -188,7 +192,7 @@ public class JoinPlanner {
         shufflejoin2 = getShuffleJoinInput2();
     }
 
-    private void persistQueryToDisk(JoinQuery q) {
+    public static void persistQueryToDisk(JoinQuery q, SparkJoinQueryConf queryConf) {
         String pathToQueries = queryConf.getWorkingDir() + "/" + q.getTable() + "/queries";
         FileSystem fs = HDFSUtils.getFSByHadoopHome(queryConf.getHadoopHome());
         HDFSUtils.safeCreateFile(fs, pathToQueries,
@@ -267,7 +271,6 @@ public class JoinPlanner {
 
     public static void speculative_repartition(String tableName, JoinQuery query, List<JoinQuery> queryWindow, TableInfo tableInfo, HPJoinInput hpinput, Map<Integer, JoinAccessMethod> am_map, Map<Integer, ArrayList<Integer>> scan_blocks, Map<Integer, Integer> iterator_type, SparkJoinQueryConf queryConf, FileSystem fs) {
 
-
         int joinAttribute = query.getJoinAttribute();
         int[] partitions = tableInfo.partitions;
 
@@ -301,11 +304,11 @@ public class JoinPlanner {
 
         int noJoinAttr = -1;
 
-        if (queryWindow.size() < QUERY_WINDOW_SIZE + 1) {
+        if (queryWindow.size() < Globals.QUERY_WINDOW_SIZE) {
             if (expected_weights.containsKey(noJoinAttr) == false) {
                 expected_weights.put(noJoinAttr, 0);
             }
-            expected_weights.put(noJoinAttr, QUERY_WINDOW_SIZE + 1 - total_weight);
+            expected_weights.put(noJoinAttr, Globals.QUERY_WINDOW_SIZE - total_weight);
         }
 
         // calculate partition size for each index
@@ -396,7 +399,7 @@ public class JoinPlanner {
         // adjust tree -> adapt or delete + scan
 
         //normalization
-        double join_expected_weight = 1.0 * expected_weights.get(joinAttribute) / (QUERY_WINDOW_SIZE + 1);
+        double join_expected_weight = 1.0 * expected_weights.get(joinAttribute) / Globals.QUERY_WINDOW_SIZE ;
 
         double join_weight = 0;
         if (partition_sizes.containsKey(joinAttribute)) {
@@ -410,7 +413,7 @@ public class JoinPlanner {
                 //normalization
 
                 double weight = 1.0 * partition_sizes.get(partitions[i]) / table_size;
-                double expected_weight = 1.0 * expected_weights.get(partitions[i]) / (QUERY_WINDOW_SIZE + 1);
+                double expected_weight = 1.0 * expected_weights.get(partitions[i]) / Globals.QUERY_WINDOW_SIZE ;
 
                 JoinAccessMethod am = am_map.get(partitions[i]);
                 JoinRobustTree rt = am.getIndex();
@@ -532,9 +535,9 @@ public class JoinPlanner {
                     queryWindow.add(f);
                 }
 
-                if (queryWindow.size() > QUERY_WINDOW_SIZE) {
+                if (queryWindow.size() > Globals.QUERY_WINDOW_SIZE - 1) {
                     // set windows size
-                    queryWindow = queryWindow.subList(queryWindow.size() - QUERY_WINDOW_SIZE, queryWindow.size());
+                    queryWindow = queryWindow.subList(queryWindow.size() - (Globals.QUERY_WINDOW_SIZE - 1), queryWindow.size());
                 }
                 sc.close();
             }
@@ -726,6 +729,8 @@ public class JoinPlanner {
 
         for (PartitionSplit split : hyperJoinSplit) {
 
+            if(split.getPartitions().length == 0) continue;
+
             if (sb.length() > 0) {
                 sb.append(";");
             }
@@ -776,6 +781,9 @@ public class JoinPlanner {
         StringBuilder sb = new StringBuilder();
 
         for (PartitionSplit split : shuffleJoinSplit) {
+
+            if(split.getPartitions().length == 0) continue;
+
             if (sb.length() > 0) {
                 sb.append(";");
             }

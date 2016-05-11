@@ -1,15 +1,24 @@
 package core.adapt.spark;
 
+import core.adapt.AccessMethod;
 import core.adapt.JoinQuery;
 import core.adapt.Predicate;
+import core.adapt.spark.join.HPJoinInput;
+import core.adapt.spark.join.JoinAccessMethod;
 import core.adapt.spark.join.JoinPlanner;
+import core.adapt.spark.join.SparkJoinQueryConf;
+import core.common.globals.Globals;
 import core.common.globals.Schema;
+import core.common.globals.TableInfo;
+import core.utils.HDFSUtils;
 import core.utils.TypeUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.spark.api.java.JavaPairRDD;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Created by ylu on 5/6/16.
@@ -58,7 +67,71 @@ public class JoinPlannerTest {
         rand.setSeed(0);
     }
 
-    public static void main(String[] args){
+    public static void test6(){
+
+        setup();
+
+        int year_6 = 1993 + rand.nextInt(5);
+        TypeUtils.SimpleDate d6_1 = new TypeUtils.SimpleDate(year_6, 1, 1);
+        TypeUtils.SimpleDate d6_2 = new TypeUtils.SimpleDate(year_6 + 1, 1, 1);
+        double discount = rand.nextDouble() * 0.07 + 0.02;
+        double quantity = rand.nextInt(2) + 24.0;
+        Predicate p1_6 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TypeUtils.TYPE.DATE, d6_1, Predicate.PREDTYPE.GEQ);
+        Predicate p2_6 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TypeUtils.TYPE.DATE, d6_2, Predicate.PREDTYPE.LT);
+        Predicate p3_6 = new Predicate(schemaLineitem.getAttributeId("l_discount"), TypeUtils.TYPE.DOUBLE, discount - 0.01, Predicate.PREDTYPE.GT);
+        Predicate p4_6 = new Predicate(schemaLineitem.getAttributeId("l_discount"), TypeUtils.TYPE.DOUBLE, discount + 0.01, Predicate.PREDTYPE.LEQ);
+        Predicate p5_6 = new Predicate(schemaLineitem.getAttributeId("l_quantity"), TypeUtils.TYPE.DOUBLE, quantity, Predicate.PREDTYPE.LEQ);
+        JoinQuery q = new JoinQuery(lineitem, 0, new Predicate[]{p1_6, p2_6, p3_6, p4_6, p5_6});
+
+
+        Configuration conf = new Configuration();
+
+        String dataset = "lineitem";
+
+        conf.set("WORKING_DIR", "/user/yilu");
+        conf.set("HADOOP_HOME", "/Users/ylu/Documents/workspace/hadoop-2.6.0");
+        conf.set("ZOOKEEPER_HOSTS","localhost");
+        conf.setInt("HDFS_REPLICATION_FACTOR", 1);
+        conf.set("MAX_SPLIT_SIZE", "" + 4L * 1024 * 1024 * 1024); // 64 MB
+        conf.set("WORKER_NUM", "9");
+
+        conf.set("DATASET", dataset);
+        conf.set("DATASET_QUERY", q.toString());
+        conf.set("PARTITION_KEY", "0") ;
+        conf.set("DELIMITER", "|");
+
+        SparkJoinQueryConf queryConf = new SparkJoinQueryConf(conf);
+
+
+        FileSystem fs = HDFSUtils.getFSByHadoopHome("/Users/ylu/Documents/workspace/hadoop-2.6.0");
+
+        //System.out.println("INFO working dir: " + workingDir);
+
+        List<JoinQuery> dataset_queryWindow = JoinPlanner.loadQueries(dataset, queryConf);
+        dataset_queryWindow.add(q);
+        JoinPlanner.persistQueryToDisk(q, queryConf);
+
+        Globals.loadTableInfo(dataset, queryConf.getWorkingDir(), fs);
+        TableInfo dataset_tableInfo = Globals.getTableInfo(dataset);
+        HPJoinInput dataset_hpinput = new HPJoinInput();
+        Map<Integer, JoinAccessMethod> dataset_am = new HashMap<Integer, JoinAccessMethod>();
+        Map<Integer, Integer> dataset_iterator_type = new HashMap<Integer, Integer>();
+        Map<Integer, ArrayList<Integer>> dataset_scan_blocks = new HashMap<Integer, ArrayList<Integer>>();
+
+        JoinPlanner.speculative_repartition(dataset, q, dataset_queryWindow, dataset_tableInfo, dataset_hpinput, dataset_am, dataset_scan_blocks, dataset_iterator_type, queryConf, fs);
+        ArrayList<AccessMethod.PartitionSplit> shuffleJoinSplit = new  ArrayList<AccessMethod.PartitionSplit>();
+        JoinPlanner.extractShuffleJoin(q, shuffleJoinSplit, dataset_scan_blocks, dataset_iterator_type, dataset_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize(), queryConf.getWorkerNum());
+
+        String input = JoinPlanner.getShuffleJoinInputHelper(shuffleJoinSplit, dataset_hpinput);
+
+        System.out.println("shuffleInput: " + input);
+
+        conf.set("DATASETINFO", input);
+
+    }
+
+
+    public static void test3(){
 
         setup();
 
@@ -72,14 +145,25 @@ public class JoinPlannerTest {
                 c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
 
 
-        Predicate p1_3 = new Predicate(schemaCustomer.getAttributeId("c_mktsegment"), TypeUtils.TYPE.STRING, c_mktsegment, Predicate.PREDTYPE.LEQ);
         Predicate p2_3 = new Predicate(schemaOrders.getAttributeId("o_orderdate"), TypeUtils.TYPE.DATE, d3, Predicate.PREDTYPE.LT);
         Predicate p3_3 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TypeUtils.TYPE.DATE, d3, Predicate.PREDTYPE.GT);
 
-        JoinQuery q_c = null;
         JoinQuery q_o = new JoinQuery(orders, schemaOrders.getAttributeId("o_orderkey"), new Predicate[]{p2_3});
-        JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_orderkey"), new Predicate[]{p3_3});
+        //JoinQuery q_l = new JoinQuery(lineitem, schemaLineitem.getAttributeId("l_orderkey"), new Predicate[]{p3_3});
 
+
+
+        int year_6 = 1993 + rand.nextInt(5);
+        TypeUtils.SimpleDate d6_1 = new TypeUtils.SimpleDate(year_6, 1, 1);
+        TypeUtils.SimpleDate d6_2 = new TypeUtils.SimpleDate(year_6 + 1, 1, 1);
+        double discount = rand.nextDouble() * 0.07 + 0.02;
+        double quantity = rand.nextInt(2) + 24.0;
+        Predicate p1_6 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TypeUtils.TYPE.DATE, d6_1, Predicate.PREDTYPE.GEQ);
+        Predicate p2_6 = new Predicate(schemaLineitem.getAttributeId("l_shipdate"), TypeUtils.TYPE.DATE, d6_2, Predicate.PREDTYPE.LT);
+        Predicate p3_6 = new Predicate(schemaLineitem.getAttributeId("l_discount"), TypeUtils.TYPE.DOUBLE, discount - 0.01, Predicate.PREDTYPE.GT);
+        Predicate p4_6 = new Predicate(schemaLineitem.getAttributeId("l_discount"), TypeUtils.TYPE.DOUBLE, discount + 0.01, Predicate.PREDTYPE.LEQ);
+        Predicate p5_6 = new Predicate(schemaLineitem.getAttributeId("l_quantity"), TypeUtils.TYPE.DOUBLE, quantity, Predicate.PREDTYPE.LEQ);
+        JoinQuery q_l = new JoinQuery(lineitem, 0, new Predicate[]{p1_6, p2_6, p3_6, p4_6, p5_6});
 
 
         Configuration conf = new Configuration();
@@ -102,5 +186,14 @@ public class JoinPlannerTest {
 
         JoinPlanner planner = new JoinPlanner(conf);
 
+        String s1 = planner.shufflejoin1;
+        String s2 = planner.shufflejoin2;
+
+        System.out.println(s1);
+        System.out.println(s2);
+    }
+
+    public static void main(String[] args){
+        test6();
     }
 }

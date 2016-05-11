@@ -6,7 +6,9 @@ import java.util.*;
 
 import core.adapt.JoinQuery;
 import core.adapt.iterator.JoinRepartitionIterator;
+import core.adapt.spark.join.JoinPlanner;
 import core.adapt.spark.join.SparkJoinQueryConf;
+import core.common.globals.Globals;
 import core.common.globals.TableInfo;
 import core.common.index.JRNode;
 import core.common.index.JoinRobustTree;
@@ -772,9 +774,9 @@ public class JoinOptimizer {
                     queryWindow.add(f);
                 }
 
-                if (queryWindow.size() > 10) {
+                if (queryWindow.size() > Globals.QUERY_WINDOW_SIZE - 1) {
                     // set windows size
-                    queryWindow = queryWindow.subList(queryWindow.size() - 10, queryWindow.size());
+                    queryWindow = queryWindow.subList(queryWindow.size() - (Globals.QUERY_WINDOW_SIZE-1), queryWindow.size());
                 }
 
 

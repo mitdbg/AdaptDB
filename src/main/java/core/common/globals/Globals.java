@@ -16,6 +16,7 @@ public class Globals {
 
     // Query window size.
     static public final int window_size = 20;
+    static public final int QUERY_WINDOW_SIZE = 2;
 
 	static Map<String, TableInfo> tableInfos = new HashMap<String, TableInfo>();
 

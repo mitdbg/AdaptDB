@@ -50,14 +50,14 @@ def build_jar():
 def update_jar():
     if not exists('/home/mdindex/yilu/mdindex/build/libs'):
         run('mkdir -p /home/mdindex/yilu/mdindex/build/libs')
-    put('/Users/ylu/Documents/workspace/mdindex/build/libs/mdindex-all.jar', '/home/mdindex/yilu/mdindex/build/libs/mdindex-all.jar')
+    put('/Users/ylu/Documents/workspace/AdaptDB/build/libs/mdindex-all.jar', '/home/mdindex/yilu/mdindex/build/libs/mdindex-all.jar')
 
 
 @roles('master')
 def update_master_jar():
     if not exists('/home/mdindex/yilu/mdindex/build/libs'):
         run('mkdir -p /home/mdindex/yilu/mdindex/build/libs')
-    put('/Users/ylu/Documents/workspace/mdindex/build/libs/mdindex-all.jar', '/home/mdindex/yilu/mdindex/build/libs/mdindex-all.jar')
+    put('/Users/ylu/Documents/workspace/AdaptDB/build/libs/mdindex-all.jar', '/home/mdindex/yilu/mdindex/build/libs/mdindex-all.jar')
 
 @serial
 def update_config():

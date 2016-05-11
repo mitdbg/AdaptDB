@@ -263,7 +263,7 @@ public class JoinRobustTree implements MDIndex {
             if (dim == -1) {
                 System.err.println("ERR: No attribute to partition on");
                 Bucket b = new Bucket();
-                b.setSample(sample);
+                b.setSample(t.sample);
                 t.node.bucket = b;
             } else {
                 t.node.attribute = dim;
@@ -293,6 +293,7 @@ public class JoinRobustTree implements MDIndex {
 
     public void initProbe(JoinQuery q) {
         System.out.println(this.sample.size() + " keys inserted");
+        randGenerator.setSeed(0);
 
         int joinAttribute = q.getJoinAttribute();
 
@@ -358,7 +359,7 @@ public class JoinRobustTree implements MDIndex {
 
                 for (int i = 0; i < numPredicates; i++) {
                     int testDim = getLeastAllocated(allocations, validDims);
-                    halves = sample.sortAndSplit(testDim);
+                    halves = t.sample.sortAndSplit(testDim);
                     if (halves.first.size() > 0 && halves.second.size() > 0) {
                         dim = testDim;
                         allocations[dim] -= 2.0 / Math.pow(2, t.depth - 1);
@@ -368,11 +369,13 @@ public class JoinRobustTree implements MDIndex {
                     }
                 }
 
+                numPredicates = this.numAttributes;
+
                 if (dim == -1) {
                     Arrays.fill(validDims, true);
                     for (int i = 0; i < numAttributes; i++) {
                         int testDim = getLeastAllocated(allocations, validDims);
-                        halves = sample.sortAndSplit(testDim);
+                        halves = t.sample.sortAndSplit(testDim);
                         if (halves.first.size() > 0 && halves.second.size() > 0) {
                             dim = testDim;
                             allocations[dim] -= 2.0 / Math.pow(2, t.depth - 1);
@@ -389,7 +392,7 @@ public class JoinRobustTree implements MDIndex {
             if (dim == -1) {
                 System.err.println("ERR: No attribute to partition on");
                 Bucket b = new Bucket();
-                b.setSample(sample);
+                b.setSample(t.sample);
                 t.node.bucket = b;
             } else {
                 t.node.attribute = dim;

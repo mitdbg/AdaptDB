@@ -1,31 +1,31 @@
-#fab setup:lineitem1000 create_table_info
-#fab setup:lineitem1000 bulk_sample_gen
-#fab setup:lineitem1000 create_join_robust_tree
-fab setup:lineitem1000 write_join_partitions
+fab setup:lineitem100 create_table_info
+fab setup:lineitem100 bulk_sample_gen
+fab setup:lineitem100 create_join_robust_tree
+fab setup:lineitem100 write_join_partitions
 
 
-#fab setup:orders1000 create_table_info
-#fab setup:orders1000 bulk_sample_gen
-#fab setup:orders1000 create_join_robust_tree
-#fab setup:orders1000 write_join_partitions
+fab setup:orders100 create_table_info
+fab setup:orders100 bulk_sample_gen
+fab setup:orders100 create_join_robust_tree
+fab setup:orders100 write_join_partitions
 
 
-#fab setup:part1000 create_table_info
-#fab setup:part1000 bulk_sample_gen
-#fab setup:part1000 create_join_robust_tree
-#fab setup:part1000 write_join_partitions
+fab setup:part100 create_table_info
+fab setup:part100 bulk_sample_gen
+fab setup:part100 create_join_robust_tree
+fab setup:part100 write_join_partitions
 
 
-#fab setup:supplier1000 create_table_info
-#fab setup:supplier1000 bulk_sample_gen
-#fab setup:supplier1000 create_join_robust_tree
-#fab setup:supplier1000 write_join_partitions
+fab setup:supplier100 create_table_info
+fab setup:supplier100 bulk_sample_gen
+fab setup:supplier100 create_join_robust_tree
+fab setup:supplier100 write_join_partitions
 
 
-#fab setup:customer1000 create_table_info
-#fab setup:customer1000 bulk_sample_gen
-#fab setup:customer1000 create_join_robust_tree
-#fab setup:customer1000 write_join_partitions
+fab setup:customer100 create_table_info
+fab setup:customer100 bulk_sample_gen
+fab setup:customer100 create_join_robust_tree
+fab setup:customer100 write_join_partitions
 
 
 #fab setup:join_mh create_table_info

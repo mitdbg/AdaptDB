@@ -13,6 +13,50 @@ def tpch_init():
         run('make')
 
 @serial
+def tpch_script_gen_1():
+    global counter
+    try:
+        with cd('/data/mdindex/yilu/tpch-dbgen'):
+            try:
+                # delete any old tables before creating new ones
+                run('rm -rf *tbl*')
+            except:
+                pass
+            script = "#!/bin/bash\n"
+            script += "cd /data/mdindex/yilu/tpch-dbgen\n"
+            cmd = './dbgen -s 1 -C 10 -S %d\n' % (counter + 1)
+            script += cmd
+
+            run('echo "%s" > data_gen.sh' % script)
+            run('chmod +x data_gen.sh')
+    except:
+        pass
+
+    counter += 1
+    
+@serial
+def tpch_script_gen_10():
+    global counter
+    try:
+        with cd('/data/mdindex/yilu/tpch-dbgen'):
+            try:
+                # delete any old tables before creating new ones
+                run('rm -rf *tbl*')
+            except:
+                pass
+            script = "#!/bin/bash\n"
+            script += "cd /data/mdindex/yilu/tpch-dbgen\n"
+            cmd = './dbgen -s 10 -C 10 -S %d\n' % (counter + 1)
+            script += cmd
+
+            run('echo "%s" > data_gen.sh' % script)
+            run('chmod +x data_gen.sh')
+    except:
+        pass
+
+    counter += 1
+
+@serial
 def tpch_script_gen_100():
     global counter
     try:
@@ -62,6 +106,24 @@ def tpch_gen():
     run('nohup /data/mdindex/yilu/tpch-dbgen/data_gen.sh  > /dev/null 2>&1 < /dev/null &', pty=False)
 
 @parallel
+def create_script_move_data_1():
+    with cd('/data/mdindex/yilu'):
+        script = "#!/bin/bash\n"
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -copyFromLocal " + \
+                "/data/mdindex/yilu/tpch-dbgen/*.tbl.* /user/yilu/tpch1-raw/" 
+        run('echo "%s" > move_data.sh' % script)
+        run('chmod +x move_data.sh')
+
+@parallel
+def create_script_move_data_10():
+    with cd('/data/mdindex/yilu'):
+        script = "#!/bin/bash\n"
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -copyFromLocal " + \
+                "/data/mdindex/yilu/tpch-dbgen/*.tbl.* /user/yilu/tpch10-raw/" 
+        run('echo "%s" > move_data.sh' % script)
+        run('chmod +x move_data.sh')
+
+@parallel
 def create_script_move_data_100():
     with cd('/data/mdindex/yilu'):
         script = "#!/bin/bash\n"
@@ -107,6 +169,81 @@ def create_script_clear_tmp():
 def clear_tmp():
     run('nohup /data/mdindex/yilu/clear_tmp.sh > /dev/null 2>&1 < /dev/null &', pty=False)
 
+
+@serial
+def create_script_download_data_1():
+    if exists('/data/mdindex/yilu/tpch1'):
+        run('rm -rf /data/mdindex/yilu/tpch1')
+
+    run('mkdir /data/mdindex/yilu/tpch1')
+
+    if not exists('/data/mdindex/yilu/tpch1/lineitem'):
+        run('mkdir /data/mdindex/yilu/tpch1/lineitem')
+    if not exists('/data/mdindex/yilu/tpch1/customer'):
+        run('mkdir /data/mdindex/yilu/tpch1/customer')
+    if not exists('/data/mdindex/yilu/tpch1/part'):
+        run('mkdir /data/mdindex/yilu/tpch1/part')
+    if not exists('/data/mdindex/yilu/tpch1/orders'):
+        run('mkdir /data/mdindex/yilu/tpch1/orders')
+    if not exists('/data/mdindex/yilu/tpch1/supplier'):
+        run('mkdir /data/mdindex/yilu/tpch1/supplier')
+
+
+    global counter
+    with cd('/data/mdindex/yilu'):
+        script = "#!/bin/bash\n"
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -get " + \
+                "/user/yilu/tpch1-spark/lineitem/part-*%d /data/mdindex/yilu/tpch1/lineitem\n" % counter 
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -get " + \
+                "/user/yilu/tpch1-spark/customer/part-*%d /data/mdindex/yilu/tpch1/customer\n" % counter
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -get " + \
+                "/user/yilu/tpch1-spark/part/part-*%d /data/mdindex/yilu/tpch1/part\n" % counter 
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -get " + \
+                "/user/yilu/tpch1-spark/orders/part-*%d /data/mdindex/yilu/tpch1/orders\n" % counter 
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -get " + \
+                "/user/yilu/tpch1-spark/supplier/part-*%d /data/mdindex/yilu/tpch1/supplier\n" % counter 
+        run('echo "%s" > download_data.sh' % script)
+        run('chmod +x download_data.sh')
+
+    counter += 1
+
+
+@serial
+def create_script_download_data_10():
+    if exists('/data/mdindex/yilu/tpch10'):
+        run('rm -rf /data/mdindex/yilu/tpch10')
+
+    run('mkdir /data/mdindex/yilu/tpch10')
+
+    if not exists('/data/mdindex/yilu/tpch10/lineitem'):
+        run('mkdir /data/mdindex/yilu/tpch10/lineitem')
+    if not exists('/data/mdindex/yilu/tpch10/customer'):
+        run('mkdir /data/mdindex/yilu/tpch10/customer')
+    if not exists('/data/mdindex/yilu/tpch10/part'):
+        run('mkdir /data/mdindex/yilu/tpch10/part')
+    if not exists('/data/mdindex/yilu/tpch10/orders'):
+        run('mkdir /data/mdindex/yilu/tpch10/orders')
+    if not exists('/data/mdindex/yilu/tpch10/supplier'):
+        run('mkdir /data/mdindex/yilu/tpch10/supplier')
+
+
+    global counter
+    with cd('/data/mdindex/yilu'):
+        script = "#!/bin/bash\n"
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -get " + \
+                "/user/yilu/tpch10-spark/lineitem/part-*%d /data/mdindex/yilu/tpch10/lineitem\n" % counter 
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -get " + \
+                "/user/yilu/tpch10-spark/customer/part-*%d /data/mdindex/yilu/tpch10/customer\n" % counter
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -get " + \
+                "/user/yilu/tpch10-spark/part/part-*%d /data/mdindex/yilu/tpch10/part\n" % counter 
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -get " + \
+                "/user/yilu/tpch10-spark/orders/part-*%d /data/mdindex/yilu/tpch10/orders\n" % counter 
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -get " + \
+                "/user/yilu/tpch10-spark/supplier/part-*%d /data/mdindex/yilu/tpch10/supplier\n" % counter 
+        run('echo "%s" > download_data.sh' % script)
+        run('chmod +x download_data.sh')
+
+    counter += 1
 
 
 @serial
