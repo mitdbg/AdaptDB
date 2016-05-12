@@ -37,20 +37,8 @@ public class Query implements Serializable {
 			this.predicates = new Predicate[0];
 		}
 
-		normalizeQuery();
 	}
 
-	/**
-	 * The partitioning tree with node A_p splits data as
-	 * A <= p and A > p. Things become simpler if predicates are also
-	 * <= or >.
-	 */
-	public void normalizeQuery() {
-		for (Predicate p: predicates) {
-			p.normalizePredicate();
-		}
-	}
-	
 	public Query(String table, Predicate[] predicates) {
 		this.table = table;
 		this.predicates = predicates;

@@ -111,7 +111,7 @@ public class HDFSPartition extends Partition {
             InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client,
                     "/partition-lock-" + path.hashCode() + "-" + partitionId);
             System.out.println("LOCK: acquired lock,  " + "path=" + path
-                    + " , partition id=" + partitionId + " , for loading.");
+                    + " , partition id=" + partitionId + " , for loading, size: " + totalSize);
 
             Path p = new Path(path + "/" + partitionId);
             in = hdfs.open(p);
