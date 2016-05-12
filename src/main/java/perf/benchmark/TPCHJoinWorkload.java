@@ -977,15 +977,33 @@ public class TPCHJoinWorkload {
 
     }
 
-    public void runTPCH3() {
-        tpch3();
+    public void runSmallTest() {
+        for(int i = 0; i < 10;i  ++){
+            tpch3();
+        }
+        for(int i = 0; i < 10;i  ++){
+            tpch5();
+        }
+        for(int i = 0; i < 10;i  ++){
+            tpch6();
+        }
+        for(int i = 0; i < 10;i  ++){
+            tpch8();
+        }
+        for(int i = 0; i < 10;i  ++){
+            tpch10();
+        }
+        for(int i = 0; i < 10;i  ++){
+            tpch12();
+        }
+        for(int i = 0; i < 10;i  ++){
+            tpch14();
+        }
+        for(int i = 0; i < 10;i  ++){
+            tpch19();
+        }
     }
-    public void runTPCH5() {
-        tpch5();
-    }
-    public void runTPCH6() {
-        tpch6();
-    }
+
 
     public static void main(String[] args) {
 
@@ -1023,14 +1041,9 @@ public class TPCHJoinWorkload {
                 t.garbageCollect();
                 break;
             case 9:
-                t.runTPCH3();
+                t.runSmallTest();
                 break;
-            case 10:
-                t.runTPCH5();
-                break;
-            case 11:
-                t.runTPCH6();
-                break;
+
             default:
                 break;
         }

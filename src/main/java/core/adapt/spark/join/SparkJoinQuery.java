@@ -7,6 +7,7 @@ import core.adapt.iterator.PartitionIterator;
 import core.adapt.iterator.PostFilterIterator;
 import core.common.globals.Globals;
 import core.common.globals.TableInfo;
+import core.common.index.MDIndex;
 import core.utils.HDFSUtils;
 import core.utils.RangePartitionerUtils;
 import core.utils.SparkUtils;
@@ -226,8 +227,9 @@ public class SparkJoinQuery {
         Map<Integer, Integer> dataset_iterator_type = new HashMap<Integer, Integer>();
         Map<Integer, Integer> dataset_belong = new HashMap<Integer, Integer>();
         Map<Integer, ArrayList<Integer>> dataset_scan_blocks = new HashMap<Integer, ArrayList<Integer>>();
+        Map<Integer, MDIndex.BucketInfo> bucketInfo = new HashMap<Integer, MDIndex.BucketInfo>();
 
-        JoinPlanner.speculative_repartition(dataset, q, dataset_queryWindow, dataset_tableInfo, dataset_hpinput, dataset_am, dataset_scan_blocks, dataset_iterator_type,dataset_belong,  queryConf, fs);
+        JoinPlanner.speculative_repartition(dataset, q, dataset_queryWindow, dataset_tableInfo, dataset_hpinput, dataset_am, dataset_scan_blocks, dataset_iterator_type,dataset_belong, bucketInfo, queryConf, fs);
         ArrayList<PartitionSplit> shuffleJoinSplit = new  ArrayList<PartitionSplit>();
         JoinPlanner.extractShuffleJoin(q, shuffleJoinSplit, dataset_scan_blocks, dataset_iterator_type, dataset_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize(), queryConf.getWorkerNum());
 

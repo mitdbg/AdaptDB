@@ -10,6 +10,7 @@ import core.adapt.spark.join.SparkJoinQueryConf;
 import core.common.globals.Globals;
 import core.common.globals.Schema;
 import core.common.globals.TableInfo;
+import core.common.index.MDIndex;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -116,9 +117,11 @@ public class JoinPlannerTest {
         HPJoinInput dataset_hpinput = new HPJoinInput();
         Map<Integer, JoinAccessMethod> dataset_am = new HashMap<Integer, JoinAccessMethod>();
         Map<Integer, Integer> dataset_iterator_type = new HashMap<Integer, Integer>();
+        Map<Integer, Integer> dataset_belong = new HashMap<Integer, Integer>();
         Map<Integer, ArrayList<Integer>> dataset_scan_blocks = new HashMap<Integer, ArrayList<Integer>>();
+        Map<Integer, MDIndex.BucketInfo> bucketInfo = new HashMap<Integer, MDIndex.BucketInfo>();
 
-        JoinPlanner.speculative_repartition(dataset, q, dataset_queryWindow, dataset_tableInfo, dataset_hpinput, dataset_am, dataset_scan_blocks, dataset_iterator_type, queryConf, fs);
+        JoinPlanner.speculative_repartition(dataset, q, dataset_queryWindow, dataset_tableInfo, dataset_hpinput, dataset_am, dataset_scan_blocks, dataset_iterator_type,dataset_belong, bucketInfo, queryConf, fs);
         ArrayList<AccessMethod.PartitionSplit> shuffleJoinSplit = new  ArrayList<AccessMethod.PartitionSplit>();
         JoinPlanner.extractShuffleJoin(q, shuffleJoinSplit, dataset_scan_blocks, dataset_iterator_type, dataset_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize(), queryConf.getWorkerNum());
 

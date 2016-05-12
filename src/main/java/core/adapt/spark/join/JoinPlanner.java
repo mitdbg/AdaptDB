@@ -112,8 +112,8 @@ public class JoinPlanner {
         int[] dataset1_partitions = dataset1_tableInfo.partitions;
         int[] dataset2_partitions = dataset2_tableInfo.partitions;
 
-        speculative_repartition(dataset1, dataset1_query, dataset1_queryWindow, dataset1_tableInfo, dataset1_hpinput, dataset1_am, dataset1_scan_blocks, dataset1_iterator_type,dataset1_belong,  queryConf, fs);
-        speculative_repartition(dataset2, dataset2_query, dataset2_queryWindow, dataset2_tableInfo, dataset2_hpinput, dataset2_am, dataset2_scan_blocks, dataset2_iterator_type, dataset2_belong,queryConf, fs);
+        speculative_repartition(dataset1, dataset1_query, dataset1_queryWindow, dataset1_tableInfo, dataset1_hpinput, dataset1_am, dataset1_scan_blocks, dataset1_iterator_type, dataset1_belong, dataset1_bucketInfo, queryConf, fs);
+        speculative_repartition(dataset2, dataset2_query, dataset2_queryWindow, dataset2_tableInfo, dataset2_hpinput, dataset2_am, dataset2_scan_blocks, dataset2_iterator_type, dataset2_belong, dataset2_bucketInfo, queryConf, fs);
 
         int dataset1_join_attr = dataset1_query.getJoinAttribute();
         int dataset2_join_attr = dataset2_query.getJoinAttribute();
@@ -135,8 +135,8 @@ public class JoinPlanner {
         if (IntInArray(dataset1_join_attr, dataset1_partitions) && IntInArray(dataset2_join_attr, dataset2_partitions) && dataset2_partitions.length == 1 && multiple_iterator_type == false) {
             // read_index && init over_lap
 
-            read_index(dataset1_bucketInfo, dataset1_am.get(dataset1_join_attr).getIndex(), dataset1_join_attr);
-            read_index(dataset2_bucketInfo, dataset2_am.get(dataset2_join_attr).getIndex(), dataset2_join_attr);
+            //read_index(dataset1_bucketInfo, dataset1_am.get(dataset1_join_attr).getIndex(), dataset1_join_attr);
+            //read_index(dataset2_bucketInfo, dataset2_am.get(dataset2_join_attr).getIndex(), dataset2_join_attr);
 
             init_overlap();
 
@@ -279,7 +279,7 @@ public class JoinPlanner {
         return ArrayListToArray(result);
     }
 
-    public static void speculative_repartition(String tableName, JoinQuery query, List<JoinQuery> queryWindow, TableInfo tableInfo, HPJoinInput hpinput, Map<Integer, JoinAccessMethod> am_map, Map<Integer, ArrayList<Integer>> scan_blocks, Map<Integer, Integer> iterator_type, Map<Integer, Integer> belong, SparkJoinQueryConf queryConf, FileSystem fs) {
+    public static void  speculative_repartition(String tableName, JoinQuery query, List<JoinQuery> queryWindow, TableInfo tableInfo, HPJoinInput hpinput, Map<Integer, JoinAccessMethod> am_map, Map<Integer, ArrayList<Integer>> scan_blocks, Map<Integer, Integer> iterator_type, Map<Integer, Integer> belong, Map<Integer, MDIndex.BucketInfo> dataset1_bucketInfo, SparkJoinQueryConf queryConf, FileSystem fs) {
 
         int joinAttribute = query.getJoinAttribute();
         int[] partitions = tableInfo.partitions;
@@ -355,6 +355,10 @@ public class JoinPlanner {
             }
             partition_sizes.put(partitions[i], total_size);
             table_size += total_size;
+
+            if (partitions[i] == joinAttribute){
+                read_index(dataset1_bucketInfo, am.getIndex(), joinAttribute);
+            }
         }
 
 
@@ -901,7 +905,7 @@ public class JoinPlanner {
         return partitions;
     }
 
-    private void read_index(Map<Integer, MDIndex.BucketInfo> info, JoinRobustTree rt, int attr) {
+    private static void read_index(Map<Integer, MDIndex.BucketInfo> info, JoinRobustTree rt, int attr) {
         // If a particular bucket is not in the following map, then the range is (-oo,+oo).
 
         Map<Integer, MDIndex.BucketInfo> bucketRanges = rt.getBucketRanges(attr);
@@ -912,8 +916,10 @@ public class JoinPlanner {
             int bucket_id = buckets[i];
             if (bucketRanges.containsKey(bucket_id) == false) {
                 // hard code, the join key can only be int.
+
                 info.put(bucket_id, new MDIndex.BucketInfo(TypeUtils.TYPE.LONG, null, null));
             } else {
+                System.out.println(">>> " + bucket_id + " " + bucketRanges.get(bucket_id));
                 info.put(bucket_id, bucketRanges.get(bucket_id));
             }
         }
@@ -924,14 +930,20 @@ public class JoinPlanner {
         // filtering
 
         HashSet<Integer> splits1 = new HashSet<Integer>();
+        int join_attribute =  dataset1_query.getJoinAttribute();
 
-
-        for (int block : dataset1_scan_blocks.get(dataset1_query.getJoinAttribute())) {
+        for (int block : dataset1_scan_blocks.get(join_attribute)) {
+            System.out.println("Put " + block);
             splits1.add(block);
         }
 
+
+
         for (int block : dataset1_iterator_type.keySet()) {
-            splits1.add(block);
+            if (dataset1_belong.get(block) == join_attribute){
+                System.out.println("Put " + block);
+                splits1.add(block);
+            }
         }
 
         HashSet<Integer> splits2 = new HashSet<Integer>();
@@ -955,7 +967,7 @@ public class JoinPlanner {
 
                 MDIndex.BucketInfo info_j = dataset2_bucketInfo.get(j);
 
-                //System.out.println(i + " from " + dataset1 + " intersects with " + j +  " from "+  dataset2 + " result: " + info_i.overlap(info_j));
+                System.out.println(i + " from " + dataset1 + " intersects with " + j +  " from "+  dataset2 + " result: " + info_i.overlap(info_j));
 
                 if (info_i.overlap(info_j)) {
                     if (overlap_chunks.containsKey(i) == false) {
@@ -1139,11 +1151,11 @@ public class JoinPlanner {
                 while (it.hasNext()) {
                     int value = it.next();
                     if (maxIntersection == -1) {
-                        //System.out.println("#getting " + value);
+                        System.out.println("#getting " + value);
                         maxIntersection = getIntersectionSize(chunks, overlap_chunks.get(value));
                         best_offset = offset;
                     } else {
-                        //System.out.println("#getting " + value);
+                        System.out.println("#getting " + value);
                         int curIntersection = getIntersectionSize(chunks, overlap_chunks.get(value));
                         if (curIntersection > maxIntersection) {
                             maxIntersection = curIntersection;
