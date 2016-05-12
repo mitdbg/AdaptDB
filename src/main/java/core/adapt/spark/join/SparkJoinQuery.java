@@ -168,7 +168,7 @@ public class SparkJoinQuery {
 
         JavaPairRDD<LongWritable, Text> dataset2RDD = createSingleTableRDD(hdfsPath, dataset2_query);
 
-        int numPartitions = 1000;
+        int numPartitions = 10;
 
         JavaPairRDD<LongWritable, Tuple2<Text,Text> > join_rdd = dataset1RDD.join(dataset2RDD, numPartitions);
 
@@ -224,9 +224,10 @@ public class SparkJoinQuery {
         HPJoinInput dataset_hpinput = new HPJoinInput();
         Map<Integer, JoinAccessMethod> dataset_am = new HashMap<Integer, JoinAccessMethod>();
         Map<Integer, Integer> dataset_iterator_type = new HashMap<Integer, Integer>();
+        Map<Integer, Integer> dataset_belong = new HashMap<Integer, Integer>();
         Map<Integer, ArrayList<Integer>> dataset_scan_blocks = new HashMap<Integer, ArrayList<Integer>>();
 
-        JoinPlanner.speculative_repartition(dataset, q, dataset_queryWindow, dataset_tableInfo, dataset_hpinput, dataset_am, dataset_scan_blocks, dataset_iterator_type, queryConf, fs);
+        JoinPlanner.speculative_repartition(dataset, q, dataset_queryWindow, dataset_tableInfo, dataset_hpinput, dataset_am, dataset_scan_blocks, dataset_iterator_type,dataset_belong,  queryConf, fs);
         ArrayList<PartitionSplit> shuffleJoinSplit = new  ArrayList<PartitionSplit>();
         JoinPlanner.extractShuffleJoin(q, shuffleJoinSplit, dataset_scan_blocks, dataset_iterator_type, dataset_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize(), queryConf.getWorkerNum());
 

@@ -82,6 +82,8 @@ public class SparkJoinRecordReader extends
         dataset1_joinquery = new JoinQuery(conf.get("DATASET1_QUERY"));
         dataset2_joinquery = new JoinQuery(conf.get("DATASET2_QUERY"));
 
+
+
         dataset2_query = dataset2_joinquery.castToQuery();
 
         join_attr1 = dataset1_joinquery.getJoinAttribute();
@@ -151,7 +153,7 @@ public class SparkJoinRecordReader extends
         partition.setTotalSize(size);
         partition.load(); // ???
 
-        if(types[currentFile- numFilesinDataset1] == 1){
+        if(types[currentFile- numFilesinDataset1] == -2){
             iter2 = pf_iter;
         } else {
             iter2 = jr_iter;

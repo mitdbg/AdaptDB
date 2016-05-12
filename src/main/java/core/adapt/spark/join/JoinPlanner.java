@@ -52,7 +52,7 @@ public class JoinPlanner {
     private Map<Integer, JoinAccessMethod> dataset1_am, dataset2_am;
     private Map<Integer, ArrayList<Integer>> dataset1_scan_blocks, dataset2_scan_blocks;
     private Map<Integer, Integer> dataset1_iterator_type, dataset2_iterator_type;
-
+    private Map<Integer, Integer> dataset1_belong, dataset2_belong;
     private Map<Integer, ArrayList<Integer>> overlap_chunks;
 
     private ArrayList<PartitionSplit> hyperJoinSplit, shuffleJoinSplit1, shuffleJoinSplit2;
@@ -87,6 +87,8 @@ public class JoinPlanner {
 
         dataset1_iterator_type = new HashMap<Integer, Integer>();
         dataset2_iterator_type = new HashMap<Integer, Integer>();
+        dataset1_belong = new HashMap<Integer, Integer>();
+        dataset2_belong = new HashMap<Integer, Integer>();
 
         dataset1_bucketInfo = new HashMap<Integer, MDIndex.BucketInfo>();
         dataset2_bucketInfo = new HashMap<Integer, MDIndex.BucketInfo>();
@@ -108,27 +110,25 @@ public class JoinPlanner {
         setupTableInfo();
 
         int[] dataset1_partitions = dataset1_tableInfo.partitions;
-        int[] dataset2_partitions = dataset1_tableInfo.partitions;
+        int[] dataset2_partitions = dataset2_tableInfo.partitions;
 
-        speculative_repartition(dataset1, dataset1_query, dataset1_queryWindow, dataset1_tableInfo, dataset1_hpinput, dataset1_am, dataset1_scan_blocks, dataset1_iterator_type, queryConf, fs);
-        speculative_repartition(dataset2, dataset2_query, dataset2_queryWindow, dataset2_tableInfo, dataset2_hpinput, dataset2_am, dataset2_scan_blocks, dataset2_iterator_type, queryConf, fs);
+        speculative_repartition(dataset1, dataset1_query, dataset1_queryWindow, dataset1_tableInfo, dataset1_hpinput, dataset1_am, dataset1_scan_blocks, dataset1_iterator_type,dataset1_belong,  queryConf, fs);
+        speculative_repartition(dataset2, dataset2_query, dataset2_queryWindow, dataset2_tableInfo, dataset2_hpinput, dataset2_am, dataset2_scan_blocks, dataset2_iterator_type, dataset2_belong,queryConf, fs);
 
         int dataset1_join_attr = dataset1_query.getJoinAttribute();
         int dataset2_join_attr = dataset2_query.getJoinAttribute();
 
         boolean multiple_iterator_type = false;
 
-        for(int block: dataset1_iterator_type.keySet()){
-            if (dataset1_iterator_type.get(block) != dataset1_join_attr){
+        // do we need to check dataset1_iterator_type?
+
+        for (int block : dataset2_iterator_type.keySet()) {
+            if (dataset2_iterator_type.get(block) != dataset2_join_attr) {
                 multiple_iterator_type = true;
             }
         }
 
-        for(int block: dataset2_iterator_type.keySet()){
-            if (dataset2_iterator_type.get(block) != dataset2_join_attr){
-                multiple_iterator_type = true;
-            }
-        }
+        System.out.println(dataset1 + "##" + dataset1_join_attr + "##" + dataset2 + "##" + +dataset2_join_attr + "##" + IntInArray(dataset1_join_attr, dataset1_partitions) + "##" + IntInArray(dataset2_join_attr, dataset2_partitions) + "##" + (dataset2_partitions.length == 1) + "##" + (multiple_iterator_type == false));
 
         // separate read-only and repartitioned. Read only go first.
 
@@ -144,7 +144,7 @@ public class JoinPlanner {
 
                 // extract hyper join, update dataset2_iterator_type, shuffle scan on dataset2 in case some data blocks are left.
 
-                extractHyperJoin(dataset1_query, hyperJoinSplit, dataset1_scan_blocks, dataset1_iterator_type, dataset1_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize());
+                extractHyperJoin(dataset1_query, hyperJoinSplit, dataset1_scan_blocks, dataset1_iterator_type, dataset1_belong, dataset1_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize());
 
                 hyperjoin = getHyperJoinInput();
                 // clear dataset2_scan_blocks
@@ -162,7 +162,7 @@ public class JoinPlanner {
 
                 // copy dataset2_iterator_type,  extract hyper join, update dataset2_iterator_type, any remaining block need repartitioned. all others need to be scanned (using the copy to update scan blocks).
 
-                extractHyperJoin(dataset1_query, hyperJoinSplit, dataset1_scan_blocks, dataset1_iterator_type, dataset1_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize());
+                extractHyperJoin(dataset1_query, hyperJoinSplit, dataset1_scan_blocks, dataset1_iterator_type, dataset1_belong, dataset1_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize());
 
                 hyperjoin = getHyperJoinInput();
 
@@ -232,6 +232,16 @@ public class JoinPlanner {
                 indexBytes.length, false);
     }
 
+    private static int[] HashSetToIntArray(HashSet<Integer> partititon) {
+        int[] ret = new int[partititon.size()];
+        int index = 0;
+        for (int num : partititon) {
+            ret[index++] = num;
+        }
+        Arrays.sort(ret);
+        return ret;
+    }
+
     private static boolean IntInArray(int value, int[] arr) {
         for (int i = 0; i < arr.length; i++) {
             if (arr[i] == value) {
@@ -269,10 +279,15 @@ public class JoinPlanner {
         return ArrayListToArray(result);
     }
 
-    public static void speculative_repartition(String tableName, JoinQuery query, List<JoinQuery> queryWindow, TableInfo tableInfo, HPJoinInput hpinput, Map<Integer, JoinAccessMethod> am_map, Map<Integer, ArrayList<Integer>> scan_blocks, Map<Integer, Integer> iterator_type, SparkJoinQueryConf queryConf, FileSystem fs) {
+    public static void speculative_repartition(String tableName, JoinQuery query, List<JoinQuery> queryWindow, TableInfo tableInfo, HPJoinInput hpinput, Map<Integer, JoinAccessMethod> am_map, Map<Integer, ArrayList<Integer>> scan_blocks, Map<Integer, Integer> iterator_type, Map<Integer, Integer> belong, SparkJoinQueryConf queryConf, FileSystem fs) {
 
         int joinAttribute = query.getJoinAttribute();
         int[] partitions = tableInfo.partitions;
+
+        HashSet<Integer> newPartition = new HashSet<Integer>();
+        for (int i = 0; i < partitions.length; i++) {
+            newPartition.add(partitions[i]);
+        }
 
 
         // calculate expected weight for each partition
@@ -287,8 +302,8 @@ public class JoinPlanner {
             expected_weights.put(attr, expected_weights.get(attr) + 1);
         }
 
-        for(int i = 0; i < partitions.length; i ++){
-            if (expected_weights.containsKey(partitions[i]) == false){
+        for (int i = 0; i < partitions.length; i++) {
+            if (expected_weights.containsKey(partitions[i]) == false) {
                 expected_weights.put(partitions[i], 0);
             }
         }
@@ -380,15 +395,7 @@ public class JoinPlanner {
 
             // step 3: add joinAttribute into tableInfo's partitions and persist
 
-            int[] newPartitions = new int[partitions.length + 1];
-            for (int i = 0; i < partitions.length; i++) {
-                newPartitions[i] = partitions[i];
-            }
-            newPartitions[partitions.length] = joinAttribute;
-            Arrays.sort(newPartitions);
-
-            tableInfo.partitions = newPartitions;
-            tableInfo.save(queryConf.getWorkingDir(), queryConf.getHDFSReplicationFactor(), fs);
+            newPartition.add(joinAttribute);
 
 
             // step 4: persist index
@@ -399,7 +406,7 @@ public class JoinPlanner {
         // adjust tree -> adapt or delete + scan
 
         //normalization
-        double join_expected_weight = 1.0 * expected_weights.get(joinAttribute) / Globals.QUERY_WINDOW_SIZE ;
+        double join_expected_weight = 1.0 * expected_weights.get(joinAttribute) / Globals.QUERY_WINDOW_SIZE;
 
         double join_weight = 0;
         if (partition_sizes.containsKey(joinAttribute)) {
@@ -413,7 +420,7 @@ public class JoinPlanner {
                 //normalization
 
                 double weight = 1.0 * partition_sizes.get(partitions[i]) / table_size;
-                double expected_weight = 1.0 * expected_weights.get(partitions[i]) / Globals.QUERY_WINDOW_SIZE ;
+                double expected_weight = 1.0 * expected_weights.get(partitions[i]) / Globals.QUERY_WINDOW_SIZE;
 
                 JoinAccessMethod am = am_map.get(partitions[i]);
                 JoinRobustTree rt = am.getIndex();
@@ -437,20 +444,10 @@ public class JoinPlanner {
 
                         HDFSUtils.deleteFile(fs, pathToIndex, true);
 
-                        int[] newPartitions = new int[partitions.length - 1];
-                        for (int k = 0, j = 0; k < partitions.length; k++) {
-                            if (partitions[i] != partitions[k]) {
-                                newPartitions[j++] = partitions[k];
-                            }
-                        }
-
-                        Arrays.sort(newPartitions);
-
-                        tableInfo.partitions = newPartitions;
-                        tableInfo.save(queryConf.getWorkingDir(), queryConf.getHDFSReplicationFactor(), fs);
+                        newPartition.remove(partitions[i]);
 
                     } else {
-                        persistIndex(rt, partitions[i], tableInfo,queryConf,fs);
+                        persistIndex(rt, partitions[i], tableInfo, queryConf, fs);
                     }
 
                     // filter scan_split by delete_split
@@ -464,6 +461,7 @@ public class JoinPlanner {
                     for (int j = 0; j < bids.length; j++) {
                         delete_bid.add(bids[j]);
                         iterator_type.put(bids[j], joinAttribute);
+                        belong.put(bids[j], partitions[i]);
                     }
 
                     ArrayList<Integer> filtered_bids = new ArrayList<Integer>();
@@ -486,6 +484,7 @@ public class JoinPlanner {
 
                         for (int j = 0; j < repartition_bids.length; j++) {
                             iterator_type.put(repartition_bids[j], partitions[i]);
+                            belong.put(repartition_bids[j], partitions[i]);
                         }
                     }
                 }
@@ -502,11 +501,18 @@ public class JoinPlanner {
                     int[] repartition_bids = filter_data_blocks(splits[1].getPartitions(), hpinput);
                     for (int j = 0; j < repartition_bids.length; j++) {
                         iterator_type.put(repartition_bids[j], partitions[i]);
+                        belong.put(repartition_bids[j], partitions[i]);
                     }
                 }
 
             }
         }
+
+
+        // update partition
+
+        tableInfo.partitions = HashSetToIntArray(newPartition);
+        tableInfo.save(queryConf.getWorkingDir(), queryConf.getHDFSReplicationFactor(), fs);
     }
 
     public void setupTableInfo() {
@@ -548,8 +554,10 @@ public class JoinPlanner {
         return queryWindow;
     }
 
-    public void extractHyperJoin(JoinQuery dataset_query, ArrayList<PartitionSplit> hyperJoinSplit, Map<Integer, ArrayList<Integer>> scan_blocks, Map<Integer, Integer> iterator_type, Map<Integer, Long> partitionSizes, long maxSplitSize) {
-        ArrayList<Integer> alist = scan_blocks.get(dataset_query.getJoinAttribute());
+    public void extractHyperJoin(JoinQuery dataset_query, ArrayList<PartitionSplit> hyperJoinSplit, Map<Integer, ArrayList<Integer>> scan_blocks, Map<Integer, Integer> iterator_type, Map<Integer, Integer> belong, Map<Integer, Long> partitionSizes, long maxSplitSize) {
+        int join_attribute = dataset_query.getJoinAttribute();
+
+        ArrayList<Integer> alist = scan_blocks.get(join_attribute);
         PartitionIterator pi = new PostFilterIterator(dataset_query.castToQuery());
 
 
@@ -564,30 +572,38 @@ public class JoinPlanner {
             throw new RuntimeException("some partition is lost");
         }
 
-        Map<Integer, ArrayList<Integer>> blocks = new HashMap<Integer, ArrayList<Integer>>();
+
+        // only handle join attribute
+
+
+        ArrayList<Integer> blocks = new ArrayList<Integer>();
 
         for (int block : iterator_type.keySet()) {
-            int index = iterator_type.get(block);
-            if (blocks.containsKey(index) == false) {
-                blocks.put(index, new ArrayList<Integer>());
-            }
-            blocks.get(index).add(block);
-        }
-
-        for (int index : blocks.keySet()) {
-            alist = blocks.get(index);
-            pi = new JoinRepartitionIterator(dataset_query.castToQuery(), index);
-            total = 0;
-            hyper_splits = groupSplits(pi, ArrayListToArray(alist), partitionSizes, maxSplitSize);
-            for (PartitionSplit hs : hyper_splits) {
-                hyperJoinSplit.add(hs);
-                total += hs.getPartitions().length;
-            }
-
-            if (total != alist.size()) {
-                throw new RuntimeException("some partition is lost");
+            if (belong.get(block) == join_attribute){
+                System.out.println("In blocks: " + block);
+                blocks.add(block);
             }
         }
+        // remove self repartitioned block
+        for(int block: blocks){
+            iterator_type.remove(block);
+            belong.remove(block);
+        }
+
+
+        pi = new JoinRepartitionIterator(dataset_query.castToQuery(), join_attribute);
+        total = 0;
+
+        hyper_splits = groupSplits(pi, ArrayListToArray(blocks), partitionSizes, maxSplitSize);
+        for (PartitionSplit hs : hyper_splits) {
+            hyperJoinSplit.add(hs);
+            total += hs.getPartitions().length;
+        }
+
+        if (total != blocks.size()) {
+            throw new RuntimeException("some partition is lost");
+        }
+
     }
 
     public static void extractShuffleJoin(JoinQuery dataset_query, ArrayList<PartitionSplit> shuffleJoinSplit, Map<Integer, ArrayList<Integer>> scan_blocks, Map<Integer, Integer> iterator_type, Map<Integer, Long> partitionSizes, long maxSplitSize, int worker_num) {
@@ -729,7 +745,7 @@ public class JoinPlanner {
 
         for (PartitionSplit split : hyperJoinSplit) {
 
-            if(split.getPartitions().length == 0) continue;
+            if (split.getPartitions().length == 0) continue;
 
             if (sb.length() > 0) {
                 sb.append(";");
@@ -782,7 +798,7 @@ public class JoinPlanner {
 
         for (PartitionSplit split : shuffleJoinSplit) {
 
-            if(split.getPartitions().length == 0) continue;
+            if (split.getPartitions().length == 0) continue;
 
             if (sb.length() > 0) {
                 sb.append(";");
@@ -914,7 +930,7 @@ public class JoinPlanner {
             splits1.add(block);
         }
 
-        for(int block: dataset1_iterator_type.keySet()){
+        for (int block : dataset1_iterator_type.keySet()) {
             splits1.add(block);
         }
 
@@ -924,7 +940,7 @@ public class JoinPlanner {
             splits2.add(block);
         }
 
-        for(int block: dataset2_iterator_type.keySet()){
+        for (int block : dataset2_iterator_type.keySet()) {
             splits2.add(block);
         }
 
@@ -1123,9 +1139,11 @@ public class JoinPlanner {
                 while (it.hasNext()) {
                     int value = it.next();
                     if (maxIntersection == -1) {
+                        //System.out.println("#getting " + value);
                         maxIntersection = getIntersectionSize(chunks, overlap_chunks.get(value));
                         best_offset = offset;
                     } else {
+                        //System.out.println("#getting " + value);
                         int curIntersection = getIntersectionSize(chunks, overlap_chunks.get(value));
                         if (curIntersection > maxIntersection) {
                             maxIntersection = curIntersection;
