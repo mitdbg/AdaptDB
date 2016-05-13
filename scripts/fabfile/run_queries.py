@@ -79,6 +79,7 @@ def run_tpchcopartitionedjoin():
             ' --conf $CONF  > ~/logs/join_workload.log'
         cmd = fill_cmd(cmd)
         run(cmd)
+    
 
 @roles('master')
 def run_cmtjoin():
