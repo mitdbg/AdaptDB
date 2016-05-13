@@ -584,7 +584,7 @@ public class JoinPlanner {
 
         for (int block : iterator_type.keySet()) {
             if (belong.get(block) == join_attribute){
-                System.out.println("In blocks: " + block);
+                //System.out.println("In blocks: " + block);
                 blocks.add(block);
             }
         }
@@ -919,7 +919,7 @@ public class JoinPlanner {
 
                 info.put(bucket_id, new MDIndex.BucketInfo(TypeUtils.TYPE.LONG, null, null));
             } else {
-                System.out.println(">>> " + bucket_id + " " + bucketRanges.get(bucket_id));
+                //System.out.println(">>> " + bucket_id + " " + bucketRanges.get(bucket_id));
                 info.put(bucket_id, bucketRanges.get(bucket_id));
             }
         }
@@ -933,7 +933,7 @@ public class JoinPlanner {
         int join_attribute =  dataset1_query.getJoinAttribute();
 
         for (int block : dataset1_scan_blocks.get(join_attribute)) {
-            System.out.println("Put " + block);
+            //System.out.println("Put " + block);
             splits1.add(block);
         }
 
@@ -941,7 +941,7 @@ public class JoinPlanner {
 
         for (int block : dataset1_iterator_type.keySet()) {
             if (dataset1_belong.get(block) == join_attribute){
-                System.out.println("Put " + block);
+                //System.out.println("Put " + block);
                 splits1.add(block);
             }
         }
@@ -967,7 +967,7 @@ public class JoinPlanner {
 
                 MDIndex.BucketInfo info_j = dataset2_bucketInfo.get(j);
 
-                System.out.println(i + " from " + dataset1 + " intersects with " + j +  " from "+  dataset2 + " result: " + info_i.overlap(info_j));
+                //System.out.println(i + " from " + dataset1 + " intersects with " + j +  " from "+  dataset2 + " result: " + info_i.overlap(info_j));
 
                 if (info_i.overlap(info_j)) {
                     if (overlap_chunks.containsKey(i) == false) {
@@ -1151,11 +1151,11 @@ public class JoinPlanner {
                 while (it.hasNext()) {
                     int value = it.next();
                     if (maxIntersection == -1) {
-                        System.out.println("#getting " + value);
+                        //System.out.println("#getting " + value);
                         maxIntersection = getIntersectionSize(chunks, overlap_chunks.get(value));
                         best_offset = offset;
                     } else {
-                        System.out.println("#getting " + value);
+                        //System.out.println("#getting " + value);
                         int curIntersection = getIntersectionSize(chunks, overlap_chunks.get(value));
                         if (curIntersection > maxIntersection) {
                             maxIntersection = curIntersection;

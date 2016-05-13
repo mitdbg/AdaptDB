@@ -113,6 +113,10 @@ public class HDFSPartition extends Partition {
             System.out.println("LOCK: acquired lock,  " + "path=" + path
                     + " , partition id=" + partitionId + " , for loading, size: " + totalSize);
 
+            if(totalSize < 0){
+                throw new RuntimeException( "path=" + path
+                        + " , partition id=" + partitionId + " , for loading, size: " + totalSize);
+            }
             Path p = new Path(path + "/" + partitionId);
             in = hdfs.open(p);
             bytes = new byte[(int) totalSize];

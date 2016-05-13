@@ -90,6 +90,7 @@ public class SparkJoinQuery {
         queryConf.setHadoopHome(cfg.getHADOOP_HOME());
         queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
         queryConf.setMaxSplitSize(4L * 1024 * 1024 * 1024); // 4 GB
+        //queryConf.setMaxSplitSize(400L * 1024 * 1024); // 400 MB
         queryConf.setWorkerNum(9);
     }
 
@@ -169,7 +170,7 @@ public class SparkJoinQuery {
 
         JavaPairRDD<LongWritable, Text> dataset2RDD = createSingleTableRDD(hdfsPath, dataset2_query);
 
-        int numPartitions = 10;
+        int numPartitions = 2000;
 
         JavaPairRDD<LongWritable, Tuple2<Text,Text> > join_rdd = dataset1RDD.join(dataset2RDD, numPartitions);
 

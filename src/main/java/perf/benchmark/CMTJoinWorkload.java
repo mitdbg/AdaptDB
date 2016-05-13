@@ -33,10 +33,8 @@ public class CMTJoinWorkload {
 
     private Schema schemaMH, schemaMHL, schemaSF;
     private String stringMH, stringMHL, stringSF;
-    private int    sizeMH, sizeMHL, sizeSF;
     private String MH = "mh", MHL = "mhl", SF = "sf";
     private TableInfo tableMH, tableMHL, tableSF;
-    private ArrayList<Long> sf_id_keys;
 
     private Predicate[] EmptyPredicates = {};
 
@@ -57,10 +55,6 @@ public class CMTJoinWorkload {
         tableMH = new TableInfo(MH, 0, '|', schemaMH);
         tableMHL = new TableInfo(MHL, 0, '|', schemaMHL);
         tableSF = new TableInfo(SF, 0, '|', schemaSF);
-
-        String workingDir = cfg.getHDFS_WORKING_DIR();
-
-        sf_id_keys = RangePartitionerUtils.getKeys(cfg, tableSF, workingDir + "/"  + SF + "/sample", schemaSF.getAttributeId("sf_id"));
     }
 
     public void garbageCollect(){
@@ -89,18 +83,6 @@ public class CMTJoinWorkload {
                 case "--schemaSF":
                     stringSF = args[counter + 1];
                     schemaSF = Schema.createSchema(stringSF);
-                    counter += 2;
-                    break;
-                case "--sizeMH":
-                    sizeMH = Integer.parseInt(args[counter + 1]);
-                    counter += 2;
-                    break;
-                case "--sizeMHL":
-                    sizeMHL = Integer.parseInt(args[counter + 1]);
-                    counter += 2;
-                    break;
-                case "--sizeSF":
-                    sizeSF = Integer.parseInt(args[counter + 1]);
                     counter += 2;
                     break;
                 case "--method":

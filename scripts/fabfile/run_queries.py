@@ -88,9 +88,6 @@ def run_cmtjoin():
             ' --schemaMH  "$SCHEMAMH"'  + \
             ' --schemaMHL "$SCHEMAMHL"'  + \
             ' --schemaSF  "$SCHEMASF"' + \
-            ' --sizeMH 1210' + \
-            ' --sizeMHL 12' + \
-            ' --sizeSF 404' + \
             ' --method 1' + \
             ' --conf $CONF  > ~/logs/join_workload.log'
         cmd = fill_cmd(cmd)
