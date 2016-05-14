@@ -999,7 +999,7 @@ public class TPCHJoinWorkload {
         for(int i = 0; i < 10;i  ++){
             tpch14();
         }
-        for(int i = 0; i < 10;i  ++){
+        for(int i = 0; i < 20;i  ++){
             tpch19();
         }
     }
