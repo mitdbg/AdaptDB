@@ -91,7 +91,7 @@ public class SparkJoinQuery {
         queryConf.setZookeeperHosts(cfg.getZOOKEEPER_HOSTS());
         queryConf.setMaxSplitSize(4L * 1024 * 1024 * 1024); // 4 GB
         //queryConf.setMaxSplitSize(400L * 1024 * 1024); // 400 MB
-        queryConf.setWorkerNum(9);
+        queryConf.setWorkerNum(8);
     }
 
     public void setBufferSize(long size){

@@ -978,15 +978,19 @@ public class TPCHJoinWorkload {
     }
 
     public void runSmallTest() {
+        /*
         for(int i = 0; i < 10;i  ++){
             tpch3();
         }
+
         for(int i = 0; i < 10;i  ++){
             tpch5();
         }
+
         for(int i = 0; i < 10;i  ++){
             tpch6();
         }
+
         for(int i = 0; i < 10;i  ++){
             tpch8();
         }
@@ -996,6 +1000,7 @@ public class TPCHJoinWorkload {
         for(int i = 0; i < 10;i  ++){
             tpch12();
         }
+        */
         for(int i = 0; i < 10;i  ++){
             tpch14();
         }
@@ -1003,6 +1008,7 @@ public class TPCHJoinWorkload {
             tpch19();
         }
     }
+
 
 
     public static void main(String[] args) {

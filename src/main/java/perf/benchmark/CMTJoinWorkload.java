@@ -257,8 +257,6 @@ public class CMTJoinWorkload {
             long result = rdd.count();
 
             System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
-
-            garbageCollect();
         }
     }
 

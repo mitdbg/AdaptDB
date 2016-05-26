@@ -107,16 +107,13 @@ public class HDFSPartition extends Partition {
             throw new RuntimeException();
         }
         try {
+            totalSize = Math.min(800 * 1024 * 1024, totalSize); // 800 MB
 
             InterProcessSemaphoreMutex l = CuratorUtils.acquireLock(client,
                     "/partition-lock-" + path.hashCode() + "-" + partitionId);
+
             System.out.println("LOCK: acquired lock,  " + "path=" + path
                     + " , partition id=" + partitionId + " , for loading, size: " + totalSize);
-
-            if(totalSize < 0){
-                throw new RuntimeException( "path=" + path
-                        + " , partition id=" + partitionId + " , for loading, size: " + totalSize);
-            }
             Path p = new Path(path + "/" + partitionId);
             in = hdfs.open(p);
             bytes = new byte[(int) totalSize];
@@ -166,7 +163,7 @@ public class HDFSPartition extends Partition {
                 os = hdfs.append(e);
             }
             os.write(bytes, 0, offset);
-            os.flush();
+            //os.flush();
             os.close();
             recordCount = 0;
         } catch (IOException ex) {
