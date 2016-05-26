@@ -982,11 +982,11 @@ public class TPCHJoinWorkload {
         for(int i = 0; i < 10;i  ++){
             tpch3();
         }
-
+*/
         for(int i = 0; i < 10;i  ++){
             tpch5();
         }
-
+/*
         for(int i = 0; i < 10;i  ++){
             tpch6();
         }
@@ -1000,13 +1000,14 @@ public class TPCHJoinWorkload {
         for(int i = 0; i < 10;i  ++){
             tpch12();
         }
-        */
+
         for(int i = 0; i < 10;i  ++){
             tpch14();
         }
         for(int i = 0; i < 20;i  ++){
             tpch19();
         }
+        */
     }
 
 
