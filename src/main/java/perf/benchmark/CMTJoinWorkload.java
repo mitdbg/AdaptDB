@@ -251,7 +251,7 @@ public class CMTJoinWorkload {
             String stringMH_join_MHL = stringMH + ", " + stringMHL;
             Schema schemaMH_join_MHL = Schema.createSchema(stringMH_join_MHL);
 
-            JavaPairRDD<LongWritable, Text> mh_join_mhl_rdd = sq.createJoinRDD(MH, q_mh, "NULL",MHL, q_mhl, "NULL",  schemaMH_join_MHL.getAttributeId("mhl_dataset_id"));
+            JavaPairRDD<LongWritable, Text> mh_join_mhl_rdd = sq.createJoinRDD(MH, q_mh,MHL, q_mhl, schemaMH_join_MHL.getAttributeId("mhl_dataset_id"));
             JavaPairRDD<LongWritable, Text> sf_rdd = sq.createScanRDD(SF, q_sf);
             JavaPairRDD<LongWritable, Tuple2<Text, Text>> rdd = mh_join_mhl_rdd.join(sf_rdd);
             long result = rdd.count();

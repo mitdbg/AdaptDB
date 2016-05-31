@@ -44,7 +44,6 @@ public class TPCHJoinWorkload {
 
     private Schema schemaCustomer, schemaLineitem, schemaOrders, schemaPart, schemaSupplier;
     private String stringCustomer, stringLineitem, stringOrders, stringPart, stringSupplier;
-    private int sizeCustomer, sizeLineitem, sizeOrders, sizePart, sizeSupplier;
     private TableInfo tableLineitem, tableCustomer, tableOrders, tableSupplier, tablePart;
 
     private String lineitem = "lineitem", orders = "orders", customer = "customer", supplier = "supplier", part = "part";
@@ -124,26 +123,6 @@ public class TPCHJoinWorkload {
                 case "--schemaSupplier":
                     stringSupplier = args[counter + 1];
                     schemaSupplier = Schema.createSchema(stringSupplier);
-                    counter += 2;
-                    break;
-                case "--sizeCustomer":
-                    sizeCustomer = Integer.parseInt(args[counter + 1]);
-                    counter += 2;
-                    break;
-                case "--sizeLineitem":
-                    sizeLineitem = Integer.parseInt(args[counter + 1]);
-                    counter += 2;
-                    break;
-                case "--sizeOrders":
-                    sizeOrders = Integer.parseInt(args[counter + 1]);
-                    counter += 2;
-                    break;
-                case "--sizePart":
-                    sizePart = Integer.parseInt(args[counter + 1]);
-                    counter += 2;
-                    break;
-                case "--sizeSupplier":
-                    sizeSupplier = Integer.parseInt(args[counter + 1]);
                     counter += 2;
                     break;
                 case "--method":
@@ -268,7 +247,7 @@ public class TPCHJoinWorkload {
         String stringLineitem_join_Orders = stringLineitem + ", " + stringOrders;
         Schema schemaLineitem_join_Orders = Schema.createSchema(stringLineitem_join_Orders);
 
-        JavaPairRDD<LongWritable, Text> lineitem_join_orders_rdd = sq.createJoinRDD(lineitem, q_l, "NULL", orders, q_o, "NULL", schemaLineitem_join_Orders.getAttributeId("o_custkey"));
+        JavaPairRDD<LongWritable, Text> lineitem_join_orders_rdd = sq.createJoinRDD(lineitem, q_l, orders, q_o, schemaLineitem_join_Orders.getAttributeId("o_custkey"));
         JavaPairRDD<LongWritable, Text> customer_rdd = sq.createScanRDD(customer, q_c);
         JavaPairRDD<LongWritable, Tuple2<Text, Text>> rdd = lineitem_join_orders_rdd.join(customer_rdd);
 
@@ -346,8 +325,8 @@ public class TPCHJoinWorkload {
         Schema schemaLineitem_join_Supplier = Schema.createSchema(stringLineitem_join_Supplier);
 
 
-        JavaPairRDD<LongWritable, Text> customer_join_orders_rdd = sq.createJoinRDD(customer, q_c, "NULL", orders, q_o, "NULL", schemaCustomer_join_Orders.getAttributeId("o_orderkey"));
-        JavaPairRDD<LongWritable, Text> lineitem_join_supplier_rdd = sq.createJoinRDD(lineitem, q_l, "NULL", supplier, q_s, "NULL", schemaLineitem_join_Supplier.getAttributeId("l_orderkey"));
+        JavaPairRDD<LongWritable, Text> customer_join_orders_rdd = sq.createJoinRDD(customer, q_c, orders, q_o, schemaCustomer_join_Orders.getAttributeId("o_orderkey"));
+        JavaPairRDD<LongWritable, Text> lineitem_join_supplier_rdd = sq.createJoinRDD(lineitem, q_l, supplier, q_s, schemaLineitem_join_Supplier.getAttributeId("l_orderkey"));
 
         JavaPairRDD<LongWritable, Tuple2<Text, Text>> rdd = customer_join_orders_rdd.join(lineitem_join_supplier_rdd);
 
@@ -457,9 +436,9 @@ public class TPCHJoinWorkload {
         Schema schemaLineitem_join_Part = Schema.createSchema(stringLineitem_join_Part);
 
 
-        JavaPairRDD<LongWritable, Text> orders_join_customer_rdd = sq.createJoinRDD(orders, q_o, "NULL", customer, q_c, "NULL", schemaOrders_join_Customer.getAttributeId("o_orderkey"));
+        JavaPairRDD<LongWritable, Text> orders_join_customer_rdd = sq.createJoinRDD(orders, q_o, customer, q_c, schemaOrders_join_Customer.getAttributeId("o_orderkey"));
 
-        JavaPairRDD<LongWritable, Text> lineitem_join_part_rdd = sq.createJoinRDD(lineitem, q_l, "NULL", part, q_p, "NULL", schemaLineitem_join_Part.getAttributeId("l_orderkey"));
+        JavaPairRDD<LongWritable, Text> lineitem_join_part_rdd = sq.createJoinRDD(lineitem, q_l,  part, q_p, schemaLineitem_join_Part.getAttributeId("l_orderkey"));
         JavaPairRDD<LongWritable, Tuple2<Text, Text>> rdd = orders_join_customer_rdd.join(lineitem_join_part_rdd);
 
         long result = rdd.count();
@@ -517,7 +496,7 @@ public class TPCHJoinWorkload {
 
         start = System.currentTimeMillis();
 
-        JavaPairRDD<LongWritable, Text> lineitem_join_orders_rdd = sq.createJoinRDD(lineitem, q_l, "NULL", orders, q_o, "NULL", schemaLineitem_join_Orders.getAttributeId("o_custkey"));
+        JavaPairRDD<LongWritable, Text> lineitem_join_orders_rdd = sq.createJoinRDD(lineitem, q_l,  orders, q_o, schemaLineitem_join_Orders.getAttributeId("o_custkey"));
         JavaPairRDD<LongWritable, Text> customer_rdd = sq.createScanRDD(customer, q_c);
         JavaPairRDD<LongWritable, Tuple2<Text, Text>> rdd = lineitem_join_orders_rdd.join(customer_rdd);
 
@@ -572,7 +551,7 @@ public class TPCHJoinWorkload {
         // lineitem ⋈ orders
 
 
-        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", orders, q_o, "NULL", 0);
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, orders, q_o, 0);
 
         long result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
@@ -615,7 +594,7 @@ public class TPCHJoinWorkload {
 
         // lineitem ⋈ part
 
-        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", part, q_p, "NULL", 0);
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, part, q_p, 0);
 
         long result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
@@ -669,7 +648,7 @@ public class TPCHJoinWorkload {
         // lineitem ⋈ part
 
 
-        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", part, q_p, "NULL", 0);
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l,part, q_p,  0);
 
         long result = rdd.count();
         System.out.println("RES: Time Taken: " + (System.currentTimeMillis() - start) + "; Result: " + result);
@@ -689,7 +668,7 @@ public class TPCHJoinWorkload {
 
         long start = System.currentTimeMillis();
 
-        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", orders, q_o, "NULL", 0);
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, orders, q_o,  0);
 
         long result = rdd.count();
 
@@ -709,7 +688,7 @@ public class TPCHJoinWorkload {
 
         long start = System.currentTimeMillis();
 
-        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, "NULL", part, q_p, "NULL", 0);
+        JavaPairRDD<LongWritable, Text> rdd = sq.createJoinRDD(lineitem, q_l, part, q_p, 0);
 
         long result = rdd.count();
 

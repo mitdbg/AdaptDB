@@ -59,9 +59,9 @@ public class SparkJoinQuery {
         }
     }
 
-    protected SparkJoinQueryConf queryConf;
-    protected JavaSparkContext ctx;
-    protected ConfUtils cfg;
+    private SparkJoinQueryConf queryConf;
+    private JavaSparkContext ctx;
+    private ConfUtils cfg;
 
     private String Delimiter = "|";
     private String joinStrategy = "Heuristic";
@@ -94,6 +94,10 @@ public class SparkJoinQuery {
         queryConf.setWorkerNum(8);
     }
 
+    public JavaSparkContext getSparkContext(){
+        return ctx;
+    }
+
     public void setBufferSize(long size){
         queryConf.setMaxSplitSize(size);
     }
@@ -118,8 +122,8 @@ public class SparkJoinQuery {
 
 
     public JavaPairRDD<LongWritable, Text> createJoinRDD(
-            String dataset1, JoinQuery dataset1_query, String dataset1_cutpoints,
-            String dataset2, JoinQuery dataset2_query, String dataset2_cutpoints,
+            String dataset1, JoinQuery dataset1_query,
+            String dataset2, JoinQuery dataset2_query,
             int partitionKey) {
 
         // set SparkQuery conf
@@ -242,5 +246,31 @@ public class SparkJoinQuery {
 
         JavaPairRDD<LongWritable, Text> rdd = createSingleTableRDD(hdfsPath, q);
         return rdd;
+    }
+
+    public JavaPairRDD<LongWritable, Text> createCopartitionedRDD(String dataset1, JoinQuery dataset1_query,
+                                                                  String dataset2, JoinQuery dataset2_query,
+                                                                  int partitionKey){
+        Configuration conf = ctx.hadoopConfiguration();
+
+        conf.set("DATASET1", dataset1);
+        conf.set("DATASET2", dataset2);
+
+        conf.set("DATASET1_QUERY", dataset1_query.toString());
+        conf.set("DATASET2_QUERY", dataset2_query.toString());
+
+        conf.set("PARTITION_NUM", "200");
+
+        conf.setInt("PARTITION_KEY",  partitionKey);
+
+        conf.set("WORKING_DIR", cfg.getHDFS_WORKING_DIR());
+        conf.set("HADOOP_HOME",cfg.getHADOOP_HOME());
+        conf.set("ZOOKEEPER_HOSTS",cfg.getZOOKEEPER_HOSTS());
+        conf.setInt("HDFS_REPLICATION_FACTOR",cfg.getHDFS_REPLICATION_FACTOR());
+        conf.set("DELIMITER", "|");
+
+        return ctx.newAPIHadoopFile(cfg.getHADOOP_NAMENODE() + cfg.getHDFS_WORKING_DIR(),
+                SparkJoinCopartitionedInputFormat.class, LongWritable.class,
+                Text.class, ctx.hadoopConfiguration());
     }
 }
