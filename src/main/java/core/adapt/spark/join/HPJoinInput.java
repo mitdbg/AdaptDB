@@ -33,7 +33,6 @@ public class HPJoinInput {
         partitionIdFileMap = new HashMap<Integer, FileStatus>();
         partitionIdSizeMap = new HashMap<Integer, Long>();
         for (FileStatus file : files) {
-            //System.out.println("FILE: " + file.getPath());
             try {
                 String fileName = FilenameUtils.getName(file.getPath().toString());
                 int id = Integer.parseInt(fileName);

@@ -15,9 +15,6 @@ import core.utils.HDFSUtils;
 import core.utils.TypeUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.spark.api.java.JavaPairRDD;
 
 import java.util.*;
 
@@ -121,7 +118,7 @@ public class JoinPlannerTest {
         Map<Integer, ArrayList<Integer>> dataset_scan_blocks = new HashMap<Integer, ArrayList<Integer>>();
         Map<Integer, MDIndex.BucketInfo> bucketInfo = new HashMap<Integer, MDIndex.BucketInfo>();
 
-        JoinPlanner.speculative_repartition(dataset, q, dataset_queryWindow, dataset_tableInfo, dataset_hpinput, dataset_am, dataset_scan_blocks, dataset_iterator_type,dataset_belong, bucketInfo, queryConf, fs);
+        JoinPlanner.SmoothRepartition(dataset, q, dataset_queryWindow, dataset_tableInfo, dataset_hpinput, dataset_am, dataset_scan_blocks, dataset_iterator_type,dataset_belong, bucketInfo, queryConf, fs);
         ArrayList<AccessMethod.PartitionSplit> shuffleJoinSplit = new  ArrayList<AccessMethod.PartitionSplit>();
         JoinPlanner.extractShuffleJoin(q, shuffleJoinSplit, dataset_scan_blocks, dataset_iterator_type, dataset_hpinput.getPartitionIdSizeMap(), queryConf.getMaxSplitSize(), queryConf.getWorkerNum());
 

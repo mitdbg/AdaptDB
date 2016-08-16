@@ -1,9 +1,6 @@
 package core.adapt.spark.join;
 
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
 
 import core.adapt.JoinQuery;
@@ -19,17 +16,14 @@ import core.common.index.MDIndex;
 
 import core.common.key.ParsedTupleList;
 import core.utils.HDFSUtils;
-import core.utils.RangePartitionerUtils;
 import core.utils.TypeUtils;
-import org.apache.commons.collections.map.HashedMap;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 
 import core.adapt.AccessMethod.PartitionSplit;
 
 
-import java.io.File;
 import java.io.IOException;
 
 import java.util.*;
@@ -112,8 +106,8 @@ public class JoinPlanner {
         int[] dataset1_partitions = dataset1_tableInfo.partitions;
         int[] dataset2_partitions = dataset2_tableInfo.partitions;
 
-        speculative_repartition(dataset1, dataset1_query, dataset1_queryWindow, dataset1_tableInfo, dataset1_hpinput, dataset1_am, dataset1_scan_blocks, dataset1_iterator_type, dataset1_belong, dataset1_bucketInfo, queryConf, fs);
-        speculative_repartition(dataset2, dataset2_query, dataset2_queryWindow, dataset2_tableInfo, dataset2_hpinput, dataset2_am, dataset2_scan_blocks, dataset2_iterator_type, dataset2_belong, dataset2_bucketInfo, queryConf, fs);
+        SmoothRepartition(dataset1, dataset1_query, dataset1_queryWindow, dataset1_tableInfo, dataset1_hpinput, dataset1_am, dataset1_scan_blocks, dataset1_iterator_type, dataset1_belong, dataset1_bucketInfo, queryConf, fs);
+        SmoothRepartition(dataset2, dataset2_query, dataset2_queryWindow, dataset2_tableInfo, dataset2_hpinput, dataset2_am, dataset2_scan_blocks, dataset2_iterator_type, dataset2_belong, dataset2_bucketInfo, queryConf, fs);
 
         int dataset1_join_attr = dataset1_query.getJoinAttribute();
         int dataset2_join_attr = dataset2_query.getJoinAttribute();
@@ -128,11 +122,15 @@ public class JoinPlanner {
             }
         }
 
-        System.out.println(dataset1 + "##" + dataset1_join_attr + "##" + dataset2 + "##" + +dataset2_join_attr + "##" + IntInArray(dataset1_join_attr, dataset1_partitions) + "##" + IntInArray(dataset2_join_attr, dataset2_partitions) + "##" + (dataset2_partitions.length == 1) + "##" + (multiple_iterator_type == false));
+        boolean dataset1PartitionHasJoinAttr = ArrayUtils.contains(dataset1_partitions, dataset1_join_attr);
+        boolean dataset2PartitionHasJoinAttr = ArrayUtils.contains(dataset2_partitions, dataset2_join_attr);
+
+        System.out.println(dataset1 + "##" + dataset1_join_attr + "##" + dataset2 + "##" + +dataset2_join_attr + "##" + dataset1PartitionHasJoinAttr + "##" + dataset2PartitionHasJoinAttr + "##" + (dataset2_partitions.length == 1) + "##" + (multiple_iterator_type == false));
 
         // separate read-only and repartitioned. Read only go first.
 
-        if (IntInArray(dataset1_join_attr, dataset1_partitions) && IntInArray(dataset2_join_attr, dataset2_partitions) && dataset2_partitions.length == 1 && multiple_iterator_type == false) {
+        if (dataset1PartitionHasJoinAttr && dataset2PartitionHasJoinAttr && dataset2_partitions.length == 1 && multiple_iterator_type == false) {
+
             // read_index && init over_lap
 
             //read_index(dataset1_bucketInfo, dataset1_am.get(dataset1_join_attr).getIndex(), dataset1_join_attr);
@@ -232,23 +230,23 @@ public class JoinPlanner {
                 indexBytes.length, false);
     }
 
-    private static int[] HashSetToIntArray(HashSet<Integer> partititon) {
-        int[] ret = new int[partititon.size()];
-        int index = 0;
-        for (int num : partititon) {
-            ret[index++] = num;
-        }
-        Arrays.sort(ret);
-        return ret;
-    }
+    private static int[] updatePartitions(HashSet<Integer> partititons, int latestPartition) {
 
-    private static boolean IntInArray(int value, int[] arr) {
-        for (int i = 0; i < arr.length; i++) {
-            if (arr[i] == value) {
-                return true;
-            }
+        if (partititons.contains(latestPartition) == false) {
+            throw new RuntimeException("latestPartition " + latestPartition + " is not in partititons.");
         }
-        return false;
+
+        int[] ret = new int[partititons.size()];
+        ret[0] = latestPartition;
+
+        int index = 1;
+        for (int parId : partititons) {
+            if (parId != latestPartition) {
+                ret[index++] = parId;
+            }
+
+        }
+        return ret;
     }
 
     private static ArrayList<Integer> ArrayToArrayList(int[] arr) {
@@ -267,7 +265,7 @@ public class JoinPlanner {
         return arr;
     }
 
-    private static int[] filter_data_blocks(int[] blocks, HPJoinInput hpinput) {
+    private static int[] GetNonEmptyDataBlocks(int[] blocks, HPJoinInput hpinput) {
         ArrayList<Integer> result = new ArrayList<Integer>();
         Map<Integer, Long> sizeMap = hpinput.getPartitionIdSizeMap();
 
@@ -279,51 +277,83 @@ public class JoinPlanner {
         return ArrayListToArray(result);
     }
 
-    public static void  speculative_repartition(String tableName, JoinQuery query, List<JoinQuery> queryWindow, TableInfo tableInfo, HPJoinInput hpinput, Map<Integer, JoinAccessMethod> am_map, Map<Integer, ArrayList<Integer>> scan_blocks, Map<Integer, Integer> iterator_type, Map<Integer, Integer> belong, Map<Integer, MDIndex.BucketInfo> dataset1_bucketInfo, SparkJoinQueryConf queryConf, FileSystem fs) {
+    private static void updateRepartitionBlocks(PartitionSplit[] splits, Map<Integer, Integer> iterator_type, Map<Integer, Integer> belong, HPJoinInput hpinput, int partition) {
+        if (splits.length > 1) {
+            int[] nonEmptyBidsFromRepartitionSplit = GetNonEmptyDataBlocks(splits[1].getPartitions(), hpinput);
+            for (int j = 0; j < nonEmptyBidsFromRepartitionSplit.length; j++) {
+                iterator_type.put(nonEmptyBidsFromRepartitionSplit[j], partition);
+                belong.put(nonEmptyBidsFromRepartitionSplit[j], partition);
+            }
+        }
+    }
+
+    public static void SmoothRepartition(String tableName, JoinQuery query, List<JoinQuery> queryWindow, TableInfo tableInfo, HPJoinInput hpinput, Map<Integer, JoinAccessMethod> am_map, Map<Integer, ArrayList<Integer>> scanBlocks, Map<Integer, Integer> iterator_type, Map<Integer, Integer> belong, Map<Integer, MDIndex.BucketInfo> dataset1_bucketInfo, SparkJoinQueryConf queryConf, FileSystem fs) {
 
         int joinAttribute = query.getJoinAttribute();
         int[] partitions = tableInfo.partitions;
+
+        int latestPartition = partitions[0];
 
         HashSet<Integer> newPartition = new HashSet<Integer>();
         for (int i = 0; i < partitions.length; i++) {
             newPartition.add(partitions[i]);
         }
 
+        /*
+            calculate expected weight for each partition
+            expectedWeights contains information about how many times each join attribute appears in the query window.
 
-        // calculate expected weight for each partition
+            NOTE: the query window has the upcoming query which has not been executed.
+        */
 
-        Map<Integer, Integer> expected_weights = new HashMap<Integer, Integer>();
+        Map<Integer, Integer> expectedWeights = new HashMap<Integer, Integer>();
 
         for (int i = 0; i < queryWindow.size(); i++) {
             int attr = queryWindow.get(i).getJoinAttribute();
-            if (expected_weights.containsKey(attr) == false) {
-                expected_weights.put(attr, 0);
+            if (expectedWeights.containsKey(attr) == false) {
+                expectedWeights.put(attr, 0);
             }
-            expected_weights.put(attr, expected_weights.get(attr) + 1);
+            expectedWeights.put(attr, expectedWeights.get(attr) + 1);
         }
+
+        /*
+            There is a limit on the size of query window, which means there may be partitions for a join attribute
+            but the attribute does not appear in the query window.
+            The expected size should be zero.
+
+         */
 
         for (int i = 0; i < partitions.length; i++) {
-            if (expected_weights.containsKey(partitions[i]) == false) {
-                expected_weights.put(partitions[i], 0);
+            if (expectedWeights.containsKey(partitions[i]) == false) {
+                expectedWeights.put(partitions[i], 0);
             }
         }
 
+
+        /*
+            is total_weight always equal to |query_window|?
+         */
 
         int total_weight = 0;
 
-        for (int attr : expected_weights.keySet()) {
-            total_weight += expected_weights.get(attr);
+        for (int attr : expectedWeights.keySet()) {
+            total_weight += expectedWeights.get(attr);
         }
 
-        // this will only happen at the beginning
+        /*
+        *   this will only happen at the beginning
+        *   If the total number of queries is less than Globals.QUERY_WINDOW_SIZE,
+        *   the summation of expectedWeights is also less than Globals.QUERY_WINDOW_SIZE
+        *   We should allocate the remaining quota to noJoinAttr(-1).
+        * */
 
         int noJoinAttr = -1;
 
         if (queryWindow.size() < Globals.QUERY_WINDOW_SIZE) {
-            if (expected_weights.containsKey(noJoinAttr) == false) {
-                expected_weights.put(noJoinAttr, 0);
+            if (expectedWeights.containsKey(noJoinAttr) == false) {
+                expectedWeights.put(noJoinAttr, 0);
             }
-            expected_weights.put(noJoinAttr, Globals.QUERY_WINDOW_SIZE - total_weight);
+            expectedWeights.put(noJoinAttr, Globals.QUERY_WINDOW_SIZE - total_weight);
         }
 
         // calculate partition size for each index
@@ -336,6 +366,13 @@ public class JoinPlanner {
 
         String input_dir = queryConf.getWorkingDir() + "/" + tableName + "/data";
         hpinput.initialize(listStatus(fs, input_dir));
+
+        /*
+        *   Compute the table size, which is a summation over all partitions.
+        *   Load the partition corresponding the current join attr into dataset1_bucketInfo
+        *   am_map is a mapping from partition id to JoinAccessMethod.
+        *   JoinAccessMethod has PartitionIdSizeMap and partitionIdFileMap
+        * */
 
         long table_size = 0;
 
@@ -356,13 +393,12 @@ public class JoinPlanner {
             partition_sizes.put(partitions[i], total_size);
             table_size += total_size;
 
-            if (partitions[i] == joinAttribute){
+            if (partitions[i] == joinAttribute) {
                 read_index(dataset1_bucketInfo, am.getIndex(), joinAttribute);
             }
         }
 
-
-        boolean partitionExists = IntInArray(joinAttribute, partitions);
+        boolean partitionExists = ArrayUtils.contains(partitions, joinAttribute);
 
         if (partitionExists == false) {
             // create a new partitioning tree for the new joinAttribute.
@@ -384,7 +420,6 @@ public class JoinPlanner {
                 e.printStackTrace();
             }
 
-
             // step 2: create a new partitioning tree
 
             // Construct the index from the sample.
@@ -397,10 +432,10 @@ public class JoinPlanner {
             index.initProbe(query);
 
 
-            // step 3: add joinAttribute into tableInfo's partitions and persist
+            // step 3: add joinAttribute into tableInfo's partitions, newPartition will persist at the end of smoothPartition
 
             newPartition.add(joinAttribute);
-
+            latestPartition = joinAttribute;
 
             // step 4: persist index
 
@@ -409,37 +444,45 @@ public class JoinPlanner {
 
         // adjust tree -> adapt or delete + scan
 
-        //normalization
-        double join_expected_weight = 1.0 * expected_weights.get(joinAttribute) / Globals.QUERY_WINDOW_SIZE;
+        double join_expected_weight = 1.0 * expectedWeights.get(joinAttribute) / Globals.QUERY_WINDOW_SIZE;
+
+        /*
+        * join_weight is calculated based on how many queries with this join attribute appear in the query window,
+        * which is equal to |# of queries with join attr| / |query_window_size|
+        * */
 
         double join_weight = 0;
         if (partition_sizes.containsKey(joinAttribute)) {
             join_weight = 1.0 * partition_sizes.get(joinAttribute) / table_size;
         }
 
-        if (join_weight < join_expected_weight) { // repartition other indexes to joinAttribute
+        //only repartition data into new partition.
 
+        if (join_weight < join_expected_weight && joinAttribute == latestPartition) { // repartition other indexes to join attribute
+            // iterate through each partition and repartition some partitions into the join attr partition
             for (int i = 0; i < partitions.length; i++) {
 
-                //normalization
-
-                double weight = 1.0 * partition_sizes.get(partitions[i]) / table_size;
-                double expected_weight = 1.0 * expected_weights.get(partitions[i]) / Globals.QUERY_WINDOW_SIZE;
+                double actualWeight = 1.0 * partition_sizes.get(partitions[i]) / table_size;
+                double expectedWeight = 1.0 * expectedWeights.get(partitions[i]) / Globals.QUERY_WINDOW_SIZE;
 
                 JoinAccessMethod am = am_map.get(partitions[i]);
                 JoinRobustTree rt = am.getIndex();
 
-                if (weight > expected_weight) {  // delete
+                if (actualWeight > expectedWeight) {  // delete
 
-                    long deleteSize = (long) ((weight - expected_weight) * table_size);
-                    boolean deleteAll = expected_weights.get(partitions[i]) == 0;
+                    long deleteSize = (long) ((actualWeight - expectedWeight) * table_size);
+                    boolean deleteAll = expectedWeights.get(partitions[i]) == 0;
 
-                    // indexScan
+                    // two partitionSplits, one for scan, one for delete
 
-                    PartitionSplit scan_split = am.getPartitionSplits(query, true, partitions[i])[0];
-                    PartitionSplit delete_split = rt.delete(deleteSize, deleteAll, query, partitions[i], hpinput.getPartitionIdSizeMap());
+                    PartitionSplit scanSplit = am.getPartitionSplits(query, true, partitions[i])[0];
+                    PartitionSplit deleteSplit = rt.delete(deleteSize, deleteAll, query, partitions[i], hpinput.getPartitionIdSizeMap());
 
-                    if (deleteAll || rt.getRoot() == null) { // delete index, only one can be deleteAll
+                    /*
+                    * Update or delete the index
+                    * */
+
+                    if (deleteAll || rt.getRoot() == null) {
                         String pathToIndex = queryConf.getWorkingDir() + "/" + tableInfo.tableName + "/index";
 
                         if (partitions[i] != -1) {
@@ -447,75 +490,61 @@ public class JoinPlanner {
                         }
 
                         HDFSUtils.deleteFile(fs, pathToIndex, true);
-
                         newPartition.remove(partitions[i]);
-
                     } else {
                         persistIndex(rt, partitions[i], tableInfo, queryConf, fs);
                     }
 
-                    // filter scan_split by delete_split
 
-                    // some blocks may be empty, need a filter
+                    /*
+                    * some blocks may be empty, need a filter
+                    * The index tree for each partition is created based on the sample file,
+                    * If only partial dataset is repartitioned until deletion, some blocks may be empty.
+                    * */
 
-                    HashSet<Integer> delete_bid = new HashSet<Integer>();
-                    int[] bids = filter_data_blocks(delete_split.getPartitions(), hpinput);
+
+                    HashSet<Integer> deleteBids = new HashSet<Integer>();
+                    int[] nonEmptyBidsFromDeleteSplit = GetNonEmptyDataBlocks(deleteSplit.getPartitions(), hpinput);
 
 
-                    for (int j = 0; j < bids.length; j++) {
-                        delete_bid.add(bids[j]);
-                        iterator_type.put(bids[j], joinAttribute);
-                        belong.put(bids[j], partitions[i]);
+                    for (int j = 0; j < nonEmptyBidsFromDeleteSplit.length; j++) {
+                        deleteBids.add(nonEmptyBidsFromDeleteSplit[j]);
+                        iterator_type.put(nonEmptyBidsFromDeleteSplit[j], joinAttribute);
+                        belong.put(nonEmptyBidsFromDeleteSplit[j], partitions[i]);
                     }
 
-                    ArrayList<Integer> filtered_bids = new ArrayList<Integer>();
+                    /*
+                    *  filter scanSplit by deleteSplit
+                    *  If a block appears in both scanSplit and deleteSplit, remove it from scanSplit
+                    * */
 
-                    bids = filter_data_blocks(scan_split.getPartitions(), hpinput);
-                    for (int j = 0; j < bids.length; j++) {
-                        if (delete_bid.contains(bids[j]) == false) {
-                            filtered_bids.add(bids[j]);
+                    ArrayList<Integer> scanBidsAfterfiltering = new ArrayList<Integer>();
+
+                    int[] nonEmptyBidsFromScanSplit = GetNonEmptyDataBlocks(scanSplit.getPartitions(), hpinput);
+                    for (int j = 0; j < nonEmptyBidsFromScanSplit.length; j++) {
+                        if (deleteBids.contains(nonEmptyBidsFromScanSplit[j]) == false) {
+                            scanBidsAfterfiltering.add(nonEmptyBidsFromScanSplit[j]);
                         }
                     }
-                    scan_blocks.put(partitions[i], filtered_bids);
-
-
+                    scanBlocks.put(partitions[i], scanBidsAfterfiltering);
                 } else { // scan
                     PartitionSplit[] splits = am.getPartitionSplits(query, false, partitions[i]);
-                    scan_blocks.put(partitions[i], ArrayToArrayList(filter_data_blocks(splits[0].getPartitions(), hpinput)));
-
-                    if (splits.length > 1) {
-                        int[] repartition_bids = filter_data_blocks(splits[1].getPartitions(), hpinput);
-
-                        for (int j = 0; j < repartition_bids.length; j++) {
-                            iterator_type.put(repartition_bids[j], partitions[i]);
-                            belong.put(repartition_bids[j], partitions[i]);
-                        }
-                    }
+                    scanBlocks.put(partitions[i], ArrayToArrayList(GetNonEmptyDataBlocks(splits[0].getPartitions(), hpinput)));
+                    // There are blocks to be repartitioned
+                    updateRepartitionBlocks(splits, iterator_type, belong, hpinput, partitions[i]);
                 }
             }
         } else {
-
             for (int i = 0; i < partitions.length; i++) {
                 JoinAccessMethod am = am_map.get(partitions[i]);
                 PartitionSplit[] splits = am.getPartitionSplits(query, false, partitions[i]);
-
-                scan_blocks.put(partitions[i], ArrayToArrayList(filter_data_blocks(splits[0].getPartitions(), hpinput)));
-
-                if (splits.length > 1) {
-                    int[] repartition_bids = filter_data_blocks(splits[1].getPartitions(), hpinput);
-                    for (int j = 0; j < repartition_bids.length; j++) {
-                        iterator_type.put(repartition_bids[j], partitions[i]);
-                        belong.put(repartition_bids[j], partitions[i]);
-                    }
-                }
-
+                scanBlocks.put(partitions[i], ArrayToArrayList(GetNonEmptyDataBlocks(splits[0].getPartitions(), hpinput)));
+                updateRepartitionBlocks(splits, iterator_type, belong, hpinput, partitions[i]);
             }
         }
 
-
         // update partition
-
-        tableInfo.partitions = HashSetToIntArray(newPartition);
+        tableInfo.partitions = updatePartitions(newPartition, joinAttribute);
         tableInfo.save(queryConf.getWorkingDir(), queryConf.getHDFSReplicationFactor(), fs);
     }
 
@@ -583,13 +612,13 @@ public class JoinPlanner {
         ArrayList<Integer> blocks = new ArrayList<Integer>();
 
         for (int block : iterator_type.keySet()) {
-            if (belong.get(block) == join_attribute){
+            if (belong.get(block) == join_attribute) {
                 //System.out.println("In blocks: " + block);
                 blocks.add(block);
             }
         }
         // remove self repartitioned block
-        for(int block: blocks){
+        for (int block : blocks) {
             iterator_type.remove(block);
             belong.remove(block);
         }
@@ -654,85 +683,6 @@ public class JoinPlanner {
             }
         }
     }
-
-    /*
-    private void extractJoin(JoinQuery dataset1_query, PartitionSplit[] dataset1_splits, Map<Integer, Long> dataset1_partitionSizes, JoinQuery dataset2_query, PartitionSplit[] dataset2_splits, Map<Integer, Long> dataset2_partitionSizes, long maxSplitSize) {
-        // TODO: the threshold should be on the number of blocks on LHS, not RHS, since we are building hashtable on LHS
-
-        HashMap<Integer, Integer> rightCounters = new HashMap<Integer, Integer>();
-
-
-        for (int i = 0; i < dataset1_splits.length; i++) {
-            PartitionSplit split = dataset1_splits[i];
-            int[] bids = split.getPartitions();
-
-            for (int j = 0; j < bids.length; j++) {
-                ArrayList<Integer> dep_bids = overlap_chunks.get(bids[j]);
-
-                for (int dep_id : dep_bids) {
-                    if (rightCounters.containsKey(dep_id) == false) {
-                        rightCounters.put(dep_id, 0);
-                    }
-                    rightCounters.put(dep_id, rightCounters.get(dep_id) + 1);
-                }
-
-            }
-        }
-
-        // statistics
-
-        int[] hist = new int[16];
-        for (int chunk : rightCounters.keySet()) {
-            int i = 0;
-            while ((1 << i) < rightCounters.get(chunk)) {
-                i++;
-            }
-            hist[i]++;
-        }
-
-        System.out.println("Histogram:");
-        for (int i = 0; i < 16; i++) {
-            System.out.println((1 << i) + ": " + hist[i]);
-        }
-
-
-        if (hyperjoin) {
-            for (int i = 0; i < dataset1_splits.length; i++) {
-                PartitionSplit split = dataset1_splits[i];
-                int[] bids = split.getPartitions();
-
-                ArrayList<Integer> hyper_ids = new ArrayList<Integer>();
-
-                for (int j = 0; j < bids.length; j++) {
-                    hyper_ids.add(bids[j]);
-                }
-
-                if (hyper_ids.size() > 0) {
-                    int[] hyper_ids_int = new int[hyper_ids.size()];
-                    for (int j = 0; j < hyper_ids_int.length; j++) {
-                        hyper_ids_int[j] = hyper_ids.get(j);
-                    }
-
-                    int total = 0;
-                    ArrayList<PartitionSplit> hyper_splits = groupSplits(split.getIterator(), hyper_ids_int, dataset1_partitionSizes, maxSplitSize);
-                    for (PartitionSplit hs : hyper_splits) {
-                        hyperJoinSplit.add(hs);
-                        total += hs.getPartitions().length;
-                    }
-
-                    if (total != hyper_ids_int.length) {
-                        throw new RuntimeException("some partition is lost");
-                    }
-                }
-            }
-        } else {
-
-            extractShuffleJoin(dataset1_query, dataset1_splits, dataset1_partitionSizes, shuffleJoinSplit1, maxSplitSize, queryConf.getWorkerNum());
-            extractShuffleJoin(dataset2_query, dataset2_splits, dataset2_partitionSizes, shuffleJoinSplit2, maxSplitSize, queryConf.getWorkerNum());
-        }
-    }
-
-*/
 
     private PartitionSplit[] getPartitionSplits(int[] bids, JoinQuery q) {
         PostFilterIterator pi = new PostFilterIterator(q.castToQuery());
@@ -930,7 +880,7 @@ public class JoinPlanner {
         // filtering
 
         HashSet<Integer> splits1 = new HashSet<Integer>();
-        int join_attribute =  dataset1_query.getJoinAttribute();
+        int join_attribute = dataset1_query.getJoinAttribute();
 
         for (int block : dataset1_scan_blocks.get(join_attribute)) {
             //System.out.println("Put " + block);
@@ -938,9 +888,8 @@ public class JoinPlanner {
         }
 
 
-
         for (int block : dataset1_iterator_type.keySet()) {
-            if (dataset1_belong.get(block) == join_attribute){
+            if (dataset1_belong.get(block) == join_attribute) {
                 //System.out.println("Put " + block);
                 splits1.add(block);
             }
@@ -987,53 +936,30 @@ public class JoinPlanner {
 
         overlap_chunks = new HashMap<Integer, ArrayList<Integer>>();
 
-
-        //System.out.println("Populate dataset1_bucketInfo");
-
-
         read_index(dataset1_bucketInfo, jam1.opt.getIndex(), dataset1_query.getJoinAttribute());
-
-
-        //Globals.schema =  Schema.createSchema(dataset2_schema);
-
-        //System.out.println("Populate dataset2_bucketInfo");
-
-
         read_index(dataset2_bucketInfo, jam2.opt.getIndex(), dataset2_query.getJoinAttribute());
-
-
     }
 
     private int[] getIntPartitions(PartitionSplit[] splits) {
-        HashSet<Integer> ids = new HashSet<Integer>();
+        HashSet<Integer> allIds = new HashSet<Integer>();
 
-        for (int i = 0; i < splits.length; i++) {
-            int[] sub_ids = splits[i].getPartitions();
-            for (int j = 0; j < sub_ids.length; j++) {
-                ids.add(sub_ids[j]);
+        for (PartitionSplit split : splits) {
+            for (int id : split.getPartitions()) {
+                allIds.add(id);
             }
         }
-        int[] ret_ids = new int[ids.size()];
-        int it = 0;
-        for (int id : ids) {
-            ret_ids[it++] = id;
-        }
-        return ret_ids;
+
+        return Ints.toArray(allIds);
     }
 
-    private int getIntersectionSize(HashSet<Integer> chunks, ArrayList<Integer> vals) {
-        /*
-        if (vals == null){
-            return 0;
-        }
-        */
-        int sum = 0;
-        for (int i = 0; i < vals.size(); i++) {
-            if (chunks.contains(vals.get(i))) {
-                sum++;
+    private int getIntersectionSize(HashSet<Integer> setValues, ArrayList<Integer> listValues) {
+        int size = 0;
+        for (int i = 0; i < listValues.size(); i++) {
+            if (setValues.contains(listValues.get(i))) {
+                size++;
             }
         }
-        return sum;
+        return size;
     }
 
 
