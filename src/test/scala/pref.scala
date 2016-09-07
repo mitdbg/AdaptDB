@@ -16,7 +16,7 @@ val DEST = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark"
 
 
 // Create order table.
-sqlContext.sql(s"""CREATE TEMPORARY TABLE orders (o_orderkey int, o_custkey int,
+sqlContext.sql(s"""CREATE TEMPORARY TABLE orders (o_orderkey long, o_custkey long,
   o_orderstatus string, o_totalprice double, o_orderdate string, o_orderpriority string, o_clerk string,
   o_shippriority int)
 USING com.databricks.spark.csv
@@ -24,7 +24,7 @@ OPTIONS (path "$PATH/orders", header "false", delimiter "|")""")
 
 
 // Create lineitem table.
-sqlContext.sql(s"""CREATE TEMPORARY TABLE lineitem (l_orderkey int, l_partkey int, l_suppkey int,
+sqlContext.sql(s"""CREATE TEMPORARY TABLE lineitem (l_orderkey long, l_partkey long, l_suppkey long,
 	l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, l_tax double,
 	l_returnflag string,  l_linestatus string, l_shipdate string, l_commitdate string, l_receiptdate string,
 	l_shipinstruct string, l_shipmode string)
@@ -34,7 +34,7 @@ OPTIONS (path "$PATH/lineitem", header "false", delimiter "|")""")
 
 // Create customer table
 
-sqlContext.sql(s"""CREATE TEMPORARY TABLE customer (c_custkey int, c_name string, c_address string,
+sqlContext.sql(s"""CREATE TEMPORARY TABLE customer (c_custkey long, c_name string, c_address string,
 c_phone string, c_acctbal double, c_mktsegment string , c_nation string, c_region string)
 USING com.databricks.spark.csv
 OPTIONS (path "$PATH/customer", header "false", delimiter "|")""")
@@ -42,7 +42,7 @@ OPTIONS (path "$PATH/customer", header "false", delimiter "|")""")
 
 // Create part table.
 
-sqlContext.sql(s"""CREATE TEMPORARY TABLE part (p_partkey int, p_name string, p_mfgr string, p_brand string,
+sqlContext.sql(s"""CREATE TEMPORARY TABLE part (p_partkey long, p_name string, p_mfgr string, p_brand string,
 	p_type string, p_size int, p_container string, p_retailprice double)
 USING com.databricks.spark.csv
 OPTIONS (path "$PATH/part", header "false", delimiter "|")""")
@@ -50,7 +50,7 @@ OPTIONS (path "$PATH/part", header "false", delimiter "|")""")
 
 // Create supplier table.
 
-sqlContext.sql(s"""CREATE TEMPORARY TABLE supplier (s_suppkey int, s_name string, s_address string,
+sqlContext.sql(s"""CREATE TEMPORARY TABLE supplier (s_suppkey long, s_name string, s_address string,
 s_phone string, s_acctbal double, s_nation string, s_region string)
 USING com.databricks.spark.csv
 OPTIONS (path "$PATH/supplier", header "false", delimiter "|")""")
@@ -79,7 +79,7 @@ l_shipinstruct, l_shipmode
 FROM tpchd_repartitioned
 WHERE l_orderkey is not null""")
 
-val repartitioned_lineitem_count = repartitioned_lineitem.count
+//val repartitioned_lineitem_count = repartitioned_lineitem.count
 //val lineitem_count = sqlContext.sql(s"""SELECT COUNT(*) FROM lineitem """).collect
 
 repartitioned_lineitem.registerTempTable("repartitioned_lineitem")
@@ -91,7 +91,7 @@ o_totalprice, o_orderdate, o_orderpriority, o_clerk, o_shippriority
 FROM tpchd_repartitioned
 WHERE o_orderkey is not null""")
 
-val repartitioned_orders_count = repartitioned_orders.count
+//val repartitioned_orders_count = repartitioned_orders.count
 //val orders_count = sqlContext.sql(s"""SELECT COUNT(*) FROM orders """).collect
 
 repartitioned_orders.registerTempTable("repartitioned_orders")
@@ -103,7 +103,7 @@ val repartitioned_customer = sqlContext.sql(s"""SELECT c_custkey, c_name, c_addr
 FROM tpchd_repartitioned
 WHERE c_custkey is not null""")
 
-val repartitioned_customer_count = repartitioned_customer.count
+//val repartitioned_customer_count = repartitioned_customer.count
 //val customer_count = sqlContext.sql(s"""SELECT COUNT(*) FROM customer """).collect
 
 
@@ -117,7 +117,7 @@ p_type, p_size, p_container, p_retailprice
 FROM tpchd_repartitioned
 WHERE p_partkey is not null""")
 
-val repartitioned_part_count = repartitioned_part.count
+//val repartitioned_part_count = repartitioned_part.count
 //val part_count = sqlContext.sql(s"""SELECT COUNT(*) FROM part """).collect
 
 repartitioned_part.registerTempTable("repartitioned_part")
@@ -129,7 +129,7 @@ val repartitioned_supplier = sqlContext.sql(s"""SELECT s_suppkey, s_name, s_addr
 FROM tpchd_repartitioned
 WHERE s_suppkey is not null""")
 
-val repartitioned_supplier_count = repartitioned_supplier.count
+//val repartitioned_supplier_count = repartitioned_supplier.count
 //val supplier_count = sqlContext.sql(s"""SELECT COUNT(*) FROM supplier """).collect
 
 repartitioned_supplier.registerTempTable("repartitioned_supplier")
