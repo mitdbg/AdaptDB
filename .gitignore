@@ -20,3 +20,6 @@ lib/
 *.properties
 /data
 *.log
+pref/target
+pref/data
+pref/project
