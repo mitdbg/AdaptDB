@@ -14,6 +14,7 @@ val DEST = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark"
 
 // Create TPCH tables, lineitem, orders, customer, part and supplier
 
+sqlContext.sql("set spark.sql.shuffle.partitions=800")
 
 // Create order table.
 sqlContext.sql(s"""CREATE TEMPORARY TABLE orders (o_orderkey long, o_custkey long,
@@ -69,6 +70,7 @@ FROM lineitem FULL JOIN orders ON l_orderkey = o_orderkey
 
 val tpchd_repartitioned = tpchd.repartition(200, $"l_linenumber", $"l_orderkey")
 tpchd_repartitioned.registerTempTable("tpchd_repartitioned")
+tpchd_repartitioned.save("com.databricks.spark.csv", SaveMode.ErrorIfExists, Map("path" -> (DEST + "/tpchd_repartitioned"), "delimiter" -> "|"))
 
 // repartitioned_lineitem
 
