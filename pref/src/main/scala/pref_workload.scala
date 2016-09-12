@@ -6,7 +6,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 import scala.util.Random
 
 object pref_workload {
-  val hadoopHome = "/Users/ylu/Documents/workspace/hadoop-2.6.0"
+  val hadoopHome = "/home/mdindex/hadoop-2.6.0"
 
   val partitionNum = 200
 
@@ -518,8 +518,7 @@ object pref_workload {
   def main(args: Array[String]) {
     val conf = new SparkConf()
     conf.setAppName("pref_workload")
-    conf.setMaster("spark://26-2-88.dynamic.csail.mit.edu:7077")
-    conf.set("spark.cores.max", "2")
+    conf.setMaster("spark://istc13.csail.mit.edu:7077")
 
     val sc = new SparkContext(conf)
 
