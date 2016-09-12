@@ -10,18 +10,18 @@ object pref_workload {
 
   val partitionNum = 200
 
-  val lineitem = "hdfs://localhost:9000/user/ylu/tpch1/repartitioned_lineitem"
-  val orders = "hdfs://localhost:9000/user/ylu/tpch1/repartitioned_orders"
-  val customer = "hdfs://localhost:9000/user/ylu/tpch1/repartitioned_customer"
-  val part = "hdfs://localhost:9000/user/ylu/tpch1/repartitioned_part"
-  val supplier = "hdfs://localhost:9000/user/ylu/tpch1/repartitioned_supplier"
+  val lineitem = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/repartitioned_lineitem"
+  val orders = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/repartitioned_orders"
+  val customer = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/repartitioned_customer"
+  val part = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/repartitioned_part"
+  val supplier = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/repartitioned_supplier"
 
 
-  val lineitemDistinctPath = "hdfs://localhost:9000/user/ylu/tpch1/repartitioned_lineitemdistinct"
-  val ordersDistinctPath = "hdfs://localhost:9000/user/ylu/tpch1/repartitioned_orders_distinct"
-  val customerDistinctPath = "hdfs://localhost:9000/user/ylu/tpch1/repartitioned_customer_distinct"
-  val partDistinctPath = "hdfs://localhost:9000/user/ylu/tpch1/repartitioned_part_distinct"
-  val supplierDistinctPath = "hdfs://localhost:9000/user/ylu/tpch1/repartitioned_supplier_distinct"
+  val lineitemDistinctPath = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/distinct_lineitem"
+  val ordersDistinctPath = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/distinct_orders"
+  val customerDistinctPath = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/distinct_customer"
+  val partDistinctPath = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/distinct_part"
+  val supplierDistinctPath = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/distinct_supplier"
 
   val stringLineitem = "l_orderkey long, l_partkey int, l_suppkey int, l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, l_tax double, l_returnflag string,  l_linestatus string, l_shipdate date, l_commitdate date, l_receiptdate date, l_shipinstruct string, l_shipmode string, l_comment string"
   val stringOrders = "o_orderkey long, o_custkey long, o_orderstatus string, o_totalprice double, o_orderdate date, o_orderpriority string, o_clerk string, o_shippriority int"
@@ -115,6 +115,21 @@ object pref_workload {
   def saveTable(table: RDD[String], savePath: String): Unit = {
     table.saveAsTextFile(savePath)
   }
+
+  def tpchDistinct(sc: SparkContext): Unit ={
+    val partTable = readTable(sc, part)
+    saveTable(partTable, partDistinctPath)
+
+    val ordersTable = readTable(sc, orders)
+    saveTable(ordersTable, ordersDistinctPath)
+
+    val customerTable = readTable(sc, customer)
+    saveTable(customerTable, customerDistinctPath)
+
+    val supplierTable = readTable(sc, supplier)
+    saveTable(supplierTable, supplierDistinctPath)
+  }
+
 
   def testReadTable(sc: SparkContext): Unit = {
 
@@ -532,6 +547,9 @@ object pref_workload {
       }
       case "tpch19" => {
         tpch19(sc)
+      }
+      case "distinct" =>{
+        tpchDistinct(sc)
       }
     }
 
