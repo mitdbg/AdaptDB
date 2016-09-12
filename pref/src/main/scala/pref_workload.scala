@@ -50,9 +50,9 @@ object pref_workload {
     val partitionIdsRDD = sc.parallelize(0 to partitionNum - 1, partitionNum)
     val rdd = partitionIdsRDD.mapPartitionsWithIndex(
       (partitionId, values) => {
+        val reader = new HDFSReader(hadoopHome)
         val tablePath = "%s/part-%05d".format(table, partitionId)
-        val fs = HDFSUtils.getFSByHadoopHome(hadoopHome)
-        val tuples = HDFSUtils.readFile(fs, tablePath).split("\n")
+        val tuples = reader.readFile(tablePath)
         val filteredTuples = tuples.filter(x => query.qualifies(x))
         filteredTuples.iterator
       }, true
@@ -72,12 +72,11 @@ object pref_workload {
 
     val rdd = baseTable.mapPartitionsWithIndex(
       (partitionId, values) => {
-
+        val reader = new HDFSReader(hadoopHome)
         val tablePath = "%s/part-%05d".format(otherTable, partitionId)
-        val fs = HDFSUtils.getFSByHadoopHome(hadoopHome)
         // build a hash table over otherTable
 
-        val tuples = HDFSUtils.readFile(fs, tablePath).split("\n")
+        val tuples = reader.readFile(tablePath)
         val filteredTuples = tuples.filter(x => query.qualifies(x))
 
         val hashTable = filteredTuples.map(x => {
@@ -116,7 +115,7 @@ object pref_workload {
     table.saveAsTextFile(savePath)
   }
 
-  def tpchDistinct(sc: SparkContext): Unit ={
+  def tpchDistinct(sc: SparkContext): Unit = {
     val partTable = readTable(sc, part)
     saveTable(partTable, partDistinctPath)
 
@@ -547,8 +546,11 @@ object pref_workload {
       case "tpch19" => {
         tpch19(sc)
       }
-      case "distinct" =>{
+      case "distinct" => {
         tpchDistinct(sc)
+      }
+      case "testReadTable" => {
+        testReadTable(sc)
       }
     }
 
