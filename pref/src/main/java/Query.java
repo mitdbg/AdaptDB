@@ -1,12 +1,11 @@
 
-import java.io.DataOutput;
-import java.io.IOException;
 import java.io.Serializable;
 
-import org.apache.hadoop.io.Text;
 import com.google.common.base.Joiner;
 
 public class Query implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	private Predicate[] predicates;
 
@@ -16,10 +15,18 @@ public class Query implements Serializable {
 		this.predicates = predicates;
 	}
 
-	public Predicate[] getPredicates() {
-		return this.predicates;
-	}
+	public Query(String queryString) {
+		if (queryString.length() > 0) {
+			String[] parts = queryString.split(";");
+			this.predicates = new Predicate[parts.length];
+			for (int i = 0; i < parts.length; i++) {
+				this.predicates[i] = new Predicate(parts[i]);
+			}
+		} else {
+			this.predicates = new Predicate[0];
+		}
 
+	}
 
 	public String getStringAttribute(String attr) {
 		return attr;
@@ -69,7 +76,7 @@ public class Query implements Serializable {
 
 	public boolean qualifies(String record) {
 
-		String[] attr = record.split(Global.DELIMITER);
+		String[] attr = record.split(Global.SPLIT_DELIMITER);
 
 		boolean qualify = true;
 		for (Predicate p : predicates) {
@@ -108,7 +115,6 @@ public class Query implements Serializable {
 		String stringPredicates = "";
 		if (predicates.length != 0)
 			stringPredicates = Joiner.on(";").join(predicates);
-
 		return stringPredicates;
 	}
 }

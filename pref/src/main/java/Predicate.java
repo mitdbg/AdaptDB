@@ -1,8 +1,14 @@
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 
-public class Predicate {
+public class Predicate implements Serializable {
+	private static final long serialVersionUID = 1L;
+
 	public enum PREDTYPE {
 		LEQ, GEQ, GT, LT, EQ
 	};
@@ -11,14 +17,20 @@ public class Predicate {
 	public TypeUtils.TYPE type;
 	public Object value;
 	public PREDTYPE predtype;
-	public Schema schema;
 
 	public Predicate(Schema schema, String attr, TypeUtils.TYPE t, Object val, PREDTYPE predtype) {
-		this.schema = schema;
 		this.attribute = schema.getAttributeId(attr);
 		this.type = t;
 		this.value = val;
 		this.predtype = predtype;
+	}
+
+	public Predicate(String predString) {
+		String[] tokens = predString.split(":");
+		this.attribute = Integer.parseInt(tokens[0]);
+		this.type = TypeUtils.TYPE.valueOf(tokens[1]);
+		this.value = TypeUtils.deserializeValue(this.type, tokens[2]);
+		this.predtype = PREDTYPE.valueOf(tokens[3]);
 	}
 
 	/**
@@ -56,28 +68,8 @@ public class Predicate {
 
 	@Override
 	public String toString() {
-		return "" + attribute + ":" + type.toString() + ":"
+		return attribute + ":" + type.toString() + ":"
 				+ TypeUtils.serializeValue(value, type) + ":"
 				+ predtype.toString();
-	}
-
-	public Object getHelpfulCutpoint() {
-		switch (this.predtype) {
-		case EQ:
-		case GT:
-		case LEQ:
-			return value;
-		case GEQ:
-			return TypeUtils.deltaLess(value, type);
-
-        case LT:
-			if (type == TypeUtils.TYPE.INT || type == TypeUtils.TYPE.DATE)
-				return TypeUtils.deltaLess(value, type);
-			else
-				return value;
-		default:
-			break;
-		}
-		return value;
 	}
 }

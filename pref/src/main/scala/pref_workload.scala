@@ -22,8 +22,7 @@ object pref_workload {
   val customerDistinctPath = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/distinct_customer"
   val partDistinctPath = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/distinct_part"
   val supplierDistinctPath = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/distinct_supplier"
-
-  val stringLineitem = "l_orderkey long, l_partkey int, l_suppkey int, l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, l_tax double, l_returnflag string,  l_linestatus string, l_shipdate date, l_commitdate date, l_receiptdate date, l_shipinstruct string, l_shipmode string, l_comment string"
+  val stringLineitem = "l_orderkey long, l_partkey int, l_suppkey int, l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, l_tax double, l_returnflag string,  l_linestatus string, l_shipdate date, l_commitdate date, l_receiptdate date, l_shipinstruct string, l_shipmode string"
   val stringOrders = "o_orderkey long, o_custkey long, o_orderstatus string, o_totalprice double, o_orderdate date, o_orderpriority string, o_clerk string, o_shippriority int"
   val stringCustomer = "c_custkey long, c_name string, c_address string, c_phone string, c_acctbal double, c_mktsegment string, c_nation string, c_region string"
   val stringPart = "p_partkey long, p_name string, p_mfgr string, p_brand string, p_type string, p_size int, p_container string, p_retailprice double"
@@ -47,13 +46,21 @@ object pref_workload {
   // query is applied to table
 
   def readTableWithQuery(sc: SparkContext, table: String, query: Query): RDD[String] = {
+
+    val queryString = query.toString
+
+    println("QueryString: " + queryString)
+
+
     val partitionIdsRDD = sc.parallelize(0 to partitionNum - 1, partitionNum)
     val rdd = partitionIdsRDD.mapPartitionsWithIndex(
       (partitionId, values) => {
+
+        val q = new Query(queryString)
         val reader = new HDFSReader(hadoopHome)
         val tablePath = "%s/part-%05d".format(table, partitionId)
         val tuples = reader.readFile(tablePath)
-        val filteredTuples = tuples.filter(x => query.qualifies(x))
+        val filteredTuples = tuples.filter(x => q.qualifies(x))
         filteredTuples.iterator
       }, true
     )
@@ -70,31 +77,37 @@ object pref_workload {
 
   def joinTableWithQuery(sc: SparkContext, baseTable: RDD[String], otherTable: String, joinKeyA: Int, joinKeyB: Int, query: Query): RDD[String] = {
 
+    println("otherTable " + otherTable + " joinKeyA " + joinKeyA + " joinKeyB " + joinKeyB )
+
+    val queryString = query.toString
+
     val rdd = baseTable.mapPartitionsWithIndex(
       (partitionId, values) => {
+        val q = new Query(queryString)
+
         val reader = new HDFSReader(hadoopHome)
         val tablePath = "%s/part-%05d".format(otherTable, partitionId)
         // build a hash table over otherTable
 
         val tuples = reader.readFile(tablePath)
-        val filteredTuples = tuples.filter(x => query.qualifies(x))
+        val filteredTuples = tuples.filter(x => q.qualifies(x))
 
         val hashTable = filteredTuples.map(x => {
-          val columns = x.split(Global.DELIMITER)
+          val columns = x.split(Global.SPLIT_DELIMITER)
           (columns(joinKeyB).toLong, x)
         }).toMap
 
-        //and probe it with baseTable
+      //and probe it with baseTable
 
-        val results = values.flatMap(x => {
-          val key = x.split(Global.DELIMITER)(joinKeyA).toLong
-          if (hashTable.contains(key)) {
-            // join with this tuple
-            Seq(x + Global.DELIMITER + hashTable.get(key))
-          }
-          else Seq()
-        })
-        results
+      val results = values.flatMap(x => {
+        val key = x.split(Global.SPLIT_DELIMITER)(joinKeyA).toLong
+        // join with this tuple
+        hashTable.get(key) match{
+          case Some(value) => Seq(x + Global.DELIMITER + value)
+          case None => Seq()
+        }
+      })
+    results
       }, true
     )
     rdd
@@ -245,14 +258,16 @@ object pref_workload {
 
     val start = System.currentTimeMillis()
 
-    val table_l = readTableWithQuery(sc, lineitem, q_l)
-    val table_l_join_o = joinTableWithQuery(sc, table_l, orders, schemaLineitem.getAttributeId("l_orderkey"), schemaOrders.getAttributeId("o_orderkey"), q_o)
+    val table_l = readTableWithQuery(sc, lineitemDistinctPath, q_l)
+    val table_l_join_o = joinTableWithQuery(sc, table_l, ordersDistinctPath, schemaLineitem.getAttributeId("l_orderkey"), schemaOrders.getAttributeId("o_orderkey"), q_o)
 
     val string_l_join_o = stringLineitem + ", " + stringOrders
     val schema_l_join_o = Schema.createSchema(string_l_join_o)
 
-    val table_l_join_o_join_c = joinTableWithQuery(sc, table_l_join_o, customer, schema_l_join_o.getAttributeId("o_custkey"), schemaCustomer.getAttributeId("c_custkey"), q_c)
+    val table_l_join_o_join_c = joinTableWithQuery(sc, table_l_join_o, customerDistinctPath, schema_l_join_o.getAttributeId("o_custkey"), schemaCustomer.getAttributeId("c_custkey"), q_c)
     val result = table_l_join_o_join_c.count()
+
+    //table_l_join_o_join_c.foreach( x => println("### " + x + " ###"))
 
     val end = System.currentTimeMillis()
 
@@ -297,22 +312,25 @@ object pref_workload {
 
     val start = System.currentTimeMillis()
 
-    val table_l = readTableWithQuery(sc, lineitem, q_l)
-    val table_l_join_o = joinTableWithQuery(sc, table_l, orders, schemaLineitem.getAttributeId("l_orderkey"), schemaOrders.getAttributeId("o_orderkey"), q_o)
+    val table_l = readTableWithQuery(sc, lineitemDistinctPath, q_l)
+    val table_l_join_o = joinTableWithQuery(sc, table_l, ordersDistinctPath, schemaLineitem.getAttributeId("l_orderkey"), schemaOrders.getAttributeId("o_orderkey"), q_o)
 
     val string_l_join_o = stringLineitem + ", " + stringOrders
     val schema_l_join_o = Schema.createSchema(string_l_join_o)
 
-    val table_l_join_o_join_c = joinTableWithQuery(sc, table_l_join_o, customer, schema_l_join_o.getAttributeId("o_custkey"), schemaCustomer.getAttributeId("c_custkey"), q_c)
+    val table_l_join_o_join_c = joinTableWithQuery(sc, table_l_join_o, customerDistinctPath, schema_l_join_o.getAttributeId("o_custkey"), schemaCustomer.getAttributeId("c_custkey"), q_c)
 
     val string_l_join_o_join_c = string_l_join_o + ", " + stringCustomer
     val schema_l_join_o_join_c = Schema.createSchema(string_l_join_o_join_c)
 
-    val table_l_join_o_join_c_join_s = joinTableWithQuery(sc, table_l_join_o_join_c, supplier, schema_l_join_o_join_c.getAttributeId("l_suppkey"), schemaSupplier.getAttributeId("s_suppkey"), q_s)
+    val table_l_join_o_join_c_join_s = joinTableWithQuery(sc, table_l_join_o_join_c, supplierDistinctPath, schema_l_join_o_join_c.getAttributeId("l_suppkey"), schemaSupplier.getAttributeId("s_suppkey"), q_s)
 
     val result = table_l_join_o_join_c_join_s.count()
 
     val end = System.currentTimeMillis()
+
+
+    //table_l_join_o_join_c_join_s.foreach( x => println("### " + x + " ###"))
 
     println("RES: Time Taken: " + (end - start) + " Result: " + result)
 
@@ -336,7 +354,7 @@ object pref_workload {
 
     val start = System.currentTimeMillis()
 
-    val table_l = readTableWithQuery(sc, lineitem, q_l)
+    val table_l = readTableWithQuery(sc, lineitemDistinctPath, q_l)
     val result = table_l.count()
 
     val end = System.currentTimeMillis()
@@ -372,20 +390,22 @@ object pref_workload {
 
     val start = System.currentTimeMillis()
 
-    val table_l = readTableWithQuery(sc, lineitem, q_l)
-    val table_l_join_o = joinTableWithQuery(sc, table_l, orders, schemaLineitem.getAttributeId("l_orderkey"), schemaOrders.getAttributeId("o_orderkey"), q_o)
+    val table_l = readTableWithQuery(sc, lineitemDistinctPath, q_l)
+    val table_l_join_o = joinTableWithQuery(sc, table_l, ordersDistinctPath, schemaLineitem.getAttributeId("l_orderkey"), schemaOrders.getAttributeId("o_orderkey"), q_o)
 
     val string_l_join_o = stringLineitem + ", " + stringOrders
     val schema_l_join_o = Schema.createSchema(string_l_join_o)
 
-    val table_l_join_o_join_c = joinTableWithQuery(sc, table_l_join_o, customer, schema_l_join_o.getAttributeId("o_custkey"), schemaCustomer.getAttributeId("c_custkey"), q_c)
+    val table_l_join_o_join_c = joinTableWithQuery(sc, table_l_join_o, customerDistinctPath, schema_l_join_o.getAttributeId("o_custkey"), schemaCustomer.getAttributeId("c_custkey"), q_c)
 
     val string_l_join_o_join_c = string_l_join_o + ", " + stringCustomer
     val schema_l_join_o_join_c = Schema.createSchema(string_l_join_o_join_c)
 
-    val table_l_join_o_join_c_join_p = joinTableWithQuery(sc, table_l_join_o_join_c, part, schema_l_join_o_join_c.getAttributeId("l_partkey"), schemaPart.getAttributeId("p_partkey"), q_p)
+    val table_l_join_o_join_c_join_p = joinTableWithQuery(sc, table_l_join_o_join_c, partDistinctPath, schema_l_join_o_join_c.getAttributeId("l_partkey"), schemaPart.getAttributeId("p_partkey"), q_p)
 
     val result = table_l_join_o_join_c_join_p.count()
+
+    //table_l_join_o_join_c_join_p.foreach( x => println("### " + x + " ###"))
 
     val end = System.currentTimeMillis()
 
@@ -411,14 +431,16 @@ object pref_workload {
 
     val start = System.currentTimeMillis()
 
-    val table_l = readTableWithQuery(sc, lineitem, q_l)
-    val table_l_join_o = joinTableWithQuery(sc, table_l, orders, schemaLineitem.getAttributeId("l_orderkey"), schemaOrders.getAttributeId("o_orderkey"), q_o)
+    val table_l = readTableWithQuery(sc, lineitemDistinctPath, q_l)
+    val table_l_join_o = joinTableWithQuery(sc, table_l, ordersDistinctPath, schemaLineitem.getAttributeId("l_orderkey"), schemaOrders.getAttributeId("o_orderkey"), q_o)
 
     val string_l_join_o = stringLineitem + ", " + stringOrders
     val schema_l_join_o = Schema.createSchema(string_l_join_o)
 
-    val table_l_join_o_join_c = joinTableWithQuery(sc, table_l_join_o, customer, schema_l_join_o.getAttributeId("o_custkey"), schemaCustomer.getAttributeId("c_custkey"), q_c)
+    val table_l_join_o_join_c = joinTableWithQuery(sc, table_l_join_o, customerDistinctPath, schema_l_join_o.getAttributeId("o_custkey"), schemaCustomer.getAttributeId("c_custkey"), q_c)
     val result = table_l_join_o_join_c.count()
+
+    //table_l_join_o_join_c.foreach( x => println("### " + x + " ###"))
 
     val end = System.currentTimeMillis()
 
@@ -449,12 +471,14 @@ object pref_workload {
 
     val start = System.currentTimeMillis()
 
-    val table_l = readTableWithQuery(sc, lineitem, q_l)
-    val table_l_join_o = joinTableWithQuery(sc, table_l, orders, schemaLineitem.getAttributeId("l_orderkey"), schemaOrders.getAttributeId("o_orderkey"), q_o)
+    val table_l = readTableWithQuery(sc, lineitemDistinctPath, q_l)
+    val table_l_join_o = joinTableWithQuery(sc, table_l, ordersDistinctPath, schemaLineitem.getAttributeId("l_orderkey"), schemaOrders.getAttributeId("o_orderkey"), q_o)
 
     val result = table_l_join_o.count()
 
     val end = System.currentTimeMillis()
+
+    //table_l_join_o.foreach( x => println("### " + x + " ###"))
 
     println("RES: Time Taken: " + (end - start) + " Result: " + result)
 
@@ -474,12 +498,14 @@ object pref_workload {
 
     val start = System.currentTimeMillis()
 
-    val table_l = readTableWithQuery(sc, lineitem, q_l)
-    val table_l_join_p = joinTableWithQuery(sc, table_l, part, schemaLineitem.getAttributeId("l_partkey"), schemaPart.getAttributeId("p_partkey"), q_p)
+    val table_l = readTableWithQuery(sc, lineitemDistinctPath, q_l)
+    val table_l_join_p = joinTableWithQuery(sc, table_l, partDistinctPath, schemaLineitem.getAttributeId("l_partkey"), schemaPart.getAttributeId("p_partkey"), q_p)
 
     val result = table_l_join_p.count()
 
     val end = System.currentTimeMillis()
+
+    //table_l_join_p.foreach( x => println("### " + x + " ###"))
 
     println("RES: Time Taken: " + (end - start) + " Result: " + result)
   }
@@ -504,10 +530,12 @@ object pref_workload {
 
     val start = System.currentTimeMillis()
 
-    val table_l = readTableWithQuery(sc, lineitem, q_l)
-    val table_l_join_p = joinTableWithQuery(sc, table_l, part, schemaLineitem.getAttributeId("l_partkey"), schemaPart.getAttributeId("p_partkey"), q_p)
+    val table_l = readTableWithQuery(sc, lineitemDistinctPath, q_l)
+    val table_l_join_p = joinTableWithQuery(sc, table_l, partDistinctPath, schemaLineitem.getAttributeId("l_partkey"), schemaPart.getAttributeId("p_partkey"), q_p)
 
     val result = table_l_join_p.count()
+
+    //table_l_join_p.foreach( x => println("### " + x + " ###"))
 
     val end = System.currentTimeMillis()
 
@@ -519,40 +547,40 @@ object pref_workload {
     conf.setAppName("pref_workload")
     conf.setMaster("spark://istc13.csail.mit.edu:7077")
 
-    val sc = new SparkContext(conf)
+      val sc = new SparkContext(conf)
 
-    args(0) match {
-      case "tpch3" => {
-        tpch3(sc)
+      args(0) match {
+        case "tpch3" => {
+          tpch3(sc)
+        }
+        case "tpch5" => {
+          tpch5(sc)
+        }
+        case "tpch6" => {
+          tpch6(sc)
+        }
+        case "tpch8" => {
+          tpch8(sc)
+        }
+        case "tpch10" => {
+          tpch10(sc)
+        }
+        case "tpch12" => {
+          tpch12(sc)
+        }
+        case "tpch14" => {
+          tpch14(sc)
+        }
+        case "tpch19" => {
+          tpch19(sc)
+        }
+        case "distinct" => {
+          tpchDistinct(sc)
+        }
+        case "testReadTable" => {
+          testReadTable(sc)
+        }
       }
-      case "tpch5" => {
-        tpch5(sc)
-      }
-      case "tpch6" => {
-        tpch6(sc)
-      }
-      case "tpch8" => {
-        tpch8(sc)
-      }
-      case "tpch10" => {
-        tpch10(sc)
-      }
-      case "tpch12" => {
-        tpch12(sc)
-      }
-      case "tpch14" => {
-        tpch14(sc)
-      }
-      case "tpch19" => {
-        tpch19(sc)
-      }
-      case "distinct" => {
-        tpchDistinct(sc)
-      }
-      case "testReadTable" => {
-        testReadTable(sc)
-      }
-    }
 
   }
 }
