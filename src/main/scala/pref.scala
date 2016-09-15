@@ -1,6 +1,6 @@
 // Load CMT tables from the datafiles generated
 // Start the spark shell using
-// ./spark-shell --master spark://istc13.csail.mit.edu:7077 --packages com.databricks:spark-csv_2.11:1.2.0 --executor-memory 200g --driver-memory 10g
+// ./spark-shell --master spark://istc13.csail.mit.edu:7077 --packages com.databricks:spark-csv_2.11:1.2.0 --executor-memory 200g --executor-cores 6 --driver-memory 10g
 // sc is an existing SparkContext.
 val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 
@@ -11,6 +11,8 @@ import org.apache.spark.sql.SaveMode
 val PATH = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-spark"
 val DEST = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark"
 
+
+val PARTITION_NUMS = 200
 
 // Create TPCH tables, lineitem, orders, customer, part and supplier
 
@@ -68,9 +70,8 @@ FROM lineitem FULL JOIN orders ON l_orderkey = o_orderkey
 
 // repartition
 
-val tpchd_repartitioned = tpchd.repartition(200, $"l_linenumber", $"l_orderkey")
+val tpchd_repartitioned = tpchd.repartition(PARTITION_NUMS, $"l_linenumber", $"l_orderkey")
 tpchd_repartitioned.registerTempTable("tpchd_repartitioned")
-tpchd_repartitioned.save("com.databricks.spark.csv", SaveMode.ErrorIfExists, Map("path" -> (DEST + "/tpchd_repartitioned"), "delimiter" -> "|"))
 
 // repartitioned_lineitem
 
@@ -136,52 +137,3 @@ WHERE s_suppkey is not null""")
 
 repartitioned_supplier.registerTempTable("repartitioned_supplier")
 repartitioned_supplier.save("com.databricks.spark.csv", SaveMode.ErrorIfExists, Map("path" -> (DEST + "/repartitioned_supplier"), "delimiter" -> "|"))
-
-
-// further testing
-
-
-sqlContext.sql(s"""CREATE TEMPORARY TABLE lineitem (l_orderkey int, l_partkey int, l_suppkey int,
-	l_linenumber int, l_quantity double, l_extendedprice double, l_discount double, l_tax double,
-	l_returnflag string,  l_linestatus string, l_shipdate string, l_commitdate string, l_receiptdate string,
-	l_shipinstruct string, l_shipmode string)
-USING com.databricks.spark.csv
-OPTIONS (path "$DEST/repartitioned_lineitem", header "false", delimiter "|")""")
-
-
-// Create customer table
-
-sqlContext.sql(s"""CREATE TEMPORARY TABLE customer (c_custkey int, c_name string, c_address string,
-c_phone string, c_acctbal double, c_mktsegment string , c_nation string, c_region string)
-USING com.databricks.spark.csv
-OPTIONS (path "$DEST/repartitioned_customer", header "false", delimiter "|")""")
-
-
-// Create part table.
-
-sqlContext.sql(s"""CREATE TEMPORARY TABLE part (p_partkey int, p_name string, p_mfgr string, p_brand string,
-	p_type string, p_size int, p_container string, p_retailprice double)
-USING com.databricks.spark.csv
-OPTIONS (path "$DEST/repartitioned_part", header "false", delimiter "|")""")
-
-
-// Create supplier table.
-
-sqlContext.sql(s"""CREATE TEMPORARY TABLE supplier (s_suppkey int, s_name string, s_address string,
-s_phone string, s_acctbal double, s_nation string, s_region string)
-USING com.databricks.spark.csv
-OPTIONS (path "$DEST/repartitioned_supplier", header "false", delimiter "|")""")
-
-// Create order table.
-sqlContext.sql(s"""CREATE TEMPORARY TABLE orders (o_orderkey int, o_custkey int,
-  o_orderstatus string, o_totalprice double, o_orderdate string, o_orderpriority string, o_clerk string,
-  o_shippriority int)
-USING com.databricks.spark.csv
-OPTIONS (path "$DEST/repartitioned_orders", header "false", delimiter "|")""")
-
-
-val lineitem_count = sqlContext.sql(s"""SELECT COUNT(*) FROM lineitem """).collect
-val orders_count = sqlContext.sql(s"""SELECT COUNT(*) FROM orders """).collect
-val customer_count = sqlContext.sql(s"""SELECT COUNT(*) FROM customer """).collect
-val part_count = sqlContext.sql(s"""SELECT COUNT(*) FROM part """).collect
-val supplier_count = sqlContext.sql(s"""SELECT COUNT(*) FROM supplier """).collect
