@@ -23,3 +23,6 @@ lib/
 pref/target
 pref/data
 pref/project
+spark-partitioner/target
+spark-partitioner/data
+spark-partitioner/project
