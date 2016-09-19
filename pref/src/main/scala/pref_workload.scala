@@ -3,12 +3,14 @@ import java.util.{Calendar, GregorianCalendar}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 object pref_workload {
   val hadoopHome = "/home/mdindex/hadoop-2.6.0"
 
-  val partitionNum = 200
+  val outputPartitionNum = 50
+  val inputPartitionNum = 100
 
   val lineitem = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/repartitioned_lineitem"
   val orders = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/repartitioned_orders"
@@ -17,7 +19,7 @@ object pref_workload {
   val supplier = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/repartitioned_supplier"
 
 
-  val lineitemDistinctPath = lineitem
+  val lineitemDistinctPath = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/distinct_lineitem"
   val ordersDistinctPath = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/distinct_orders"
   val customerDistinctPath = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/distinct_customer"
   val partDistinctPath = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/distinct_part"
@@ -52,15 +54,16 @@ object pref_workload {
 
     println("QueryString: " + queryString)
 
-
-    val partitionIdsRDD = sc.parallelize(0 to partitionNum - 1, partitionNum)
+    val partitionIdsRDD = sc.parallelize(0 to outputPartitionNum - 1, outputPartitionNum)
     val rdd = partitionIdsRDD.mapPartitionsWithIndex(
-      (partitionId, values) => {
-
+      (id, values) => {
         val q = new Query(queryString)
         val reader = new HDFSReader(hadoopHome)
-        val tablePath = "%s/part-%05d".format(table, partitionId)
-        val tuples = reader.readFile(tablePath)
+        var tuples = new ArrayBuffer[String];
+        for (partitionId <- id until inputPartitionNum by outputPartitionNum) {
+          val tablePath = "%s/part-%05d".format(table, partitionId)
+          tuples = tuples ++ reader.readFile(tablePath)
+        }
         val filteredTuples = tuples.filter(x => q.qualifies(x))
         filteredTuples.iterator
       }, true
@@ -130,6 +133,10 @@ object pref_workload {
   }
 
   def tpchDistinct(sc: SparkContext): Unit = {
+
+    val lineitemTable = readTable(sc, lineitem)
+    saveTable(selectDistinct(lineitemTable), lineitemDistinctPath)
+
     val partTable = readTable(sc, part)
     saveTable(selectDistinct(partTable), partDistinctPath)
 
