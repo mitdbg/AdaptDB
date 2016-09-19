@@ -131,16 +131,16 @@ object pref_workload {
 
   def tpchDistinct(sc: SparkContext): Unit = {
     val partTable = readTable(sc, part)
-    saveTable(partTable, partDistinctPath)
+    saveTable(selectDistinct(partTable), partDistinctPath)
 
     val ordersTable = readTable(sc, orders)
-    saveTable(ordersTable, ordersDistinctPath)
+    saveTable(selectDistinct(ordersTable), ordersDistinctPath)
 
     val customerTable = readTable(sc, customer)
-    saveTable(customerTable, customerDistinctPath)
+    saveTable(selectDistinct(customerTable), customerDistinctPath)
 
     val supplierTable = readTable(sc, supplier)
-    saveTable(supplierTable, supplierDistinctPath)
+    saveTable(selectDistinct(supplierTable), supplierDistinctPath)
   }
 
 
