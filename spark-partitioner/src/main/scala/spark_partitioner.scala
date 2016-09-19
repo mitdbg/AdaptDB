@@ -1,5 +1,6 @@
 import java.util.{Calendar, GregorianCalendar}
 
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -7,8 +8,6 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 object spark_partitioner {
-  val hadoopHome = "/home/mdindex/hadoop-2.6.0"
-
 
   /*
     input structure
@@ -41,17 +40,16 @@ object spark_partitioner {
   def partition(sc: SparkContext, table: RDD[String], pathToIndex: String): RDD[String] = {
 
     val tableWithKeys = table.mapPartitions(values => {
-      val reader = new HDFSReader(hadoopHome)
-      var indexBytes = reader.readFileToBytes(pathToIndex);
+      var indexBytes = HDFSUtils.readFileToBytes(pathToIndex);
       val adaptDbIndex = new JoinRobustTree(indexBytes)
       val keyValuesPairs = values.map(x => ( adaptDbIndex.getBucketId(x), x));
       keyValuesPairs
     })
-    val reader = new HDFSReader(hadoopHome)
-    var indexBytes = reader.readFileToBytes(pathToIndex);
+
+    var indexBytes = HDFSUtils.readFileToBytes(pathToIndex);
     val adaptDbIndex = new JoinRobustTree(indexBytes)
 
-    val tableRepartitioned = tableWithKeys.partitionBy(new AdaptDBPartitioner(adaptDbIndex))
+    val tableRepartitioned = tableWithKeys.partitionBy(new AdaptDBPartitioner(adaptDbIndex.numBuckets))
     tableRepartitioned.values
   }
 
@@ -61,20 +59,23 @@ object spark_partitioner {
 
 
   def main(args: Array[String]) {
+
     val conf = new SparkConf()
     conf.setAppName("spark_partitioner")
     conf.setMaster("spark://istc13.csail.mit.edu:7077")
 
     val sc = new SparkContext(conf)
 
-    val input = args(0)
-    val output = args(1)
+    val rawData  = args(0)
+    val adpatbPath = args(1)
+    val index = adpatbPath + "/index"
+    val output = adpatbPath + "/data"
 
-    val pathToIndex = input + "/index"
-
-    val table = readTable(sc, input)
-    val partitionedTable = partition(sc, table, pathToIndex)
+    val table = readTable(sc, rawData)
+    val partitionedTable = partition(sc, table, index)
 
     saveTable(partitionedTable, output)
+
+    HDFSUtils.rename(output)
   }
 }

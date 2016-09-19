@@ -1,6 +1,7 @@
 import java.io.{BufferedReader, IOException, InputStreamReader}
 
 import com.google.common.io.ByteStreams
+import org.apache.commons.io.FilenameUtils
 import org.apache.hadoop.fs._
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.conf.Configuration
@@ -10,7 +11,9 @@ import scala.collection.mutable.ArrayBuffer
 /**
   * Created by ylu on 9/12/16.
   */
-class HDFSReader(hadoopHome: String) {
+object HDFSUtils {
+
+  def hadoopHome = Global.HadoopHome
 
   def readFile(filename: String): ArrayBuffer[String] = {
     val hdfs = getFS()
@@ -52,6 +55,31 @@ class HDFSReader(hadoopHome: String) {
     }
   }
 
+
+  def rename(dest: String): Unit = {
+    val hdfs = getFS()
+    try {
+      // delete _SUCCESS
+
+      hdfs.delete(new Path(dest + "/_SUCCESS"), false);
+      val fileStatus = hdfs.listStatus(new Path(dest));
+
+      fileStatus.foreach(
+        x => {
+          val oldPath = x.getPath().toString();
+          val baseName = FilenameUtils.getBaseName(oldPath);
+          val dir = oldPath.substring(0, oldPath.length() - baseName.length());
+          val newPath = dir + Integer.parseInt(baseName.substring(baseName.indexOf('-') + 1));
+          hdfs.rename(new Path(oldPath), new Path(newPath));
+        }
+      )
+    } catch {
+      case e => {
+        e.printStackTrace()
+      }
+    }
+
+  }
 
   private def getFS(): FileSystem = {
     try {

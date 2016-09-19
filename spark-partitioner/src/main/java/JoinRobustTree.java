@@ -15,11 +15,9 @@ public class JoinRobustTree {
     public TypeUtils.TYPE[] dimensionTypes;
     JRNode root;
 
-    public static Random randGenerator = new Random();
-
     public JoinRobustTree(byte[] indexBytes) {
         this.root = new JRNode();
-        this.root.unmarshall(indexBytes);
+        unmarshall(indexBytes);
         this.numBuckets = getNumBuckets(this.root);
     }
 
