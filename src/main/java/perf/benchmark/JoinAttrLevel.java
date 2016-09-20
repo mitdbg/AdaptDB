@@ -12,6 +12,8 @@ import org.apache.hadoop.fs.FileSystem;
 
 import java.util.*;
 
+import java.util.BitSet;
+
 /**
  * Created by ylu on 1/21/16.
  */
@@ -87,14 +89,11 @@ public class JoinAttrLevel {
         }
     }
 
-    public static int getIntersectionSize(HashSet<Integer> setValues, ArrayList<Integer> listValues) {
-        int size = 0;
-        for (int i = 0; i < listValues.size(); i++) {
-            if (setValues.contains(listValues.get(i))) {
-                size++;
-            }
-        }
-        return size;
+    public static int getIntersectionSize(BitSet a, BitSet b) {
+        BitSet ca = (BitSet)a.clone();
+        BitSet cb = (BitSet)b.clone();
+        ca.and(cb);
+        return ca.cardinality();
     }
 
 
@@ -103,21 +102,21 @@ public class JoinAttrLevel {
         Map<Integer, MDIndex.BucketInfo> dataset1_bucketInfo = new HashMap<Integer, MDIndex.BucketInfo>();
         Map<Integer, MDIndex.BucketInfo> dataset2_bucketInfo = new HashMap<Integer, MDIndex.BucketInfo>();
 
-        Map<Integer, ArrayList<Integer>> overlap_chunks = new HashMap<Integer, ArrayList<Integer>>();
-
         read_index(dataset1_bucketInfo, rt1, joinAttr1);
         read_index(dataset2_bucketInfo, rt2, joinAttr2);
 
+        BitSet[] overlap_chunks = new  BitSet[dataset1_bucketInfo.keySet().size()];
+
+        for(int i = 0 ;i < overlap_chunks.length; i ++){
+            overlap_chunks[i] = new BitSet();
+        }
 
         for (Integer i : dataset1_bucketInfo.keySet()) {
             MDIndex.BucketInfo info_i = dataset1_bucketInfo.get(i);
             for (Integer j : dataset2_bucketInfo.keySet()) {
                 MDIndex.BucketInfo info_j = dataset2_bucketInfo.get(j);
                 if (info_i.overlap(info_j)) {
-                    if (overlap_chunks.containsKey(i) == false) {
-                        overlap_chunks.put(i, new ArrayList<Integer>());
-                    }
-                    overlap_chunks.get(i).add(j);
+                    overlap_chunks[i].set(j);
                 }
             }
         }
@@ -135,7 +134,7 @@ public class JoinAttrLevel {
 
         while (size > 0) {
             ArrayList<Integer> cur_split = new ArrayList<Integer>();
-            HashSet<Integer> chunks = new HashSet<Integer>();
+            BitSet chunks = new BitSet();
             int splitAvailableSize = bufferSize;
             while (size > 0 && splitAvailableSize > 0) {
                 int maxIntersection = -1;
@@ -147,10 +146,10 @@ public class JoinAttrLevel {
                 while (it.hasNext()) {
                     int value = it.next();
                     if (maxIntersection == -1) {
-                        maxIntersection = getIntersectionSize(chunks, overlap_chunks.get(value));
+                        maxIntersection = getIntersectionSize(chunks, overlap_chunks[value]);
                         best_offset = offset;
                     } else {
-                        int curIntersection = getIntersectionSize(chunks, overlap_chunks.get(value));
+                        int curIntersection = getIntersectionSize(chunks, overlap_chunks[value]);
                         if (curIntersection > maxIntersection) {
                             maxIntersection = curIntersection;
                             best_offset = offset;
@@ -164,15 +163,14 @@ public class JoinAttrLevel {
 
 
                 cur_split.add(bucket);
-                for (int rhs : overlap_chunks.get(bucket)) {
-                    chunks.add(rhs);
-                }
+
+                chunks.or(overlap_chunks[bucket]);
                 buckets.remove(best_offset);
                 size--;
 
             }
 
-            cost += chunks.size();
+            cost += chunks.cardinality();
         }
 
         return cost;
@@ -183,12 +181,13 @@ public class JoinAttrLevel {
 
         init();
 
-
         // l_orderkey == 0, o_orderkey == 0
         // lineitem 14, orders 11
 
         // o_custkey == 1, c_custkey == 0
         // orders 11, customer 9
+
+
 
         int bufferSize = 128; // 4G / 32 MB
 
@@ -211,6 +210,7 @@ public class JoinAttrLevel {
                 System.out.printf("orders %d customer %d cost %d\n", i, j , cost);
             }
         }
+
 
         System.out.println("Done!");
     }
