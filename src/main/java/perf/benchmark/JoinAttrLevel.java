@@ -28,7 +28,7 @@ public class JoinAttrLevel {
 
     public static ParsedTupleList lineitemSample, ordersSample, customerSample;
 
-    public static ParsedTupleList loadSample(String tableName){
+    public static ParsedTupleList loadSample(String tableName) {
 
         ConfUtils cfg = new ConfUtils("/Users/ylu/Documents/workspace/AdaptDB/conf/local.properties");
         FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
@@ -36,7 +36,7 @@ public class JoinAttrLevel {
         Globals.loadTableInfo(tableName, cfg.getHDFS_WORKING_DIR(), fs);
         TableInfo tableInfo = Globals.getTableInfo(tableName);
 
-        String pathToSample = cfg.getHDFS_WORKING_DIR()+ "/" + tableInfo.tableName + "/sample";
+        String pathToSample = cfg.getHDFS_WORKING_DIR() + "/" + tableInfo.tableName + "/sample";
 
         byte[] sampleBytes = HDFSUtils.readFile(fs, pathToSample);
 
@@ -47,13 +47,15 @@ public class JoinAttrLevel {
         return sample;
     }
 
-    public static void init(){
+    public static void init() {
         lineitemSample = loadSample(lineitem);
         ordersSample = loadSample(orders);
         customerSample = loadSample(customer);
     }
 
-    public static JoinRobustTree getAdaptDbIndex(String tableName, ParsedTupleList sample, int numBuckets, int levelsForJoinAttr, int joinAttr){
+    public static JoinRobustTree getAdaptDbIndex(String tableName, ParsedTupleList sample, int numBuckets, int levelsForJoinAttr, int joinAttr) {
+
+        MDIndex.Bucket.maxBucketId = 0;
 
         TableInfo tableInfo = Globals.getTableInfo(tableName);
 
@@ -90,24 +92,23 @@ public class JoinAttrLevel {
     }
 
     public static int getIntersectionSize(BitSet a, BitSet b) {
-        BitSet ca = (BitSet)a.clone();
-        BitSet cb = (BitSet)b.clone();
+        BitSet ca = (BitSet) a.clone();
+        BitSet cb = (BitSet) b.clone();
         ca.and(cb);
         return ca.cardinality();
     }
 
 
-
-    public static int getCost(JoinRobustTree rt1, JoinRobustTree rt2, int joinAttr1, int joinAttr2, int bufferSize){
+    public static int getCost(JoinRobustTree rt1, JoinRobustTree rt2, int joinAttr1, int joinAttr2, int bufferSize) {
         Map<Integer, MDIndex.BucketInfo> dataset1_bucketInfo = new HashMap<Integer, MDIndex.BucketInfo>();
         Map<Integer, MDIndex.BucketInfo> dataset2_bucketInfo = new HashMap<Integer, MDIndex.BucketInfo>();
 
         read_index(dataset1_bucketInfo, rt1, joinAttr1);
         read_index(dataset2_bucketInfo, rt2, joinAttr2);
 
-        BitSet[] overlap_chunks = new  BitSet[dataset1_bucketInfo.keySet().size()];
+        BitSet[] overlap_chunks = new BitSet[dataset1_bucketInfo.keySet().size()];
 
-        for(int i = 0 ;i < overlap_chunks.length; i ++){
+        for (int i = 0; i < overlap_chunks.length; i++) {
             overlap_chunks[i] = new BitSet();
         }
 
@@ -159,7 +160,7 @@ public class JoinAttrLevel {
                 }
                 int bucket = buckets.get(best_offset);
 
-                splitAvailableSize --;
+                splitAvailableSize--;
 
 
                 cur_split.add(bucket);
@@ -177,7 +178,36 @@ public class JoinAttrLevel {
     }
 
 
-    public static void main(String[] args){
+    public static void LineitemJoinOrders() {
+        int bufferSize = 128; // 4G / 32 MB
+
+        for (int i = 0; i <= 14; i++) {
+            JoinRobustTree lineitemTree = getAdaptDbIndex(lineitem, lineitemSample, lineitemBuckets, i, 0);
+
+            for (int j = 0; j <= 11; j++) {
+                JoinRobustTree ordersTree = getAdaptDbIndex(orders, ordersSample, ordersBuckets, j, 0);
+                int cost = getCost(lineitemTree, ordersTree, 0, 0, bufferSize);
+                System.out.printf("lineitem %d orders %d cost %d\n", i, j, cost);
+            }
+        }
+    }
+
+    public static void OrdersJoinCustomer() {
+        int bufferSize = 128; // 4G / 32 MB
+        for (int i = 0; i <= 11; i++) {
+            JoinRobustTree ordersTree = getAdaptDbIndex(orders, ordersSample, ordersBuckets, i, 1);
+
+            for (int j = 0; j <= 9; j++) {
+                JoinRobustTree customerTree = getAdaptDbIndex(customer, customerSample, customerBuckets, j, 0);
+                int cost = getCost(ordersTree, customerTree, 1, 0, bufferSize);
+                System.out.printf("orders %d customer %d cost %d\n", i, j, cost);
+            }
+        }
+
+    }
+
+
+    public static void main(String[] args) {
 
         init();
 
@@ -188,29 +218,8 @@ public class JoinAttrLevel {
         // orders 11, customer 9
 
 
-
-        int bufferSize = 128; // 4G / 32 MB
-
-        for(int i = 0; i <= 14; i ++){
-            JoinRobustTree lineitemTree = getAdaptDbIndex(lineitem, lineitemSample, lineitemBuckets, i, 0);
-
-            for(int j = 0; j <= 11; j ++){
-                JoinRobustTree ordersTree = getAdaptDbIndex(orders, ordersSample, ordersBuckets, j, 0);
-                int cost = getCost(lineitemTree, ordersTree, 0, 0, bufferSize);
-                System.out.printf("lineitem %d orders %d cost %d\n", i, j , cost);
-            }
-        }
-
-        for(int i = 0; i <= 11; i ++){
-            JoinRobustTree ordersTree = getAdaptDbIndex(orders, ordersSample, ordersBuckets, i, 1);
-
-            for(int j = 0; j <= 9; j ++){
-                JoinRobustTree customerTree = getAdaptDbIndex(customer, customerSample, customerBuckets, j, 0);
-                int cost = getCost(ordersTree, customerTree, 1, 0, bufferSize);
-                System.out.printf("orders %d customer %d cost %d\n", i, j , cost);
-            }
-        }
-
+        LineitemJoinOrders();
+        OrdersJoinCustomer();
 
         System.out.println("Done!");
     }
