@@ -254,14 +254,14 @@ public class JoinRobustTree implements MDIndex {
                         break;
                     } else {
                         validDims[testDim] = false;
-                        System.err.println("WARN: Skipping attribute " + testDim);
+                        //System.err.println("WARN: Skipping attribute " + testDim);
                     }
                 }
 
             }
 
             if (dim == -1) {
-                System.err.println("ERR: No attribute to partition on");
+                //System.err.println("ERR: No attribute to partition on");
                 Bucket b = new Bucket();
                 b.setSample(t.sample);
                 t.node.bucket = b;
@@ -390,7 +390,7 @@ public class JoinRobustTree implements MDIndex {
             }
 
             if (dim == -1) {
-                System.err.println("ERR: No attribute to partition on");
+                //System.err.println("ERR: No attribute to partition on");
                 Bucket b = new Bucket();
                 b.setSample(t.sample);
                 t.node.bucket = b;
