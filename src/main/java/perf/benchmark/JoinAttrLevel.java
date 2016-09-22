@@ -456,7 +456,7 @@ public class JoinAttrLevel {
             for (int j = 0; j <= 11; j++) {
                 JoinRobustTree ordersTree = getAdaptDbIndexWithQ(orders, ordersSample, q_o, ordersBuckets, j, 0);
                 int cost = getCost(lineitemTree, ordersTree, q_l, q_o, 0, 0, bufferSize);
-                System.out.printf("tpch3: lineitem %d orders %d cost %d\n", i, j, cost);
+                System.out.printf("tpch10: lineitem %d orders %d cost %d\n", i, j, cost);
             }
         }
     }
@@ -515,14 +515,14 @@ public class JoinAttrLevel {
         // o_custkey == 1, c_custkey == 0
         // orders 11, customer 9
 
-        //LineitemJoinOrders();
+        LineitemJoinOrders();
         //OrdersJoinCustomer();
 
         //LineitemJoinOrdersWithQ();
 
         //LineitemJoinPart();
 
-        LineitemJoinOrdersWithQ10();
+        //LineitemJoinOrdersWithQ10();
 
         System.out.println("Done!");
     }
