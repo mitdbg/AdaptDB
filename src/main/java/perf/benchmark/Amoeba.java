@@ -12,12 +12,14 @@ import core.common.key.ParsedTupleList;
 import core.utils.ConfUtils;
 import core.utils.HDFSUtils;
 import core.utils.TypeUtils;
-import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.*;
 
+import java.io.IOException;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Random;
 
+import org.apache.hadoop.conf.Configuration;
 
 /**
  * Created by ylu on 9/22/16.
@@ -206,11 +208,11 @@ public class Amoeba {
         return getAdaptDbIndexWithQ(lineitem, lineitemSample, q_l, lineitemBuckets);
     }
 
-    public static JoinRobustTree Orders(){
+    public static JoinRobustTree Orders() {
 
         Random rand = new Random();
         String stringOrders = "o_orderkey long, o_custkey long, o_orderstatus string, o_totalprice double, o_orderdate date, o_orderpriority string, o_clerk string, o_shippriority int";
-        Schema schemaOrders= Schema.createSchema(stringOrders);
+        Schema schemaOrders = Schema.createSchema(stringOrders);
 
         int rand_3 = rand.nextInt(mktSegmentVals.length);
         String c_mktsegment = mktSegmentVals[rand_3];
@@ -230,7 +232,7 @@ public class Amoeba {
         return getAdaptDbIndexWithQ(orders, ordersSample, q_o, ordersBuckets);
     }
 
-    public static JoinRobustTree Part(){
+    public static JoinRobustTree Part() {
         Random rand = new Random();
 
         String stringPart = "p_partkey long, p_name string, p_mfgr string, p_brand string, p_type string, p_size int, p_container string, p_retailprice double";
@@ -250,14 +252,13 @@ public class Amoeba {
         Predicate p7_19 = new Predicate(schemaPart.getAttributeId("p_size"), TypeUtils.TYPE.INT, 5, Predicate.PREDTYPE.LEQ);
 
 
-
         JoinQuery q_p = new JoinQuery(part, schemaPart.getAttributeId("p_partkey"), new Predicate[]{p2_19, p3_19, p6_19, p7_19});
 
         return getAdaptDbIndexWithQ(part, partSample, q_p, partBuckets);
     }
 
 
-    public static JoinRobustTree Supplier(){
+    public static JoinRobustTree Supplier() {
 
         Random rand = new Random();
 
@@ -289,7 +290,7 @@ public class Amoeba {
         return getAdaptDbIndexWithQ(supplier, supplierSample, q_s, supplierBuckets);
     }
 
-    public static JoinRobustTree CustomerOnTpch3(){
+    public static JoinRobustTree CustomerOnTpch3() {
         Random rand = new Random();
         String stringCustomer = "c_custkey long, c_name string, c_address string, c_phone string, c_acctbal double, c_mktsegment string, c_nation string, c_region string";
         Schema schemaCustomer = Schema.createSchema(stringCustomer);
@@ -322,7 +323,7 @@ public class Amoeba {
         return getAdaptDbIndexWithQ(customer, customerSample, q_c, customerBuckets);
     }
 
-    public static JoinRobustTree CustomerOnTpch8(){
+    public static JoinRobustTree CustomerOnTpch8() {
         Random rand = new Random();
         String stringCustomer = "c_custkey long, c_name string, c_address string, c_phone string, c_acctbal double, c_mktsegment string, c_nation string, c_region string";
         Schema schemaCustomer = Schema.createSchema(stringCustomer);
@@ -349,11 +350,77 @@ public class Amoeba {
     }
 
 
-
     public static void main(String[] args) {
 
         init();
 
+        String tableName = args[0];
+        String query = args[1];
+        String outpath = args[2];
+
+        JoinRobustTree tree = null;
+
+        switch (tableName) {
+            case "lineitem":
+                switch (query) {
+                    case "tpch3":
+                        tree = LineitemOnTpch3();
+                        break;
+                    case "tpch10":
+                        tree = LineitemOnTpch10();
+                        break;
+                    case "tpch12":
+                        tree = LineitemOnTpch12();
+                        break;
+                    case "tpch14":
+                        tree = LineitemOnTpch14();
+                        break;
+                    case "tpch19":
+                        tree = LineitemOnTpch19();
+                        break;
+                }
+                break;
+            case "orders":
+                tree = Orders();
+                break;
+            case "customer":
+                switch (query) {
+                    case "tpch3":
+                        tree = CustomerOnTpch3();
+                        break;
+                    case "tpch8":
+                        tree = CustomerOnTpch8();
+                        break;
+                }
+                break;
+            case "supplier":
+                tree = Supplier();
+                break;
+            case "part":
+                tree = Part();
+                break;
+        }
+
+        // save index to hdfs
+
+
+        Configuration conf = new Configuration();
+        String coreSitePath = "/Users/ylu/Documents/workspace/hadoop-2.6.0/etc/hadoop/core-site.xml";
+        conf.addResource(new Path(coreSitePath));
+        Path path = new Path(outpath);
+        try {
+            FileSystem fs = FileSystem.get(conf);
+            if (fs.exists(path)) {
+                fs.delete(path, false);
+            }
+            HDFSUtils.safeCreateFile(fs, outpath, (short) 3);
+
+            byte[] indexBytes = tree.marshall();
+            HDFSUtils.writeFile(fs, outpath, (short) 3, indexBytes, 0, indexBytes.length, false);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         System.out.println("Done!");
     }
