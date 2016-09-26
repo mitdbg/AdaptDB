@@ -15,7 +15,7 @@ public class JRNode {
     public int attribute;
     public TypeUtils.TYPE type;
     public Object value;
-    int bucketId;
+    public int bucketId;
 
     public JRNode parent;
     public JRNode leftChild;
@@ -75,6 +75,70 @@ public class JRNode {
                 return ((String) value).compareTo(TypeUtils.getStringAttribute(attr[dimension]));
             default:
                 throw new RuntimeException("Unknown dimension type: " + type);
+        }
+    }
+
+    public List<JRNode> search(Predicate[] ps) {
+        if (bucketId == -1) {
+            boolean goLeft = true;
+            boolean goRight = true;
+            for (int i = 0; i < ps.length; i++) {
+                Predicate p = ps[i];
+                if (p.attribute == attribute) {
+                    switch (p.predtype) {
+                        case GEQ:
+                            if (TypeUtils.compareTo(p.value, value, type) > 0)
+                                goLeft = false;
+                            break;
+                        case LEQ:
+                            if (TypeUtils.compareTo(p.value, value, type) <= 0)
+                                goRight = false;
+                            break;
+                        case GT:
+                            if (TypeUtils.compareTo(p.value, value, type) >= 0)
+                                goLeft = false;
+                            break;
+                        case LT:
+                            if (TypeUtils.compareTo(p.value, value, type) <= 0)
+                                goRight = false;
+                            break;
+                        case EQ:
+                            if (TypeUtils.compareTo(p.value, value, type) <= 0)
+                                goRight = false;
+                            else
+                                goLeft = false;
+                            break;
+                    }
+                }
+            }
+
+
+            List<JRNode> ret = null;
+            if (goLeft) {
+                ret = leftChild.search(ps);
+            }
+
+            if (goRight) {
+                if (ret == null) {
+                    ret = rightChild.search(ps);
+                } else {
+                    ret.addAll(rightChild.search(ps));
+                }
+            }
+
+            if (ret == null) {
+                String nStr = String.format("n %d %s %s\n", attribute,
+                        type.toString(),
+                        TypeUtils.serializeValue(value, type));
+                System.out.println("ERR:" + goLeft + " " + goRight);
+                System.out.println("ERR: " + nStr);
+            }
+
+            return ret;
+        } else {
+            List<JRNode> ret = new LinkedList<JRNode>();
+            ret.add(this);
+            return ret;
         }
     }
 

@@ -46,7 +46,7 @@ object spark_partitioner {
       keyValuesPairs
     })
 
-    var indexBytes = HDFSUtils.readFileToBytes(pathToIndex);
+    val indexBytes = HDFSUtils.readFileToBytes(pathToIndex);
     val adaptDbIndex = new JoinRobustTree(indexBytes)
 
     val tableRepartitioned = tableWithKeys.partitionBy(new AdaptDBPartitioner(adaptDbIndex.numBuckets))
