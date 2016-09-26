@@ -49,7 +49,7 @@ public class Amoeba {
 
     public static ParsedTupleList loadSample(String tableName) {
 
-        ConfUtils cfg = new ConfUtils("/Users/ylu/Documents/workspace/AdaptDB/conf/local.properties");
+        ConfUtils cfg = new ConfUtils("/home/mdindex/yilu/mdindex/conf/tpch.properties");
         FileSystem fs = HDFSUtils.getFSByHadoopHome(cfg.getHADOOP_HOME());
         // Load table info.
         Globals.loadTableInfo(tableName, cfg.getHDFS_WORKING_DIR(), fs);
@@ -405,7 +405,7 @@ public class Amoeba {
 
 
         Configuration conf = new Configuration();
-        String coreSitePath = "/Users/ylu/Documents/workspace/hadoop-2.6.0/etc/hadoop/core-site.xml";
+        String coreSitePath = "/home/mdindex/hadoop-2.6.0/etc/hadoop/core-site.xml";
         conf.addResource(new Path(coreSitePath));
         Path path = new Path(outpath);
         try {
@@ -413,10 +413,12 @@ public class Amoeba {
             if (fs.exists(path)) {
                 fs.delete(path, false);
             }
-            HDFSUtils.safeCreateFile(fs, outpath, (short) 3);
+            System.out.println("creating file " + outpath);
+            HDFSUtils.safeCreateFile(fs, outpath, (short) 1);
 
             byte[] indexBytes = tree.marshall();
-            HDFSUtils.writeFile(fs, outpath, (short) 3, indexBytes, 0, indexBytes.length, false);
+            System.out.println("writing file " + outpath);
+            HDFSUtils.writeFile(fs, outpath, (short) 1, indexBytes, 0, indexBytes.length, false);
 
         } catch (IOException e) {
             e.printStackTrace();
