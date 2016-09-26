@@ -9,8 +9,7 @@ import scala.util.Random
 object pref_workload {
   val hadoopHome = "/home/mdindex/hadoop-2.6.0"
 
-  val outputPartitionNum = 50
-  val inputPartitionNum = 100
+  val partitionNum = 200
 
   val lineitem = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/repartitioned_lineitem"
   val orders = "hdfs://istc13.csail.mit.edu:9000/user/yilu/tpch1000-pref-spark/repartitioned_orders"
@@ -54,16 +53,14 @@ object pref_workload {
 
     println("QueryString: " + queryString)
 
-    val partitionIdsRDD = sc.parallelize(0 to outputPartitionNum - 1, outputPartitionNum)
+    val partitionIdsRDD = sc.parallelize(0 to partitionNum - 1, partitionNum)
     val rdd = partitionIdsRDD.mapPartitionsWithIndex(
-      (id, values) => {
+      (partitionId, values) => {
         val q = new Query(queryString)
         val reader = new HDFSReader(hadoopHome)
         var tuples = new ArrayBuffer[String];
-        for (partitionId <- id until inputPartitionNum by outputPartitionNum) {
-          val tablePath = "%s/part-%05d".format(table, partitionId)
-          tuples = tuples ++ reader.readFile(tablePath)
-        }
+        val tablePath = "%s/part-%05d".format(table, partitionId)
+        tuples = tuples ++ reader.readFile(tablePath)
         val filteredTuples = tuples.filter(x => q.qualifies(x))
         filteredTuples.iterator
       }, true
