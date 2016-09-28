@@ -62,7 +62,7 @@ object spark_partitioner {
 
     val conf = new SparkConf()
     conf.setAppName("spark_partitioner")
-    conf.setMaster("spark://istc13.csail.mit.edu:7077")
+    conf.setMaster("spark://istc1.csail.mit.edu:7077")
 
     val sc = new SparkContext(conf)
 
