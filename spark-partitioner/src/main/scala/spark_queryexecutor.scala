@@ -10,7 +10,7 @@ import scala.collection.JavaConverters._
 /**
   * Created by ylu on 9/26/16.
   */
-class spark_queryexecutor {
+object spark_queryexecutor {
   var lineitem = ""
   var orders = ""
   var customer = ""
