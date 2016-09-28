@@ -6,8 +6,8 @@ SERVER = {
     'HOMEDIR' : '/home/mdindex/',
     'HDFSDIR' : '/user/mdindex/',
     'USER' : 'mdindex',
-    'HOSTS' : ['istc1.csail.mit.edu', 'istc3.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu', 'istc9.csail.mit.edu', 'istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
-    'ROLEDEFS' : { 'master': ['istc13.csail.mit.edu'] },
+    'HOSTS' : ['istc1.csail.mit.edu', 'istc3.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu', 'istc9.csail.mit.edu', 'istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu' ],
+    'ROLEDEFS' : { 'master': ['istc1.csail.mit.edu'] },
     }
 
 confs = {
@@ -22,8 +22,8 @@ confs = {
             'SCHEMASUPPLIER': 's_suppkey long, s_name string, s_address string, s_phone string, s_acctbal double, s_nation string, s_region string',
             'SCHEMACUSTOMER': 'c_custkey long, c_name string, c_address string, c_phone string, c_acctbal double, c_mktsegment string, c_nation string, c_region string',
             'USER' : 'mdindex',
-            'HOSTS' : ['istc1.csail.mit.edu', 'istc3.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu',  'istc9.csail.mit.edu', 'istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu', 'istc13.csail.mit.edu'],
-            'ROLEDEFS' : { 'master': ['istc13.csail.mit.edu'] },
+            'HOSTS' : ['istc1.csail.mit.edu', 'istc3.csail.mit.edu', 'istc6.csail.mit.edu', 'istc7.csail.mit.edu', 'istc8.csail.mit.edu',  'istc9.csail.mit.edu', 'istc10.csail.mit.edu', 'istc11.csail.mit.edu', 'istc12.csail.mit.edu'],
+            'ROLEDEFS' : { 'master': ['istc1.csail.mit.edu'] },
             },
     "lineitem1000" : {
             'JAR' : '/home/mdindex/yilu/mdindex/build/libs/mdindex-all.jar',

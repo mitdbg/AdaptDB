@@ -24,7 +24,7 @@ def tpch_script_gen_1():
                 pass
             script = "#!/bin/bash\n"
             script += "cd /data/mdindex/yilu/tpch-dbgen\n"
-            cmd = './dbgen -s 1 -C 10 -S %d\n' % (counter + 1)
+            cmd = './dbgen -s 1 -C 9 -S %d\n' % (counter + 1)
             script += cmd
 
             run('echo "%s" > data_gen.sh' % script)
@@ -46,7 +46,7 @@ def tpch_script_gen_10():
                 pass
             script = "#!/bin/bash\n"
             script += "cd /data/mdindex/yilu/tpch-dbgen\n"
-            cmd = './dbgen -s 10 -C 10 -S %d\n' % (counter + 1)
+            cmd = './dbgen -s 10 -C 9 -S %d\n' % (counter + 1)
             script += cmd
 
             run('echo "%s" > data_gen.sh' % script)
@@ -68,7 +68,7 @@ def tpch_script_gen_100():
                 pass
             script = "#!/bin/bash\n"
             script += "cd /data/mdindex/yilu/tpch-dbgen\n"
-            cmd = './dbgen -s 100 -C 10 -S %d\n' % (counter + 1)
+            cmd = './dbgen -s 100 -C 9 -S %d\n' % (counter + 1)
             script += cmd
 
             run('echo "%s" > data_gen.sh' % script)
@@ -90,7 +90,7 @@ def tpch_script_gen_1000():
                 pass
             script = "#!/bin/bash\n"
             script += "cd /data/mdindex/yilu/tpch-dbgen\n"
-            cmd = './dbgen -s 1000 -C 10 -S %d\n' % (counter + 1)
+            cmd = './dbgen -s 1000 -C 9 -S %d\n' % (counter + 1)
             script += cmd
 
             run('echo "%s" > data_gen.sh' % script)
