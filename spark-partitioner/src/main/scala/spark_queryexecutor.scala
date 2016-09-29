@@ -221,8 +221,8 @@ object spark_queryexecutor {
     val year_6 = 1993 + rand.nextInt(5)
     val d6_1 = new TypeUtils.SimpleDate(year_6, 1, 1)
     val d6_2 = new TypeUtils.SimpleDate(year_6 + 1, 1, 1)
-    val discount = rand.nextDouble() * 0.07 + 0.02
-    val quantity = rand.nextInt(2) + 24.0
+    val discount:Double = rand.nextDouble() * 0.07 + 0.02
+    val quantity:Double = rand.nextInt(2) + 24.0
     val p1_6 = new Predicate(schemaLineitem, "l_shipdate", TypeUtils.TYPE.DATE, d6_1, Predicate.PREDTYPE.GEQ)
     val p2_6 = new Predicate(schemaLineitem, "l_shipdate", TypeUtils.TYPE.DATE, d6_2, Predicate.PREDTYPE.LT)
     val p3_6 = new Predicate(schemaLineitem, "l_discount", TypeUtils.TYPE.DOUBLE, discount - 0.01, Predicate.PREDTYPE.GT)
@@ -405,7 +405,7 @@ object spark_queryexecutor {
 
     val brand_19 = "Brand#" + (rand.nextInt(5) + 1) + "" + (rand.nextInt(5) + 1)
     val shipInstruct_19 = "DELIVER IN PERSON"
-    var quantity_19 = rand.nextInt(10) + 1
+    var quantity_19:Double = rand.nextInt(10) + 1
     val p1_19 = new Predicate(schemaLineitem, "l_shipinstruct", TypeUtils.TYPE.STRING, shipInstruct_19, Predicate.PREDTYPE.EQ)
     val p2_19 = new Predicate(schemaPart, "p_brand", TypeUtils.TYPE.STRING, brand_19, Predicate.PREDTYPE.EQ)
     val p3_19 = new Predicate(schemaPart, "p_container", TypeUtils.TYPE.STRING, "SM CASE", Predicate.PREDTYPE.EQ)
