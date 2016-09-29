@@ -62,7 +62,7 @@ object spark_queryexecutor {
         }
 
         val q = new Query(queryString)
-        val tablePath = "%s/%d".format(table, partitionId)
+        val tablePath = "%s/data/%d".format(table, partitionId)
         var tuples = HDFSUtils.readFile(tablePath)
         val filteredTuples = tuples.filter(x => q.qualifies(x)).map(x => {
 
