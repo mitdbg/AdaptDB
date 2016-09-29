@@ -81,7 +81,7 @@ object spark_queryexecutor {
   // query is applied to otherTable
 
   def joinTable(sc: SparkContext, baseTable: RDD[(Long, String)], otherTable: RDD[(Long, String)], newJoinKey: Int): RDD[(Long, String)] = {
-    baseTable.join(otherTable).map(x => {
+    baseTable.join(otherTable, 800).map(x => {
       val concate = x._2._1 + Global.DELIMITER + x._2._2
       val columns = concate.split(Global.SPLIT_DELIMITER)
       if (newJoinKey == -1) {
