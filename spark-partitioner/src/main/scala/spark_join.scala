@@ -41,8 +41,8 @@ object spark_join {
       (key, x)
     })
 
-    val result = table1RddWithKeys.join(table2RddWithKeys, 800).map( x=> x._2._1 + Global.DELIMITER + x._2._2 )
-    val resuult = result.count()
+    val resultRdd = table1RddWithKeys.join(table2RddWithKeys, 800).map( x=> x._2._1 + Global.DELIMITER + x._2._2 )
+    val result = resultRdd.count()
 
     val end = System.currentTimeMillis()
 
