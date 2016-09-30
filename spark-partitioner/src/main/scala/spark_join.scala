@@ -36,7 +36,7 @@ object spark_join {
       (key, x)
     })
 
-    val table2RddWithKeys = table1Rdd.map( x => {
+    val table2RddWithKeys = table2Rdd.map( x => {
       val key = x.split(Global.SPLIT_DELIMITER)(key2)
       (key, x)
     })
