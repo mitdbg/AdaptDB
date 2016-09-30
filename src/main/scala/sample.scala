@@ -1,6 +1,6 @@
 // Load TPC-H tables from the datafiles generated
 // Start the spark shell using
-// ./spark-shell --master spark://128.30.77.71:7077 --packages com.databricks:spark-csv_2.11:1.2.0 --driver-memory 4G --executor-memory 200G
+// ./spark-shell --master spark://128.30.77.71:7077 --packages com.databricks:spark-csv_2.11:1.2.0 --driver-memory 4G --executor-memory 200G --executor-cores 6
 
 // sc is an existing SparkContext.
 val sqlContext = new org.apache.spark.sql.SQLContext(sc)
@@ -12,6 +12,8 @@ import org.apache.spark.sql.SaveMode
 val PATH = "hdfs://istc1.csail.mit.edu:9000/user/yilu/tpch1000-spark"
 val DEST = "hdfs://istc1.csail.mit.edu:9000/user/yilu/tpch1000-sample"
 
+
+sqlContext.sql("set spark.sql.shuffle.partitions=800")
 
 // Create lineitem table.
 val lineitem = sqlContext.sql(s"""CREATE TEMPORARY TABLE lineitem (l_orderkey long, l_partkey long, l_suppkey long,
