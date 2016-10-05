@@ -53,3 +53,24 @@ def cmt_move_data_100000000():
     run('mv /data/mdindex/yilu/cmt-dbgen/src/sf_datasets.txt.* /data/mdindex/yilu/cmt100000000/sf')
     run('rm -rf /data/mdindex/yilu/cmt-dbgen/src/*txt*')
     
+@parallel
+def cmt_script_upload_data():
+    with cd('/data/mdindex/yilu'):
+        script = "#!/bin/bash\n"
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -mkdir /user/yilu/cmt100000000"
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -mkdir /user/yilu/cmt100000000/mh"
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -mkdir /user/yilu/cmt100000000/mhl"
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -mkdir /user/yilu/cmt100000000/sf"
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -copyFromLocal " + \
+                "/data/mdindex/yilu/cmt100000000/mh/* /user/yilu/cmt100000000/mh" 
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -copyFromLocal " + \
+                "/data/mdindex/yilu/cmt100000000/mhl/* /user/yilu/cmt100000000/mhl"
+        script += "/home/mdindex/hadoop-2.6.0/bin/hadoop fs -copyFromLocal " + \
+                "/data/mdindex/yilu/cmt100000000/sf/* /user/yilu/cmt100000000/sf"
+        run('echo "%s" > upload_data.sh' % script)
+        run('chmod +x upload_data.sh')
+
+@parallel
+def cmt_upload_data():
+    run('nohup /data/mdindex/yilu/upload_data.sh  > /dev/null 2>&1 < /dev/null &', pty=False)
+  
